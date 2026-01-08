@@ -1,0 +1,189 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
+import { Payout, PayoutFormData, PayoutType } from '@/lib/types';
+import { toast } from 'sonner';
+
+export function usePayouts() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['payouts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('payouts')
+        .select(`
+          *,
+          deal:deals(*)
+        `)
+        .order('due_date', { ascending: true });
+      
+      if (error) throw error;
+      return data as Payout[];
+    },
+    enabled: !!user,
+  });
+}
+
+export function useDealPayouts(dealId: string | undefined) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['payouts', 'deal', dealId],
+    queryFn: async () => {
+      if (!user || !dealId) return [];
+      const { data, error } = await supabase
+        .from('payouts')
+        .select('*')
+        .eq('deal_id', dealId)
+        .order('due_date', { ascending: true });
+      
+      if (error) throw error;
+      return data as Payout[];
+    },
+    enabled: !!user && !!dealId,
+  });
+}
+
+export function useCreatePayout() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (data: PayoutFormData) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data: payout, error } = await supabase
+        .from('payouts')
+        .insert({
+          ...data,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return payout as Payout;
+    },
+    onSuccess: (payout) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', payout.deal_id] });
+      toast.success('Payout added successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to add payout: ${error.message}`);
+    },
+  });
+}
+
+export function useCreatePayoutsFromTemplate() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ dealId, template }: { dealId: string; template: string[] }) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      const payouts = template.map((type) => ({
+        deal_id: dealId,
+        user_id: user.id,
+        payout_type: type as PayoutType,
+        amount: 0,
+        status: 'PROJECTED' as const,
+      }));
+      
+      const { data, error } = await supabase
+        .from('payouts')
+        .insert(payouts)
+        .select();
+      
+      if (error) throw error;
+      return data as Payout[];
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', variables.dealId] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to create payouts: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdatePayout() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<PayoutFormData> }) => {
+      const { data: payout, error } = await supabase
+        .from('payouts')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return payout as Payout;
+    },
+    onSuccess: (payout) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', payout.deal_id] });
+      toast.success('Payout updated');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update payout: ${error.message}`);
+    },
+  });
+}
+
+export function useMarkPayoutPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: payout, error } = await supabase
+        .from('payouts')
+        .update({ status: 'PAID', paid_date: today })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return payout as Payout;
+    },
+    onSuccess: (payout) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', payout.deal_id] });
+      toast.success('Marked as paid');
+    },
+    onError: (error) => {
+      toast.error(`Failed to mark as paid: ${error.message}`);
+    },
+  });
+}
+
+export function useDeletePayout() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, dealId }: { id: string; dealId: string }) => {
+      const { error } = await supabase
+        .from('payouts')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return dealId;
+    },
+    onSuccess: (dealId) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', dealId] });
+      toast.success('Payout deleted');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete payout: ${error.message}`);
+    },
+  });
+}
