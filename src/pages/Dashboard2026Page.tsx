@@ -8,11 +8,10 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, parseISO, addMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { KpiCard } from '@/components/KpiCard';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { useDeals } from '@/hooks/useDeals';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
@@ -29,16 +28,37 @@ import {
   Legend,
 } from 'recharts';
 
-export default function DashboardPage() {
-  const { data: deals = [] } = useDeals();
-  const { data: payouts = [] } = usePayouts();
-  const { data: expenses = [] } = useExpenses();
+const YEAR = 2026;
+
+export default function Dashboard2026Page() {
+  const { data: allDeals = [] } = useDeals();
+  const { data: allPayouts = [] } = usePayouts();
+  const { data: allExpenses = [] } = useExpenses();
   const markPaid = useMarkPayoutPaid();
 
   const now = new Date();
   const currentMonth = format(now, 'yyyy-MM');
   const currentMonthStart = startOfMonth(now);
   const currentMonthEnd = endOfMonth(now);
+
+  // Filter data for 2026
+  const deals = useMemo(() => 
+    allDeals.filter(d => {
+      const closeDate = d.close_date_actual || d.close_date_est || d.pending_date;
+      if (!closeDate) return false;
+      const date = parseISO(closeDate);
+      return date.getFullYear() === YEAR;
+    }), [allDeals]);
+
+  const payouts = useMemo(() => 
+    allPayouts.filter(p => {
+      if (!p.due_date) return false;
+      const date = parseISO(p.due_date);
+      return date.getFullYear() === YEAR;
+    }), [allPayouts]);
+
+  const expenses = useMemo(() => 
+    allExpenses.filter(e => e.month.startsWith(`${YEAR}`)), [allExpenses]);
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -56,79 +76,60 @@ export default function DashboardPage() {
       .filter((p) => p.status === 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Next 3 months
-    const next3MonthsEnd = endOfMonth(addMonths(now, 3));
-    const expected3Months = payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end: next3MonthsEnd });
-      })
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // Next 12 months
-    const next12MonthsEnd = endOfMonth(addMonths(now, 12));
-    const expected12Months = payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end: next12MonthsEnd });
-      })
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // Outstanding
-    const outstanding = payouts
+    const totalExpected = payouts
       .filter((p) => p.status !== 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Current month expenses
+    const totalPaid = payouts
+      .filter((p) => p.status === 'PAID')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    const totalExpenses = expenses
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
     const thisMonthExpenses = expenses
       .filter((e) => e.month === currentMonth)
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
-    const netCashflow = paidThisMonth - thisMonthExpenses;
-
     return {
       expectedThisMonth,
       paidThisMonth,
-      expected3Months,
-      expected12Months,
-      outstanding,
+      totalExpected,
+      totalPaid,
+      totalExpenses,
       thisMonthExpenses,
-      netCashflow,
-      activeDeals: deals.filter((d) => d.status === 'PENDING').length,
+      netCashflow: paidThisMonth - thisMonthExpenses,
       closedDeals: deals.filter((d) => d.status === 'CLOSED').length,
+      pendingDeals: deals.filter((d) => d.status === 'PENDING').length,
     };
   }, [deals, payouts, expenses, currentMonth]);
 
-  // Upcoming payouts (next 60 days)
+  // Upcoming payouts (next 60 days, 2026 only)
   const upcomingPayouts = useMemo(() => {
     const end = addMonths(now, 2);
     return payouts
       .filter((p) => {
         if (!p.due_date || p.status === 'PAID') return false;
         const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end });
+        return isWithinInterval(date, { start: now, end }) && date.getFullYear() === YEAR;
       })
       .sort((a, b) => {
         if (!a.due_date || !b.due_date) return 0;
         return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
       })
       .slice(0, 8);
-  }, [payouts]);
+  }, [payouts, now]);
 
-  // Chart data - last 6 months
+  // Chart data for 2026
   const chartData = useMemo(() => {
     const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = addMonths(now, -i);
-      const monthStr = format(monthDate, 'yyyy-MM');
-      const monthLabel = format(monthDate, 'MMM');
+    for (let i = 0; i < 12; i++) {
+      const monthStr = `${YEAR}-${String(i + 1).padStart(2, '0')}`;
+      const monthLabel = format(new Date(YEAR, i, 1), 'MMM');
 
-      const monthPayouts = payouts.filter((p) => {
-        if (!p.due_date) return false;
-        return p.due_date.startsWith(monthStr);
-      });
+      const monthPayouts = payouts.filter((p) => 
+        p.due_date?.startsWith(monthStr)
+      );
 
       const expected = monthPayouts
         .filter((p) => p.status !== 'PAID')
@@ -156,23 +157,24 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <Header 
-        title="Dashboard" 
+        title="2026 Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
       />
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
-        {/* Year Navigation */}
+        {/* Navigation tabs */}
         <div className="flex gap-2">
           <Link to="/dashboard/2025">
             <Button variant="outline" size="sm">2025</Button>
           </Link>
           <Link to="/dashboard/2026">
-            <Button variant="outline" size="sm">2026</Button>
+            <Button variant="default" size="sm">2026</Button>
           </Link>
           <Link to="/dashboard">
-            <Button variant="default" size="sm">Current</Button>
+            <Button variant="outline" size="sm">Current</Button>
           </Link>
         </div>
+
         {/* KPI Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
@@ -192,9 +194,9 @@ export default function DashboardPage() {
             icon={<TrendingUp className="w-4 h-4 text-accent" />}
           />
           <KpiCard
-            title="Outstanding"
-            value={formatCurrency(kpis.outstanding)}
-            subtitle={`${kpis.activeDeals} pending deals`}
+            title="Outstanding 2026"
+            value={formatCurrency(kpis.totalExpected)}
+            subtitle={`${kpis.pendingDeals} pending deals`}
             icon={<FileText className="w-4 h-4 text-warning" />}
           />
         </div>
@@ -202,28 +204,29 @@ export default function DashboardPage() {
         {/* Secondary KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
-            title="Next 3 Months"
-            value={formatCurrency(kpis.expected3Months)}
+            title="Total Paid (2026)"
+            value={formatCurrency(kpis.totalPaid)}
           />
           <KpiCard
-            title="Next 12 Months"
-            value={formatCurrency(kpis.expected12Months)}
-          />
-          <KpiCard
-            title="Monthly Expenses"
-            value={formatCurrency(kpis.thisMonthExpenses)}
+            title="Total Expenses (2026)"
+            value={formatCurrency(kpis.totalExpenses)}
           />
           <KpiCard
             title="Closed Deals"
             value={String(kpis.closedDeals)}
-            subtitle="all time"
+            subtitle="this year"
+          />
+          <KpiCard
+            title="Pending Deals"
+            value={String(kpis.pendingDeals)}
+            subtitle="this year"
           />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Chart */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
-            <h3 className="font-semibold mb-4">Monthly Overview</h3>
+            <h3 className="font-semibold mb-4">2026 Monthly Forecast</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -258,7 +261,7 @@ export default function DashboardPage() {
 
             {upcomingPayouts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No upcoming payouts
+                No upcoming payouts in 2026
               </p>
             ) : (
               <div className="space-y-3">
