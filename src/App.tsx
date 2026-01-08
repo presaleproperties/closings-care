@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
+import Dashboard2025Page from "./pages/Dashboard2025Page";
+import Dashboard2026Page from "./pages/Dashboard2026Page";
 import DealsPage from "./pages/DealsPage";
 import NewDealPage from "./pages/NewDealPage";
 import DealDetailPage from "./pages/DealDetailPage";
@@ -14,6 +16,7 @@ import PayoutsPage from "./pages/PayoutsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ForecastPage from "./pages/ForecastPage";
 import ImportPage from "./pages/ImportPage";
+import Import2025Page from "./pages/Import2025Page";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +69,8 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/dashboard/2025" element={<ProtectedRoute><Dashboard2025Page /></ProtectedRoute>} />
+            <Route path="/dashboard/2026" element={<ProtectedRoute><Dashboard2026Page /></ProtectedRoute>} />
             <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
             <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
             <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
@@ -73,6 +78,7 @@ const App = () => (
             <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
             <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
             <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+            <Route path="/import/2025" element={<ProtectedRoute><Import2025Page /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

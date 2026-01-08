@@ -8,7 +8,7 @@ import {
   ArrowRight,
   Check
 } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { KpiCard } from '@/components/KpiCard';
@@ -29,106 +29,75 @@ import {
   Legend,
 } from 'recharts';
 
-export default function DashboardPage() {
-  const { data: deals = [] } = useDeals();
-  const { data: payouts = [] } = usePayouts();
-  const { data: expenses = [] } = useExpenses();
+const YEAR = 2025;
+const YEAR_START = new Date(YEAR, 0, 1);
+const YEAR_END = new Date(YEAR, 11, 31);
+
+export default function Dashboard2025Page() {
+  const { data: allDeals = [] } = useDeals();
+  const { data: allPayouts = [] } = usePayouts();
+  const { data: allExpenses = [] } = useExpenses();
   const markPaid = useMarkPayoutPaid();
 
-  const now = new Date();
-  const currentMonth = format(now, 'yyyy-MM');
-  const currentMonthStart = startOfMonth(now);
-  const currentMonthEnd = endOfMonth(now);
+  // Filter data for 2025
+  const deals = useMemo(() => 
+    allDeals.filter(d => {
+      const closeDate = d.close_date_actual || d.close_date_est || d.pending_date;
+      if (!closeDate) return false;
+      const date = parseISO(closeDate);
+      return date.getFullYear() === YEAR;
+    }), [allDeals]);
+
+  const payouts = useMemo(() => 
+    allPayouts.filter(p => {
+      if (!p.due_date) return false;
+      const date = parseISO(p.due_date);
+      return date.getFullYear() === YEAR;
+    }), [allPayouts]);
+
+  const expenses = useMemo(() => 
+    allExpenses.filter(e => e.month.startsWith(`${YEAR}`)), [allExpenses]);
 
   // Calculate KPIs
   const kpis = useMemo(() => {
-    const thisMonthPayouts = payouts.filter((p) => {
-      if (!p.due_date) return false;
-      const date = parseISO(p.due_date);
-      return isWithinInterval(date, { start: currentMonthStart, end: currentMonthEnd });
-    });
-
-    const expectedThisMonth = thisMonthPayouts
-      .filter((p) => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    const paidThisMonth = thisMonthPayouts
+    const totalPaid = payouts
       .filter((p) => p.status === 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Next 3 months
-    const next3MonthsEnd = endOfMonth(addMonths(now, 3));
-    const expected3Months = payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end: next3MonthsEnd });
-      })
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // Next 12 months
-    const next12MonthsEnd = endOfMonth(addMonths(now, 12));
-    const expected12Months = payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end: next12MonthsEnd });
-      })
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // Outstanding
-    const outstanding = payouts
+    const totalExpected = payouts
       .filter((p) => p.status !== 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Current month expenses
-    const thisMonthExpenses = expenses
-      .filter((e) => e.month === currentMonth)
+    const totalExpenses = expenses
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
-    const netCashflow = paidThisMonth - thisMonthExpenses;
+    const netIncome = totalPaid - totalExpenses;
+
+    const grossCommission = deals.reduce((sum, d) => 
+      sum + Number(d.gross_commission_actual || d.gross_commission_est || 0), 0);
 
     return {
-      expectedThisMonth,
-      paidThisMonth,
-      expected3Months,
-      expected12Months,
-      outstanding,
-      thisMonthExpenses,
-      netCashflow,
-      activeDeals: deals.filter((d) => d.status === 'PENDING').length,
+      totalPaid,
+      totalExpected,
+      totalExpenses,
+      netIncome,
+      grossCommission,
       closedDeals: deals.filter((d) => d.status === 'CLOSED').length,
+      pendingDeals: deals.filter((d) => d.status === 'PENDING').length,
+      totalDeals: deals.length,
     };
-  }, [deals, payouts, expenses, currentMonth]);
+  }, [deals, payouts, expenses]);
 
-  // Upcoming payouts (next 60 days)
-  const upcomingPayouts = useMemo(() => {
-    const end = addMonths(now, 2);
-    return payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end });
-      })
-      .sort((a, b) => {
-        if (!a.due_date || !b.due_date) return 0;
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      })
-      .slice(0, 8);
-  }, [payouts]);
-
-  // Chart data - last 6 months
+  // Monthly chart data for 2025
   const chartData = useMemo(() => {
     const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = addMonths(now, -i);
-      const monthStr = format(monthDate, 'yyyy-MM');
-      const monthLabel = format(monthDate, 'MMM');
+    for (let i = 0; i < 12; i++) {
+      const monthStr = `${YEAR}-${String(i + 1).padStart(2, '0')}`;
+      const monthLabel = format(new Date(YEAR, i, 1), 'MMM');
 
-      const monthPayouts = payouts.filter((p) => {
-        if (!p.due_date) return false;
-        return p.due_date.startsWith(monthStr);
-      });
+      const monthPayouts = payouts.filter((p) => 
+        p.due_date?.startsWith(monthStr)
+      );
 
       const expected = monthPayouts
         .filter((p) => p.status !== 'PAID')
@@ -153,77 +122,88 @@ export default function DashboardPage() {
     return months;
   }, [payouts, expenses]);
 
+  // Top payouts
+  const topPayouts = useMemo(() => {
+    return payouts
+      .filter((p) => p.status === 'PAID')
+      .sort((a, b) => Number(b.amount) - Number(a.amount))
+      .slice(0, 8);
+  }, [payouts]);
+
   return (
     <AppLayout>
       <Header 
-        title="Dashboard" 
-        subtitle={format(now, 'EEEE, MMMM d, yyyy')}
+        title="2025 Dashboard" 
+        subtitle="Full year overview"
       />
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
-        {/* Year Navigation */}
+        {/* Navigation tabs */}
         <div className="flex gap-2">
           <Link to="/dashboard/2025">
-            <Button variant="outline" size="sm">2025</Button>
+            <Button variant="default" size="sm">2025</Button>
           </Link>
           <Link to="/dashboard/2026">
             <Button variant="outline" size="sm">2026</Button>
           </Link>
           <Link to="/dashboard">
-            <Button variant="default" size="sm">Current</Button>
+            <Button variant="outline" size="sm">Current</Button>
           </Link>
         </div>
-        {/* KPI Grid */}
+
+        {/* Main KPI Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
-            title="Expected This Month"
-            value={formatCurrency(kpis.expectedThisMonth)}
-            icon={<Calendar className="w-4 h-4 text-accent" />}
-          />
-          <KpiCard
-            title="Paid This Month"
-            value={formatCurrency(kpis.paidThisMonth)}
+            title="Total Gross Commission"
+            value={formatCurrency(kpis.grossCommission)}
             icon={<DollarSign className="w-4 h-4 text-success" />}
           />
           <KpiCard
-            title="Net Cashflow"
-            value={formatCurrency(kpis.netCashflow)}
-            trend={kpis.netCashflow >= 0 ? 'up' : 'down'}
+            title="Total Paid"
+            value={formatCurrency(kpis.totalPaid)}
+            icon={<DollarSign className="w-4 h-4 text-accent" />}
+          />
+          <KpiCard
+            title="Net Income"
+            value={formatCurrency(kpis.netIncome)}
+            trend={kpis.netIncome >= 0 ? 'up' : 'down'}
             icon={<TrendingUp className="w-4 h-4 text-accent" />}
           />
           <KpiCard
-            title="Outstanding"
-            value={formatCurrency(kpis.outstanding)}
-            subtitle={`${kpis.activeDeals} pending deals`}
-            icon={<FileText className="w-4 h-4 text-warning" />}
+            title="Total Expenses"
+            value={formatCurrency(kpis.totalExpenses)}
+            icon={<FileText className="w-4 h-4 text-destructive" />}
           />
         </div>
 
         {/* Secondary KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
-            title="Next 3 Months"
-            value={formatCurrency(kpis.expected3Months)}
-          />
-          <KpiCard
-            title="Next 12 Months"
-            value={formatCurrency(kpis.expected12Months)}
-          />
-          <KpiCard
-            title="Monthly Expenses"
-            value={formatCurrency(kpis.thisMonthExpenses)}
-          />
-          <KpiCard
             title="Closed Deals"
             value={String(kpis.closedDeals)}
-            subtitle="all time"
+            subtitle="completed"
+          />
+          <KpiCard
+            title="Pending Deals"
+            value={String(kpis.pendingDeals)}
+            subtitle="in progress"
+          />
+          <KpiCard
+            title="Total Deals"
+            value={String(kpis.totalDeals)}
+            subtitle="all year"
+          />
+          <KpiCard
+            title="Still Expected"
+            value={formatCurrency(kpis.totalExpected)}
+            subtitle="pending payouts"
           />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Chart */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
-            <h3 className="font-semibold mb-4">Monthly Overview</h3>
+            <h3 className="font-semibold mb-4">2025 Monthly Breakdown</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -247,22 +227,22 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Upcoming Payouts */}
+          {/* Top Payouts */}
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Upcoming Payouts</h3>
+              <h3 className="font-semibold">Top Payouts (2025)</h3>
               <Link to="/payouts" className="text-sm text-accent hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
 
-            {upcomingPayouts.length === 0 ? (
+            {topPayouts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No upcoming payouts
+                No paid payouts in 2025
               </p>
             ) : (
               <div className="space-y-3">
-                {upcomingPayouts.map((payout) => (
+                {topPayouts.map((payout) => (
                   <div
                     key={payout.id}
                     className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
@@ -272,23 +252,12 @@ export default function DashboardPage() {
                         {payout.deal?.client_name || 'Unknown Deal'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {payout.payout_type} • {formatDate(payout.due_date)}
+                        {payout.payout_type} • {formatDate(payout.paid_date || payout.due_date)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">
-                        {formatCurrency(payout.amount)}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 text-success hover:bg-success/10"
-                        onClick={() => markPaid.mutate(payout.id)}
-                        disabled={markPaid.isPending}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <span className="font-semibold text-sm text-success">
+                      {formatCurrency(payout.amount)}
+                    </span>
                   </div>
                 ))}
               </div>
