@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -58,10 +59,23 @@ import {
   useMarkPayoutPaid,
   useDeletePayout 
 } from '@/hooks/usePayouts';
-import { formatCurrency, formatDate } from '@/lib/format';
-import { DealFormData, DealType, DealStatus, PayoutType, PayoutStatus, PayoutFormData } from '@/lib/types';
+import { formatCurrency as formatCurrencyDisplay, formatDate } from '@/lib/format';
+import { DealFormData, DealType, DealStatus, PropertyType, PayoutType, PayoutStatus, PayoutFormData } from '@/lib/types';
 
 const payoutTypes: PayoutType[] = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion', 'Custom'];
+
+// Format number with commas for input display
+const formatCurrencyInput = (value: number | undefined | null): string => {
+  if (value === undefined || value === null || isNaN(value)) return '';
+  return value.toLocaleString('en-US');
+};
+
+// Parse formatted string back to number
+const parseCurrency = (value: string): number | null => {
+  const cleaned = value.replace(/,/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+};
 
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,6 +92,7 @@ export default function DealDetailPage() {
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [isTeamDeal, setIsTeamDeal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPayoutDialog, setShowPayoutDialog] = useState(false);
   const [editingPayout, setEditingPayout] = useState<string | null>(null);
@@ -87,11 +102,15 @@ export default function DealDetailPage() {
     status: 'PROJECTED',
   });
 
+  const isPresale = formData.property_type === 'PRESALE';
+  const isResale = formData.property_type === 'RESALE';
+
   useEffect(() => {
     if (deal) {
       setFormData({
         client_name: deal.client_name,
         deal_type: deal.deal_type,
+        property_type: deal.property_type || undefined,
         address: deal.address || '',
         project_name: deal.project_name || '',
         city: deal.city || '',
@@ -110,12 +129,17 @@ export default function DealDetailPage() {
         notes: deal.notes || '',
         status: deal.status,
       });
+      setIsTeamDeal(!!deal.team_member);
     }
   }, [deal]);
 
   const updateField = (field: keyof DealFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setHasChanges(true);
+  };
+
+  const handlePropertyTypeChange = (value: PropertyType) => {
+    updateField('property_type', value);
   };
 
   const handleSave = async () => {
@@ -258,6 +282,22 @@ export default function DealDetailPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="property_type">Property Type</Label>
+                  <Select
+                    value={formData.property_type || ''}
+                    onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
+                  >
+                    <SelectTrigger id="property_type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PRESALE">Presale</SelectItem>
+                      <SelectItem value="RESALE">Resale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
@@ -275,16 +315,25 @@ export default function DealDetailPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="lead_source">Lead Source</Label>
-                  <Input
-                    id="lead_source"
+                  <Select
                     value={formData.lead_source || ''}
-                    onChange={(e) => updateField('lead_source', e.target.value)}
-                  />
+                    onValueChange={(v) => updateField('lead_source', v)}
+                  >
+                    <SelectTrigger id="lead_source">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Tiktok">Tiktok</SelectItem>
+                      <SelectItem value="Instagram">Instagram</SelectItem>
+                      <SelectItem value="Youtube">Youtube</SelectItem>
+                      <SelectItem value="Referral">Referral</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </section>
 
-            {/* Property Info */}
+            {/* Property Info - Conditional based on property type */}
             <section className="bg-card border border-border rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Building2 className="w-5 h-5 text-accent" />
@@ -292,23 +341,29 @@ export default function DealDetailPage() {
               </div>
               
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input
-                    id="address"
-                    value={formData.address || ''}
-                    onChange={(e) => updateField('address', e.target.value)}
-                  />
-                </div>
+                {(isPresale || !formData.property_type) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="project_name">Project Name</Label>
+                    <Input
+                      id="project_name"
+                      value={formData.project_name || ''}
+                      onChange={(e) => updateField('project_name', e.target.value)}
+                      placeholder="The Palisades"
+                    />
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="project_name">Project Name</Label>
-                  <Input
-                    id="project_name"
-                    value={formData.project_name || ''}
-                    onChange={(e) => updateField('project_name', e.target.value)}
-                  />
-                </div>
+                {(isResale || !formData.property_type) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address || ''}
+                      onChange={(e) => updateField('address', e.target.value)}
+                      placeholder="123 Main Street, Unit 1001"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
@@ -316,6 +371,7 @@ export default function DealDetailPage() {
                     id="city"
                     value={formData.city || ''}
                     onChange={(e) => updateField('city', e.target.value)}
+                    placeholder="Vancouver"
                   />
                 </div>
               </div>
@@ -328,19 +384,9 @@ export default function DealDetailPage() {
                 <h2 className="font-semibold">Key Dates</h2>
               </div>
               
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="listing_date">Listing Date</Label>
-                  <Input
-                    id="listing_date"
-                    type="date"
-                    value={formData.listing_date || ''}
-                    onChange={(e) => updateField('listing_date', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pending_date">Pending Date</Label>
+                  <Label htmlFor="pending_date">Firm Date</Label>
                   <Input
                     id="pending_date"
                     type="date"
@@ -349,25 +395,17 @@ export default function DealDetailPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="close_date_est">Est. Close Date</Label>
-                  <Input
-                    id="close_date_est"
-                    type="date"
-                    value={formData.close_date_est || ''}
-                    onChange={(e) => updateField('close_date_est', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="close_date_actual">Actual Close Date</Label>
-                  <Input
-                    id="close_date_actual"
-                    type="date"
-                    value={formData.close_date_actual || ''}
-                    onChange={(e) => updateField('close_date_actual', e.target.value)}
-                  />
-                </div>
+                {(isResale || !formData.property_type) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="close_date_est">Closing Date</Label>
+                    <Input
+                      id="close_date_est"
+                      type="date"
+                      value={formData.close_date_est || ''}
+                      onChange={(e) => updateField('close_date_est', e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </section>
 
@@ -381,58 +419,104 @@ export default function DealDetailPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sale_price">Sale Price</Label>
-                  <Input
-                    id="sale_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.sale_price || ''}
-                    onChange={(e) => updateField('sale_price', parseFloat(e.target.value) || null)}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="sale_price"
+                      className="pl-7"
+                      value={formatCurrencyInput(formData.sale_price)}
+                      onChange={(e) => updateField('sale_price', parseCurrency(e.target.value))}
+                      placeholder="1,250,000"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="gross_commission_est">Gross Commission (Est)</Label>
-                  <Input
-                    id="gross_commission_est"
-                    type="number"
-                    step="0.01"
-                    value={formData.gross_commission_est || ''}
-                    onChange={(e) => updateField('gross_commission_est', parseFloat(e.target.value) || null)}
-                  />
+                  <Label htmlFor="gross_commission_est">Gross Commission</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="gross_commission_est"
+                      className="pl-7"
+                      value={formatCurrencyInput(formData.gross_commission_est)}
+                      onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
+                      placeholder="31,250"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="net_commission_est">Net Commission (Est)</Label>
-                  <Input
-                    id="net_commission_est"
-                    type="number"
-                    step="0.01"
-                    value={formData.net_commission_est || ''}
-                    onChange={(e) => updateField('net_commission_est', parseFloat(e.target.value) || null)}
+                  <Label htmlFor="net_commission_est">Net Commission</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="net_commission_est"
+                      className="pl-7"
+                      value={formatCurrencyInput(formData.net_commission_est)}
+                      onChange={(e) => updateField('net_commission_est', parseCurrency(e.target.value))}
+                      placeholder="28,125"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Team Split */}
+            <section className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-accent" />
+                <h2 className="font-semibold">Team Split</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Switch 
+                    id="is_team_deal"
+                    checked={isTeamDeal}
+                    onCheckedChange={(checked) => {
+                      setIsTeamDeal(checked);
+                      setHasChanges(true);
+                      if (!checked) {
+                        updateField('team_member', undefined);
+                        updateField('team_member_portion', undefined);
+                      }
+                    }}
                   />
+                  <Label htmlFor="is_team_deal">Is this a team deal?</Label>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="gross_commission_actual">Gross Commission (Actual)</Label>
-                  <Input
-                    id="gross_commission_actual"
-                    type="number"
-                    step="0.01"
-                    value={formData.gross_commission_actual || ''}
-                    onChange={(e) => updateField('gross_commission_actual', parseFloat(e.target.value) || null)}
-                  />
-                </div>
+                {isTeamDeal && (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="team_member">Team Member</Label>
+                      <Select
+                        value={formData.team_member || ''}
+                        onValueChange={(v) => updateField('team_member', v)}
+                      >
+                        <SelectTrigger id="team_member">
+                          <SelectValue placeholder="Select member" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Sarb">Sarb</SelectItem>
+                          <SelectItem value="Ravish">Ravish</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="net_commission_actual">Net Commission (Actual)</Label>
-                  <Input
-                    id="net_commission_actual"
-                    type="number"
-                    step="0.01"
-                    value={formData.net_commission_actual || ''}
-                    onChange={(e) => updateField('net_commission_actual', parseFloat(e.target.value) || null)}
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="team_member_portion">Their Portion (%)</Label>
+                      <Input
+                        id="team_member_portion"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={formData.team_member_portion || ''}
+                        onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
+                        placeholder="50"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -478,11 +562,11 @@ export default function DealDetailPage() {
               <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="font-semibold">{formatCurrency(totalPayouts)}</p>
+                  <p className="font-semibold">{formatCurrencyDisplay(totalPayouts)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Paid</p>
-                  <p className="font-semibold text-success">{formatCurrency(paidPayouts)}</p>
+                  <p className="font-semibold text-success">{formatCurrencyDisplay(paidPayouts)}</p>
                 </div>
               </div>
 
@@ -513,7 +597,7 @@ export default function DealDetailPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm">
-                          {formatCurrency(payout.amount)}
+                          {formatCurrencyDisplay(payout.amount)}
                         </span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -625,12 +709,15 @@ export default function DealDetailPage() {
 
             <div className="space-y-2">
               <Label>Amount</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={payoutForm.amount || ''}
-                onChange={(e) => setPayoutForm((p) => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  className="pl-7"
+                  value={formatCurrencyInput(payoutForm.amount)}
+                  onChange={(e) => setPayoutForm((p) => ({ ...p, amount: parseCurrency(e.target.value) || 0 }))}
+                  placeholder="10,000"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
