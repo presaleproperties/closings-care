@@ -14,16 +14,25 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   useExpenses, 
   useCreateExpense, 
   useUpdateExpense, 
   useDeleteExpense 
 } from '@/hooks/useExpenses';
+import { useRentalProperties } from '@/hooks/useRentalProperties';
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProgress';
+import { RentalPropertyManager } from '@/components/expenses/RentalPropertyManager';
 
 // Categorized expenses for real estate agents
 const expenseCategories = {
@@ -162,6 +171,7 @@ type ExpenseType = 'personal' | 'business' | 'rental' | 'taxes' | 'other';
 
 export default function ExpensesPage() {
   const { data: expenses = [], isLoading } = useExpenses();
+  const { data: rentalProperties = [] } = useRentalProperties();
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -171,11 +181,12 @@ export default function ExpensesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<ExpenseType>('personal');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType }>({
+  const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType; rental_property_id?: string }>({
     category: '',
     amount: 0,
     month: currentMonth,
     recurrence: 'monthly',
+    rental_property_id: undefined,
   });
 
   // Navigate months
@@ -254,6 +265,7 @@ export default function ExpensesPage() {
       amount: 0,
       month: currentMonth,
       recurrence: 'monthly',
+      rental_property_id: undefined,
     });
     setShowDialog(true);
   };
@@ -269,6 +281,7 @@ export default function ExpensesPage() {
       month: expense.month,
       notes: expense.notes || '',
       recurrence: (expense as any).recurrence || 'monthly',
+      rental_property_id: (expense as any).rental_property_id || undefined,
     });
     setShowDialog(true);
   };
@@ -279,6 +292,8 @@ export default function ExpensesPage() {
     const dataToSave = {
       ...formData,
       recurrence: formData.recurrence || 'monthly',
+      // Only include rental_property_id for rental expenses
+      rental_property_id: selectedType === 'rental' ? formData.rental_property_id : null,
     };
     
     console.log('Saving expense with data:', dataToSave);
@@ -402,6 +417,9 @@ export default function ExpensesPage() {
           </div>
         </div>
 
+        {/* Rental Properties Manager */}
+        <RentalPropertyManager expenses={expenses} currentMonth={currentMonth} />
+
         {/* Budget Goals Progress */}
         <CategoryBudgetProgress expenses={expenses} currentMonth={currentMonth} />
 
@@ -479,16 +497,20 @@ export default function ExpensesPage() {
                   <span className="text-sm font-medium">{formatCurrency(getTypeTotal('rental'))}</span>
                 </div>
                 <div className="divide-y divide-border">
-                  {groupedExpenses.rental.map(expense => (
-                    <ExpenseRow 
-                      key={expense.id} 
-                      expense={expense} 
-                      onEdit={() => handleOpenEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                      getRecurrenceBadge={getRecurrenceBadge}
-                      getDisplayAmount={getDisplayAmount}
-                    />
-                  ))}
+                  {groupedExpenses.rental.map(expense => {
+                    const property = rentalProperties.find(p => p.id === (expense as any).rental_property_id);
+                    return (
+                      <ExpenseRow 
+                        key={expense.id} 
+                        expense={expense} 
+                        onEdit={() => handleOpenEdit(expense)}
+                        onDelete={() => handleDelete(expense.id)}
+                        getRecurrenceBadge={getRecurrenceBadge}
+                        getDisplayAmount={getDisplayAmount}
+                        propertyName={property?.name}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -668,6 +690,32 @@ export default function ExpensesPage() {
               </div>
             </div>
 
+            {/* Step 2.5: Property Selection (only for rental type) */}
+            {selectedType === 'rental' && rentalProperties.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Assign to Property</Label>
+                <Select
+                  value={formData.rental_property_id || 'none'}
+                  onValueChange={(value) => setFormData(p => ({ ...p, rental_property_id: value === 'none' ? undefined : value }))}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select a property (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific property</SelectItem>
+                    {rentalProperties.map((property) => (
+                      <SelectItem key={property.id} value={property.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-teal-400" />
+                          {property.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {/* Step 3: Recurrence Type */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Frequency</Label>
@@ -810,13 +858,15 @@ function ExpenseRow({
   onEdit, 
   onDelete,
   getRecurrenceBadge,
-  getDisplayAmount 
+  getDisplayAmount,
+  propertyName,
 }: { 
   expense: any; 
   onEdit: () => void;
   onDelete: () => void;
   getRecurrenceBadge: (r: RecurrenceType) => JSX.Element;
   getDisplayAmount: (e: any) => number;
+  propertyName?: string;
 }) {
   const recurrence = expense.recurrence || 'monthly';
   
@@ -827,7 +877,15 @@ function ExpenseRow({
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className="min-w-0">
-          <p className="font-medium truncate">{expense.category}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium truncate">{expense.category}</p>
+            {propertyName && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-teal-500/30 text-teal-400">
+                <Building2 className="w-2.5 h-2.5 mr-1" />
+                {propertyName}
+              </Badge>
+            )}
+          </div>
           <div className="flex items-center gap-2 mt-0.5">
             {getRecurrenceBadge(recurrence)}
             {expense.notes && (

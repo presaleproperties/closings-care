@@ -146,6 +146,7 @@ export type Database = {
           month: string
           notes: string | null
           recurrence: string | null
+          rental_property_id: string | null
           updated_at: string
           user_id: string
         }
@@ -157,6 +158,7 @@ export type Database = {
           month: string
           notes?: string | null
           recurrence?: string | null
+          rental_property_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -168,10 +170,19 @@ export type Database = {
           month?: string
           notes?: string | null
           recurrence?: string | null
+          rental_property_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expenses_rental_property_id_fkey"
+            columns: ["rental_property_id"]
+            isOneToOne: false
+            referencedRelation: "rental_properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       other_income: {
         Row: {
@@ -284,6 +295,42 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rental_properties: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
           updated_at?: string
           user_id?: string
         }
