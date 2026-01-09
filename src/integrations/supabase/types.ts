@@ -33,6 +33,7 @@ export type Database = {
           notes: string | null
           pending_date: string | null
           project_name: string | null
+          property_type: Database["public"]["Enums"]["property_type"] | null
           sale_price: number | null
           status: Database["public"]["Enums"]["deal_status"]
           team_member: string | null
@@ -58,6 +59,7 @@ export type Database = {
           notes?: string | null
           pending_date?: string | null
           project_name?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"] | null
           sale_price?: number | null
           status?: Database["public"]["Enums"]["deal_status"]
           team_member?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           notes?: string | null
           pending_date?: string | null
           project_name?: string | null
+          property_type?: Database["public"]["Enums"]["property_type"] | null
           sale_price?: number | null
           status?: Database["public"]["Enums"]["deal_status"]
           team_member?: string | null
@@ -259,6 +262,7 @@ export type Database = {
         | "4th Deposit"
         | "Completion"
         | "Custom"
+      property_type: "PRESALE" | "RESALE"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -397,6 +401,7 @@ export const Constants = {
         "Completion",
         "Custom",
       ],
+      property_type: ["PRESALE", "RESALE"],
     },
   },
 } as const
