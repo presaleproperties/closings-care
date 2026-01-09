@@ -150,7 +150,7 @@ export default function NewDealPage() {
                   onValueChange={(v) => updateField('deal_type', v as DealType)}
                 >
                   <SelectTrigger id="deal_type">
-                    <SelectValue />
+                    <SelectValue placeholder="Buy / Sell" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="BUY">Buy</SelectItem>
@@ -166,7 +166,7 @@ export default function NewDealPage() {
                   onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
                 >
                   <SelectTrigger id="property_type">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Presale / Resale" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PRESALE">Presale</SelectItem>
@@ -182,7 +182,7 @@ export default function NewDealPage() {
                   onValueChange={(v) => updateField('buyer_type' as any, v)}
                 >
                   <SelectTrigger id="buyer_type">
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="First Time / Investor" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
                     <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
@@ -198,7 +198,7 @@ export default function NewDealPage() {
                   onValueChange={(v) => updateField('lead_source', v)}
                 >
                   <SelectTrigger id="lead_source">
-                    <SelectValue placeholder="Select source" />
+                    <SelectValue placeholder="Tiktok / IG / Referral..." />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
                     <SelectItem value="Tiktok">Tiktok</SelectItem>
@@ -216,7 +216,7 @@ export default function NewDealPage() {
                   onValueChange={(v) => updateField('status', v as DealStatus)}
                 >
                   <SelectTrigger id="status">
-                    <SelectValue />
+                    <SelectValue placeholder="Pending / Closed" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PENDING">Pending</SelectItem>
@@ -267,7 +267,7 @@ export default function NewDealPage() {
                     onValueChange={(v) => updateField('city', v)}
                   >
                     <SelectTrigger id="city">
-                      <SelectValue placeholder="Select city" />
+                      <SelectValue placeholder="Vancouver / Burnaby..." />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
                       <SelectItem value="Vancouver">Vancouver</SelectItem>
@@ -490,7 +490,7 @@ export default function NewDealPage() {
                       onValueChange={(v) => updateField('team_member', v)}
                     >
                       <SelectTrigger id="team_member">
-                        <SelectValue placeholder="Select member" />
+                        <SelectValue placeholder="Sarb / Ravish" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Sarb">Sarb</SelectItem>
