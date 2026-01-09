@@ -47,6 +47,7 @@ export default function NewDealPage() {
     city: 'Vancouver',
   });
   const [isTeamDeal, setIsTeamDeal] = useState(false);
+  const [hasAdvanceCommission, setHasAdvanceCommission] = useState(true);
 
   const isPresale = formData.property_type === 'PRESALE';
   const isResale = formData.property_type === 'RESALE';
@@ -61,17 +62,26 @@ export default function NewDealPage() {
       
       // Auto-apply payout template based on property type with amounts
       if (settings) {
-        const template = isPresale 
-          ? settings.presale_template 
-          : settings.resale_template;
+        // For presale: use advance + completion or completion only based on toggle
+        // For resale: always just completion
+        let template: string[];
+        if (isPresale) {
+          template = hasAdvanceCommission 
+            ? ['Advance', 'Completion'] 
+            : ['Completion'];
+        } else {
+          template = ['Completion'];
+        }
         
         await createPayoutsFromTemplate.mutateAsync({
           dealId: deal.id,
           template,
-          advanceCommission: (formData as any).advance_commission || 0,
-          completionCommission: (formData as any).completion_commission || 0,
+          advanceCommission: hasAdvanceCommission ? ((formData as any).advance_commission || 0) : 0,
+          completionCommission: hasAdvanceCommission 
+            ? ((formData as any).completion_commission || 0) 
+            : (formData.gross_commission_est || 0),
           grossCommission: formData.gross_commission_est || 0,
-          advanceDate: (formData as any).advance_date,
+          advanceDate: hasAdvanceCommission ? (formData as any).advance_date : undefined,
           completionDate: (formData as any).completion_date,
           closingDate: formData.close_date_est,
         });
@@ -292,25 +302,26 @@ export default function NewDealPage() {
                   />
                 </div>
 
+                {isPresale && hasAdvanceCommission && (
+                  <div className="space-y-2">
+                    <Label>Advance Commission Date</Label>
+                    <DatePicker
+                      value={(formData as any).advance_date}
+                      onChange={(val) => updateField('advance_date' as any, val)}
+                      placeholder="Select advance date"
+                    />
+                  </div>
+                )}
+
                 {isPresale && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Advance Commission Date</Label>
-                      <DatePicker
-                        value={(formData as any).advance_date}
-                        onChange={(val) => updateField('advance_date' as any, val)}
-                        placeholder="Select advance date"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Completion Date</Label>
-                      <DatePicker
-                        value={(formData as any).completion_date}
-                        onChange={(val) => updateField('completion_date' as any, val)}
-                        placeholder="Select completion date"
-                      />
-                    </div>
-                  </>
+                  <div className="space-y-2">
+                    <Label>Completion Date</Label>
+                    <DatePicker
+                      value={(formData as any).completion_date}
+                      onChange={(val) => updateField('completion_date' as any, val)}
+                      placeholder="Select completion date"
+                    />
+                  </div>
                 )}
 
                 {isResale && (
@@ -351,6 +362,29 @@ export default function NewDealPage() {
                 </div>
 
                 {isPresale && (
+                  <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <Switch 
+                      id="has_advance"
+                      checked={hasAdvanceCommission}
+                      onCheckedChange={(checked) => {
+                        setHasAdvanceCommission(checked);
+                        if (!checked) {
+                          // Clear advance fields when switching to completion only
+                          updateField('advance_commission' as any, null);
+                          updateField('advance_date' as any, null);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="has_advance" className="cursor-pointer">
+                      Has Advance Commission
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {hasAdvanceCommission ? '(Advance + Completion payouts)' : '(All paid on completion)'}
+                      </span>
+                    </Label>
+                  </div>
+                )}
+
+                {isPresale && hasAdvanceCommission && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="advance_commission">Advance Commission</Label>
@@ -395,7 +429,7 @@ export default function NewDealPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="gross_commission_est">
-                    Gross Commission {isPresale && <span className="text-xs text-muted-foreground">(auto-calculated)</span>}
+                    Gross Commission {isPresale && hasAdvanceCommission && <span className="text-xs text-muted-foreground">(auto-calculated)</span>}
                   </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -405,7 +439,7 @@ export default function NewDealPage() {
                       value={formatCurrency(formData.gross_commission_est)}
                       onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
                       placeholder="31,250"
-                      readOnly={isPresale}
+                      readOnly={isPresale && hasAdvanceCommission}
                     />
                   </div>
                 </div>
@@ -414,7 +448,9 @@ export default function NewDealPage() {
               <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   {isPresale 
-                    ? '✓ Presale: 2 payouts will be created (Advance + Completion)'
+                    ? hasAdvanceCommission
+                      ? '✓ Presale: 2 payouts will be created (Advance + Completion)'
+                      : '✓ Presale: 1 payout will be created (All commission on completion)'
                     : '✓ Resale: 1 payout will be created (Completion on closing date)'
                   }
                 </p>
