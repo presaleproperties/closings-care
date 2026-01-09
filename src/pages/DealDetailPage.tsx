@@ -422,6 +422,29 @@ export default function DealDetailPage() {
                   />
                 </div>
 
+                {isPresale && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="advance_date">Advance Commission Date</Label>
+                      <Input
+                        id="advance_date"
+                        type="date"
+                        value={(formData as any).advance_date || ''}
+                        onChange={(e) => updateField('advance_date' as any, e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="completion_date">Completion Date</Label>
+                      <Input
+                        id="completion_date"
+                        type="date"
+                        value={(formData as any).completion_date || ''}
+                        onChange={(e) => updateField('completion_date' as any, e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
                 {(isResale || !formData.property_type) && (
                   <div className="space-y-2">
                     <Label htmlFor="close_date_est">Closing Date</Label>
@@ -458,8 +481,51 @@ export default function DealDetailPage() {
                   </div>
                 </div>
 
+                {isPresale && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="advance_commission">Advance Commission</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          id="advance_commission"
+                          className="pl-7"
+                          value={formatCurrencyInput((formData as any).advance_commission)}
+                          onChange={(e) => {
+                            const val = parseCurrency(e.target.value);
+                            updateField('advance_commission' as any, val);
+                            const completion = (formData as any).completion_commission || 0;
+                            updateField('gross_commission_est', (val || 0) + completion);
+                          }}
+                          placeholder="5,000"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="completion_commission">Completion Commission</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                        <Input
+                          id="completion_commission"
+                          className="pl-7"
+                          value={formatCurrencyInput((formData as any).completion_commission)}
+                          onChange={(e) => {
+                            const val = parseCurrency(e.target.value);
+                            updateField('completion_commission' as any, val);
+                            const advance = (formData as any).advance_commission || 0;
+                            updateField('gross_commission_est', advance + (val || 0));
+                          }}
+                          placeholder="26,250"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="gross_commission_est">Gross Commission</Label>
+                  <Label htmlFor="gross_commission_est">
+                    Gross Commission {isPresale && <span className="text-xs text-muted-foreground">(auto-calculated)</span>}
+                  </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                     <Input
@@ -468,6 +534,7 @@ export default function DealDetailPage() {
                       value={formatCurrencyInput(formData.gross_commission_est)}
                       onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
                       placeholder="31,250"
+                      readOnly={isPresale}
                     />
                   </div>
                 </div>
