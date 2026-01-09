@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useProperties,
   useCreateProperty,
@@ -300,12 +301,13 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Property' : 'Add Property'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
+            <div className="space-y-4">
             {/* Property Type Toggle */}
             <div className="space-y-2">
               <Label>Property Type *</Label>
@@ -494,7 +496,8 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                 placeholder="Any additional notes..."
               />
             </div>
-          </div>
+            </div>
+          </ScrollArea>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>
