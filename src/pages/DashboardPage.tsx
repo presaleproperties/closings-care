@@ -8,11 +8,13 @@ import {
   ArrowRight,
   Check,
   Building2,
-  Users,
   Clock,
-  Sparkles
+  Sparkles,
+  AlertCircle,
+  CalendarDays,
+  Wallet
 } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO, differenceInDays } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -29,6 +31,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
 
 export default function DashboardPage() {
@@ -38,53 +42,68 @@ export default function DashboardPage() {
   const markPaid = useMarkPayoutPaid();
 
   const now = new Date();
-  const currentYear = now.getFullYear();
   const currentMonth = format(now, 'yyyy-MM');
-  const currentMonthStart = startOfMonth(now);
-  const currentMonthEnd = endOfMonth(now);
 
-  // Calculate KPIs
-  const kpis = useMemo(() => {
-    const thisMonthPayouts = payouts.filter((p) => {
-      if (!p.due_date) return false;
-      const date = parseISO(p.due_date);
-      return isWithinInterval(date, { start: currentMonthStart, end: currentMonthEnd });
-    });
-
-    const expectedThisMonth = thisMonthPayouts
-      .filter((p) => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    const paidThisMonth = thisMonthPayouts
-      .filter((p) => p.status === 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    // Next 3 months
-    const next3MonthsEnd = endOfMonth(addMonths(now, 3));
-    const expected3Months = payouts
+  // Calculate comprehensive forecast KPIs
+  const forecast = useMemo(() => {
+    const pendingPayouts = payouts.filter((p) => p.status !== 'PAID');
+    
+    // Total pending (all unpaid regardless of date)
+    const totalPending = pendingPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+    const pendingCount = pendingPayouts.length;
+    
+    // Payouts with dates for timeline forecasting
+    const payoutsWithDates = pendingPayouts.filter((p) => p.due_date);
+    const payoutsWithoutDates = pendingPayouts.filter((p) => !p.due_date);
+    
+    // This Month
+    const thisMonthStart = startOfMonth(now);
+    const thisMonthEnd = endOfMonth(now);
+    const thisMonth = payoutsWithDates
       .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
+        const date = parseISO(p.due_date!);
+        return isWithinInterval(date, { start: thisMonthStart, end: thisMonthEnd });
+      })
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Next Month
+    const nextMonthStart = startOfMonth(addMonths(now, 1));
+    const nextMonthEnd = endOfMonth(addMonths(now, 1));
+    const nextMonth = payoutsWithDates
+      .filter((p) => {
+        const date = parseISO(p.due_date!);
+        return isWithinInterval(date, { start: nextMonthStart, end: nextMonthEnd });
+      })
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Next 3 Months (from today)
+    const next3MonthsEnd = endOfMonth(addMonths(now, 3));
+    const next3Months = payoutsWithDates
+      .filter((p) => {
+        const date = parseISO(p.due_date!);
         return isWithinInterval(date, { start: now, end: next3MonthsEnd });
       })
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Next 12 months
+    // Next 12 Months (from today)
     const next12MonthsEnd = endOfMonth(addMonths(now, 12));
-    const expected12Months = payouts
+    const next12Months = payoutsWithDates
       .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
+        const date = parseISO(p.due_date!);
         return isWithinInterval(date, { start: now, end: next12MonthsEnd });
       })
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Outstanding (all unpaid)
-    const outstanding = payouts
-      .filter((p) => p.status !== 'PAID')
+    // Unscheduled (no due date)
+    const unscheduled = payoutsWithoutDates.reduce((sum, p) => sum + Number(p.amount), 0);
+    const unscheduledCount = payoutsWithoutDates.length;
+
+    // Total paid all time
+    const totalPaid = payouts
+      .filter((p) => p.status === 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Total pipeline value
+    // Pipeline value from pending deals
     const pipelineValue = deals
       .filter((d) => d.status === 'PENDING')
       .reduce((sum, d) => sum + (Number(d.net_commission_est) || 0), 0);
@@ -94,58 +113,64 @@ export default function DashboardPage() {
       .filter((e) => e.month === currentMonth)
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
-    const netCashflow = paidThisMonth - thisMonthExpenses;
-
-    // Total all-time
-    const totalPaid = payouts
-      .filter((p) => p.status === 'PAID')
+    // Paid this month
+    const paidThisMonth = payouts
+      .filter((p) => {
+        if (p.status !== 'PAID' || !p.paid_date) return false;
+        const date = parseISO(p.paid_date);
+        return isWithinInterval(date, { start: thisMonthStart, end: thisMonthEnd });
+      })
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {
-      expectedThisMonth,
-      paidThisMonth,
-      expected3Months,
-      expected12Months,
-      outstanding,
+      totalPending,
+      pendingCount,
+      thisMonth,
+      nextMonth,
+      next3Months,
+      next12Months,
+      unscheduled,
+      unscheduledCount,
+      totalPaid,
       pipelineValue,
       thisMonthExpenses,
-      netCashflow,
-      totalPaid,
+      paidThisMonth,
+      netCashflow: paidThisMonth - thisMonthExpenses,
       activeDeals: deals.filter((d) => d.status === 'PENDING').length,
       closedDeals: deals.filter((d) => d.status === 'CLOSED').length,
-      totalDeals: deals.length,
     };
   }, [deals, payouts, expenses, currentMonth]);
 
-  // All payouts (including those without dates) - show recent/upcoming
-  const allPayouts = useMemo(() => {
+  // Get pending payouts sorted by urgency (due soon first)
+  const upcomingPayouts = useMemo(() => {
     return payouts
       .filter((p) => p.status !== 'PAID')
       .sort((a, b) => {
-        // Sort by due_date if exists, otherwise by created_at
-        const dateA = a.due_date ? new Date(a.due_date) : new Date(a.created_at);
-        const dateB = b.due_date ? new Date(b.due_date) : new Date(b.created_at);
-        return dateA.getTime() - dateB.getTime();
+        // Payouts with dates come first, sorted by date
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (a.due_date) return -1;
+        if (b.due_date) return 1;
+        return 0;
       })
-      .slice(0, 6);
+      .slice(0, 8);
   }, [payouts]);
 
-  // Recent deals
-  const recentDeals = useMemo(() => {
-    return deals.slice(0, 5);
-  }, [deals]);
-
-  // Chart data - next 6 months forecast
+  // Chart data - 12-month forecast
   const chartData = useMemo(() => {
     const months = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       const monthDate = addMonths(now, i);
       const monthStr = format(monthDate, 'yyyy-MM');
-      const monthLabel = format(monthDate, 'MMM yyyy');
+      const monthLabel = format(monthDate, 'MMM');
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
 
       const monthPayouts = payouts.filter((p) => {
         if (!p.due_date) return false;
-        return p.due_date.startsWith(monthStr);
+        const date = parseISO(p.due_date);
+        return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
 
       const projected = monthPayouts
@@ -158,6 +183,7 @@ export default function DashboardPage() {
 
       months.push({
         month: monthLabel,
+        fullMonth: format(monthDate, 'MMM yyyy'),
         projected,
         paid,
         total: projected + paid,
@@ -166,10 +192,21 @@ export default function DashboardPage() {
     return months;
   }, [payouts]);
 
+  // Get days until due for badge color
+  const getDueBadge = (dueDate: string | null) => {
+    if (!dueDate) return { label: 'No date', variant: 'warning' as const };
+    const days = differenceInDays(parseISO(dueDate), now);
+    if (days < 0) return { label: 'Overdue', variant: 'destructive' as const };
+    if (days === 0) return { label: 'Due today', variant: 'destructive' as const };
+    if (days <= 7) return { label: `${days}d`, variant: 'warning' as const };
+    if (days <= 30) return { label: `${days}d`, variant: 'default' as const };
+    return { label: formatDate(dueDate), variant: 'secondary' as const };
+  };
+
   return (
     <AppLayout>
       <Header 
-        title="Dashboard" 
+        title="Commission Forecast" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
       />
 
@@ -194,164 +231,166 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Hero KPIs */}
+        {/* Primary Forecast KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Pipeline Value */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          {/* Total Pending Commissions */}
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-primary/80 p-6 text-primary-foreground shadow-lg">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <Building2 className="w-4 h-4 opacity-70" />
-                <span className="text-sm opacity-70">Pipeline Value</span>
+                <Wallet className="w-5 h-5 opacity-80" />
+                <span className="text-sm font-medium opacity-80">Total Pending</span>
               </div>
-              <p className="text-3xl font-bold">{formatCurrency(kpis.pipelineValue)}</p>
-              <p className="text-sm opacity-70 mt-1">{kpis.activeDeals} pending deals</p>
-            </div>
-          </div>
-
-          {/* Outstanding */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-accent to-accent/80 p-6 text-accent-foreground">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 opacity-70" />
-                <span className="text-sm opacity-70">Outstanding</span>
-              </div>
-              <p className="text-3xl font-bold">{formatCurrency(kpis.outstanding)}</p>
-              <p className="text-sm opacity-70 mt-1">Awaiting payment</p>
+              <p className="text-4xl font-bold tracking-tight">{formatCurrency(forecast.totalPending)}</p>
+              <p className="text-sm opacity-70 mt-2">{forecast.pendingCount} payouts awaiting</p>
             </div>
           </div>
 
           {/* This Month */}
-          <div className="rounded-xl border border-border bg-card p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">This Month</span>
-            </div>
-            <p className="text-3xl font-bold">{formatCurrency(kpis.expectedThisMonth)}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs px-2 py-0.5 rounded-full bg-success/10 text-success">
-                {formatCurrency(kpis.paidThisMonth)} paid
-              </span>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-accent to-accent/80 p-6 text-accent-foreground shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-5 h-5 opacity-80" />
+                <span className="text-sm font-medium opacity-80">This Month</span>
+              </div>
+              <p className="text-4xl font-bold tracking-tight">{formatCurrency(forecast.thisMonth)}</p>
+              <p className="text-sm opacity-70 mt-2">{format(now, 'MMMM yyyy')}</p>
             </div>
           </div>
 
-          {/* Net Cashflow */}
-          <div className="rounded-xl border border-border bg-card p-6">
+          {/* Next Month */}
+          <div className="rounded-xl border-2 border-accent/30 bg-card p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Net Cashflow</span>
+              <CalendarDays className="w-5 h-5 text-accent" />
+              <span className="text-sm font-medium text-muted-foreground">Next Month</span>
             </div>
-            <p className={`text-3xl font-bold ${kpis.netCashflow >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {formatCurrency(kpis.netCashflow)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Income - Expenses ({format(now, 'MMM')})
-            </p>
+            <p className="text-4xl font-bold tracking-tight">{formatCurrency(forecast.nextMonth)}</p>
+            <p className="text-sm text-muted-foreground mt-2">{format(addMonths(now, 1), 'MMMM yyyy')}</p>
+          </div>
+
+          {/* Next 3 Months */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Next 3 Months</span>
+            </div>
+            <p className="text-4xl font-bold tracking-tight">{formatCurrency(forecast.next3Months)}</p>
+            <p className="text-sm text-muted-foreground mt-2">Through {format(addMonths(now, 3), 'MMM yyyy')}</p>
           </div>
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="rounded-lg border border-border bg-card/50 p-4">
-            <p className="text-xs text-muted-foreground mb-1">Next 3 Months</p>
-            <p className="text-xl font-semibold">{formatCurrency(kpis.expected3Months)}</p>
-          </div>
+        {/* Secondary Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="rounded-lg border border-border bg-card/50 p-4">
             <p className="text-xs text-muted-foreground mb-1">Next 12 Months</p>
-            <p className="text-xl font-semibold">{formatCurrency(kpis.expected12Months)}</p>
+            <p className="text-2xl font-bold">{formatCurrency(forecast.next12Months)}</p>
           </div>
           <div className="rounded-lg border border-border bg-card/50 p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Paid (All Time)</p>
-            <p className="text-xl font-semibold">{formatCurrency(kpis.totalPaid)}</p>
+            <p className="text-xs text-muted-foreground mb-1">Pipeline Value</p>
+            <p className="text-2xl font-bold">{formatCurrency(forecast.pipelineValue)}</p>
+            <p className="text-xs text-muted-foreground">{forecast.activeDeals} pending deals</p>
           </div>
           <div className="rounded-lg border border-border bg-card/50 p-4">
-            <p className="text-xs text-muted-foreground mb-1">Total Deals</p>
-            <p className="text-xl font-semibold">{kpis.totalDeals}</p>
-            <p className="text-xs text-muted-foreground">{kpis.closedDeals} closed</p>
+            <p className="text-xs text-muted-foreground mb-1">Paid This Month</p>
+            <p className="text-2xl font-bold text-success">{formatCurrency(forecast.paidThisMonth)}</p>
           </div>
+          <div className="rounded-lg border border-border bg-card/50 p-4">
+            <p className="text-xs text-muted-foreground mb-1">Net Cashflow</p>
+            <p className={`text-2xl font-bold ${forecast.netCashflow >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {formatCurrency(forecast.netCashflow)}
+            </p>
+          </div>
+          {forecast.unscheduledCount > 0 && (
+            <div className="rounded-lg border border-warning/50 bg-warning/5 p-4">
+              <div className="flex items-center gap-1 mb-1">
+                <AlertCircle className="w-3 h-3 text-warning" />
+                <p className="text-xs text-warning">Needs Dates</p>
+              </div>
+              <p className="text-2xl font-bold">{formatCurrency(forecast.unscheduled)}</p>
+              <p className="text-xs text-muted-foreground">{forecast.unscheduledCount} payouts</p>
+            </div>
+          )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Forecast Chart */}
+          {/* 12-Month Forecast Chart */}
           <div className="lg:col-span-2 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="font-semibold text-lg">6-Month Forecast</h3>
-                <p className="text-sm text-muted-foreground">Projected commission income</p>
+                <h3 className="font-semibold text-lg">12-Month Forecast</h3>
+                <p className="text-sm text-muted-foreground">Projected commission income by month</p>
               </div>
               <Link to="/forecast">
                 <Button variant="ghost" size="sm" className="text-accent">
-                  View Details <ArrowRight className="w-3 h-3 ml-1" />
+                  Full Details <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               </Link>
             </div>
-            <div className="h-64">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <BarChart data={chartData} barCategoryGap="20%">
                   <defs>
-                    <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0}/>
+                    <linearGradient id="barProjected" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--accent))" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity={0.6}/>
                     </linearGradient>
-                    <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
+                    <linearGradient id="barPaid" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.6}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis 
                     dataKey="month" 
                     stroke="hsl(var(--muted-foreground))" 
-                    fontSize={12} 
+                    fontSize={11} 
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))" 
-                    fontSize={12} 
-                    tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`}
+                    fontSize={11} 
+                    tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
                     tickLine={false}
                     axisLine={false}
+                    width={50}
                   />
                   <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
                     contentStyle={{
                       backgroundColor: 'hsl(var(--popover))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                     }}
-                    formatter={(value: number) => formatCurrency(value)}
+                    formatter={(value: number, name: string) => [formatCurrency(value), name === 'projected' ? 'Projected' : 'Paid']}
+                    labelFormatter={(label, payload) => payload?.[0]?.payload?.fullMonth || label}
                   />
-                  <Area 
-                    type="monotone" 
+                  <Bar 
                     dataKey="projected" 
                     name="Projected"
-                    stroke="hsl(var(--accent))" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorProjected)" 
+                    fill="url(#barProjected)"
+                    radius={[4, 4, 0, 0]}
                   />
-                  <Area 
-                    type="monotone" 
+                  <Bar 
                     dataKey="paid" 
                     name="Paid"
-                    stroke="hsl(var(--success))" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorPaid)" 
+                    fill="url(#barPaid)"
+                    radius={[4, 4, 0, 0]}
                   />
-                </AreaChart>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Pending Payouts */}
+          {/* Upcoming Payouts */}
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-semibold">Pending Payouts</h3>
-                <p className="text-xs text-muted-foreground">{payouts.filter(p => p.status !== 'PAID').length} awaiting</p>
+                <h3 className="font-semibold">Upcoming Payouts</h3>
+                <p className="text-xs text-muted-foreground">{forecast.pendingCount} pending</p>
               </div>
               <Link to="/payouts">
                 <Button variant="ghost" size="sm" className="text-accent h-8">
@@ -360,56 +399,64 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            {allPayouts.length === 0 ? (
-              <div className="text-center py-8">
-                <DollarSign className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No pending payouts</p>
+            {upcomingPayouts.length === 0 ? (
+              <div className="text-center py-12">
+                <DollarSign className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground mb-2">No pending payouts</p>
                 <Link to="/deals/new">
-                  <Button variant="link" size="sm" className="text-accent mt-2">
+                  <Button variant="outline" size="sm" className="text-accent">
                     Create a deal
                   </Button>
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2">
-                {allPayouts.map((payout) => (
-                  <div
-                    key={payout.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {payout.deal?.client_name || 'Unknown'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-muted-foreground">
-                          {payout.payout_type}
-                        </span>
-                        {payout.due_date ? (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {upcomingPayouts.map((payout) => {
+                  const badge = getDueBadge(payout.due_date);
+                  return (
+                    <Link
+                      key={payout.id}
+                      to={`/deals/${payout.deal_id}`}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {payout.deal?.client_name || 'Unknown'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-muted-foreground">
-                            • {formatDate(payout.due_date)}
+                            {payout.payout_type}
                           </span>
-                        ) : (
-                          <span className="text-xs text-warning">• No date set</span>
-                        )}
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            badge.variant === 'destructive' ? 'bg-destructive/10 text-destructive' :
+                            badge.variant === 'warning' ? 'bg-warning/10 text-warning' :
+                            'bg-muted text-muted-foreground'
+                          }`}>
+                            {badge.label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">
-                        {formatCurrency(payout.amount)}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => markPaid.mutate(payout.id)}
-                        disabled={markPaid.isPending}
-                      >
-                        <Check className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">
+                          {formatCurrency(payout.amount)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            markPaid.mutate(payout.id);
+                          }}
+                          disabled={markPaid.isPending}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -429,7 +476,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          {recentDeals.length === 0 ? (
+          {deals.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No deals yet</p>
@@ -440,47 +487,33 @@ export default function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground">Client</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground">Type</th>
-                    <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground hidden sm:table-cell">Property</th>
-                    <th className="text-right py-3 px-2 text-xs font-medium text-muted-foreground">Commission</th>
-                    <th className="text-center py-3 px-2 text-xs font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentDeals.map((deal) => (
-                    <tr key={deal.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-2">
-                        <Link to={`/deals/${deal.id}`} className="font-medium text-sm hover:text-accent transition-colors">
-                          {deal.client_name}
-                        </Link>
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          deal.property_type === 'PRESALE' 
-                            ? 'bg-info/10 text-info' 
-                            : 'bg-secondary text-secondary-foreground'
-                        }`}>
-                          {deal.property_type || deal.deal_type}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-sm text-muted-foreground hidden sm:table-cell truncate max-w-[200px]">
-                        {deal.project_name || deal.address || deal.city || '-'}
-                      </td>
-                      <td className="py-3 px-2 text-right font-medium text-sm">
-                        {formatCurrency(deal.net_commission_est || 0)}
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <StatusBadge status={deal.status} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-3">
+              {deals.slice(0, 5).map((deal) => (
+                <Link
+                  key={deal.id}
+                  to={`/deals/${deal.id}`}
+                  className="flex items-center justify-between p-4 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{deal.client_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {deal.property_type === 'PRESALE' ? deal.project_name : deal.address || 'No address'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-semibold">{formatCurrency(deal.net_commission_est)}</p>
+                      <p className="text-xs text-muted-foreground">{deal.deal_type}</p>
+                    </div>
+                    <StatusBadge status={deal.status} />
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
