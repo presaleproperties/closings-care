@@ -305,7 +305,9 @@ export type Database = {
           address: string | null
           created_at: string
           id: string
+          monthly_mortgage: number | null
           monthly_rent: number | null
+          monthly_strata: number | null
           name: string
           notes: string | null
           property_type: string
@@ -313,12 +315,15 @@ export type Database = {
           purchase_price: number | null
           updated_at: string
           user_id: string
+          yearly_taxes: number | null
         }
         Insert: {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_mortgage?: number | null
           monthly_rent?: number | null
+          monthly_strata?: number | null
           name: string
           notes?: string | null
           property_type?: string
@@ -326,12 +331,15 @@ export type Database = {
           purchase_price?: number | null
           updated_at?: string
           user_id: string
+          yearly_taxes?: number | null
         }
         Update: {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_mortgage?: number | null
           monthly_rent?: number | null
+          monthly_strata?: number | null
           name?: string
           notes?: string | null
           property_type?: string
@@ -339,6 +347,7 @@ export type Database = {
           purchase_price?: number | null
           updated_at?: string
           user_id?: string
+          yearly_taxes?: number | null
         }
         Relationships: []
       }
