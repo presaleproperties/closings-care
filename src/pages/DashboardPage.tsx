@@ -6,6 +6,7 @@ import { useDeals } from '@/hooks/useDeals';
 import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useOtherIncome } from '@/hooks/useOtherIncome';
+import { useProperties } from '@/hooks/useProperties';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -18,12 +19,14 @@ import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
+import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 
 export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
   const { data: otherIncome = [] } = useOtherIncome();
+  const { data: properties = [] } = useProperties();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
   const updatePayout = useUpdatePayout();
@@ -34,26 +37,21 @@ export default function DashboardPage() {
   const now = new Date();
   const thisYear = now.getFullYear();
 
-  // Calculate expense totals
+  // Calculate expense totals including property costs
   const expenseTotals = useMemo(() => {
-    const monthly = expenses
-      .filter(e => e.recurrence === 'monthly')
-      .reduce((sum, e) => sum + Number(e.amount), 0);
-
-    const weekly = expenses
-      .filter(e => e.recurrence === 'weekly')
-      .reduce((sum, e) => sum + Number(e.amount) * 4.33, 0);
-
+    const monthly = getMonthlyRecurringExpenses(expenses, properties);
+    const annual = getAnnualExpenses(expenses, properties);
+    
     const oneTime = expenses
       .filter(e => e.recurrence === 'one-time')
       .reduce((sum, e) => sum + Number(e.amount), 0);
 
     return {
-      monthly: monthly + weekly,
-      annual: (monthly + weekly) * 12 + oneTime,
+      monthly,
+      annual,
       oneTime,
     };
-  }, [expenses]);
+  }, [expenses, properties]);
 
   // Calculate income totals
   const incomeTotals = useMemo(() => {
@@ -139,7 +137,7 @@ export default function DashboardPage() {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Income Projection - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} />
+                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
               </div>
 
               {/* Upcoming Payouts */}
@@ -180,7 +178,7 @@ export default function DashboardPage() {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} />
+              <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
               <ExpenseAnalytics expenses={expenses} />
             </div>
             

@@ -5,10 +5,12 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { usePayouts } from '@/hooks/usePayouts';
-import { useExpenses, getExpensesForMonth } from '@/hooks/useExpenses';
+import { useExpenses } from '@/hooks/useExpenses';
+import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, getMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
 import {
   BarChart,
   Bar,
@@ -23,6 +25,7 @@ import {
 export default function ForecastPage() {
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
+  const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
 
   const [view, setView] = useState<'table' | 'calendar'>('table');
@@ -48,8 +51,8 @@ export default function ForecastPage() {
 
       const totalIncome = income + paid;
 
-      // Calculate expenses for this specific month (includes yearly, one-time, etc.)
-      const totalExpenses = getExpensesForMonth(expenses, monthStr);
+      // Calculate expenses for this specific month (includes property costs)
+      const totalExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
 
       let adjustedIncome = totalIncome;
       if (settings?.apply_tax_to_forecasts && settings.tax_set_aside_percent) {
@@ -67,7 +70,7 @@ export default function ForecastPage() {
         net,
       };
     });
-  }, [payouts, expenses, settings]);
+  }, [payouts, expenses, properties, settings]);
 
   // Running totals
   const runningTotals = useMemo(() => {
