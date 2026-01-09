@@ -139,7 +139,7 @@ export default function DashboardPage() {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Income Projection - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} otherIncome={otherIncome} />
+                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} />
               </div>
 
               {/* Upcoming Payouts */}
@@ -180,7 +180,7 @@ export default function DashboardPage() {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} otherIncome={otherIncome} />
+              <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} />
               <ExpenseAnalytics expenses={expenses} />
             </div>
             

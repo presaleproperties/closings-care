@@ -3,6 +3,52 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Expense, ExpenseFormData } from '@/lib/types';
 import { toast } from 'sonner';
+import { parseISO, format } from 'date-fns';
+
+/**
+ * Calculate total expenses for a specific month, including:
+ * - Monthly recurring expenses
+ * - Weekly recurring expenses (multiplied by 4.33)
+ * - Yearly recurring expenses (only if the month matches)
+ * - One-time expenses (only in the specific month they occurred)
+ */
+export function getExpensesForMonth(expenses: Expense[], monthStr: string): number {
+  const targetMonth = monthStr.slice(5, 7); // Extract MM from YYYY-MM
+  
+  let total = 0;
+  
+  for (const expense of expenses) {
+    const recurrence = expense.recurrence || 'monthly';
+    const amount = Number(expense.amount);
+    const expenseMonth = expense.month?.slice(5, 7); // MM from expense.month
+    const expenseYearMonth = expense.month; // YYYY-MM
+    
+    switch (recurrence) {
+      case 'monthly':
+        // Monthly expenses apply to every month
+        total += amount;
+        break;
+      case 'weekly':
+        // Weekly expenses apply to every month (4.33 weeks per month)
+        total += amount * 4.33;
+        break;
+      case 'yearly':
+        // Yearly expenses only apply if the month matches
+        if (expenseMonth === targetMonth) {
+          total += amount;
+        }
+        break;
+      case 'one-time':
+        // One-time expenses only apply to their specific month
+        if (expenseYearMonth === monthStr) {
+          total += amount;
+        }
+        break;
+    }
+  }
+  
+  return total;
+}
 
 export function useExpenses() {
   const { user } = useAuth();

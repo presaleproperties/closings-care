@@ -5,7 +5,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { usePayouts } from '@/hooks/usePayouts';
-import { useExpenses } from '@/hooks/useExpenses';
+import { useExpenses, getExpensesForMonth } from '@/hooks/useExpenses';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, getMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -48,16 +48,8 @@ export default function ForecastPage() {
 
       const totalIncome = income + paid;
 
-      // Calculate monthly expenses (recurring)
-      const monthlyExpenses = expenses
-        .filter(e => e.recurrence === 'monthly')
-        .reduce((sum, e) => sum + Number(e.amount), 0);
-
-      const weeklyExpenses = expenses
-        .filter(e => e.recurrence === 'weekly')
-        .reduce((sum, e) => sum + Number(e.amount) * 4.33, 0);
-
-      const totalExpenses = monthlyExpenses + weeklyExpenses;
+      // Calculate expenses for this specific month (includes yearly, one-time, etc.)
+      const totalExpenses = getExpensesForMonth(expenses, monthStr);
 
       let adjustedIncome = totalIncome;
       if (settings?.apply_tax_to_forecasts && settings.tax_set_aside_percent) {

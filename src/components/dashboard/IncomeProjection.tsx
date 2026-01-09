@@ -4,8 +4,9 @@ import { ArrowRight, TrendingUp, Wallet } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
-import { Payout, OtherIncome } from '@/lib/types';
+import { Payout, OtherIncome, Expense } from '@/lib/types';
 import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
+import { getExpensesForMonth } from '@/hooks/useExpenses';
 import {
   ComposedChart,
   Bar,
@@ -26,7 +27,7 @@ import {
 
 interface IncomeProjectionProps {
   payouts: Payout[];
-  monthlyExpenses: number;
+  expenses: Expense[];
   otherIncome?: OtherIncome[];
 }
 
@@ -90,7 +91,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function IncomeProjection({ payouts, monthlyExpenses, otherIncome = [] }: IncomeProjectionProps) {
+export function IncomeProjection({ payouts, expenses, otherIncome = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
 
@@ -114,7 +115,9 @@ export function IncomeProjection({ payouts, monthlyExpenses, otherIncome = [] }:
       const income = monthPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
       const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
       const totalIncome = income + monthOtherIncome;
-      const net = totalIncome - monthlyExpenses;
+      // Calculate expenses for this specific month (includes yearly, one-time, etc.)
+      const monthExpenses = getExpensesForMonth(expenses, monthStr);
+      const net = totalIncome - monthExpenses;
       cumulativeNet += net;
 
       months.push({
@@ -125,19 +128,19 @@ export function IncomeProjection({ payouts, monthlyExpenses, otherIncome = [] }:
         income,
         otherIncome: monthOtherIncome,
         totalIncome,
-        expenses: monthlyExpenses,
+        expenses: monthExpenses,
         net,
         cumulativeNet,
         payouts: monthPayouts,
       });
     }
     return months;
-  }, [payouts, monthlyExpenses, otherIncome]);
+  }, [payouts, expenses, otherIncome]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
   const totalProjectedIncome = totalCommissions + totalOtherIncome;
-  const totalExpenses = monthlyExpenses * 12;
+  const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
   const netProjection = totalProjectedIncome - totalExpenses;
 
   const handleBarClick = (data: any) => {
