@@ -330,42 +330,44 @@ export default function DashboardPage() {
                     <Link
                       key={payout.id}
                       to={`/deals/${payout.deal_id}`}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
+                      className="block p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {payout.deal?.client_name || 'Unknown'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-muted-foreground">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {payout.deal?.client_name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {payout.payout_type}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-semibold text-sm">
+                            {formatCurrency(payout.amount)}
                           </span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            badge.variant === 'destructive' ? 'bg-destructive/10 text-destructive' :
-                            badge.variant === 'warning' ? 'bg-warning/10 text-warning' :
-                            'bg-muted text-muted-foreground'
-                          }`}>
-                            {badge.label}
-                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              markPaid.mutate(payout.id);
+                            }}
+                            disabled={markPaid.isPending}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">
-                          {formatCurrency(payout.amount)}
+                      <div className="mt-1.5">
+                        <span className={`text-xs px-1.5 py-0.5 rounded inline-block ${
+                          badge.variant === 'destructive' ? 'bg-destructive/10 text-destructive' :
+                          badge.variant === 'warning' ? 'bg-warning/10 text-warning' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {badge.label}
                         </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            markPaid.mutate(payout.id);
-                          }}
-                          disabled={markPaid.isPending}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
                       </div>
                     </Link>
                   );
