@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
-import { Calculator, TrendingDown, Landmark, DollarSign, PiggyBank, Lightbulb, AlertTriangle } from 'lucide-react';
+import { Calculator, Landmark, PiggyBank, Lightbulb, AlertTriangle, Building2, User, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { formatCurrency } from '@/lib/format';
-import { calculateTax, getQuarterlyInstallment, getTaxTips } from '@/lib/taxCalculator';
-import { Progress } from '@/components/ui/progress';
+import { calculateTax, getQuarterlyInstallment, getTaxTips, PROVINCE_NAMES, Province, TaxType } from '@/lib/taxCalculator';
+import { useSettings } from '@/hooks/useSettings';
+import { Button } from '@/components/ui/button';
 
 interface TaxProjectionProps {
   projectedIncome: number;
@@ -11,15 +13,22 @@ interface TaxProjectionProps {
 }
 
 export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: TaxProjectionProps) {
+  const { data: settings } = useSettings();
+  
+  // Get user's tax settings
+  const province = ((settings as any)?.province || 'BC') as Province;
+  const taxType = ((settings as any)?.tax_type || 'self-employed') as TaxType;
+  const provinceName = PROVINCE_NAMES[province];
+
   const taxData = useMemo(() => {
     // Calculate tax on total projected income (what's expected for the year)
     const totalIncome = paidIncome + projectedIncome;
     const deductibleExpenses = totalExpenses; // Business expenses are deductible
     
-    const projected = calculateTax(totalIncome, deductibleExpenses);
-    const currentOwed = calculateTax(paidIncome, totalExpenses * (paidIncome / Math.max(totalIncome, 1)));
+    const projected = calculateTax(totalIncome, deductibleExpenses, province, taxType);
+    const currentOwed = calculateTax(paidIncome, totalExpenses * (paidIncome / Math.max(totalIncome, 1)), province, taxType);
     const quarterlyInstallment = getQuarterlyInstallment(projected.totalTax);
-    const tips = getTaxTips(totalIncome, deductibleExpenses);
+    const tips = getTaxTips(totalIncome, deductibleExpenses, taxType);
 
     // Calculate how much should be set aside from projected income
     const taxSetAside = projected.totalTax - currentOwed.totalTax;
@@ -33,22 +42,38 @@ export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: Ta
       taxSetAside,
       tips,
     };
-  }, [projectedIncome, paidIncome, totalExpenses]);
+  }, [projectedIncome, paidIncome, totalExpenses, province, taxType]);
 
   const currentMonth = new Date().getMonth();
   const monthsRemaining = 12 - currentMonth;
   const monthlyTaxSetAside = taxData.taxSetAside / Math.max(monthsRemaining, 1);
 
+  const isCorporation = taxType === 'corporation';
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="p-2 rounded-xl bg-accent/10">
-          <Calculator className="h-5 w-5 text-accent" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className={`p-2 rounded-xl ${isCorporation ? 'bg-purple-500/10' : 'bg-accent/10'}`}>
+            <Calculator className={`h-5 w-5 ${isCorporation ? 'text-purple-400' : 'text-accent'}`} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">Tax Projection</h3>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{provinceName}, Canada</span>
+              <span>•</span>
+              <span className={`flex items-center gap-1 ${isCorporation ? 'text-purple-400' : 'text-accent'}`}>
+                {isCorporation ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                {isCorporation ? 'Corporation' : 'Self-Employed'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-lg">Tax Projection</h3>
-          <p className="text-xs text-muted-foreground">British Columbia, Canada</p>
-        </div>
+        <Link to="/settings">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </Link>
       </div>
 
       {/* Income Summary */}
@@ -57,19 +82,19 @@ export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: Ta
           <p className="text-xs text-muted-foreground mb-1">Total Projected Income</p>
           <p className="text-xl font-bold text-success">{formatCurrency(taxData.totalIncome)}</p>
         </div>
-        <div className="p-4 rounded-xl bg-info/10">
+        <div className="p-4 rounded-xl bg-sky-500/10">
           <p className="text-xs text-muted-foreground mb-1">Business Expenses</p>
-          <p className="text-xl font-bold text-info">{formatCurrency(taxData.deductibleExpenses)}</p>
+          <p className="text-xl font-bold text-sky-400">{formatCurrency(taxData.deductibleExpenses)}</p>
           <p className="text-xs text-muted-foreground mt-1">Tax deductible</p>
         </div>
       </div>
 
       {/* Tax Breakdown */}
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 mb-6">
         <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2">
             <Landmark className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Federal Tax</span>
+            <span className="text-sm">{isCorporation ? 'Federal Corporate Tax' : 'Federal Tax'}</span>
           </div>
           <span className="font-semibold">{formatCurrency(taxData.projected.federalTax)}</span>
         </div>
@@ -77,32 +102,36 @@ export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: Ta
         <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div className="flex items-center gap-2">
             <Landmark className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">BC Provincial Tax</span>
+            <span className="text-sm">{province} Provincial Tax</span>
           </div>
           <span className="font-semibold">{formatCurrency(taxData.projected.provincialTax)}</span>
         </div>
 
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2">
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">CPP (Self-Employed)</span>
+        {!isCorporation && (
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <PiggyBank className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">CPP Contributions</span>
+            </div>
+            <span className="font-semibold">{formatCurrency(taxData.projected.cppContributions)}</span>
           </div>
-          <span className="font-semibold">{formatCurrency(taxData.projected.cppContributions)}</span>
-        </div>
+        )}
       </div>
 
       {/* Total Tax */}
-      <div className="p-4 rounded-xl bg-destructive/10 mb-6">
+      <div className={`p-4 rounded-xl mb-6 ${isCorporation ? 'bg-purple-500/10' : 'bg-destructive/10'}`}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium">Estimated Total Tax</span>
-          <span className="text-2xl font-bold text-destructive">{formatCurrency(taxData.projected.totalTax)}</span>
+          <span className={`text-2xl font-bold ${isCorporation ? 'text-purple-400' : 'text-destructive'}`}>
+            {formatCurrency(taxData.projected.totalTax)}
+          </span>
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>Effective Rate</span>
           <span>{taxData.projected.effectiveRate.toFixed(1)}%</span>
         </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Marginal Rate</span>
+          <span>{isCorporation ? 'Corporate Rate' : 'Marginal Rate'}</span>
           <span>{taxData.projected.marginalRate.toFixed(1)}%</span>
         </div>
       </div>
@@ -111,8 +140,10 @@ export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: Ta
       <div className="p-4 rounded-xl bg-success/10 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium">Estimated Take-Home</p>
-            <p className="text-xs text-muted-foreground">After taxes & CPP</p>
+            <p className="text-sm font-medium">{isCorporation ? 'After-Tax Profit' : 'Estimated Take-Home'}</p>
+            <p className="text-xs text-muted-foreground">
+              {isCorporation ? 'Before dividends/salary' : 'After taxes & CPP'}
+            </p>
           </div>
           <span className="text-2xl font-bold text-success">{formatCurrency(taxData.projected.takeHome)}</span>
         </div>
@@ -133,15 +164,17 @@ export function TaxProjection({ projectedIncome, paidIncome, totalExpenses }: Ta
       </div>
 
       {/* Quarterly Installments */}
-      <div className="p-4 rounded-xl bg-muted/50 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Quarterly Installment</p>
-            <p className="text-xs text-muted-foreground">To avoid interest charges</p>
+      {!isCorporation && (
+        <div className="p-4 rounded-xl bg-muted/50 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Quarterly Installment</p>
+              <p className="text-xs text-muted-foreground">To avoid interest charges</p>
+            </div>
+            <span className="text-lg font-bold">{formatCurrency(taxData.quarterlyInstallment)}</span>
           </div>
-          <span className="text-lg font-bold">{formatCurrency(taxData.quarterlyInstallment)}</span>
         </div>
-      </div>
+      )}
 
       {/* Tax Tips */}
       <div className="space-y-3">
