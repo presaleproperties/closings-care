@@ -9,6 +9,7 @@ import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import Dashboard2025Page from "./pages/Dashboard2025Page";
 import Dashboard2026Page from "./pages/Dashboard2026Page";
+import Dashboard2027Page from "./pages/Dashboard2027Page";
 import DealsPage from "./pages/DealsPage";
 import NewDealPage from "./pages/NewDealPage";
 import DealDetailPage from "./pages/DealDetailPage";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/dashboard/2025" element={<ProtectedRoute><Dashboard2025Page /></ProtectedRoute>} />
             <Route path="/dashboard/2026" element={<ProtectedRoute><Dashboard2026Page /></ProtectedRoute>} />
+            <Route path="/dashboard/2027" element={<ProtectedRoute><Dashboard2027Page /></ProtectedRoute>} />
             <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
             <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
             <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />

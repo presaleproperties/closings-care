@@ -162,12 +162,15 @@ export default function DashboardPage() {
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
         {/* Year Navigation */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Link to="/dashboard/2025">
             <Button variant="outline" size="sm">2025</Button>
           </Link>
           <Link to="/dashboard/2026">
             <Button variant="outline" size="sm">2026</Button>
+          </Link>
+          <Link to="/dashboard/2027">
+            <Button variant="outline" size="sm">2027</Button>
           </Link>
           <Link to="/dashboard">
             <Button variant="default" size="sm">Current</Button>

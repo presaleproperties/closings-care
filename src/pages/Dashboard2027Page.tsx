@@ -28,9 +28,9 @@ import {
   Legend,
 } from 'recharts';
 
-const YEAR = 2026;
+const YEAR = 2027;
 
-export default function Dashboard2026Page() {
+export default function Dashboard2027Page() {
   const { data: allDeals = [] } = useDeals();
   const { data: allPayouts = [] } = usePayouts();
   const { data: allExpenses = [] } = useExpenses();
@@ -41,7 +41,7 @@ export default function Dashboard2026Page() {
   const currentMonthStart = startOfMonth(now);
   const currentMonthEnd = endOfMonth(now);
 
-  // Filter data for 2026
+  // Filter data for 2027
   const deals = useMemo(() => 
     allDeals.filter(d => {
       const closeDate = d.close_date_actual || d.close_date_est || d.pending_date;
@@ -104,23 +104,18 @@ export default function Dashboard2026Page() {
     };
   }, [deals, payouts, expenses, currentMonth]);
 
-  // Upcoming payouts (next 60 days, 2026 only)
+  // Upcoming payouts for 2027
   const upcomingPayouts = useMemo(() => {
-    const end = addMonths(now, 2);
     return payouts
-      .filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: now, end }) && date.getFullYear() === YEAR;
-      })
+      .filter((p) => p.status !== 'PAID')
       .sort((a, b) => {
         if (!a.due_date || !b.due_date) return 0;
         return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
       })
       .slice(0, 8);
-  }, [payouts, now]);
+  }, [payouts]);
 
-  // Chart data for 2026
+  // Chart data for 2027
   const chartData = useMemo(() => {
     const months = [];
     for (let i = 0; i < 12; i++) {
@@ -157,8 +152,8 @@ export default function Dashboard2026Page() {
   return (
     <AppLayout>
       <Header 
-        title="2026 Dashboard" 
-        subtitle={format(now, 'EEEE, MMMM d, yyyy')}
+        title="2027 Dashboard" 
+        subtitle="Presale completions and future payouts"
       />
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
@@ -168,10 +163,10 @@ export default function Dashboard2026Page() {
             <Button variant="outline" size="sm">2025</Button>
           </Link>
           <Link to="/dashboard/2026">
-            <Button variant="default" size="sm">2026</Button>
+            <Button variant="outline" size="sm">2026</Button>
           </Link>
           <Link to="/dashboard/2027">
-            <Button variant="outline" size="sm">2027</Button>
+            <Button variant="default" size="sm">2027</Button>
           </Link>
           <Link to="/dashboard">
             <Button variant="outline" size="sm">Current</Button>
@@ -197,7 +192,7 @@ export default function Dashboard2026Page() {
             icon={<TrendingUp className="w-4 h-4 text-accent" />}
           />
           <KpiCard
-            title="Outstanding 2026"
+            title="Outstanding 2027"
             value={formatCurrency(kpis.totalExpected)}
             subtitle={`${kpis.pendingDeals} pending deals`}
             icon={<FileText className="w-4 h-4 text-warning" />}
@@ -207,11 +202,11 @@ export default function Dashboard2026Page() {
         {/* Secondary KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
-            title="Total Paid (2026)"
+            title="Total Paid (2027)"
             value={formatCurrency(kpis.totalPaid)}
           />
           <KpiCard
-            title="Total Expenses (2026)"
+            title="Total Expenses (2027)"
             value={formatCurrency(kpis.totalExpenses)}
           />
           <KpiCard
@@ -229,7 +224,7 @@ export default function Dashboard2026Page() {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Chart */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6">
-            <h3 className="font-semibold mb-4">2026 Monthly Forecast</h3>
+            <h3 className="font-semibold mb-4">2027 Monthly Forecast</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
@@ -256,7 +251,7 @@ export default function Dashboard2026Page() {
           {/* Upcoming Payouts */}
           <div className="bg-card border border-border rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Upcoming Payouts</h3>
+              <h3 className="font-semibold">2027 Payouts</h3>
               <Link to="/payouts" className="text-sm text-accent hover:underline flex items-center gap-1">
                 View all <ArrowRight className="w-3 h-3" />
               </Link>
@@ -264,7 +259,7 @@ export default function Dashboard2026Page() {
 
             {upcomingPayouts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No upcoming payouts in 2026
+                No payouts scheduled for 2027 yet
               </p>
             ) : (
               <div className="space-y-3">
