@@ -179,7 +179,7 @@ export type Database = {
             foreignKeyName: "expenses_rental_property_id_fkey"
             columns: ["rental_property_id"]
             isOneToOne: false
-            referencedRelation: "rental_properties"
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -300,13 +300,15 @@ export type Database = {
         }
         Relationships: []
       }
-      rental_properties: {
+      properties: {
         Row: {
           address: string | null
           created_at: string
           id: string
+          monthly_rent: number | null
           name: string
           notes: string | null
+          property_type: string
           purchase_date: string | null
           purchase_price: number | null
           updated_at: string
@@ -316,8 +318,10 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_rent?: number | null
           name: string
           notes?: string | null
+          property_type?: string
           purchase_date?: string | null
           purchase_price?: number | null
           updated_at?: string
@@ -327,8 +331,10 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_rent?: number | null
           name?: string
           notes?: string | null
+          property_type?: string
           purchase_date?: string | null
           purchase_price?: number | null
           updated_at?: string
