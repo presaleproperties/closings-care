@@ -27,7 +27,7 @@ import {
   useUpdateExpense, 
   useDeleteExpense 
 } from '@/hooks/useExpenses';
-import { useProperties } from '@/hooks/useProperties';
+import { useProperties, getPropertyMonthlyExpenses, calculatePropertyCashflow } from '@/hooks/useProperties';
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -238,6 +238,37 @@ export default function ExpensesPage() {
     }, 0);
   }, [monthExpenses]);
 
+  // Calculate property carrying costs (net cashflow impact)
+  const propertyCarryingCosts = useMemo(() => {
+    let totalPersonalCost = 0;
+    let totalRentalNet = 0;
+    
+    properties.forEach(property => {
+      const builtInExpenses = getPropertyMonthlyExpenses(property);
+      
+      if (property.property_type === 'personal') {
+        // Personal properties are pure expenses
+        totalPersonalCost += builtInExpenses;
+      } else {
+        // Rental properties: calculate net (rent - expenses)
+        const cashflow = calculatePropertyCashflow(property, 0);
+        totalRentalNet += cashflow.net; // Positive = income, Negative = expense
+      }
+    });
+    
+    return {
+      personalCost: totalPersonalCost,
+      rentalNet: totalRentalNet,
+      totalNet: totalRentalNet - totalPersonalCost, // Positive = net income, Negative = net expense
+    };
+  }, [properties]);
+
+  // Grand total including property carrying costs
+  const grandTotalExpenses = useMemo(() => {
+    // Total tracked expenses + personal property costs - rental net (if negative, adds to expenses)
+    return totalMonthExpenses + propertyCarryingCosts.personalCost - propertyCarryingCosts.rentalNet;
+  }, [totalMonthExpenses, propertyCarryingCosts]);
+
   // Group expenses by type
   const groupedExpenses = useMemo(() => {
     const groups: Record<ExpenseType, typeof expenses> = {
@@ -364,7 +395,12 @@ export default function ExpensesPage() {
               {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Total: {formatCurrency(totalMonthExpenses)}
+              Total: {formatCurrency(grandTotalExpenses)}
+              {properties.length > 0 && (
+                <span className="text-xs ml-1">
+                  (incl. property costs)
+                </span>
+              )}
             </p>
           </div>
 
@@ -374,7 +410,7 @@ export default function ExpensesPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="bg-card border border-blue-500/30 rounded-xl p-4">
             <div className="flex items-center gap-2 text-blue-400 mb-2">
               <Home className="w-4 h-4" />
@@ -394,7 +430,7 @@ export default function ExpensesPage() {
           <div className="bg-card border border-teal-500/30 rounded-xl p-4">
             <div className="flex items-center gap-2 text-teal-400 mb-2">
               <Building2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Rental Properties</span>
+              <span className="text-sm font-medium">Rental Expenses</span>
             </div>
             <p className="text-xl font-bold">{formatCurrency(getTypeTotal('rental'))}</p>
             <p className="text-xs text-muted-foreground">{groupedExpenses.rental.length} items</p>
@@ -415,6 +451,33 @@ export default function ExpensesPage() {
             <p className="text-xl font-bold">{formatCurrency(getTypeTotal('other'))}</p>
             <p className="text-xs text-muted-foreground">{groupedExpenses.other.length} items</p>
           </div>
+          
+          {/* Property Carrying Costs Card */}
+          {properties.length > 0 && (
+            <div className={cn(
+              "bg-card rounded-xl p-4 border",
+              propertyCarryingCosts.totalNet >= 0 
+                ? "border-green-500/30" 
+                : "border-red-500/30"
+            )}>
+              <div className={cn(
+                "flex items-center gap-2 mb-2",
+                propertyCarryingCosts.totalNet >= 0 ? "text-green-400" : "text-red-400"
+              )}>
+                <Home className="w-4 h-4" />
+                <span className="text-sm font-medium">Property Net</span>
+              </div>
+              <p className={cn(
+                "text-xl font-bold",
+                propertyCarryingCosts.totalNet >= 0 ? "text-green-400" : "text-red-400"
+              )}>
+                {propertyCarryingCosts.totalNet >= 0 ? '+' : ''}{formatCurrency(propertyCarryingCosts.totalNet)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {properties.filter(p => p.property_type === 'personal').length} personal, {properties.filter(p => p.property_type === 'rental').length} rental
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Property Manager */}
