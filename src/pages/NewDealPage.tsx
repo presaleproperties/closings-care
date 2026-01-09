@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { DatePicker } from '@/components/DatePicker';
 import {
   Select,
   SelectContent,
@@ -277,33 +278,30 @@ export default function NewDealPage() {
               
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pending_date">Firm Date</Label>
-                  <Input
-                    id="pending_date"
-                    type="date"
-                    value={formData.pending_date || ''}
-                    onChange={(e) => updateField('pending_date', e.target.value)}
+                  <Label>Firm Date</Label>
+                  <DatePicker
+                    value={formData.pending_date}
+                    onChange={(val) => updateField('pending_date', val)}
+                    placeholder="Select firm date"
                   />
                 </div>
 
                 {isPresale && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="advance_date">Advance Commission Date</Label>
-                      <Input
-                        id="advance_date"
-                        type="date"
-                        value={(formData as any).advance_date || ''}
-                        onChange={(e) => updateField('advance_date' as any, e.target.value)}
+                      <Label>Advance Commission Date</Label>
+                      <DatePicker
+                        value={(formData as any).advance_date}
+                        onChange={(val) => updateField('advance_date' as any, val)}
+                        placeholder="Select advance date"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="completion_date">Completion Date</Label>
-                      <Input
-                        id="completion_date"
-                        type="date"
-                        value={(formData as any).completion_date || ''}
-                        onChange={(e) => updateField('completion_date' as any, e.target.value)}
+                      <Label>Completion Date</Label>
+                      <DatePicker
+                        value={(formData as any).completion_date}
+                        onChange={(val) => updateField('completion_date' as any, val)}
+                        placeholder="Select completion date"
                       />
                     </div>
                   </>
@@ -311,12 +309,11 @@ export default function NewDealPage() {
 
                 {isResale && (
                   <div className="space-y-2">
-                    <Label htmlFor="close_date_est">Closing Date</Label>
-                    <Input
-                      id="close_date_est"
-                      type="date"
-                      value={formData.close_date_est || ''}
-                      onChange={(e) => updateField('close_date_est', e.target.value)}
+                    <Label>Closing Date</Label>
+                    <DatePicker
+                      value={formData.close_date_est}
+                      onChange={(val) => updateField('close_date_est', val)}
+                      placeholder="Select closing date"
                     />
                   </div>
                 )}
@@ -403,20 +400,6 @@ export default function NewDealPage() {
                       onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
                       placeholder="31,250"
                       readOnly={isPresale}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="net_commission_est">Net Commission</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="net_commission_est"
-                      className="pl-7"
-                      value={formatCurrency(formData.net_commission_est)}
-                      onChange={(e) => updateField('net_commission_est', parseCurrency(e.target.value))}
-                      placeholder="28,125"
                     />
                   </div>
                 </div>
