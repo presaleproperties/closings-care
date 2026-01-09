@@ -20,6 +20,19 @@ import { useSettings } from '@/hooks/useSettings';
 import { useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
 
+// Format number with commas
+const formatCurrency = (value: number | undefined | null): string => {
+  if (value === undefined || value === null || isNaN(value)) return '';
+  return value.toLocaleString('en-US');
+};
+
+// Parse formatted string back to number
+const parseCurrency = (value: string): number | null => {
+  const cleaned = value.replace(/,/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+};
+
 export default function NewDealPage() {
   const navigate = useNavigate();
   const createDeal = useCreateDeal();
@@ -227,7 +240,7 @@ export default function NewDealPage() {
             </section>
           )}
 
-          {/* Dates - Conditional based on property type */}
+          {/* Dates - Always show after property type selected */}
           {formData.property_type && (
             <section className="bg-card border border-border rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -236,17 +249,15 @@ export default function NewDealPage() {
               </div>
               
               <div className="grid sm:grid-cols-2 gap-4">
-                {isPresale && (
-                  <div className="space-y-2">
-                    <Label htmlFor="pending_date">Firm Date</Label>
-                    <Input
-                      id="pending_date"
-                      type="date"
-                      value={formData.pending_date || ''}
-                      onChange={(e) => updateField('pending_date', e.target.value)}
-                    />
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="pending_date">Firm Date</Label>
+                  <Input
+                    id="pending_date"
+                    type="date"
+                    value={formData.pending_date || ''}
+                    onChange={(e) => updateField('pending_date', e.target.value)}
+                  />
+                </div>
 
                 {isResale && (
                   <div className="space-y-2">
@@ -274,38 +285,44 @@ export default function NewDealPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sale_price">Sale Price</Label>
-                  <Input
-                    id="sale_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.sale_price || ''}
-                    onChange={(e) => updateField('sale_price', parseFloat(e.target.value) || null)}
-                    placeholder="$1,250,000"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="sale_price"
+                      className="pl-7"
+                      value={formatCurrency(formData.sale_price)}
+                      onChange={(e) => updateField('sale_price', parseCurrency(e.target.value))}
+                      placeholder="1,250,000"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="gross_commission_est">Gross Commission</Label>
-                  <Input
-                    id="gross_commission_est"
-                    type="number"
-                    step="0.01"
-                    value={formData.gross_commission_est || ''}
-                    onChange={(e) => updateField('gross_commission_est', parseFloat(e.target.value) || null)}
-                    placeholder="$31,250"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="gross_commission_est"
+                      className="pl-7"
+                      value={formatCurrency(formData.gross_commission_est)}
+                      onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
+                      placeholder="31,250"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="net_commission_est">Net Commission</Label>
-                  <Input
-                    id="net_commission_est"
-                    type="number"
-                    step="0.01"
-                    value={formData.net_commission_est || ''}
-                    onChange={(e) => updateField('net_commission_est', parseFloat(e.target.value) || null)}
-                    placeholder="$28,125"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="net_commission_est"
+                      className="pl-7"
+                      value={formatCurrency(formData.net_commission_est)}
+                      onChange={(e) => updateField('net_commission_est', parseCurrency(e.target.value))}
+                      placeholder="28,125"
+                    />
+                  </div>
                 </div>
               </div>
 
