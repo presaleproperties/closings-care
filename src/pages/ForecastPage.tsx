@@ -9,6 +9,16 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useSettings } from '@/hooks/useSettings';
 import { formatCurrency, getMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 
 export default function ForecastPage() {
   const { data: payouts = [] } = usePayouts();
@@ -123,6 +133,62 @@ export default function ForecastPage() {
             <p className={cn("text-2xl font-bold", totals.net >= 0 ? "text-primary" : "text-destructive")}>
               {formatCurrency(totals.net)}
             </p>
+          </div>
+        </div>
+
+        {/* Bar Chart */}
+        <div className="rounded-2xl bg-card border border-border p-6">
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Monthly Income vs Expenses</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={runningTotals} barGap={2}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis 
+                  dataKey="label" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  fontSize={11} 
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))" 
+                  fontSize={11}
+                  tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+                  tickLine={false}
+                  axisLine={false}
+                  width={50}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value),
+                    name === 'income' ? 'Income' : 'Expenses',
+                  ]}
+                  labelFormatter={(label) => runningTotals.find(m => m.label === label)?.fullLabel}
+                />
+                <Legend 
+                  formatter={(value) => value === 'income' ? 'Income' : 'Expenses'}
+                  wrapperStyle={{ fontSize: '12px' }}
+                />
+                <Bar 
+                  dataKey="income" 
+                  fill="hsl(142, 76%, 36%)" 
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+                <Bar 
+                  dataKey="expenses" 
+                  fill="hsl(0, 84%, 60%)" 
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
