@@ -92,6 +92,17 @@ const expenseCategories = {
       'Admin Support',
       'Bookkeeping',
     ],
+    'Rental Property': [
+      'Rental Mortgage',
+      'Rental Strata Fees',
+      'Rental Property Tax',
+      'Property Management',
+      'Rental Insurance',
+      'Rental Repairs/Maintenance',
+      'Rental Utilities',
+      'Rental Depreciation',
+      'Other Rental Expense',
+    ],
   },
   taxes: {
     'Taxes & Savings': [
