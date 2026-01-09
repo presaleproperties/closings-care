@@ -118,6 +118,7 @@ export type Database = {
           id: string
           month: string
           notes: string | null
+          recurrence: string | null
           updated_at: string
           user_id: string
         }
@@ -128,6 +129,7 @@ export type Database = {
           id?: string
           month: string
           notes?: string | null
+          recurrence?: string | null
           updated_at?: string
           user_id: string
         }
@@ -138,6 +140,7 @@ export type Database = {
           id?: string
           month?: string
           notes?: string | null
+          recurrence?: string | null
           updated_at?: string
           user_id?: string
         }
