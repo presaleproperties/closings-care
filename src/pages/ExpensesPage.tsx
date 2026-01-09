@@ -256,16 +256,16 @@ export default function ExpensesPage() {
     return groups;
   }, [monthExpenses]);
 
-  const handleOpenAdd = () => {
+  const handleOpenAdd = (type?: ExpenseType, propertyId?: string) => {
     setEditingId(null);
-    setSelectedType('personal');
+    setSelectedType(type || 'personal');
     setSelectedGroup(null);
     setFormData({
       category: '',
       amount: 0,
       month: currentMonth,
       recurrence: 'monthly',
-      rental_property_id: undefined,
+      rental_property_id: propertyId,
     });
     setShowDialog(true);
   };
@@ -345,7 +345,7 @@ export default function ExpensesPage() {
         title="Expenses" 
         subtitle={`${format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}`}
         action={
-          <Button onClick={handleOpenAdd} className="btn-premium">
+          <Button onClick={() => handleOpenAdd()} className="btn-premium">
             <Plus className="w-4 h-4 mr-2" />
             Add Expense
           </Button>
@@ -429,7 +429,7 @@ export default function ExpensesPage() {
         ) : monthExpenses.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">No expenses for this month</p>
-            <Button onClick={handleOpenAdd} className="btn-premium">
+            <Button onClick={() => handleOpenAdd()} className="btn-premium">
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Expense
             </Button>
@@ -437,137 +437,177 @@ export default function ExpensesPage() {
         ) : (
           <div className="space-y-6">
             {/* Personal Expenses */}
-            {groupedExpenses.personal.length > 0 && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-3 bg-blue-500/10 border-b border-blue-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-blue-400" />
-                    <h3 className="font-semibold text-blue-400">Personal Expenses</h3>
-                  </div>
-                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('personal'))}</span>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-blue-500/10 border-b border-blue-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-blue-400" />
+                  <h3 className="font-semibold text-blue-400">Personal Expenses</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400"
+                    onClick={() => handleOpenAdd('personal')}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {groupedExpenses.personal.map(expense => (
-                    <ExpenseRow 
-                      key={expense.id} 
-                      expense={expense} 
-                      onEdit={() => handleOpenEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                      getRecurrenceBadge={getRecurrenceBadge}
-                      getDisplayAmount={getDisplayAmount}
-                    />
-                  ))}
-                </div>
+                <span className="text-sm font-medium">{formatCurrency(getTypeTotal('personal'))}</span>
               </div>
-            )}
+              {groupedExpenses.personal.length > 0 && (
+              <div className="divide-y divide-border">
+                {groupedExpenses.personal.map(expense => (
+                  <ExpenseRow 
+                    key={expense.id} 
+                    expense={expense} 
+                    onEdit={() => handleOpenEdit(expense)}
+                    onDelete={() => handleDelete(expense.id)}
+                    getRecurrenceBadge={getRecurrenceBadge}
+                    getDisplayAmount={getDisplayAmount}
+                  />
+                ))}
+              </div>
+              )}
+            </div>
 
             {/* Business Expenses */}
-            {groupedExpenses.business.length > 0 && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-3 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-purple-400" />
-                    <h3 className="font-semibold text-purple-400">Business Expenses</h3>
-                  </div>
-                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('business'))}</span>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-purple-400" />
+                  <h3 className="font-semibold text-purple-400">Business Expenses</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full bg-purple-500/20 hover:bg-purple-500/40 text-purple-400"
+                    onClick={() => handleOpenAdd('business')}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {groupedExpenses.business.map(expense => (
-                    <ExpenseRow 
-                      key={expense.id} 
-                      expense={expense} 
-                      onEdit={() => handleOpenEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                      getRecurrenceBadge={getRecurrenceBadge}
-                      getDisplayAmount={getDisplayAmount}
-                    />
-                  ))}
-                </div>
+                <span className="text-sm font-medium">{formatCurrency(getTypeTotal('business'))}</span>
               </div>
-            )}
+              {groupedExpenses.business.length > 0 && (
+              <div className="divide-y divide-border">
+                {groupedExpenses.business.map(expense => (
+                  <ExpenseRow 
+                    key={expense.id} 
+                    expense={expense} 
+                    onEdit={() => handleOpenEdit(expense)}
+                    onDelete={() => handleDelete(expense.id)}
+                    getRecurrenceBadge={getRecurrenceBadge}
+                    getDisplayAmount={getDisplayAmount}
+                  />
+                ))}
+              </div>
+              )}
+            </div>
 
             {/* Rental Properties */}
-            {groupedExpenses.rental.length > 0 && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-3 bg-teal-500/10 border-b border-teal-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-teal-400" />
-                    <h3 className="font-semibold text-teal-400">Rental Properties</h3>
-                  </div>
-                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('rental'))}</span>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-teal-500/10 border-b border-teal-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-teal-400" />
+                  <h3 className="font-semibold text-teal-400">Rental Properties</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full bg-teal-500/20 hover:bg-teal-500/40 text-teal-400"
+                    onClick={() => handleOpenAdd('rental')}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {groupedExpenses.rental.map(expense => {
-                    const property = properties.find(p => p.id === (expense as any).rental_property_id);
-                    return (
-                      <ExpenseRow 
-                        key={expense.id} 
-                        expense={expense} 
-                        onEdit={() => handleOpenEdit(expense)}
-                        onDelete={() => handleDelete(expense.id)}
-                        getRecurrenceBadge={getRecurrenceBadge}
-                        getDisplayAmount={getDisplayAmount}
-                        propertyName={property?.name}
-                      />
-                    );
-                  })}
-                </div>
+                <span className="text-sm font-medium">{formatCurrency(getTypeTotal('rental'))}</span>
               </div>
-            )}
+              {groupedExpenses.rental.length > 0 && (
+              <div className="divide-y divide-border">
+                {groupedExpenses.rental.map(expense => {
+                  const property = properties.find(p => p.id === (expense as any).rental_property_id);
+                  return (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                      propertyName={property?.name}
+                    />
+                  );
+                })}
+              </div>
+              )}
+            </div>
 
             {/* Taxes & Savings */}
-            {groupedExpenses.taxes.length > 0 && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PiggyBank className="w-4 h-4 text-amber-400" />
-                    <h3 className="font-semibold text-amber-400">Taxes & Savings</h3>
-                  </div>
-                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('taxes'))}</span>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <PiggyBank className="w-4 h-4 text-amber-400" />
+                  <h3 className="font-semibold text-amber-400">Taxes & Savings</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full bg-amber-500/20 hover:bg-amber-500/40 text-amber-400"
+                    onClick={() => handleOpenAdd('taxes')}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {groupedExpenses.taxes.map(expense => (
-                    <ExpenseRow 
-                      key={expense.id} 
-                      expense={expense} 
-                      onEdit={() => handleOpenEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                      getRecurrenceBadge={getRecurrenceBadge}
-                      getDisplayAmount={getDisplayAmount}
-                    />
-                  ))}
-                </div>
+                <span className="text-sm font-medium">{formatCurrency(getTypeTotal('taxes'))}</span>
               </div>
-            )}
+              {groupedExpenses.taxes.length > 0 && (
+              <div className="divide-y divide-border">
+                {groupedExpenses.taxes.map(expense => (
+                  <ExpenseRow 
+                    key={expense.id} 
+                    expense={expense} 
+                    onEdit={() => handleOpenEdit(expense)}
+                    onDelete={() => handleDelete(expense.id)}
+                    getRecurrenceBadge={getRecurrenceBadge}
+                    getDisplayAmount={getDisplayAmount}
+                  />
+                ))}
+              </div>
+              )}
+            </div>
 
             {/* Other */}
-            {groupedExpenses.other.length > 0 && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <div className="p-3 bg-muted/50 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-muted-foreground" />
-                    <h3 className="font-semibold">Other Expenses</h3>
-                  </div>
-                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('other'))}</span>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="p-3 bg-muted/50 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-muted-foreground" />
+                  <h3 className="font-semibold">Other Expenses</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 rounded-full bg-muted hover:bg-muted-foreground/20"
+                    onClick={() => handleOpenAdd('other')}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <div className="divide-y divide-border">
-                  {groupedExpenses.other.map(expense => (
-                    <ExpenseRow 
-                      key={expense.id} 
-                      expense={expense} 
-                      onEdit={() => handleOpenEdit(expense)}
-                      onDelete={() => handleDelete(expense.id)}
-                      getRecurrenceBadge={getRecurrenceBadge}
-                      getDisplayAmount={getDisplayAmount}
-                    />
-                  ))}
-                </div>
+                <span className="text-sm font-medium">{formatCurrency(getTypeTotal('other'))}</span>
               </div>
-            )}
+              {groupedExpenses.other.length > 0 && (
+              <div className="divide-y divide-border">
+                {groupedExpenses.other.map(expense => (
+                  <ExpenseRow 
+                    key={expense.id} 
+                    expense={expense} 
+                    onEdit={() => handleOpenEdit(expense)}
+                    onDelete={() => handleDelete(expense.id)}
+                    getRecurrenceBadge={getRecurrenceBadge}
+                    getDisplayAmount={getDisplayAmount}
+                  />
+                ))}
+              </div>
+              )}
+            </div>
 
             {/* Add More Button */}
             <button
-              onClick={handleOpenAdd}
+              onClick={() => handleOpenAdd()}
               className="w-full bg-muted/50 border-2 border-dashed border-border rounded-xl p-4 flex items-center justify-center gap-2 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
             >
               <Plus className="w-5 h-5" />
