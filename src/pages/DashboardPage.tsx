@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { useDeals } from '@/hooks/useDeals';
 import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useOtherIncome } from '@/hooks/useOtherIncome';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -13,6 +14,7 @@ import { UpcomingPayouts } from '@/components/dashboard/UpcomingPayouts';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
+import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
@@ -21,6 +23,7 @@ export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
+  const { data: otherIncome = [] } = useOtherIncome();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
   const updatePayout = useUpdatePayout();
@@ -136,7 +139,7 @@ export default function DashboardPage() {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Income Projection - Takes 2 columns */}
               <div className="lg:col-span-2">
-                <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} />
+                <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} otherIncome={otherIncome} />
               </div>
 
               {/* Upcoming Payouts */}
@@ -146,6 +149,9 @@ export default function DashboardPage() {
                 isPending={markPaid.isPending}
               />
             </div>
+
+            {/* Other Income Manager */}
+            <OtherIncomeManager />
 
             {/* Financial Health */}
             <FinancialHealth 
@@ -174,7 +180,7 @@ export default function DashboardPage() {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} />
+              <IncomeProjection payouts={payouts} monthlyExpenses={expenseTotals.monthly} otherIncome={otherIncome} />
               <ExpenseAnalytics expenses={expenses} />
             </div>
             

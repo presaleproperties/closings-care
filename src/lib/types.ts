@@ -83,6 +83,19 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface OtherIncome {
+  id: string;
+  user_id: string;
+  name: string;
+  amount: number;
+  recurrence: 'monthly' | 'weekly' | 'one-time';
+  start_month: string;
+  end_month: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Form types
 export interface DealFormData {
   client_name: string;

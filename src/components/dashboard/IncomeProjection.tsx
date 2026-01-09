@@ -4,7 +4,8 @@ import { ArrowRight, TrendingUp, X } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
-import { Payout } from '@/lib/types';
+import { Payout, OtherIncome } from '@/lib/types';
+import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
 import {
   BarChart,
   Bar,
@@ -26,20 +27,23 @@ import {
 interface IncomeProjectionProps {
   payouts: Payout[];
   monthlyExpenses: number;
+  otherIncome?: OtherIncome[];
 }
 
 interface MonthData {
   month: string;
   fullMonth: string;
+  monthStr: string;
   monthIndex: number;
   income: number;
+  otherIncome: number;
   expenses: number;
   net: number;
   cumulativeNet: number;
   payouts: Payout[];
 }
 
-export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionProps) {
+export function IncomeProjection({ payouts, monthlyExpenses, otherIncome = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
 
@@ -50,6 +54,7 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
     for (let i = 0; i < 12; i++) {
       const monthDate = addMonths(now, i);
       const monthLabel = format(monthDate, 'MMM');
+      const monthStr = format(monthDate, 'yyyy-MM');
       const monthStart = startOfMonth(monthDate);
       const monthEnd = endOfMonth(monthDate);
 
@@ -60,14 +65,18 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
       });
 
       const income = monthPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
-      const net = income - monthlyExpenses;
+      const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
+      const totalIncome = income + monthOtherIncome;
+      const net = totalIncome - monthlyExpenses;
       cumulativeNet += net;
 
       months.push({
         month: monthLabel,
         fullMonth: format(monthDate, 'MMMM yyyy'),
+        monthStr,
         monthIndex: i,
         income,
+        otherIncome: monthOtherIncome,
         expenses: monthlyExpenses,
         net,
         cumulativeNet,
@@ -75,11 +84,12 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
       });
     }
     return months;
-  }, [payouts, monthlyExpenses]);
+  }, [payouts, monthlyExpenses, otherIncome]);
 
   const totalProjectedIncome = chartData.reduce((sum, m) => sum + m.income, 0);
+  const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
   const totalExpenses = monthlyExpenses * 12;
-  const netProjection = totalProjectedIncome - totalExpenses;
+  const netProjection = totalProjectedIncome + totalOtherIncome - totalExpenses;
 
   const handleBarClick = (data: any) => {
     if (data?.activePayload?.[0]?.payload) {
@@ -105,17 +115,21 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-6">
         <div className="text-center p-3 rounded-xl bg-success/10">
-          <p className="text-xs text-muted-foreground mb-1">Projected Income</p>
+          <p className="text-xs text-muted-foreground mb-1">Commissions</p>
           <p className="text-lg font-bold text-success">{formatCurrency(totalProjectedIncome)}</p>
         </div>
+        <div className="text-center p-3 rounded-xl bg-sky-500/10">
+          <p className="text-xs text-muted-foreground mb-1">Other Income</p>
+          <p className="text-lg font-bold text-sky-400">{formatCurrency(totalOtherIncome)}</p>
+        </div>
         <div className="text-center p-3 rounded-xl bg-destructive/10">
-          <p className="text-xs text-muted-foreground mb-1">Total Expenses</p>
+          <p className="text-xs text-muted-foreground mb-1">Expenses</p>
           <p className="text-lg font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
         </div>
         <div className="text-center p-3 rounded-xl bg-accent/10">
-          <p className="text-xs text-muted-foreground mb-1">Net Projection</p>
+          <p className="text-xs text-muted-foreground mb-1">Net</p>
           <p className={`text-lg font-bold ${netProjection >= 0 ? 'text-accent' : 'text-destructive'}`}>
             {formatCurrency(netProjection)}
           </p>
@@ -150,19 +164,20 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
               }}
               formatter={(value: number, name: string) => [
                 formatCurrency(value),
-                name === 'income' ? 'Income' : 'Expenses',
+                name === 'income' ? 'Commissions' : name === 'otherIncome' ? 'Other Income' : 'Expenses',
               ]}
               labelFormatter={(_, payload) => payload?.[0]?.payload?.fullMonth}
             />
             <Legend
-              formatter={(value) => (value === 'income' ? 'Income' : 'Expenses')}
+              formatter={(value) => value === 'income' ? 'Commissions' : value === 'otherIncome' ? 'Other Income' : 'Expenses'}
               wrapperStyle={{ fontSize: '12px' }}
             />
             <Bar
               dataKey="income"
               fill="hsl(142, 76%, 36%)"
               radius={[4, 4, 0, 0]}
-              maxBarSize={32}
+              maxBarSize={28}
+              stackId="income"
             >
               {chartData.map((entry, index) => (
                 <Cell 
@@ -172,10 +187,24 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
               ))}
             </Bar>
             <Bar
+              dataKey="otherIncome"
+              fill="hsl(199, 89%, 48%)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={28}
+              stackId="income"
+            >
+              {chartData.map((entry, index) => (
+                <Cell 
+                  key={`other-${index}`} 
+                  className="hover:opacity-80 transition-opacity"
+                />
+              ))}
+            </Bar>
+            <Bar
               dataKey="expenses"
               fill="hsl(0, 84%, 60%)"
               radius={[4, 4, 0, 0]}
-              maxBarSize={32}
+              maxBarSize={28}
             >
               {chartData.map((entry, index) => (
                 <Cell 
@@ -198,10 +227,14 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
           {selectedMonth && (
             <div className="space-y-4">
               {/* Summary */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-3 rounded-lg bg-success/10">
-                  <p className="text-xs text-muted-foreground">Income</p>
+                  <p className="text-xs text-muted-foreground">Commissions</p>
                   <p className="font-bold text-success">{formatCurrency(selectedMonth.income)}</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-sky-500/10">
+                  <p className="text-xs text-muted-foreground">Other Income</p>
+                  <p className="font-bold text-sky-400">{formatCurrency(selectedMonth.otherIncome)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-destructive/10">
                   <p className="text-xs text-muted-foreground">Expenses</p>
