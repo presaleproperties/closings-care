@@ -78,9 +78,20 @@ export function useUpdateDeal() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<DealFormData> }) => {
+      // Clean up empty strings to null for date and optional fields
+      const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
+        // Convert empty strings to null for nullable fields
+        if (value === '' || value === undefined) {
+          acc[key] = null;
+        } else {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
       const { data: deal, error } = await supabase
         .from('deals')
-        .update(data)
+        .update(cleanedData)
         .eq('id', id)
         .select()
         .single();
