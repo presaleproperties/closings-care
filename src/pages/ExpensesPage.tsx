@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal, Target } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal, Target, CalendarClock } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -146,7 +146,7 @@ const getCategoryType = (category: string): 'personal' | 'business' | 'taxes' | 
   return found?.type || 'other';
 };
 
-type RecurrenceType = 'monthly' | 'weekly' | 'one-time';
+type RecurrenceType = 'monthly' | 'weekly' | 'yearly' | 'one-time';
 type ExpenseType = 'personal' | 'business' | 'taxes' | 'other';
 
 export default function ExpensesPage() {
@@ -182,12 +182,23 @@ export default function ExpensesPage() {
 
   // Get expenses for current month (recurring ones apply to all months)
   const monthExpenses = useMemo(() => {
+    const currentMonthNum = parseInt(currentMonth.split('-')[1]); // Get month number (01-12)
+    
     return expenses.filter((e) => {
       const recurrence = (e as any).recurrence || 'monthly';
+      const startMonth = e.month;
+      
       if (recurrence === 'one-time') {
         return e.month === currentMonth;
       }
-      const startMonth = e.month;
+      
+      if (recurrence === 'yearly') {
+        // For yearly, check if the month matches (regardless of year) and current is >= start
+        const expenseMonthNum = parseInt(startMonth.split('-')[1]);
+        return currentMonthNum === expenseMonthNum && currentMonth >= startMonth;
+      }
+      
+      // Monthly and weekly apply from start month onwards
       return currentMonth >= startMonth;
     });
   }, [expenses, currentMonth]);
@@ -197,6 +208,9 @@ export default function ExpensesPage() {
       const recurrence = (e as any).recurrence || 'monthly';
       if (recurrence === 'weekly') {
         return sum + Number(e.amount) * 4.33;
+      }
+      if (recurrence === 'yearly') {
+        return sum + Number(e.amount); // Full amount shows in that month
       }
       return sum + Number(e.amount);
     }, 0);
@@ -273,6 +287,8 @@ export default function ExpensesPage() {
     switch (recurrence) {
       case 'weekly':
         return <Badge variant="secondary" className="text-xs"><Clock className="w-3 h-3 mr-1" />Weekly</Badge>;
+      case 'yearly':
+        return <Badge variant="secondary" className="text-xs bg-purple-500/20 text-purple-300 border-0"><CalendarClock className="w-3 h-3 mr-1" />Yearly</Badge>;
       case 'one-time':
         return <Badge variant="outline" className="text-xs"><Calendar className="w-3 h-3 mr-1" />One-time</Badge>;
       default:
@@ -594,47 +610,65 @@ export default function ExpensesPage() {
             {/* Step 3: Recurrence Type */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Frequency</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormData(p => ({ ...p, recurrence: 'monthly' }))}
                   className={cn(
-                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1",
                     formData.recurrence === 'monthly'
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
                   <Repeat className="w-4 h-4" />
-                  <span className="text-sm font-medium">Monthly</span>
+                  <span className="text-xs font-medium">Monthly</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(p => ({ ...p, recurrence: 'weekly' }))}
                   className={cn(
-                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1",
                     formData.recurrence === 'weekly'
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
                   <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">Weekly</span>
+                  <span className="text-xs font-medium">Weekly</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, recurrence: 'yearly' }))}
+                  className={cn(
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1",
+                    formData.recurrence === 'yearly'
+                      ? "border-purple-500 bg-purple-500/10 text-purple-400"
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <CalendarClock className="w-4 h-4" />
+                  <span className="text-xs font-medium">Yearly</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(p => ({ ...p, recurrence: 'one-time' }))}
                   className={cn(
-                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center justify-center gap-1",
                     formData.recurrence === 'one-time'
                       ? "border-accent bg-accent/10 text-accent"
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
                   <Calendar className="w-4 h-4" />
-                  <span className="text-sm font-medium">One-time</span>
+                  <span className="text-xs font-medium">One-time</span>
                 </button>
               </div>
+              {formData.recurrence === 'yearly' && (
+                <p className="text-xs text-purple-400 mt-1">
+                  This expense will recur every year in {formData.month ? format(parseISO(`${formData.month}-01`), 'MMMM') : 'the selected month'}
+                </p>
+              )}
             </div>
 
             {/* Step 4: Amount & Month */}
@@ -642,6 +676,7 @@ export default function ExpensesPage() {
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                   Amount {formData.recurrence === 'weekly' && <span className="normal-case">(per week)</span>}
+                  {formData.recurrence === 'yearly' && <span className="normal-case">(per year)</span>}
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
