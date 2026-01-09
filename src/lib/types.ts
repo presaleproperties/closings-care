@@ -56,6 +56,7 @@ export interface Expense {
   category: string;
   month: string;
   amount: number;
+  recurrence: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -121,5 +122,6 @@ export interface ExpenseFormData {
   category: string;
   month: string;
   amount: number;
+  recurrence?: string;
   notes?: string;
 }
