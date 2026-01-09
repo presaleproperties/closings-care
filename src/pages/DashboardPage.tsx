@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { useDeals } from '@/hooks/useDeals';
-import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid } from '@/hooks/usePayouts';
+import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
@@ -15,6 +15,7 @@ import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
+import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 
 export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
@@ -22,6 +23,7 @@ export default function DashboardPage() {
   const { data: expenses = [] } = useExpenses();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
+  const updatePayout = useUpdatePayout();
   
   // Track which payouts we've already auto-marked to avoid duplicate calls
   const autoMarkedRef = useRef<Set<string>>(new Set());
@@ -76,6 +78,10 @@ export default function DashboardPage() {
     autoMarkPaid.mutate(newIds);
   }, [autoMarkPaid]);
 
+  const handleUpdatePayoutDueDate = useCallback((payoutId: string, newDate: string) => {
+    updatePayout.mutate({ id: payoutId, data: { due_date: newDate } });
+  }, [updatePayout]);
+
   return (
     <AppLayout>
       <Header 
@@ -84,6 +90,14 @@ export default function DashboardPage() {
       />
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
+        {/* Overdue Payout Notification */}
+        <OverduePayoutNotification
+          payouts={payouts}
+          onMarkPaid={(id) => markPaid.mutate(id)}
+          onUpdateDueDate={handleUpdatePayoutDueDate}
+          isPending={markPaid.isPending || updatePayout.isPending}
+        />
+
         {/* Quick Actions */}
         <QuickActions />
 
