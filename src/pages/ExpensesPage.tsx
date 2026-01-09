@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal, Target } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProgress';
 
 // Categorized expenses for real estate agents
 const expenseCategories = {
@@ -351,6 +352,9 @@ export default function ExpensesPage() {
             <p className="text-xs text-muted-foreground">{groupedExpenses.other.length} items</p>
           </div>
         </div>
+
+        {/* Budget Goals Progress */}
+        <CategoryBudgetProgress expenses={expenses} currentMonth={currentMonth} />
 
         {/* Expenses List by Type */}
         {isLoading ? (
