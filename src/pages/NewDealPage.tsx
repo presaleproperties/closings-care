@@ -115,12 +115,20 @@ export default function NewDealPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="lead_source">Lead Source</Label>
-                <Input
-                  id="lead_source"
+                <Select
                   value={formData.lead_source || ''}
-                  onChange={(e) => updateField('lead_source', e.target.value)}
-                  placeholder="Referral, Zillow, etc."
-                />
+                  onValueChange={(v) => updateField('lead_source', v)}
+                >
+                  <SelectTrigger id="lead_source">
+                    <SelectValue placeholder="Select source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tiktok">Tiktok</SelectItem>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="Youtube">Youtube</SelectItem>
+                    <SelectItem value="Referral">Referral</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
