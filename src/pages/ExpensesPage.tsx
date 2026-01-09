@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal, Target, CalendarClock } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal, Target, CalendarClock, Building2, Home } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProg
 const expenseCategories = {
   personal: {
     'Housing': [
-      'Mortgage/Rent',
+      'Personal Mortgage',
       'Strata Fees',
       'Property Taxes',
       'Hydro/Utilities',
@@ -92,6 +92,8 @@ const expenseCategories = {
       'Admin Support',
       'Bookkeeping',
     ],
+  },
+  rental: {
     'Rental Property': [
       'Rental Mortgage',
       'Rental Strata Fees',
@@ -120,13 +122,16 @@ const expenseCategories = {
 
 // Get all categories flat with their type
 const getAllCategories = () => {
-  const result: { category: string; type: 'personal' | 'business' | 'taxes' | 'other'; group: string }[] = [];
+  const result: { category: string; type: 'personal' | 'business' | 'rental' | 'taxes' | 'other'; group: string }[] = [];
   
   Object.entries(expenseCategories.personal).forEach(([group, items]) => {
     items.forEach(item => result.push({ category: item, type: 'personal', group }));
   });
   Object.entries(expenseCategories.business).forEach(([group, items]) => {
     items.forEach(item => result.push({ category: item, type: 'business', group }));
+  });
+  Object.entries(expenseCategories.rental).forEach(([group, items]) => {
+    items.forEach(item => result.push({ category: item, type: 'rental', group }));
   });
   Object.entries(expenseCategories.taxes).forEach(([group, items]) => {
     items.forEach(item => result.push({ category: item, type: 'taxes', group }));
@@ -141,13 +146,19 @@ const getAllCategories = () => {
 const allCategoriesFlat = getAllCategories();
 const defaultCategories = allCategoriesFlat.map(c => c.category);
 
-const getCategoryType = (category: string): 'personal' | 'business' | 'taxes' | 'other' => {
+const getCategoryType = (category: string): 'personal' | 'business' | 'rental' | 'taxes' | 'other' => {
   const found = allCategoriesFlat.find(c => c.category === category);
   return found?.type || 'other';
 };
 
+const getCategoryGroup = (category: string): string => {
+  const found = allCategoriesFlat.find(c => c.category === category);
+  return found?.group || '';
+};
+
 type RecurrenceType = 'monthly' | 'weekly' | 'yearly' | 'one-time';
-type ExpenseType = 'personal' | 'business' | 'taxes' | 'other';
+type ExpenseType = 'personal' | 'business' | 'rental' | 'taxes' | 'other';
+
 
 export default function ExpensesPage() {
   const { data: expenses = [], isLoading } = useExpenses();
@@ -221,6 +232,7 @@ export default function ExpensesPage() {
     const groups: Record<ExpenseType, typeof expenses> = {
       personal: [],
       business: [],
+      rental: [],
       taxes: [],
       other: [],
     };
@@ -347,10 +359,10 @@ export default function ExpensesPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="bg-card border border-blue-500/30 rounded-xl p-4">
             <div className="flex items-center gap-2 text-blue-400 mb-2">
-              <User className="w-4 h-4" />
+              <Home className="w-4 h-4" />
               <span className="text-sm font-medium">Personal</span>
             </div>
             <p className="text-xl font-bold">{formatCurrency(getTypeTotal('personal'))}</p>
@@ -364,10 +376,18 @@ export default function ExpensesPage() {
             <p className="text-xl font-bold">{formatCurrency(getTypeTotal('business'))}</p>
             <p className="text-xs text-muted-foreground">{groupedExpenses.business.length} items</p>
           </div>
+          <div className="bg-card border border-teal-500/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-teal-400 mb-2">
+              <Building2 className="w-4 h-4" />
+              <span className="text-sm font-medium">Rental Properties</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(getTypeTotal('rental'))}</p>
+            <p className="text-xs text-muted-foreground">{groupedExpenses.rental.length} items</p>
+          </div>
           <div className="bg-card border border-amber-500/30 rounded-xl p-4">
             <div className="flex items-center gap-2 text-amber-400 mb-2">
               <PiggyBank className="w-4 h-4" />
-              <span className="text-sm font-medium">Taxes & Savings</span>
+              <span className="text-sm font-medium">Taxes</span>
             </div>
             <p className="text-xl font-bold">{formatCurrency(getTypeTotal('taxes'))}</p>
             <p className="text-xs text-muted-foreground">{groupedExpenses.taxes.length} items</p>
@@ -435,6 +455,31 @@ export default function ExpensesPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {groupedExpenses.business.map(expense => (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rental Properties */}
+            {groupedExpenses.rental.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-3 bg-teal-500/10 border-b border-teal-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-teal-400" />
+                    <h3 className="font-semibold text-teal-400">Rental Properties</h3>
+                  </div>
+                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('rental'))}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {groupedExpenses.rental.map(expense => (
                     <ExpenseRow 
                       key={expense.id} 
                       expense={expense} 
@@ -521,58 +566,71 @@ export default function ExpensesPage() {
             {/* Step 1: Expense Type Toggle */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Type</Label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-5 gap-2">
                 <button
                   type="button"
                   onClick={() => { setSelectedType('personal'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
                   className={cn(
-                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
                     selectedType === 'personal' 
                       ? "border-blue-500 bg-blue-500/10 text-blue-400" 
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <User className="w-5 h-5" />
-                  <span className="text-xs font-medium">Personal</span>
+                  <Home className="w-4 h-4" />
+                  <span className="text-[10px] font-medium">Personal</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setSelectedType('business'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
                   className={cn(
-                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
                     selectedType === 'business' 
                       ? "border-purple-500 bg-purple-500/10 text-purple-400" 
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <Briefcase className="w-5 h-5" />
-                  <span className="text-xs font-medium">Business</span>
+                  <Briefcase className="w-4 h-4" />
+                  <span className="text-[10px] font-medium">Business</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('rental'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
+                  className={cn(
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    selectedType === 'rental' 
+                      ? "border-teal-500 bg-teal-500/10 text-teal-400" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <Building2 className="w-4 h-4" />
+                  <span className="text-[10px] font-medium">Rental</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setSelectedType('taxes'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
                   className={cn(
-                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
                     selectedType === 'taxes' 
                       ? "border-amber-500 bg-amber-500/10 text-amber-400" 
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <PiggyBank className="w-5 h-5" />
-                  <span className="text-xs font-medium">Taxes</span>
+                  <PiggyBank className="w-4 h-4" />
+                  <span className="text-[10px] font-medium">Taxes</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => { setSelectedType('other'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
                   className={cn(
-                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    "p-2.5 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
                     selectedType === 'other' 
                       ? "border-muted-foreground bg-muted text-foreground" 
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <MoreHorizontal className="w-5 h-5" />
-                  <span className="text-xs font-medium">Other</span>
+                  <MoreHorizontal className="w-4 h-4" />
+                  <span className="text-[10px] font-medium">Other</span>
                 </button>
               </div>
             </div>
@@ -595,6 +653,7 @@ export default function ExpensesPage() {
                             formData.category === item
                               ? selectedType === 'personal' ? "border-blue-500 bg-blue-500/20 text-blue-300"
                               : selectedType === 'business' ? "border-purple-500 bg-purple-500/20 text-purple-300"
+                              : selectedType === 'rental' ? "border-teal-500 bg-teal-500/20 text-teal-300"
                               : selectedType === 'taxes' ? "border-amber-500 bg-amber-500/20 text-amber-300"
                               : "border-muted-foreground bg-muted text-foreground"
                               : "border-border hover:border-muted-foreground bg-muted/30"
