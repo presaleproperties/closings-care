@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, Wallet } from 'lucide-react';
+import { ArrowRight, TrendingUp, Wallet, Home } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
 import { Payout, OtherIncome, Expense } from '@/lib/types';
+import { Property } from '@/hooks/useProperties';
 import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
-import { getExpensesForMonth } from '@/hooks/useExpenses';
+import { getTotalExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import {
   ComposedChart,
   Bar,
@@ -29,6 +30,7 @@ interface IncomeProjectionProps {
   payouts: Payout[];
   expenses: Expense[];
   otherIncome?: OtherIncome[];
+  properties?: Property[];
 }
 
 interface MonthData {
@@ -38,6 +40,7 @@ interface MonthData {
   monthIndex: number;
   income: number;
   otherIncome: number;
+  propertyNet: number;
   totalIncome: number;
   expenses: number;
   net: number;
@@ -67,6 +70,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             </span>
             <span className="font-medium">{formatCurrency(data?.otherIncome || 0)}</span>
           </div>
+          {data?.propertyNet !== 0 && (
+            <div className="flex justify-between gap-4">
+              <span className={`flex items-center gap-1.5 ${data?.propertyNet >= 0 ? 'text-teal-400' : 'text-orange-400'}`}>
+                <span className={`w-2 h-2 rounded-full ${data?.propertyNet >= 0 ? 'bg-teal-400' : 'bg-orange-400'}`} />
+                Property Net
+              </span>
+              <span className="font-medium">{data?.propertyNet >= 0 ? '+' : ''}{formatCurrency(data?.propertyNet || 0)}</span>
+            </div>
+          )}
           <div className="flex justify-between gap-4 pt-1 border-t border-border/50">
             <span className="text-primary font-medium">Total Income</span>
             <span className="font-bold">{formatCurrency(data?.totalIncome || 0)}</span>
@@ -91,9 +103,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function IncomeProjection({ payouts, expenses, otherIncome = [] }: IncomeProjectionProps) {
+export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
+
+  // Calculate property costs once (they're the same every month)
+  const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];
@@ -114,9 +129,20 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
 
       const income = monthPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
       const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
+      
+      // Property net: positive if rental income > costs, negative if costs > income
+      const propertyNet = propertyCosts.totalNet;
+      
+      // Total income = commissions + other income
+      // Property net is shown separately in the UI but handled in expenses calculation
       const totalIncome = income + monthOtherIncome;
-      // Calculate expenses for this specific month (includes yearly, one-time, etc.)
-      const monthExpenses = getExpensesForMonth(expenses, monthStr);
+      
+      // Calculate expenses for this month (includes property costs properly)
+      // getTotalExpensesForMonth = tracked expenses + personal property costs - rental net
+      // This means if rental is profitable, it REDUCES expenses (effectively income)
+      // If rental is losing, it ADDS to expenses
+      const monthExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
+      
       const net = totalIncome - monthExpenses;
       cumulativeNet += net;
 
@@ -127,6 +153,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
         monthIndex: i,
         income,
         otherIncome: monthOtherIncome,
+        propertyNet,
         totalIncome,
         expenses: monthExpenses,
         net,
@@ -135,13 +162,14 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
       });
     }
     return months;
-  }, [payouts, expenses, otherIncome]);
+  }, [payouts, expenses, otherIncome, properties, propertyCosts]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
+  const totalPropertyNet = propertyCosts.totalNet * 12; // Annual property impact (informational only)
   const totalProjectedIncome = totalCommissions + totalOtherIncome;
   const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
-  const netProjection = totalProjectedIncome - totalExpenses;
+  const netProjection = chartData.reduce((sum, m) => sum + m.net, 0);
 
   const handleBarClick = (data: any) => {
     if (data?.activePayload?.[0]?.payload) {
@@ -169,7 +197,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
       {/* Summary Stats - Two rows for better visual */}
       <div className="space-y-3 mb-6">
         {/* Income row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className={`grid gap-3 ${propertyCosts.totalNet !== 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-3'}`}>
           <div className="p-3 rounded-xl bg-success/10 border border-success/20">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Commissions</p>
             <p className="text-lg font-bold text-success">{formatCurrency(totalCommissions)}</p>
@@ -181,6 +209,17 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
             </div>
             <p className="text-lg font-bold text-sky-400">{formatCurrency(totalOtherIncome)}</p>
           </div>
+          {propertyCosts.totalNet !== 0 && (
+            <div className={`p-3 rounded-xl border ${propertyCosts.totalNet >= 0 ? 'bg-teal-500/10 border-teal-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
+              <div className="flex items-center gap-1 mb-0.5">
+                <Home className="h-3 w-3" />
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Property Net/yr</p>
+              </div>
+              <p className={`text-lg font-bold ${propertyCosts.totalNet >= 0 ? 'text-teal-400' : 'text-orange-400'}`}>
+                {propertyCosts.totalNet >= 0 ? '+' : ''}{formatCurrency(totalPropertyNet)}
+              </p>
+            </div>
+          )}
           <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-sky-500/10 border border-primary/20">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Income</p>
             <p className="text-lg font-bold text-primary">{formatCurrency(totalProjectedIncome)}</p>
@@ -314,6 +353,18 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [] }: Income
                     <p className="font-bold text-sky-400">{formatCurrency(selectedMonth.otherIncome)}</p>
                   </div>
                 </div>
+                {selectedMonth.propertyNet !== 0 && (
+                  <div className={`p-3 rounded-lg border ${selectedMonth.propertyNet >= 0 ? 'bg-teal-500/10 border-teal-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Home className="h-3 w-3" /> Property Net
+                      </p>
+                      <p className={`font-bold ${selectedMonth.propertyNet >= 0 ? 'text-teal-400' : 'text-orange-400'}`}>
+                        {selectedMonth.propertyNet >= 0 ? '+' : ''}{formatCurrency(selectedMonth.propertyNet)}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="p-3 rounded-lg bg-gradient-to-r from-success/5 to-sky-500/5 border border-primary/20">
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-muted-foreground">Total Income</p>
