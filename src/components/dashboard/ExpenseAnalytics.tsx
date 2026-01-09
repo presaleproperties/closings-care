@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Receipt, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Receipt, AlertTriangle, Home, Briefcase, RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 interface Expense {
   id: string;
@@ -17,76 +17,136 @@ interface ExpenseAnalyticsProps {
   expenses: Expense[];
 }
 
-const COLORS = [
-  'hsl(43, 96%, 56%)',   // accent
-  'hsl(217, 91%, 60%)',  // info
-  'hsl(142, 76%, 36%)',  // success
-  'hsl(262, 83%, 58%)',  // purple
-  'hsl(0, 84%, 60%)',    // destructive
-  'hsl(38, 92%, 50%)',   // warning
-];
+const PERSONAL_COLOR = 'hsl(217, 91%, 60%)'; // blue
+const BUSINESS_COLOR = 'hsl(262, 83%, 58%)'; // purple
+const OTHER_COLOR = 'hsl(var(--muted-foreground))';
+
+// Helper to determine expense type
+const getExpenseType = (category: string): 'personal' | 'business' | 'other' => {
+  if (category.startsWith('Personal -')) return 'personal';
+  if (category.startsWith('Business -')) return 'business';
+  return 'other';
+};
 
 export function ExpenseAnalytics({ expenses }: ExpenseAnalyticsProps) {
   const analytics = useMemo(() => {
-    // Calculate monthly totals
     const calculateMonthlyAmount = (e: Expense) => {
       if (e.recurrence === 'weekly') return Number(e.amount) * 4.33;
       return Number(e.amount);
     };
 
+    // Separate by type and recurrence
+    const breakdown = {
+      personal: { recurring: 0, oneTime: 0 },
+      business: { recurring: 0, oneTime: 0 },
+      other: { recurring: 0, oneTime: 0 },
+    };
+
     // Group by category
-    const byCategory = new Map<string, { monthly: number; oneTime: number }>();
+    const byCategory = new Map<string, { 
+      recurring: number; 
+      oneTime: number; 
+      type: 'personal' | 'business' | 'other';
+    }>();
+
     expenses.forEach(e => {
-      const existing = byCategory.get(e.category) || { monthly: 0, oneTime: 0 };
-      if (e.recurrence === 'one-time') {
+      const type = getExpenseType(e.category);
+      const isOneTime = e.recurrence === 'one-time';
+      const amount = isOneTime ? Number(e.amount) : calculateMonthlyAmount(e);
+
+      // Update type breakdown
+      if (isOneTime) {
+        breakdown[type].oneTime += amount;
+      } else {
+        breakdown[type].recurring += amount;
+      }
+
+      // Update category breakdown
+      const existing = byCategory.get(e.category) || { recurring: 0, oneTime: 0, type };
+      if (isOneTime) {
         existing.oneTime += Number(e.amount);
       } else {
-        existing.monthly += calculateMonthlyAmount(e);
+        existing.recurring += calculateMonthlyAmount(e);
       }
       byCategory.set(e.category, existing);
     });
 
     const categoryData = Array.from(byCategory.entries())
       .map(([name, data]) => ({
-        name,
-        monthly: data.monthly,
+        name: name.replace(/^(Personal|Business) - /, ''),
+        fullName: name,
+        recurring: data.recurring,
         oneTime: data.oneTime,
-        total: data.monthly + data.oneTime,
+        total: data.recurring + data.oneTime,
+        type: data.type,
       }))
       .sort((a, b) => b.total - a.total);
 
     // Calculate totals
-    const totalMonthly = categoryData.reduce((sum, c) => sum + c.monthly, 0);
-    const totalOneTime = categoryData.reduce((sum, c) => sum + c.oneTime, 0);
-    const annualRecurring = totalMonthly * 12;
+    const totalPersonalRecurring = breakdown.personal.recurring;
+    const totalBusinessRecurring = breakdown.business.recurring;
+    const totalOtherRecurring = breakdown.other.recurring;
+    const totalRecurring = totalPersonalRecurring + totalBusinessRecurring + totalOtherRecurring;
+    
+    const totalPersonalOneTime = breakdown.personal.oneTime;
+    const totalBusinessOneTime = breakdown.business.oneTime;
+    const totalOtherOneTime = breakdown.other.oneTime;
+    const totalOneTime = totalPersonalOneTime + totalBusinessOneTime + totalOtherOneTime;
 
-    // Find biggest expense category
-    const biggestCategory = categoryData[0];
+    // Chart data for type comparison
+    const typeChartData = [
+      { 
+        name: 'Personal', 
+        recurring: totalPersonalRecurring, 
+        oneTime: totalPersonalOneTime,
+        total: totalPersonalRecurring + totalPersonalOneTime,
+      },
+      { 
+        name: 'Business', 
+        recurring: totalBusinessRecurring, 
+        oneTime: totalBusinessOneTime,
+        total: totalBusinessRecurring + totalBusinessOneTime,
+      },
+    ];
 
-    // Identify potential savings (categories that are above average)
-    const avgCategorySpend = totalMonthly / Math.max(categoryData.length, 1);
-    const highSpendCategories = categoryData.filter(c => c.monthly > avgCategorySpend * 1.5);
+    if (totalOtherRecurring + totalOtherOneTime > 0) {
+      typeChartData.push({
+        name: 'Other',
+        recurring: totalOtherRecurring,
+        oneTime: totalOtherOneTime,
+        total: totalOtherRecurring + totalOtherOneTime,
+      });
+    }
 
     return {
       categoryData,
-      totalMonthly,
+      typeChartData,
+      breakdown,
+      totalRecurring,
       totalOneTime,
-      annualRecurring,
-      biggestCategory,
-      highSpendCategories,
+      totalPersonal: totalPersonalRecurring + totalPersonalOneTime,
+      totalBusiness: totalBusinessRecurring + totalBusinessOneTime,
     };
   }, [expenses]);
 
+  const getColorForType = (type: string) => {
+    switch (type) {
+      case 'personal': return PERSONAL_COLOR;
+      case 'business': return BUSINESS_COLOR;
+      default: return OTHER_COLOR;
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-destructive/10">
             <Receipt className="h-5 w-5 text-destructive" />
           </div>
           <div>
             <h3 className="font-semibold text-lg">Expense Analytics</h3>
-            <p className="text-xs text-muted-foreground">Where your money goes</p>
+            <p className="text-xs text-muted-foreground">Personal vs Business breakdown</p>
           </div>
         </div>
         <Link to="/expenses">
@@ -96,92 +156,149 @@ export function ExpenseAnalytics({ expenses }: ExpenseAnalyticsProps) {
         </Link>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-3 rounded-xl bg-destructive/10">
-          <p className="text-xs text-muted-foreground mb-1">Monthly</p>
-          <p className="text-lg font-bold text-destructive">{formatCurrency(analytics.totalMonthly)}</p>
+      {/* Summary Stats - 2x2 Grid */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <Home className="h-3.5 w-3.5 text-blue-500" />
+            <span className="text-xs font-medium text-blue-500">Personal</span>
+          </div>
+          <p className="text-lg font-bold">{formatCurrency(analytics.breakdown.personal.recurring)}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <RefreshCw className="h-2.5 w-2.5" /> /mo
+            </span>
+            {analytics.breakdown.personal.oneTime > 0 && (
+              <span className="text-xs text-blue-400 flex items-center gap-1">
+                <Calendar className="h-2.5 w-2.5" /> +{formatCurrency(analytics.breakdown.personal.oneTime)}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="text-center p-3 rounded-xl bg-warning/10">
-          <p className="text-xs text-muted-foreground mb-1">Annual (Recurring)</p>
-          <p className="text-lg font-bold text-warning">{formatCurrency(analytics.annualRecurring)}</p>
+        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <Briefcase className="h-3.5 w-3.5 text-purple-500" />
+            <span className="text-xs font-medium text-purple-500">Business</span>
+          </div>
+          <p className="text-lg font-bold">{formatCurrency(analytics.breakdown.business.recurring)}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <RefreshCw className="h-2.5 w-2.5" /> /mo
+            </span>
+            {analytics.breakdown.business.oneTime > 0 && (
+              <span className="text-xs text-purple-400 flex items-center gap-1">
+                <Calendar className="h-2.5 w-2.5" /> +{formatCurrency(analytics.breakdown.business.oneTime)}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="text-center p-3 rounded-xl bg-muted/50">
-          <p className="text-xs text-muted-foreground mb-1">One-Time</p>
+        <div className="p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 mb-1">
+            <RefreshCw className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Total Recurring</span>
+          </div>
+          <p className="text-lg font-bold text-destructive">{formatCurrency(analytics.totalRecurring)}</p>
+          <p className="text-xs text-muted-foreground">/month</p>
+        </div>
+        <div className="p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">One-Time</span>
+          </div>
           <p className="text-lg font-bold">{formatCurrency(analytics.totalOneTime)}</p>
+          <p className="text-xs text-muted-foreground">this period</p>
         </div>
       </div>
 
       {/* Chart */}
-      {analytics.categoryData.length > 0 ? (
+      {analytics.typeChartData.length > 0 && analytics.totalRecurring > 0 ? (
         <>
-          <div className="h-48 mb-6">
+          <div className="h-32 mb-5">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.categoryData.slice(0, 6)} layout="vertical">
+              <BarChart data={analytics.typeChartData} layout="vertical" barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                 <XAxis 
                   type="number" 
-                  fontSize={11}
-                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  fontSize={10}
+                  tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
                   stroke="hsl(var(--muted-foreground))"
                 />
                 <YAxis 
                   type="category" 
                   dataKey="name" 
                   fontSize={11}
-                  width={100}
+                  width={60}
                   stroke="hsl(var(--muted-foreground))"
                   tickLine={false}
                 />
                 <Tooltip
-                  formatter={(value: number) => [formatCurrency(value), 'Monthly']}
+                  formatter={(value: number, name: string) => [
+                    formatCurrency(value), 
+                    name === 'recurring' ? 'Monthly Recurring' : 'One-Time'
+                  ]}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
+                    fontSize: '12px',
                   }}
                 />
-                <Bar dataKey="monthly" radius={[0, 4, 4, 0]}>
-                  {analytics.categoryData.slice(0, 6).map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Bar dataKey="recurring" fill={PERSONAL_COLOR} radius={[0, 4, 4, 0]} stackId="stack">
+                  {analytics.typeChartData.map((entry, index) => (
+                    <Cell 
+                      key={`recurring-${index}`} 
+                      fill={entry.name === 'Personal' ? PERSONAL_COLOR : entry.name === 'Business' ? BUSINESS_COLOR : OTHER_COLOR} 
+                    />
+                  ))}
+                </Bar>
+                <Bar dataKey="oneTime" fill="hsl(var(--muted-foreground))" radius={[0, 4, 4, 0]} stackId="stack" opacity={0.5}>
+                  {analytics.typeChartData.map((entry, index) => (
+                    <Cell 
+                      key={`onetime-${index}`} 
+                      fill={entry.name === 'Personal' ? PERSONAL_COLOR : entry.name === 'Business' ? BUSINESS_COLOR : OTHER_COLOR}
+                      opacity={0.4}
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Biggest Expense Alert */}
-          {analytics.biggestCategory && analytics.biggestCategory.monthly > 1000 && (
-            <div className="p-4 rounded-xl border border-warning/30 bg-warning/5 mb-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-medium text-sm">Highest Expense Category</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <span className="font-semibold">{analytics.biggestCategory.name}</span> costs you{' '}
-                    <span className="font-semibold text-warning">{formatCurrency(analytics.biggestCategory.monthly)}/month</span>
-                    {' '}({formatCurrency(analytics.biggestCategory.monthly * 12)}/year)
-                  </p>
-                </div>
-              </div>
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 mb-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-blue-500" />
+              <span className="text-muted-foreground">Personal</span>
             </div>
-          )}
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-purple-500" />
+              <span className="text-muted-foreground">Business</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-current opacity-40" />
+              <span className="text-muted-foreground">One-time</span>
+            </div>
+          </div>
 
-          {/* Category Breakdown List */}
-          <div className="space-y-2">
-            {analytics.categoryData.map((cat, i) => (
-              <div key={cat.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-3">
+          {/* Top Categories */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Top Categories</p>
+            {analytics.categoryData.slice(0, 5).map((cat) => (
+              <div key={cat.fullName} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/30 transition-colors">
+                <div className="flex items-center gap-2">
                   <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: getColorForType(cat.type) }}
                   />
                   <span className="text-sm">{cat.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({cat.type === 'personal' ? 'P' : cat.type === 'business' ? 'B' : 'O'})
+                  </span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium">{formatCurrency(cat.monthly)}/mo</p>
+                  <p className="text-sm font-medium">{formatCurrency(cat.recurring)}/mo</p>
                   {cat.oneTime > 0 && (
-                    <p className="text-xs text-muted-foreground">+{formatCurrency(cat.oneTime)} one-time</p>
+                    <p className="text-xs text-muted-foreground">+{formatCurrency(cat.oneTime)} once</p>
                   )}
                 </div>
               </div>
@@ -189,7 +306,7 @@ export function ExpenseAnalytics({ expenses }: ExpenseAnalyticsProps) {
           </div>
         </>
       ) : (
-        <div className="text-center py-12">
+        <div className="text-center py-10">
           <Receipt className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground mb-2">No expenses tracked yet</p>
           <Link to="/expenses">
