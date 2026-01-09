@@ -133,42 +133,51 @@ export default function DealsPage() {
                     <th>Address / Project</th>
                     <th>Status</th>
                     <th className="text-right">Sale Price</th>
-                    <th className="text-right">Net Commission</th>
-                    <th>Close Date</th>
+                    <th className="text-right">Gross Commission</th>
+                    <th>Completion Date</th>
                     <th className="w-12"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDeals.map((deal) => (
-                    <tr key={deal.id} className="group">
-                      <td>
-                        <Link
-                          to={`/deals/${deal.id}`}
-                          className="font-medium hover:text-accent transition-colors"
-                        >
-                          {deal.client_name}
-                        </Link>
-                      </td>
-                      <td>
-                        <span className="text-xs font-medium px-2 py-1 rounded bg-muted">
-                          {deal.deal_type}
-                        </span>
-                      </td>
-                      <td className="text-muted-foreground">
-                        {deal.address || deal.project_name || '—'}
-                      </td>
-                      <td>
-                        <StatusBadge status={deal.status} />
-                      </td>
-                      <td className="text-right font-medium">
-                        {formatCurrency(deal.sale_price)}
-                      </td>
-                      <td className="text-right font-medium">
-                        {formatCurrency(deal.net_commission_est || deal.net_commission_actual)}
-                      </td>
-                      <td className="text-muted-foreground">
-                        {formatDate(deal.close_date_actual || deal.close_date_est)}
-                      </td>
+                  {filteredDeals.map((deal) => {
+                    // Get the appropriate date: completion_date for presale, close_date for resale
+                    const displayDate = deal.property_type === 'PRESALE'
+                      ? (deal as any).completion_date
+                      : (deal.close_date_actual || deal.close_date_est);
+                    
+                    // Get gross commission
+                    const grossCommission = deal.gross_commission_actual || deal.gross_commission_est;
+
+                    return (
+                      <tr key={deal.id} className="group">
+                        <td>
+                          <Link
+                            to={`/deals/${deal.id}`}
+                            className="font-medium hover:text-accent transition-colors"
+                          >
+                            {deal.client_name}
+                          </Link>
+                        </td>
+                        <td>
+                          <span className="text-xs font-medium px-2 py-1 rounded bg-muted">
+                            {deal.deal_type}
+                          </span>
+                        </td>
+                        <td className="text-muted-foreground">
+                          {deal.address || deal.project_name || '—'}
+                        </td>
+                        <td>
+                          <StatusBadge status={deal.status} />
+                        </td>
+                        <td className="text-right font-medium">
+                          {formatCurrency(deal.sale_price)}
+                        </td>
+                        <td className="text-right font-medium">
+                          {formatCurrency(grossCommission)}
+                        </td>
+                        <td className="text-muted-foreground">
+                          {formatDate(displayDate)}
+                        </td>
                       <td>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -194,7 +203,8 @@ export default function DealsPage() {
                         </DropdownMenu>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
