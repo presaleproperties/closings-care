@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
 import { useCreateDeal } from '@/hooks/useDeals';
 import { useSettings } from '@/hooks/useSettings';
 import { useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
-import { DealFormData, DealType, DealStatus } from '@/lib/types';
+import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
 
 export default function NewDealPage() {
   const navigate = useNavigate();
@@ -31,19 +32,22 @@ export default function NewDealPage() {
     status: 'PENDING',
     city: 'Vancouver',
   });
-  const [applyTemplate, setApplyTemplate] = useState<'presale' | 'resale' | 'none'>('none');
+  const [isTeamDeal, setIsTeamDeal] = useState(false);
+
+  const isPresale = formData.property_type === 'PRESALE';
+  const isResale = formData.property_type === 'RESALE';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.client_name || !formData.deal_type) return;
+    if (!formData.client_name || !formData.deal_type || !formData.property_type) return;
 
     try {
       const deal = await createDeal.mutateAsync(formData as DealFormData);
       
-      // Apply payout template if selected
-      if (applyTemplate !== 'none' && settings) {
-        const template = applyTemplate === 'presale' 
+      // Auto-apply payout template based on property type
+      if (settings) {
+        const template = isPresale 
           ? settings.presale_template 
           : settings.resale_template;
         
@@ -61,6 +65,18 @@ export default function NewDealPage() {
 
   const updateField = (field: keyof DealFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePropertyTypeChange = (value: PropertyType) => {
+    updateField('property_type', value);
+    // Clear fields that don't apply
+    if (value === 'PRESALE') {
+      updateField('address', undefined);
+      updateField('close_date_actual', undefined);
+    } else {
+      updateField('project_name', undefined);
+      updateField('pending_date', undefined);
+    }
   };
 
   return (
@@ -114,6 +130,22 @@ export default function NewDealPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="property_type">Property Type *</Label>
+                <Select
+                  value={formData.property_type || ''}
+                  onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
+                >
+                  <SelectTrigger id="property_type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PRESALE">Presale</SelectItem>
+                    <SelectItem value="RESALE">Resale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="lead_source">Lead Source</Label>
                 <Select
                   value={formData.lead_source || ''}
@@ -149,199 +181,200 @@ export default function NewDealPage() {
             </div>
           </section>
 
-          {/* Property Info */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Property Details</h2>
-            </div>
-            
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={formData.address || ''}
-                  onChange={(e) => updateField('address', e.target.value)}
-                  placeholder="123 Main Street, Unit 1001"
-                />
+          {/* Property Info - Conditional based on property type */}
+          {formData.property_type && (
+            <section className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 className="w-5 h-5 text-accent" />
+                <h2 className="font-semibold">Property Details</h2>
               </div>
+              
+              <div className="grid sm:grid-cols-2 gap-4">
+                {isPresale && (
+                  <div className="space-y-2">
+                    <Label htmlFor="project_name">Project Name</Label>
+                    <Input
+                      id="project_name"
+                      value={formData.project_name || ''}
+                      onChange={(e) => updateField('project_name', e.target.value)}
+                      placeholder="The Palisades"
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <Label htmlFor="project_name">Project Name</Label>
-                <Input
-                  id="project_name"
-                  value={formData.project_name || ''}
-                  onChange={(e) => updateField('project_name', e.target.value)}
-                  placeholder="The Palisades"
-                />
-              </div>
+                {isResale && (
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={formData.address || ''}
+                      onChange={(e) => updateField('address', e.target.value)}
+                      placeholder="123 Main Street, Unit 1001"
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.city || ''}
-                  onChange={(e) => updateField('city', e.target.value)}
-                  placeholder="Vancouver"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city || ''}
+                    onChange={(e) => updateField('city', e.target.value)}
+                    placeholder="Vancouver"
+                  />
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* Dates */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <CalendarIcon className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Key Dates</h2>
-            </div>
-            
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="listing_date">Listing Date</Label>
-                <Input
-                  id="listing_date"
-                  type="date"
-                  value={formData.listing_date || ''}
-                  onChange={(e) => updateField('listing_date', e.target.value)}
-                />
+          {/* Dates - Conditional based on property type */}
+          {formData.property_type && (
+            <section className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CalendarIcon className="w-5 h-5 text-accent" />
+                <h2 className="font-semibold">Key Dates</h2>
               </div>
+              
+              <div className="grid sm:grid-cols-2 gap-4">
+                {isPresale && (
+                  <div className="space-y-2">
+                    <Label htmlFor="pending_date">Firm Date</Label>
+                    <Input
+                      id="pending_date"
+                      type="date"
+                      value={formData.pending_date || ''}
+                      onChange={(e) => updateField('pending_date', e.target.value)}
+                    />
+                  </div>
+                )}
 
-              <div className="space-y-2">
-                <Label htmlFor="pending_date">Pending Date</Label>
-                <Input
-                  id="pending_date"
-                  type="date"
-                  value={formData.pending_date || ''}
-                  onChange={(e) => updateField('pending_date', e.target.value)}
-                />
+                {isResale && (
+                  <div className="space-y-2">
+                    <Label htmlFor="close_date_est">Closing Date</Label>
+                    <Input
+                      id="close_date_est"
+                      type="date"
+                      value={formData.close_date_est || ''}
+                      onChange={(e) => updateField('close_date_est', e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="close_date_est">Est. Close Date</Label>
-                <Input
-                  id="close_date_est"
-                  type="date"
-                  value={formData.close_date_est || ''}
-                  onChange={(e) => updateField('close_date_est', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="close_date_actual">Actual Close Date</Label>
-                <Input
-                  id="close_date_actual"
-                  type="date"
-                  value={formData.close_date_actual || ''}
-                  onChange={(e) => updateField('close_date_actual', e.target.value)}
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Financials */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Financials</h2>
-            </div>
-            
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sale_price">Sale Price</Label>
-                <Input
-                  id="sale_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.sale_price || ''}
-                  onChange={(e) => updateField('sale_price', parseFloat(e.target.value) || null)}
-                  placeholder="$1,250,000"
-                />
+          {formData.property_type && (
+            <section className="bg-card border border-border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <DollarSign className="w-5 h-5 text-accent" />
+                <h2 className="font-semibold">Financials</h2>
+              </div>
+              
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sale_price">Sale Price</Label>
+                  <Input
+                    id="sale_price"
+                    type="number"
+                    step="0.01"
+                    value={formData.sale_price || ''}
+                    onChange={(e) => updateField('sale_price', parseFloat(e.target.value) || null)}
+                    placeholder="$1,250,000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gross_commission_est">Gross Commission</Label>
+                  <Input
+                    id="gross_commission_est"
+                    type="number"
+                    step="0.01"
+                    value={formData.gross_commission_est || ''}
+                    onChange={(e) => updateField('gross_commission_est', parseFloat(e.target.value) || null)}
+                    placeholder="$31,250"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="net_commission_est">Net Commission</Label>
+                  <Input
+                    id="net_commission_est"
+                    type="number"
+                    step="0.01"
+                    value={formData.net_commission_est || ''}
+                    onChange={(e) => updateField('net_commission_est', parseFloat(e.target.value) || null)}
+                    placeholder="$28,125"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="gross_commission_est">Gross Commission (Est)</Label>
-                <Input
-                  id="gross_commission_est"
-                  type="number"
-                  step="0.01"
-                  value={formData.gross_commission_est || ''}
-                  onChange={(e) => updateField('gross_commission_est', parseFloat(e.target.value) || null)}
-                  placeholder="$31,250"
-                />
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  {isPresale 
+                    ? '✓ Presale: 2 payouts will be created (Advance + Completion)'
+                    : '✓ Resale: 1 payout will be created (Completion on closing date)'
+                  }
+                </p>
               </div>
+            </section>
+          )}
 
-              <div className="space-y-2">
-                <Label htmlFor="net_commission_est">Net Commission (Est)</Label>
-                <Input
-                  id="net_commission_est"
-                  type="number"
-                  step="0.01"
-                  value={formData.net_commission_est || ''}
-                  onChange={(e) => updateField('net_commission_est', parseFloat(e.target.value) || null)}
-                  placeholder="$28,125"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Team */}
+          {/* Team Split */}
           <section className="bg-card border border-border rounded-lg p-6">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-accent" />
               <h2 className="font-semibold">Team Split</h2>
             </div>
             
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="team_member">Team Member</Label>
-                <Input
-                  id="team_member"
-                  value={formData.team_member || ''}
-                  onChange={(e) => updateField('team_member', e.target.value)}
-                  placeholder="Partner name"
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="is_team_deal"
+                  checked={isTeamDeal}
+                  onCheckedChange={(checked) => {
+                    setIsTeamDeal(checked);
+                    if (!checked) {
+                      updateField('team_member', undefined);
+                      updateField('team_member_portion', undefined);
+                    }
+                  }}
                 />
+                <Label htmlFor="is_team_deal">Is this a team deal?</Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="team_member_portion">Their Portion (%)</Label>
-                <Input
-                  id="team_member_portion"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={formData.team_member_portion || ''}
-                  onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
-                  placeholder="50"
-                />
-              </div>
-            </div>
-          </section>
+              {isTeamDeal && (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="team_member">Team Member</Label>
+                    <Select
+                      value={formData.team_member || ''}
+                      onValueChange={(v) => updateField('team_member', v)}
+                    >
+                      <SelectTrigger id="team_member">
+                        <SelectValue placeholder="Select member" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sarb">Sarb</SelectItem>
+                        <SelectItem value="Ravish">Ravish</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          {/* Payout Template */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Payout Template</h2>
-            </div>
-            
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Optionally create payout rows based on a template
-              </p>
-              <Select
-                value={applyTemplate}
-                onValueChange={(v) => setApplyTemplate(v as 'presale' | 'resale' | 'none')}
-              >
-                <SelectTrigger className="w-full sm:w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No template</SelectItem>
-                  <SelectItem value="presale">Presale ({settings?.presale_template?.length || 5} payouts)</SelectItem>
-                  <SelectItem value="resale">Resale ({settings?.resale_template?.length || 1} payout)</SelectItem>
-                </SelectContent>
-              </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="team_member_portion">Their Portion (%)</Label>
+                    <Input
+                      id="team_member_portion"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.team_member_portion || ''}
+                      onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
+                      placeholder="50"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -365,7 +398,11 @@ export default function NewDealPage() {
             <Button type="button" variant="outline" onClick={() => navigate(-1)}>
               Cancel
             </Button>
-            <Button type="submit" className="btn-premium" disabled={createDeal.isPending}>
+            <Button 
+              type="submit" 
+              className="btn-premium" 
+              disabled={createDeal.isPending || !formData.property_type}
+            >
               <Save className="w-4 h-4 mr-2" />
               {createDeal.isPending ? 'Creating...' : 'Create Deal'}
             </Button>

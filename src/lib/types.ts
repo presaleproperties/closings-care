@@ -2,6 +2,7 @@
 
 export type DealStatus = 'PENDING' | 'CLOSED';
 export type DealType = 'BUY' | 'SELL';
+export type PropertyType = 'PRESALE' | 'RESALE';
 export type PayoutStatus = 'PROJECTED' | 'INVOICED' | 'PAID';
 export type PayoutType = 'Advance' | '2nd Payment' | '3rd Deposit' | '4th Deposit' | 'Completion' | 'Custom';
 
@@ -10,6 +11,7 @@ export interface Deal {
   user_id: string;
   client_name: string;
   deal_type: DealType;
+  property_type: PropertyType | null;
   address: string | null;
   project_name: string | null;
   city: string | null;
@@ -84,6 +86,7 @@ export interface Profile {
 export interface DealFormData {
   client_name: string;
   deal_type: DealType;
+  property_type?: PropertyType;
   address?: string;
   project_name?: string;
   city?: string;
