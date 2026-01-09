@@ -302,26 +302,49 @@ export default function NewDealPage() {
                   />
                 </div>
 
-                {isPresale && hasAdvanceCommission && (
-                  <div className="space-y-2">
-                    <Label>Advance Commission Date</Label>
-                    <DatePicker
-                      value={(formData as any).advance_date}
-                      onChange={(val) => updateField('advance_date' as any, val)}
-                      placeholder="Select advance date"
-                    />
-                  </div>
-                )}
-
                 {isPresale && (
-                  <div className="space-y-2">
-                    <Label>Completion Date</Label>
-                    <DatePicker
-                      value={(formData as any).completion_date}
-                      onChange={(val) => updateField('completion_date' as any, val)}
-                      placeholder="Select completion date"
-                    />
-                  </div>
+                  <>
+                    <div className="sm:col-span-2 flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                      <Switch 
+                        id="has_advance"
+                        checked={hasAdvanceCommission}
+                        onCheckedChange={(checked) => {
+                          setHasAdvanceCommission(checked);
+                          if (!checked) {
+                            // Clear advance fields when switching to completion only
+                            updateField('advance_commission' as any, null);
+                            updateField('advance_date' as any, null);
+                          }
+                        }}
+                      />
+                      <Label htmlFor="has_advance" className="cursor-pointer">
+                        Has Advance Commission
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {hasAdvanceCommission ? '(Advance + Completion payouts)' : '(All paid on completion)'}
+                        </span>
+                      </Label>
+                    </div>
+
+                    {hasAdvanceCommission && (
+                      <div className="space-y-2">
+                        <Label>Advance Commission Date</Label>
+                        <DatePicker
+                          value={(formData as any).advance_date}
+                          onChange={(val) => updateField('advance_date' as any, val)}
+                          placeholder="Select advance date"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Completion Date</Label>
+                      <DatePicker
+                        value={(formData as any).completion_date}
+                        onChange={(val) => updateField('completion_date' as any, val)}
+                        placeholder="Select completion date"
+                      />
+                    </div>
+                  </>
                 )}
 
                 {isResale && (
@@ -360,29 +383,6 @@ export default function NewDealPage() {
                     />
                   </div>
                 </div>
-
-                {isPresale && (
-                  <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                    <Switch 
-                      id="has_advance"
-                      checked={hasAdvanceCommission}
-                      onCheckedChange={(checked) => {
-                        setHasAdvanceCommission(checked);
-                        if (!checked) {
-                          // Clear advance fields when switching to completion only
-                          updateField('advance_commission' as any, null);
-                          updateField('advance_date' as any, null);
-                        }
-                      }}
-                    />
-                    <Label htmlFor="has_advance" className="cursor-pointer">
-                      Has Advance Commission
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {hasAdvanceCommission ? '(Advance + Completion payouts)' : '(All paid on completion)'}
-                      </span>
-                    </Label>
-                  </div>
-                )}
 
                 {isPresale && hasAdvanceCommission && (
                   <>
