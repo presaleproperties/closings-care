@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { useDeals } from '@/hooks/useDeals';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -13,6 +14,7 @@ import { UpcomingPayouts } from '@/components/dashboard/UpcomingPayouts';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
+import { GoalTracker } from '@/components/dashboard/GoalTracker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
 
@@ -20,6 +22,8 @@ export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
   const markPaid = useMarkPayoutPaid();
 
   const now = new Date();
@@ -59,6 +63,10 @@ export default function DashboardPage() {
     return { paid, projected };
   }, [payouts, thisYear]);
 
+  const handleUpdateGoal = (goal: number) => {
+    updateSettings.mutate({ monthly_income_goal: goal });
+  };
+
   return (
     <AppLayout>
       <Header 
@@ -70,12 +78,24 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <QuickActions />
 
-        {/* Quick Stats */}
-        <QuickStats 
-          deals={deals} 
-          payouts={payouts} 
-          monthlyExpenses={expenseTotals.monthly} 
-        />
+        {/* Goal Tracker + Quick Stats */}
+        <div className="grid lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
+            <GoalTracker 
+              payouts={payouts}
+              monthlyGoal={settings?.monthly_income_goal ?? 15000}
+              onUpdateGoal={handleUpdateGoal}
+              isUpdating={updateSettings.isPending}
+            />
+          </div>
+          <div className="lg:col-span-3">
+            <QuickStats 
+              deals={deals} 
+              payouts={payouts} 
+              monthlyExpenses={expenseTotals.monthly} 
+            />
+          </div>
+        </div>
 
         {/* Tabbed Dashboard Sections */}
         <Tabs defaultValue="overview" className="space-y-6">
