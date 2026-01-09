@@ -77,21 +77,58 @@ export function useCreatePayout() {
   });
 }
 
+interface PayoutTemplateData {
+  dealId: string;
+  template: string[];
+  advanceCommission?: number;
+  completionCommission?: number;
+  grossCommission?: number;
+  advanceDate?: string;
+  completionDate?: string;
+  closingDate?: string;
+}
+
 export function useCreatePayoutsFromTemplate() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ dealId, template }: { dealId: string; template: string[] }) => {
+    mutationFn: async ({ 
+      dealId, 
+      template, 
+      advanceCommission = 0, 
+      completionCommission = 0, 
+      grossCommission = 0,
+      advanceDate,
+      completionDate,
+      closingDate
+    }: PayoutTemplateData) => {
       if (!user) throw new Error('Not authenticated');
       
-      const payouts = template.map((type) => ({
-        deal_id: dealId,
-        user_id: user.id,
-        payout_type: type as PayoutType,
-        amount: 0,
-        status: 'PROJECTED' as const,
-      }));
+      const payouts = template.map((type) => {
+        let amount = 0;
+        let dueDate: string | null = null;
+
+        // Set amount based on payout type
+        if (type === 'Advance') {
+          amount = advanceCommission;
+          dueDate = advanceDate || null;
+        } else if (type === 'Completion') {
+          // For resale, completion gets full gross; for presale, use completion commission
+          amount = template.length === 1 ? grossCommission : completionCommission;
+          dueDate = closingDate || completionDate || null;
+        }
+        // Other types (2nd Payment, 3rd Deposit, 4th Deposit) remain 0 until user sets them
+
+        return {
+          deal_id: dealId,
+          user_id: user.id,
+          payout_type: type as PayoutType,
+          amount,
+          due_date: dueDate,
+          status: 'PROJECTED' as const,
+        };
+      });
       
       const { data, error } = await supabase
         .from('payouts')

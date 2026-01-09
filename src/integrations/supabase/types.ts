@@ -230,6 +230,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          monthly_income_goal: number | null
           presale_template: Json | null
           resale_template: Json | null
           tax_set_aside_percent: number | null
@@ -242,6 +243,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          monthly_income_goal?: number | null
           presale_template?: Json | null
           resale_template?: Json | null
           tax_set_aside_percent?: number | null
@@ -254,6 +256,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          monthly_income_goal?: number | null
           presale_template?: Json | null
           resale_template?: Json | null
           tax_set_aside_percent?: number | null
