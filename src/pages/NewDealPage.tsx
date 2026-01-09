@@ -59,7 +59,7 @@ export default function NewDealPage() {
     try {
       const deal = await createDeal.mutateAsync(formData as DealFormData);
       
-      // Auto-apply payout template based on property type
+      // Auto-apply payout template based on property type with amounts
       if (settings) {
         const template = isPresale 
           ? settings.presale_template 
@@ -68,6 +68,12 @@ export default function NewDealPage() {
         await createPayoutsFromTemplate.mutateAsync({
           dealId: deal.id,
           template,
+          advanceCommission: (formData as any).advance_commission || 0,
+          completionCommission: (formData as any).completion_commission || 0,
+          grossCommission: formData.gross_commission_est || 0,
+          advanceDate: (formData as any).advance_date,
+          completionDate: (formData as any).completion_date,
+          closingDate: formData.close_date_est,
         });
       }
 
