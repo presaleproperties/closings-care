@@ -367,12 +367,23 @@ export default function DealDetailPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
+                  <Select
                     value={formData.city || ''}
-                    onChange={(e) => updateField('city', e.target.value)}
-                    placeholder="Vancouver"
-                  />
+                    onValueChange={(v) => updateField('city', v)}
+                  >
+                    <SelectTrigger id="city">
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="Vancouver">Vancouver</SelectItem>
+                      <SelectItem value="Burnaby">Burnaby</SelectItem>
+                      <SelectItem value="Surrey">Surrey</SelectItem>
+                      <SelectItem value="Langley">Langley</SelectItem>
+                      <SelectItem value="Delta">Delta</SelectItem>
+                      <SelectItem value="Coquitlam">Coquitlam</SelectItem>
+                      <SelectItem value="Abbotsford">Abbotsford</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </section>
