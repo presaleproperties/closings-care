@@ -211,6 +211,35 @@ export function useMarkPayoutPaid() {
   });
 }
 
+export function useAutoMarkPayoutsPaid() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return [];
+      
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('payouts')
+        .update({ status: 'PAID', paid_date: today })
+        .in('id', ids)
+        .select();
+      
+      if (error) throw error;
+      return data as Payout[];
+    },
+    onSuccess: (payouts) => {
+      if (payouts.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ['payouts'] });
+        toast.success(`${payouts.length} payout(s) auto-marked as paid`);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to auto-mark payouts: ${error.message}`);
+    },
+  });
+}
+
 export function useDeletePayout() {
   const queryClient = useQueryClient();
 

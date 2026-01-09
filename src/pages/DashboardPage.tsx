@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { useDeals } from '@/hooks/useDeals';
-import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
+import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
@@ -21,6 +21,10 @@ export default function DashboardPage() {
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
   const markPaid = useMarkPayoutPaid();
+  const autoMarkPaid = useAutoMarkPayoutsPaid();
+  
+  // Track which payouts we've already auto-marked to avoid duplicate calls
+  const autoMarkedRef = useRef<Set<string>>(new Set());
 
   const now = new Date();
   const thisYear = now.getFullYear();
@@ -59,6 +63,19 @@ export default function DashboardPage() {
     return { paid, projected };
   }, [payouts, thisYear]);
 
+  // Handle auto-marking payouts as paid when due date passes
+  const handleAutoMarkPaid = useCallback((payoutIds: string[]) => {
+    // Filter out payouts we've already processed
+    const newIds = payoutIds.filter(id => !autoMarkedRef.current.has(id));
+    if (newIds.length === 0) return;
+    
+    // Mark them as processed
+    newIds.forEach(id => autoMarkedRef.current.add(id));
+    
+    // Auto-mark as paid
+    autoMarkPaid.mutate(newIds);
+  }, [autoMarkPaid]);
+
   return (
     <AppLayout>
       <Header 
@@ -74,7 +91,8 @@ export default function DashboardPage() {
         <QuickStats 
           deals={deals} 
           payouts={payouts} 
-          monthlyExpenses={expenseTotals.monthly} 
+          monthlyExpenses={expenseTotals.monthly}
+          onAutoMarkPaid={handleAutoMarkPaid}
         />
 
         {/* Tabbed Dashboard Sections */}
