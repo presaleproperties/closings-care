@@ -27,12 +27,12 @@ import {
   useUpdateExpense, 
   useDeleteExpense 
 } from '@/hooks/useExpenses';
-import { useRentalProperties } from '@/hooks/useRentalProperties';
+import { useProperties } from '@/hooks/useProperties';
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProgress';
-import { RentalPropertyManager } from '@/components/expenses/RentalPropertyManager';
+import { PropertyManager } from '@/components/expenses/PropertyManager';
 
 // Categorized expenses for real estate agents
 const expenseCategories = {
@@ -171,7 +171,7 @@ type ExpenseType = 'personal' | 'business' | 'rental' | 'taxes' | 'other';
 
 export default function ExpensesPage() {
   const { data: expenses = [], isLoading } = useExpenses();
-  const { data: rentalProperties = [] } = useRentalProperties();
+  const { data: properties = [] } = useProperties();
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -417,8 +417,8 @@ export default function ExpensesPage() {
           </div>
         </div>
 
-        {/* Rental Properties Manager */}
-        <RentalPropertyManager expenses={expenses} currentMonth={currentMonth} />
+        {/* Property Manager */}
+        <PropertyManager expenses={expenses} currentMonth={currentMonth} />
 
         {/* Budget Goals Progress */}
         <CategoryBudgetProgress expenses={expenses} currentMonth={currentMonth} />
@@ -498,7 +498,7 @@ export default function ExpensesPage() {
                 </div>
                 <div className="divide-y divide-border">
                   {groupedExpenses.rental.map(expense => {
-                    const property = rentalProperties.find(p => p.id === (expense as any).rental_property_id);
+                    const property = properties.find(p => p.id === (expense as any).rental_property_id);
                     return (
                       <ExpenseRow 
                         key={expense.id} 
@@ -691,7 +691,7 @@ export default function ExpensesPage() {
             </div>
 
             {/* Step 2.5: Property Selection (only for rental type) */}
-            {selectedType === 'rental' && rentalProperties.length > 0 && (
+            {selectedType === 'rental' && properties.filter(p => p.property_type === 'rental').length > 0 && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">Assign to Property</Label>
                 <Select
@@ -703,10 +703,36 @@ export default function ExpensesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No specific property</SelectItem>
-                    {rentalProperties.map((property) => (
+                    {properties.filter(p => p.property_type === 'rental').map((property) => (
                       <SelectItem key={property.id} value={property.id}>
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-teal-400" />
+                          {property.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Step 2.6: Property Selection (for personal housing expenses) */}
+            {selectedType === 'personal' && formData.category?.includes('Mortgage') && properties.filter(p => p.property_type === 'personal').length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Assign to Property</Label>
+                <Select
+                  value={formData.rental_property_id || 'none'}
+                  onValueChange={(value) => setFormData(p => ({ ...p, rental_property_id: value === 'none' ? undefined : value }))}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select a property (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific property</SelectItem>
+                    {properties.filter(p => p.property_type === 'personal').map((property) => (
+                      <SelectItem key={property.id} value={property.id}>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-blue-400" />
                           {property.name}
                         </div>
                       </SelectItem>

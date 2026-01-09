@@ -3,11 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-export interface RentalProperty {
+export type PropertyType = 'personal' | 'rental';
+
+export interface Property {
   id: string;
   user_id: string;
   name: string;
   address: string | null;
+  property_type: PropertyType;
+  monthly_rent: number | null;
   purchase_price: number | null;
   purchase_date: string | null;
   notes: string | null;
@@ -15,43 +19,45 @@ export interface RentalProperty {
   updated_at: string;
 }
 
-export interface RentalPropertyFormData {
+export interface PropertyFormData {
   name: string;
   address?: string;
+  property_type: PropertyType;
+  monthly_rent?: number;
   purchase_price?: number;
   purchase_date?: string;
   notes?: string;
 }
 
-export function useRentalProperties() {
+export function useProperties() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['rental_properties', user?.id],
+    queryKey: ['properties', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from('rental_properties')
+        .from('properties')
         .select('*')
         .order('name', { ascending: true });
       
       if (error) throw error;
-      return data as RentalProperty[];
+      return data as Property[];
     },
     enabled: !!user,
   });
 }
 
-export function useCreateRentalProperty() {
+export function useCreateProperty() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (data: RentalPropertyFormData) => {
+    mutationFn: async (data: PropertyFormData) => {
       if (!user) throw new Error('Not authenticated');
       
       const { data: property, error } = await supabase
-        .from('rental_properties')
+        .from('properties')
         .insert({
           ...data,
           user_id: user.id,
@@ -60,10 +66,10 @@ export function useCreateRentalProperty() {
         .single();
       
       if (error) throw error;
-      return property as RentalProperty;
+      return property as Property;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rental_properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success('Property added');
     },
     onError: (error) => {
@@ -72,23 +78,23 @@ export function useCreateRentalProperty() {
   });
 }
 
-export function useUpdateRentalProperty() {
+export function useUpdateProperty() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<RentalPropertyFormData> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<PropertyFormData> }) => {
       const { data: property, error } = await supabase
-        .from('rental_properties')
+        .from('properties')
         .update(data)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
-      return property as RentalProperty;
+      return property as Property;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rental_properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success('Property updated');
     },
     onError: (error) => {
@@ -97,24 +103,39 @@ export function useUpdateRentalProperty() {
   });
 }
 
-export function useDeleteRentalProperty() {
+export function useDeleteProperty() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('rental_properties')
+        .from('properties')
         .delete()
         .eq('id', id);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rental_properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success('Property deleted');
     },
     onError: (error) => {
       toast.error(`Failed to delete property: ${error.message}`);
     },
   });
+}
+
+/**
+ * Calculate property cashflow for a specific month
+ */
+export function calculatePropertyCashflow(
+  property: Property,
+  monthlyExpenses: number
+): { income: number; expenses: number; net: number; isCashFlowing: boolean } {
+  const income = property.property_type === 'rental' ? (property.monthly_rent || 0) : 0;
+  const expenses = monthlyExpenses;
+  const net = income - expenses;
+  const isCashFlowing = net >= 0;
+  
+  return { income, expenses, net, isCashFlowing };
 }
