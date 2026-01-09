@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Building2, Calendar as CalendarIcon, DollarSign, Users, FileText } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -60,10 +60,7 @@ export default function NewDealPage() {
     try {
       const deal = await createDeal.mutateAsync(formData as DealFormData);
       
-      // Auto-apply payout template based on property type with amounts
       if (settings) {
-        // For presale: use advance + completion or completion only based on toggle
-        // For resale: always just completion
         let template: string[];
         if (isPresale) {
           template = hasAdvanceCommission 
@@ -99,7 +96,6 @@ export default function NewDealPage() {
 
   const handlePropertyTypeChange = (value: PropertyType) => {
     updateField('property_type', value);
-    // Clear fields that don't apply
     if (value === 'PRESALE') {
       updateField('address', undefined);
       updateField('close_date_actual', undefined);
@@ -115,159 +111,87 @@ export default function NewDealPage() {
         title="New Deal" 
         showAddDeal={false}
         action={
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-1" />
             Back
           </Button>
         }
       />
 
-      <form onSubmit={handleSubmit} className="p-4 lg:p-6 max-w-4xl animate-fade-in">
-        <div className="space-y-8">
-          {/* Client Info */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Client Information</h2>
+      <form onSubmit={handleSubmit} className="p-4 lg:p-6 max-w-3xl animate-fade-in">
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {/* Step 1: Essential Info */}
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">1. Client & Deal Type</h2>
+          </div>
+          <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="client_name" className="text-xs">Client Name *</Label>
+              <Input
+                id="client_name"
+                value={formData.client_name || ''}
+                onChange={(e) => updateField('client_name', e.target.value)}
+                placeholder="John Smith"
+                required
+                className="h-9"
+              />
             </div>
-            
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_name">Client Name *</Label>
-                <Input
-                  id="client_name"
-                  value={formData.client_name || ''}
-                  onChange={(e) => updateField('client_name', e.target.value)}
-                  placeholder="John Smith"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="deal_type">Deal Type *</Label>
-                <Select
-                  value={formData.deal_type}
-                  onValueChange={(v) => updateField('deal_type', v as DealType)}
-                >
-                  <SelectTrigger id="deal_type">
-                    <SelectValue placeholder="Buy / Sell" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BUY">Buy</SelectItem>
-                    <SelectItem value="SELL">Sell</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="property_type">Property Type *</Label>
-                <Select
-                  value={formData.property_type || ''}
-                  onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
-                >
-                  <SelectTrigger id="property_type">
-                    <SelectValue placeholder="Presale / Resale" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRESALE">Presale</SelectItem>
-                    <SelectItem value="RESALE">Resale</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="buyer_type">Buyer Type</Label>
-                <Select
-                  value={(formData as any).buyer_type || ''}
-                  onValueChange={(v) => updateField('buyer_type' as any, v)}
-                >
-                  <SelectTrigger id="buyer_type">
-                    <SelectValue placeholder="First Time / Investor" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
-                    <SelectItem value="Investor">Investor</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="lead_source">Lead Source</Label>
-                <Select
-                  value={formData.lead_source || ''}
-                  onValueChange={(v) => updateField('lead_source', v)}
-                >
-                  <SelectTrigger id="lead_source">
-                    <SelectValue placeholder="Tiktok / IG / Referral..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="Tiktok">Tiktok</SelectItem>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="Youtube">Youtube</SelectItem>
-                    <SelectItem value="Referral">Referral</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(v) => updateField('status', v as DealStatus)}
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Pending / Closed" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="CLOSED">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Deal Type *</Label>
+              <Select
+                value={formData.deal_type}
+                onValueChange={(v) => updateField('deal_type', v as DealType)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Buy / Sell" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BUY">Buy</SelectItem>
+                  <SelectItem value="SELL">Sell</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </section>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Property Type *</Label>
+              <Select
+                value={formData.property_type || ''}
+                onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Presale / Resale" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRESALE">Presale</SelectItem>
+                  <SelectItem value="RESALE">Resale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-          {/* Property Info - Conditional based on property type */}
+          {/* Step 2: Property & Location (shows after property type selected) */}
           {formData.property_type && (
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Property Details</h2>
+            <>
+              <div className="p-4 border-t border-b border-border bg-muted/30">
+                <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">2. Property Details</h2>
               </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {isPresale && (
-                  <div className="space-y-2">
-                    <Label htmlFor="project_name">Project Name</Label>
-                    <Input
-                      id="project_name"
-                      value={formData.project_name || ''}
-                      onChange={(e) => updateField('project_name', e.target.value)}
-                      placeholder="The Palisades"
-                    />
-                  </div>
-                )}
-
-                {isResale && (
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      value={formData.address || ''}
-                      onChange={(e) => updateField('address', e.target.value)}
-                      placeholder="123 Main Street, Unit 1001"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs">{isPresale ? 'Project Name' : 'Address'}</Label>
+                  <Input
+                    value={isPresale ? (formData.project_name || '') : (formData.address || '')}
+                    onChange={(e) => updateField(isPresale ? 'project_name' : 'address', e.target.value)}
+                    placeholder={isPresale ? 'The Palisades' : '123 Main St, Unit 1001'}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">City</Label>
                   <Select
                     value={formData.city || ''}
                     onValueChange={(v) => updateField('city', v)}
                   >
-                    <SelectTrigger id="city">
-                      <SelectValue placeholder="Vancouver / Burnaby..." />
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select city" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
                       <SelectItem value="Vancouver">Vancouver</SelectItem>
@@ -280,266 +204,299 @@ export default function NewDealPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-            </section>
-          )}
-
-          {/* Dates - Always show after property type selected */}
-          {formData.property_type && (
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarIcon className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Key Dates</h2>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Firm Date</Label>
-                  <DatePicker
-                    value={formData.pending_date}
-                    onChange={(val) => updateField('pending_date', val)}
-                    placeholder="Select firm date"
-                  />
-                </div>
-
-                {isPresale && (
-                  <>
-                    <div className="sm:col-span-2 flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                      <Switch 
-                        id="has_advance"
-                        checked={hasAdvanceCommission}
-                        onCheckedChange={(checked) => {
-                          setHasAdvanceCommission(checked);
-                          if (!checked) {
-                            // Clear advance fields when switching to completion only
-                            updateField('advance_commission' as any, null);
-                            updateField('advance_date' as any, null);
-                          }
-                        }}
-                      />
-                      <Label htmlFor="has_advance" className="cursor-pointer">
-                        Has Advance Commission
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {hasAdvanceCommission ? '(Advance + Completion payouts)' : '(All paid on completion)'}
-                        </span>
-                      </Label>
-                    </div>
-
-                    {hasAdvanceCommission && (
-                      <div className="space-y-2">
-                        <Label>Advance Commission Date</Label>
-                        <DatePicker
-                          value={(formData as any).advance_date}
-                          onChange={(val) => updateField('advance_date' as any, val)}
-                          placeholder="Select advance date"
-                        />
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label>Completion Date</Label>
-                      <DatePicker
-                        value={(formData as any).completion_date}
-                        onChange={(val) => updateField('completion_date' as any, val)}
-                        placeholder="Select completion date"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {isResale && (
-                  <div className="space-y-2">
-                    <Label>Closing Date</Label>
-                    <DatePicker
-                      value={formData.close_date_est}
-                      onChange={(val) => updateField('close_date_est', val)}
-                      placeholder="Select closing date"
-                    />
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Financials */}
-          {formData.property_type && (
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <DollarSign className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Financials</h2>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sale_price">Sale Price</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Sale Price</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                     <Input
-                      id="sale_price"
-                      className="pl-7"
+                      className="pl-6 h-9"
                       value={formatCurrency(formData.sale_price)}
                       onChange={(e) => updateField('sale_price', parseCurrency(e.target.value))}
                       placeholder="1,250,000"
                     />
                   </div>
                 </div>
+              </div>
+            </>
+          )}
 
-                {isPresale && hasAdvanceCommission && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="advance_commission">Advance Commission</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          id="advance_commission"
-                          className="pl-7"
-                          value={formatCurrency((formData as any).advance_commission)}
-                          onChange={(e) => {
-                            const val = parseCurrency(e.target.value);
-                            updateField('advance_commission' as any, val);
-                            // Auto-calculate gross
-                            const completion = (formData as any).completion_commission || 0;
-                            updateField('gross_commission_est', (val || 0) + completion);
-                          }}
-                          placeholder="5,000"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="completion_commission">Completion Commission</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          id="completion_commission"
-                          className="pl-7"
-                          value={formatCurrency((formData as any).completion_commission)}
-                          onChange={(e) => {
-                            const val = parseCurrency(e.target.value);
-                            updateField('completion_commission' as any, val);
-                            // Auto-calculate gross
-                            const advance = (formData as any).advance_commission || 0;
-                            updateField('gross_commission_est', advance + (val || 0));
-                          }}
-                          placeholder="26,250"
-                        />
-                      </div>
-                    </div>
-                  </>
+          {/* Step 3: Dates & Commission */}
+          {formData.property_type && (
+            <>
+              <div className="p-4 border-t border-b border-border bg-muted/30">
+                <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">3. Dates & Commission</h2>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Presale: Advance toggle */}
+                {isPresale && (
+                  <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg">
+                    <Switch 
+                      id="has_advance"
+                      checked={hasAdvanceCommission}
+                      onCheckedChange={(checked) => {
+                        setHasAdvanceCommission(checked);
+                        if (!checked) {
+                          updateField('advance_commission' as any, null);
+                          updateField('advance_date' as any, null);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="has_advance" className="cursor-pointer text-sm">
+                      Has Advance Commission
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {hasAdvanceCommission ? '(2 payouts)' : '(All on completion)'}
+                      </span>
+                    </Label>
+                  </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="gross_commission_est">
-                    Gross Commission {isPresale && hasAdvanceCommission && <span className="text-xs text-muted-foreground">(auto-calculated)</span>}
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="gross_commission_est"
-                      className="pl-7"
-                      value={formatCurrency(formData.gross_commission_est)}
-                      onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
-                      placeholder="31,250"
-                      readOnly={isPresale && hasAdvanceCommission}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* Firm Date - always show */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Firm Date</Label>
+                    <DatePicker
+                      value={formData.pending_date}
+                      onChange={(val) => updateField('pending_date', val)}
+                      placeholder="Select date"
                     />
                   </div>
-                </div>
-              </div>
 
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                <p className="text-sm text-muted-foreground">
+                  {/* Presale with advance: show advance date + amount */}
+                  {isPresale && hasAdvanceCommission && (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Advance Date</Label>
+                        <DatePicker
+                          value={(formData as any).advance_date}
+                          onChange={(val) => updateField('advance_date' as any, val)}
+                          placeholder="Select date"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Advance $</Label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                          <Input
+                            className="pl-6 h-9"
+                            value={formatCurrency((formData as any).advance_commission)}
+                            onChange={(e) => {
+                              const val = parseCurrency(e.target.value);
+                              updateField('advance_commission' as any, val);
+                              const completion = (formData as any).completion_commission || 0;
+                              updateField('gross_commission_est', (val || 0) + completion);
+                            }}
+                            placeholder="5,000"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Presale: Completion date + amount */}
+                  {isPresale && (
+                    <>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Completion Date</Label>
+                        <DatePicker
+                          value={(formData as any).completion_date}
+                          onChange={(val) => updateField('completion_date' as any, val)}
+                          placeholder="Select date"
+                        />
+                      </div>
+                      {hasAdvanceCommission && (
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Completion $</Label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                            <Input
+                              className="pl-6 h-9"
+                              value={formatCurrency((formData as any).completion_commission)}
+                              onChange={(e) => {
+                                const val = parseCurrency(e.target.value);
+                                updateField('completion_commission' as any, val);
+                                const advance = (formData as any).advance_commission || 0;
+                                updateField('gross_commission_est', advance + (val || 0));
+                              }}
+                              placeholder="26,250"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Resale: Closing date */}
+                  {isResale && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Closing Date</Label>
+                      <DatePicker
+                        value={formData.close_date_est}
+                        onChange={(val) => updateField('close_date_est', val)}
+                        placeholder="Select date"
+                      />
+                    </div>
+                  )}
+
+                  {/* Gross Commission - always show */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      Gross Commission {isPresale && hasAdvanceCommission && <span className="text-muted-foreground">(auto)</span>}
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        className="pl-6 h-9"
+                        value={formatCurrency(formData.gross_commission_est)}
+                        onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
+                        placeholder="31,250"
+                        readOnly={isPresale && hasAdvanceCommission}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payout preview */}
+                <p className="text-xs text-muted-foreground bg-muted/30 rounded px-3 py-2">
                   {isPresale 
                     ? hasAdvanceCommission
-                      ? '✓ Presale: 2 payouts will be created (Advance + Completion)'
-                      : '✓ Presale: 1 payout will be created (All commission on completion)'
-                    : '✓ Resale: 1 payout will be created (Completion on closing date)'
+                      ? '✓ 2 payouts: Advance + Completion'
+                      : '✓ 1 payout: All commission on completion'
+                    : '✓ 1 payout: Commission on closing date'
                   }
                 </p>
               </div>
-            </section>
+            </>
           )}
 
-          {/* Team Split */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Team Split</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="is_team_deal"
-                  checked={isTeamDeal}
-                  onCheckedChange={(checked) => {
-                    setIsTeamDeal(checked);
-                    if (!checked) {
-                      updateField('team_member', undefined);
-                      updateField('team_member_portion', undefined);
-                    }
-                  }}
-                />
-                <Label htmlFor="is_team_deal">Is this a team deal?</Label>
+          {/* Step 4: Additional Info */}
+          <div className="p-4 border-t border-b border-border bg-muted/30">
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">4. Additional Info</h2>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Buyer Type</Label>
+                <Select
+                  value={(formData as any).buyer_type || ''}
+                  onValueChange={(v) => updateField('buyer_type' as any, v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
+                    <SelectItem value="Investor">Investor</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              {isTeamDeal && (
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="team_member">Team Member</Label>
-                    <Select
-                      value={formData.team_member || ''}
-                      onValueChange={(v) => updateField('team_member', v)}
-                    >
-                      <SelectTrigger id="team_member">
-                        <SelectValue placeholder="Sarb / Ravish" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Sarb">Sarb</SelectItem>
-                        <SelectItem value="Ravish">Ravish</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="team_member_portion">Their Portion (%)</Label>
-                    <Input
-                      id="team_member_portion"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.team_member_portion || ''}
-                      onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
-                      placeholder="50"
-                    />
-                  </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Lead Source</Label>
+                <Select
+                  value={formData.lead_source || ''}
+                  onValueChange={(v) => updateField('lead_source', v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select source" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="Tiktok">Tiktok</SelectItem>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="Youtube">Youtube</SelectItem>
+                    <SelectItem value="Referral">Referral</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => updateField('status', v as DealStatus)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="CLOSED">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Team Deal?</Label>
+                <div className="flex items-center h-9 px-3 border rounded-md bg-background">
+                  <Switch 
+                    id="is_team_deal"
+                    checked={isTeamDeal}
+                    onCheckedChange={(checked) => {
+                      setIsTeamDeal(checked);
+                      if (!checked) {
+                        updateField('team_member', undefined);
+                        updateField('team_member_portion', undefined);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="is_team_deal" className="ml-2 text-xs cursor-pointer">
+                    {isTeamDeal ? 'Yes' : 'No'}
+                  </Label>
                 </div>
-              )}
+              </div>
             </div>
-          </section>
 
-          {/* Notes */}
-          <section className="bg-card border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5 text-accent" />
-              <h2 className="font-semibold">Notes</h2>
+            {/* Team split details */}
+            {isTeamDeal && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Team Member</Label>
+                  <Select
+                    value={formData.team_member || ''}
+                    onValueChange={(v) => updateField('team_member', v)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sarb">Sarb</SelectItem>
+                      <SelectItem value="Ravish">Ravish</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Their Portion (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className="h-9"
+                    value={formData.team_member_portion || ''}
+                    onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
+                    placeholder="50"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Notes (optional)</Label>
+              <Textarea
+                value={formData.notes || ''}
+                onChange={(e) => updateField('notes', e.target.value)}
+                placeholder="Additional notes..."
+                rows={2}
+                className="resize-none"
+              />
             </div>
-            
-            <Textarea
-              value={formData.notes || ''}
-              onChange={(e) => updateField('notes', e.target.value)}
-              placeholder="Additional notes about this deal..."
-              rows={4}
-            />
-          </section>
+          </div>
 
           {/* Submit */}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+          <div className="p-4 border-t border-border bg-muted/20 flex justify-between items-center">
+            <Button type="button" variant="ghost" size="sm" onClick={() => navigate(-1)}>
               Cancel
             </Button>
             <Button 
               type="submit" 
               className="btn-premium" 
-              disabled={createDeal.isPending || !formData.property_type}
+              disabled={createDeal.isPending || !formData.property_type || !formData.client_name}
             >
               <Save className="w-4 h-4 mr-2" />
               {createDeal.isPending ? 'Creating...' : 'Create Deal'}
