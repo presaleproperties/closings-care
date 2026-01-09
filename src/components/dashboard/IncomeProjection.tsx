@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
 import { Payout } from '@/lib/types';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
+  Legend,
 } from 'recharts';
 
 interface IncomeProjectionProps {
@@ -99,17 +99,7 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
       {/* Chart */}
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+          <BarChart data={chartData} barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis
               dataKey="month"
@@ -134,40 +124,28 @@ export function IncomeProjection({ payouts, monthlyExpenses }: IncomeProjectionP
               }}
               formatter={(value: number, name: string) => [
                 formatCurrency(value),
-                name === 'income' ? 'Income' : name === 'expenses' ? 'Expenses' : 'Net',
+                name === 'income' ? 'Income' : 'Expenses',
               ]}
               labelFormatter={(_, payload) => payload?.[0]?.payload?.fullMonth}
             />
-            <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
-            <Area
-              type="monotone"
+            <Legend
+              formatter={(value) => (value === 'income' ? 'Income' : 'Expenses')}
+              wrapperStyle={{ fontSize: '12px' }}
+            />
+            <Bar
               dataKey="income"
-              stroke="hsl(142, 76%, 36%)"
-              strokeWidth={2}
-              fill="url(#incomeGradient)"
+              fill="hsl(142, 76%, 36%)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={32}
             />
-            <Area
-              type="monotone"
+            <Bar
               dataKey="expenses"
-              stroke="hsl(0, 84%, 60%)"
-              strokeWidth={2}
-              fill="url(#expenseGradient)"
-              strokeDasharray="5 5"
+              fill="hsl(0, 84%, 60%)"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={32}
             />
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-center gap-6 mt-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-success" />
-          <span className="text-xs text-muted-foreground">Projected Income</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-destructive" />
-          <span className="text-xs text-muted-foreground">Monthly Expenses</span>
-        </div>
       </div>
     </div>
   );
