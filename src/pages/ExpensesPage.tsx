@@ -30,17 +30,86 @@ import {
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 
-const defaultCategories = [
-  'Marketing',
-  'Office Rent',
-  'Insurance',
-  'MLS Fees',
-  'Software',
-  'Vehicle',
-  'Professional Development',
-  'Admin Support',
-  'Other',
-];
+// Categorized expenses for real estate agents
+const expenseCategories = {
+  'Personal - Housing': [
+    'Mortgage/Rent',
+    'Strata Fees',
+    'Property Taxes',
+    'Hydro/Utilities',
+    'Internet',
+  ],
+  'Personal - Transportation': [
+    'Car Lease/Payment',
+    'Car Insurance (Personal)',
+    'Car Charging/Gas',
+  ],
+  'Personal - Living': [
+    'Phone (Personal)',
+    'Groceries',
+    'Entertainment/Dining',
+    'Gym/Fitness',
+    'Apps & Subscriptions',
+  ],
+  'Business - Office': [
+    'Office Lease',
+    'Board Fees',
+    'Brokerage Fees',
+  ],
+  'Business - Technology': [
+    'CRM (CHIME, etc.)',
+    'Website Hosting',
+    'Google Workspace',
+    'iCloud/Storage',
+    'Canva/Design Tools',
+    'Email Marketing (MailerLite)',
+    'Editing Apps',
+    'Other Software',
+  ],
+  'Business - Marketing': [
+    'Facebook/Social Ads',
+    'Signs & Signage',
+    'Marketing Agency',
+    'Marketing Manager',
+    'Print Marketing',
+  ],
+  'Business - Transportation': [
+    'Car (Business Use)',
+    'Car Insurance (Business)',
+    'Car Charging (Business)',
+  ],
+  'Business - Professional': [
+    'BCFSA License',
+    'Real Estate License',
+    'Professional Development',
+    'Continuing Education',
+  ],
+  'Business - Client': [
+    'Client Gifts',
+    'Staging/Clean-ups',
+    'Photography',
+  ],
+  'Business - Admin': [
+    'Phone (Business)',
+    'Admin Support',
+    'Bookkeeping',
+  ],
+  'Taxes & Savings': [
+    'Tax Set-Aside',
+    'GST/HST Remittance',
+    'Debt Pay Down',
+  ],
+  'Other': [
+    'Miscellaneous',
+  ],
+};
+
+// Flatten categories for dropdown
+const allDefaultCategories = Object.entries(expenseCategories).flatMap(([group, items]) => 
+  items.map(item => ({ group, item }))
+);
+
+const defaultCategories = allDefaultCategories.map(c => c.item);
 
 type RecurrenceType = 'monthly' | 'weekly' | 'one-time';
 
@@ -276,35 +345,104 @@ export default function ExpensesPage() {
 
         {/* Monthly Summary */}
         {monthExpenses.length > 0 && (
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="p-4 bg-muted/50 border-b border-border">
-              <h3 className="font-semibold">Monthly Summary</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* By Category */}
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="p-4 bg-muted/50 border-b border-border">
+                <h3 className="font-semibold">By Category</h3>
+              </div>
+              <div className="p-4">
+                <table className="w-full">
+                  <tbody>
+                    {Object.entries(
+                      monthExpenses.reduce((acc, e) => {
+                        const amount = getDisplayAmount(e);
+                        acc[e.category] = (acc[e.category] || 0) + amount;
+                        return acc;
+                      }, {} as Record<string, number>)
+                    )
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([category, total]) => (
+                        <tr key={category} className="border-b border-border/50 last:border-0">
+                          <td className="py-2 text-sm">{category}</td>
+                          <td className="py-2 text-right font-medium text-sm">
+                            {formatCurrency(total)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="p-4">
-              <table className="w-full">
-                <tbody>
-                  {Object.entries(
-                    monthExpenses.reduce((acc, e) => {
-                      const amount = getDisplayAmount(e);
-                      acc[e.category] = (acc[e.category] || 0) + amount;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  )
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([category, total]) => (
-                      <tr key={category} className="border-b border-border/50 last:border-0">
-                        <td className="py-2">{category}</td>
-                        <td className="py-2 text-right font-medium">
-                          {formatCurrency(total)}
-                        </td>
-                      </tr>
-                    ))}
-                  <tr className="font-semibold">
-                    <td className="py-2 pt-4">Total</td>
-                    <td className="py-2 pt-4 text-right">{formatCurrency(totalMonthExpenses)}</td>
-                  </tr>
-                </tbody>
-              </table>
+
+            {/* Personal vs Business */}
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <div className="p-4 bg-muted/50 border-b border-border">
+                <h3 className="font-semibold">Personal vs Business</h3>
+              </div>
+              <div className="p-4 space-y-4">
+                {(() => {
+                  const personalCategories = Object.entries(expenseCategories)
+                    .filter(([group]) => group.startsWith('Personal'))
+                    .flatMap(([, items]) => items);
+                  const businessCategories = Object.entries(expenseCategories)
+                    .filter(([group]) => group.startsWith('Business'))
+                    .flatMap(([, items]) => items);
+                  const taxCategories = expenseCategories['Taxes & Savings'] || [];
+
+                  const personalTotal = monthExpenses
+                    .filter(e => personalCategories.includes(e.category))
+                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
+                  const businessTotal = monthExpenses
+                    .filter(e => businessCategories.includes(e.category))
+                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
+                  const taxTotal = monthExpenses
+                    .filter(e => taxCategories.includes(e.category))
+                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
+                  const otherTotal = totalMonthExpenses - personalTotal - businessTotal - taxTotal;
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-blue-500" />
+                          <span className="font-medium">Personal</span>
+                        </div>
+                        <span className="font-bold">{formatCurrency(personalTotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-purple-500" />
+                          <span className="font-medium">Business</span>
+                        </div>
+                        <span className="font-bold">{formatCurrency(businessTotal)}</span>
+                      </div>
+                      {taxTotal > 0 && (
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-amber-500" />
+                            <span className="font-medium">Taxes & Savings</span>
+                          </div>
+                          <span className="font-bold">{formatCurrency(taxTotal)}</span>
+                        </div>
+                      )}
+                      {otherTotal > 0 && (
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-muted-foreground" />
+                            <span className="font-medium">Other</span>
+                          </div>
+                          <span className="font-bold">{formatCurrency(otherTotal)}</span>
+                        </div>
+                      )}
+                      <div className="pt-2 border-t border-border flex items-center justify-between">
+                        <span className="font-semibold">Total</span>
+                        <span className="font-bold text-lg">{formatCurrency(totalMonthExpenses)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         )}
@@ -357,12 +495,34 @@ export default function ExpensesPage() {
                 onValueChange={(v) => setFormData((p) => ({ ...p, category: v }))}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {allCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectContent className="bg-popover max-h-[300px]">
+                  {Object.entries(expenseCategories).map(([group, items]) => (
+                    <div key={group}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
+                        {group}
+                      </div>
+                      {items.map((item) => (
+                        <SelectItem key={item} value={item} className="pl-4">
+                          {item}
+                        </SelectItem>
+                      ))}
+                    </div>
                   ))}
+                  {/* Include any custom categories not in the default list */}
+                  {allCategories.filter(c => !defaultCategories.includes(c)).length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
+                        Custom
+                      </div>
+                      {allCategories.filter(c => !defaultCategories.includes(c)).map((cat) => (
+                        <SelectItem key={cat} value={cat} className="pl-4">
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
