@@ -116,9 +116,19 @@ export function useUpdatePayout() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<PayoutFormData> }) => {
+      // Clean up empty strings to null for date fields
+      const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (value === '' || value === undefined) {
+          acc[key] = null;
+        } else {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as Record<string, any>);
+
       const { data: payout, error } = await supabase
         .from('payouts')
-        .update(data)
+        .update(cleanedData)
         .eq('id', id)
         .select()
         .single();
