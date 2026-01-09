@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   useProperties,
   useCreateProperty,
@@ -301,13 +300,12 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingId ? 'Edit Property' : 'Add Property'}</DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
-            <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4">
             {/* Property Type Toggle */}
             <div className="space-y-2">
               <Label>Property Type *</Label>
@@ -316,29 +314,29 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                   type="button"
                   onClick={() => setFormData(p => ({ ...p, property_type: 'personal' }))}
                   className={cn(
-                    "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                    "p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
                     formData.property_type === 'personal'
                       ? "border-blue-500 bg-blue-500/10 text-blue-400"
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <Home className="w-6 h-6" />
-                  <span className="font-medium">Personal</span>
-                  <span className="text-xs text-muted-foreground text-center">Your primary residence or personal use</span>
+                  <Home className="w-5 h-5" />
+                  <span className="font-medium text-sm">Personal</span>
+                  <span className="text-xs text-muted-foreground text-center">Primary residence</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(p => ({ ...p, property_type: 'rental' }))}
                   className={cn(
-                    "p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2",
+                    "p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
                     formData.property_type === 'rental'
                       ? "border-teal-500 bg-teal-500/10 text-teal-400"
                       : "border-border hover:border-muted-foreground"
                   )}
                 >
-                  <Building2 className="w-6 h-6" />
-                  <span className="font-medium">Rental</span>
-                  <span className="text-xs text-muted-foreground text-center">Investment property generating income</span>
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-medium text-sm">Rental</span>
+                  <span className="text-xs text-muted-foreground text-center">Investment property</span>
                 </button>
               </div>
             </div>
@@ -387,7 +385,7 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
               
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Mortgage Payment</Label>
+                  <Label className="text-xs text-muted-foreground">Mortgage</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                     <Input
@@ -400,7 +398,7 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Strata Fees</Label>
+                  <Label className="text-xs text-muted-foreground">Strata</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                     <Input
@@ -437,7 +435,7 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
               {(formData.monthly_mortgage || formData.monthly_strata || formData.yearly_taxes) && (
                 <div className="pt-2 border-t border-destructive/20">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total Monthly Expenses</span>
+                    <span className="text-muted-foreground">Total Monthly</span>
                     <span className="font-semibold text-destructive">
                       {formatCurrency(
                         (formData.monthly_mortgage || 0) + 
@@ -496,19 +494,19 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                 placeholder="Any additional notes..."
               />
             </div>
-            </div>
-          </ScrollArea>
+          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
+          <DialogFooter className="flex-shrink-0 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>
             <Button 
+              type="button"
               onClick={handleSave} 
-              disabled={!formData.name || (formData.property_type === 'rental' && !formData.monthly_rent)}
+              disabled={!formData.name || (formData.property_type === 'rental' && !formData.monthly_rent) || createProperty.isPending || updateProperty.isPending}
               className={formData.property_type === 'rental' ? "bg-teal-600 hover:bg-teal-700" : "bg-blue-600 hover:bg-blue-700"}
             >
-              {editingId ? 'Save Changes' : 'Add Property'}
+              {(createProperty.isPending || updateProperty.isPending) ? 'Saving...' : (editingId ? 'Save Changes' : 'Add Property')}
             </Button>
           </DialogFooter>
         </DialogContent>
