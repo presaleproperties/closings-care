@@ -17,11 +17,15 @@ export type Database = {
       deals: {
         Row: {
           address: string | null
+          advance_commission: number | null
+          advance_date: string | null
           buyer_type: string | null
           city: string | null
           client_name: string
           close_date_actual: string | null
           close_date_est: string | null
+          completion_commission: number | null
+          completion_date: string | null
           created_at: string
           deal_type: Database["public"]["Enums"]["deal_type"]
           gross_commission_actual: number | null
@@ -44,11 +48,15 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          advance_commission?: number | null
+          advance_date?: string | null
           buyer_type?: string | null
           city?: string | null
           client_name: string
           close_date_actual?: string | null
           close_date_est?: string | null
+          completion_commission?: number | null
+          completion_date?: string | null
           created_at?: string
           deal_type: Database["public"]["Enums"]["deal_type"]
           gross_commission_actual?: number | null
@@ -71,11 +79,15 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          advance_commission?: number | null
+          advance_date?: string | null
           buyer_type?: string | null
           city?: string | null
           client_name?: string
           close_date_actual?: string | null
           close_date_est?: string | null
+          completion_commission?: number | null
+          completion_date?: string | null
           created_at?: string
           deal_type?: Database["public"]["Enums"]["deal_type"]
           gross_commission_actual?: number | null
