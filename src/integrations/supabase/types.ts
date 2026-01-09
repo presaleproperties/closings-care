@@ -17,6 +17,7 @@ export type Database = {
       deals: {
         Row: {
           address: string | null
+          buyer_type: string | null
           city: string | null
           client_name: string
           close_date_actual: string | null
@@ -43,6 +44,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          buyer_type?: string | null
           city?: string | null
           client_name: string
           close_date_actual?: string | null
@@ -69,6 +71,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          buyer_type?: string | null
           city?: string | null
           client_name?: string
           close_date_actual?: string | null

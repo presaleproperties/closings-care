@@ -314,6 +314,22 @@ export default function DealDetailPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="buyer_type">Buyer Type</Label>
+                  <Select
+                    value={(formData as any).buyer_type || ''}
+                    onValueChange={(v) => updateField('buyer_type' as any, v)}
+                  >
+                    <SelectTrigger id="buyer_type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
+                      <SelectItem value="Investor">Investor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="lead_source">Lead Source</Label>
                   <Select
                     value={formData.lead_source || ''}
@@ -322,7 +338,7 @@ export default function DealDetailPage() {
                     <SelectTrigger id="lead_source">
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover">
                       <SelectItem value="Tiktok">Tiktok</SelectItem>
                       <SelectItem value="Instagram">Instagram</SelectItem>
                       <SelectItem value="Youtube">Youtube</SelectItem>
