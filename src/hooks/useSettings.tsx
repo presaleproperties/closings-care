@@ -9,7 +9,6 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   tax_set_aside_percent: 0,
   brokerage_split_percent: 0,
   apply_tax_to_forecasts: false,
-  monthly_income_goal: 15000,
   presale_template: ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion'],
   resale_template: ['Completion'],
 };

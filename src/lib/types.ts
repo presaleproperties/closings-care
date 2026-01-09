@@ -69,7 +69,6 @@ export interface Settings {
   tax_set_aside_percent: number | null;
   brokerage_split_percent: number | null;
   apply_tax_to_forecasts: boolean;
-  monthly_income_goal: number | null;
   presale_template: string[];
   resale_template: string[];
   created_at: string;
