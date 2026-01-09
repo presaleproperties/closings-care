@@ -268,6 +268,8 @@ export default function ExpensesPage() {
       ...formData,
       recurrence: formData.recurrence || 'monthly',
     };
+    
+    console.log('Saving expense with data:', dataToSave);
 
     if (editingId) {
       await updateExpense.mutateAsync({ id: editingId, data: dataToSave });
@@ -697,7 +699,7 @@ export default function ExpensesPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                  {formData.recurrence === 'one-time' ? 'Month' : 'Starting'}
+                  {formData.recurrence === 'one-time' ? 'Month' : formData.recurrence === 'yearly' ? 'Occurs In' : 'Starting'}
                 </Label>
                 <Input
                   type="month"
@@ -705,6 +707,11 @@ export default function ExpensesPage() {
                   value={formData.month}
                   onChange={(e) => setFormData((p) => ({ ...p, month: e.target.value }))}
                 />
+                {formData.recurrence === 'yearly' && formData.month && (
+                  <p className="text-xs text-muted-foreground">
+                    Recurs every {format(parseISO(`${formData.month}-01`), 'MMMM')} starting {format(parseISO(`${formData.month}-01`), 'yyyy')}
+                  </p>
+                )}
               </div>
             </div>
 
