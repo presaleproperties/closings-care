@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, User, Briefcase, Receipt, PiggyBank, MoreHorizontal } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { 
   useExpenses, 
@@ -29,89 +22,120 @@ import {
 } from '@/hooks/useExpenses';
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 // Categorized expenses for real estate agents
 const expenseCategories = {
-  'Personal - Housing': [
-    'Mortgage/Rent',
-    'Strata Fees',
-    'Property Taxes',
-    'Hydro/Utilities',
-    'Internet',
-  ],
-  'Personal - Transportation': [
-    'Car Lease/Payment',
-    'Car Insurance (Personal)',
-    'Car Charging/Gas',
-  ],
-  'Personal - Living': [
-    'Phone (Personal)',
-    'Groceries',
-    'Entertainment/Dining',
-    'Gym/Fitness',
-    'Apps & Subscriptions',
-  ],
-  'Business - Office': [
-    'Office Lease',
-    'Board Fees',
-    'Brokerage Fees',
-  ],
-  'Business - Technology': [
-    'CRM (CHIME, etc.)',
-    'Website Hosting',
-    'Google Workspace',
-    'iCloud/Storage',
-    'Canva/Design Tools',
-    'Email Marketing (MailerLite)',
-    'Editing Apps',
-    'Other Software',
-  ],
-  'Business - Marketing': [
-    'Facebook/Social Ads',
-    'Signs & Signage',
-    'Marketing Agency',
-    'Marketing Manager',
-    'Print Marketing',
-  ],
-  'Business - Transportation': [
-    'Car (Business Use)',
-    'Car Insurance (Business)',
-    'Car Charging (Business)',
-  ],
-  'Business - Professional': [
-    'BCFSA License',
-    'Real Estate License',
-    'Professional Development',
-    'Continuing Education',
-  ],
-  'Business - Client': [
-    'Client Gifts',
-    'Staging/Clean-ups',
-    'Photography',
-  ],
-  'Business - Admin': [
-    'Phone (Business)',
-    'Admin Support',
-    'Bookkeeping',
-  ],
-  'Taxes & Savings': [
-    'Tax Set-Aside',
-    'GST/HST Remittance',
-    'Debt Pay Down',
-  ],
-  'Other': [
-    'Miscellaneous',
-  ],
+  personal: {
+    'Housing': [
+      'Mortgage/Rent',
+      'Strata Fees',
+      'Property Taxes',
+      'Hydro/Utilities',
+      'Internet',
+    ],
+    'Transportation': [
+      'Car Lease/Payment',
+      'Car Insurance (Personal)',
+      'Car Charging/Gas',
+    ],
+    'Living': [
+      'Phone (Personal)',
+      'Groceries',
+      'Entertainment/Dining',
+      'Gym/Fitness',
+      'Apps & Subscriptions',
+    ],
+  },
+  business: {
+    'Office': [
+      'Office Lease',
+      'Board Fees',
+      'Brokerage Fees',
+    ],
+    'Technology': [
+      'CRM (CHIME, etc.)',
+      'Website Hosting',
+      'Google Workspace',
+      'iCloud/Storage',
+      'Canva/Design Tools',
+      'Email Marketing (MailerLite)',
+      'Editing Apps',
+      'Other Software',
+    ],
+    'Marketing': [
+      'Facebook/Social Ads',
+      'Signs & Signage',
+      'Marketing Agency',
+      'Marketing Manager',
+      'Print Marketing',
+    ],
+    'Transportation': [
+      'Car (Business Use)',
+      'Car Insurance (Business)',
+      'Car Charging (Business)',
+    ],
+    'Professional': [
+      'BCFSA License',
+      'Real Estate License',
+      'Professional Development',
+      'Continuing Education',
+    ],
+    'Client': [
+      'Client Gifts',
+      'Staging/Clean-ups',
+      'Photography',
+    ],
+    'Admin': [
+      'Phone (Business)',
+      'Admin Support',
+      'Bookkeeping',
+    ],
+  },
+  taxes: {
+    'Taxes & Savings': [
+      'Tax Set-Aside',
+      'GST/HST Remittance',
+      'Debt Pay Down',
+    ],
+  },
+  other: {
+    'Other': [
+      'Miscellaneous',
+    ],
+  },
 };
 
-// Flatten categories for dropdown
-const allDefaultCategories = Object.entries(expenseCategories).flatMap(([group, items]) => 
-  items.map(item => ({ group, item }))
-);
+// Get all categories flat with their type
+const getAllCategories = () => {
+  const result: { category: string; type: 'personal' | 'business' | 'taxes' | 'other'; group: string }[] = [];
+  
+  Object.entries(expenseCategories.personal).forEach(([group, items]) => {
+    items.forEach(item => result.push({ category: item, type: 'personal', group }));
+  });
+  Object.entries(expenseCategories.business).forEach(([group, items]) => {
+    items.forEach(item => result.push({ category: item, type: 'business', group }));
+  });
+  Object.entries(expenseCategories.taxes).forEach(([group, items]) => {
+    items.forEach(item => result.push({ category: item, type: 'taxes', group }));
+  });
+  Object.entries(expenseCategories.other).forEach(([group, items]) => {
+    items.forEach(item => result.push({ category: item, type: 'other', group }));
+  });
+  
+  return result;
+};
 
-const defaultCategories = allDefaultCategories.map(c => c.item);
+const allCategoriesFlat = getAllCategories();
+const defaultCategories = allCategoriesFlat.map(c => c.category);
+
+const getCategoryType = (category: string): 'personal' | 'business' | 'taxes' | 'other' => {
+  const found = allCategoriesFlat.find(c => c.category === category);
+  return found?.type || 'other';
+};
 
 type RecurrenceType = 'monthly' | 'weekly' | 'one-time';
+type ExpenseType = 'personal' | 'business' | 'taxes' | 'other';
 
 export default function ExpensesPage() {
   const { data: expenses = [], isLoading } = useExpenses();
@@ -122,8 +146,10 @@ export default function ExpensesPage() {
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<ExpenseType>('personal');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType }>({
-    category: defaultCategories[0],
+    category: '',
     amount: 0,
     month: currentMonth,
     recurrence: 'monthly',
@@ -146,11 +172,9 @@ export default function ExpensesPage() {
   const monthExpenses = useMemo(() => {
     return expenses.filter((e) => {
       const recurrence = (e as any).recurrence || 'monthly';
-      // One-time expenses only show in their specific month
       if (recurrence === 'one-time') {
         return e.month === currentMonth;
       }
-      // Monthly/weekly recurring expenses show in all months from their start month onwards
       const startMonth = e.month;
       return currentMonth >= startMonth;
     });
@@ -160,24 +184,35 @@ export default function ExpensesPage() {
     return monthExpenses.reduce((sum, e) => {
       const recurrence = (e as any).recurrence || 'monthly';
       if (recurrence === 'weekly') {
-        // Approximate 4.33 weeks per month
         return sum + Number(e.amount) * 4.33;
       }
       return sum + Number(e.amount);
     }, 0);
   }, [monthExpenses]);
 
-  // Get unique categories across all expenses
-  const allCategories = useMemo(() => {
-    const cats = new Set(expenses.map((e) => e.category));
-    defaultCategories.forEach((c) => cats.add(c));
-    return Array.from(cats).sort();
-  }, [expenses]);
+  // Group expenses by type
+  const groupedExpenses = useMemo(() => {
+    const groups: Record<ExpenseType, typeof expenses> = {
+      personal: [],
+      business: [],
+      taxes: [],
+      other: [],
+    };
+    
+    monthExpenses.forEach(e => {
+      const type = getCategoryType(e.category);
+      groups[type].push(e);
+    });
+    
+    return groups;
+  }, [monthExpenses]);
 
   const handleOpenAdd = () => {
     setEditingId(null);
+    setSelectedType('personal');
+    setSelectedGroup(null);
     setFormData({
-      category: defaultCategories[0],
+      category: '',
       amount: 0,
       month: currentMonth,
       recurrence: 'monthly',
@@ -186,7 +221,10 @@ export default function ExpensesPage() {
   };
 
   const handleOpenEdit = (expense: typeof expenses[0]) => {
+    const type = getCategoryType(expense.category);
     setEditingId(expense.id);
+    setSelectedType(type);
+    setSelectedGroup(null);
     setFormData({
       category: expense.category,
       amount: expense.amount,
@@ -233,10 +271,16 @@ export default function ExpensesPage() {
   const getDisplayAmount = (expense: typeof expenses[0]) => {
     const recurrence = (expense as any).recurrence || 'monthly';
     if (recurrence === 'weekly') {
-      return Number(expense.amount) * 4.33; // Monthly equivalent
+      return Number(expense.amount) * 4.33;
     }
     return Number(expense.amount);
   };
+
+  const getTypeTotal = (type: ExpenseType) => {
+    return groupedExpenses[type].reduce((sum, e) => sum + getDisplayAmount(e), 0);
+  };
+
+  const currentCategories = expenseCategories[selectedType] || {};
 
   return (
     <AppLayout>
@@ -272,7 +316,43 @@ export default function ExpensesPage() {
           </Button>
         </div>
 
-        {/* Expenses Grid */}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-card border border-blue-500/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-blue-400 mb-2">
+              <User className="w-4 h-4" />
+              <span className="text-sm font-medium">Personal</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(getTypeTotal('personal'))}</p>
+            <p className="text-xs text-muted-foreground">{groupedExpenses.personal.length} items</p>
+          </div>
+          <div className="bg-card border border-purple-500/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-purple-400 mb-2">
+              <Briefcase className="w-4 h-4" />
+              <span className="text-sm font-medium">Business</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(getTypeTotal('business'))}</p>
+            <p className="text-xs text-muted-foreground">{groupedExpenses.business.length} items</p>
+          </div>
+          <div className="bg-card border border-amber-500/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-amber-400 mb-2">
+              <PiggyBank className="w-4 h-4" />
+              <span className="text-sm font-medium">Taxes & Savings</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(getTypeTotal('taxes'))}</p>
+            <p className="text-xs text-muted-foreground">{groupedExpenses.taxes.length} items</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <Receipt className="w-4 h-4" />
+              <span className="text-sm font-medium">Other</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(getTypeTotal('other'))}</p>
+            <p className="text-xs text-muted-foreground">{groupedExpenses.other.length} items</p>
+          </div>
+        </div>
+
+        {/* Expenses List by Type */}
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         ) : monthExpenses.length === 0 ? (
@@ -284,307 +364,381 @@ export default function ExpensesPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {monthExpenses.map((expense) => {
-              const recurrence = (expense as any).recurrence || 'monthly';
-              return (
-                <div
-                  key={expense.id}
-                  className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow group cursor-pointer"
-                  onClick={() => handleOpenEdit(expense)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium truncate">{expense.category}</p>
-                      </div>
-                      {getRecurrenceBadge(recurrence)}
-                      <p className="text-2xl font-bold mt-2">
-                        {formatCurrency(getDisplayAmount(expense))}
-                        {recurrence === 'weekly' && (
-                          <span className="text-xs font-normal text-muted-foreground ml-1">/mo</span>
-                        )}
-                      </p>
-                      {recurrence === 'weekly' && (
-                        <p className="text-xs text-muted-foreground">
-                          {formatCurrency(expense.amount)}/week
-                        </p>
-                      )}
-                      {expense.notes && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                          {expense.notes}
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(expense.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+          <div className="space-y-6">
+            {/* Personal Expenses */}
+            {groupedExpenses.personal.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-3 bg-blue-500/10 border-b border-blue-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-blue-400" />
+                    <h3 className="font-semibold text-blue-400">Personal Expenses</h3>
                   </div>
+                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('personal'))}</span>
                 </div>
-              );
-            })}
+                <div className="divide-y divide-border">
+                  {groupedExpenses.personal.map(expense => (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Add Card */}
+            {/* Business Expenses */}
+            {groupedExpenses.business.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-3 bg-purple-500/10 border-b border-purple-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-purple-400" />
+                    <h3 className="font-semibold text-purple-400">Business Expenses</h3>
+                  </div>
+                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('business'))}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {groupedExpenses.business.map(expense => (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Taxes & Savings */}
+            {groupedExpenses.taxes.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PiggyBank className="w-4 h-4 text-amber-400" />
+                    <h3 className="font-semibold text-amber-400">Taxes & Savings</h3>
+                  </div>
+                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('taxes'))}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {groupedExpenses.taxes.map(expense => (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Other */}
+            {groupedExpenses.other.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="p-3 bg-muted/50 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-muted-foreground" />
+                    <h3 className="font-semibold">Other Expenses</h3>
+                  </div>
+                  <span className="text-sm font-medium">{formatCurrency(getTypeTotal('other'))}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {groupedExpenses.other.map(expense => (
+                    <ExpenseRow 
+                      key={expense.id} 
+                      expense={expense} 
+                      onEdit={() => handleOpenEdit(expense)}
+                      onDelete={() => handleDelete(expense.id)}
+                      getRecurrenceBadge={getRecurrenceBadge}
+                      getDisplayAmount={getDisplayAmount}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Add More Button */}
             <button
               onClick={handleOpenAdd}
-              className="bg-muted/50 border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-accent hover:text-accent transition-colors min-h-[120px]"
+              className="w-full bg-muted/50 border-2 border-dashed border-border rounded-xl p-4 flex items-center justify-center gap-2 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
             >
-              <Plus className="w-6 h-6" />
+              <Plus className="w-5 h-5" />
               <span className="font-medium">Add Expense</span>
             </button>
           </div>
         )}
-
-        {/* Monthly Summary */}
-        {monthExpenses.length > 0 && (
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* By Category */}
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <div className="p-4 bg-muted/50 border-b border-border">
-                <h3 className="font-semibold">By Category</h3>
-              </div>
-              <div className="p-4">
-                <table className="w-full">
-                  <tbody>
-                    {Object.entries(
-                      monthExpenses.reduce((acc, e) => {
-                        const amount = getDisplayAmount(e);
-                        acc[e.category] = (acc[e.category] || 0) + amount;
-                        return acc;
-                      }, {} as Record<string, number>)
-                    )
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([category, total]) => (
-                        <tr key={category} className="border-b border-border/50 last:border-0">
-                          <td className="py-2 text-sm">{category}</td>
-                          <td className="py-2 text-right font-medium text-sm">
-                            {formatCurrency(total)}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Personal vs Business */}
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <div className="p-4 bg-muted/50 border-b border-border">
-                <h3 className="font-semibold">Personal vs Business</h3>
-              </div>
-              <div className="p-4 space-y-4">
-                {(() => {
-                  const personalCategories = Object.entries(expenseCategories)
-                    .filter(([group]) => group.startsWith('Personal'))
-                    .flatMap(([, items]) => items);
-                  const businessCategories = Object.entries(expenseCategories)
-                    .filter(([group]) => group.startsWith('Business'))
-                    .flatMap(([, items]) => items);
-                  const taxCategories = expenseCategories['Taxes & Savings'] || [];
-
-                  const personalTotal = monthExpenses
-                    .filter(e => personalCategories.includes(e.category))
-                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
-                  const businessTotal = monthExpenses
-                    .filter(e => businessCategories.includes(e.category))
-                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
-                  const taxTotal = monthExpenses
-                    .filter(e => taxCategories.includes(e.category))
-                    .reduce((sum, e) => sum + getDisplayAmount(e), 0);
-                  const otherTotal = totalMonthExpenses - personalTotal - businessTotal - taxTotal;
-
-                  return (
-                    <>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500" />
-                          <span className="font-medium">Personal</span>
-                        </div>
-                        <span className="font-bold">{formatCurrency(personalTotal)}</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-purple-500" />
-                          <span className="font-medium">Business</span>
-                        </div>
-                        <span className="font-bold">{formatCurrency(businessTotal)}</span>
-                      </div>
-                      {taxTotal > 0 && (
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-amber-500" />
-                            <span className="font-medium">Taxes & Savings</span>
-                          </div>
-                          <span className="font-bold">{formatCurrency(taxTotal)}</span>
-                        </div>
-                      )}
-                      {otherTotal > 0 && (
-                        <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-muted-foreground" />
-                            <span className="font-medium">Other</span>
-                          </div>
-                          <span className="font-bold">{formatCurrency(otherTotal)}</span>
-                        </div>
-                      )}
-                      <div className="pt-2 border-t border-border flex items-center justify-between">
-                        <span className="font-semibold">Total</span>
-                        <span className="font-bold text-lg">{formatCurrency(totalMonthExpenses)}</span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Dialog - Optimized Form */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Step 1: Expense Type Toggle */}
             <div className="space-y-2">
-              <Label>Expense Type</Label>
-              <Select
-                value={formData.recurrence || 'monthly'}
-                onValueChange={(v) => setFormData((p) => ({ ...p, recurrence: v as RecurrenceType }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="monthly">
-                    <div className="flex items-center gap-2">
-                      <Repeat className="w-4 h-4" />
-                      Monthly Recurring
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="weekly">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Weekly Recurring
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="one-time">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      One-Time Expense
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(v) => setFormData((p) => ({ ...p, category: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover max-h-[300px]">
-                  {Object.entries(expenseCategories).map(([group, items]) => (
-                    <div key={group}>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
-                        {group}
-                      </div>
-                      {items.map((item) => (
-                        <SelectItem key={item} value={item} className="pl-4">
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                  {/* Include any custom categories not in the default list */}
-                  {allCategories.filter(c => !defaultCategories.includes(c)).length > 0 && (
-                    <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 sticky top-0">
-                        Custom
-                      </div>
-                      {allCategories.filter(c => !defaultCategories.includes(c)).map((cat) => (
-                        <SelectItem key={cat} value={cat} className="pl-4">
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Type</Label>
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('personal'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    selectedType === 'personal' 
+                      ? "border-blue-500 bg-blue-500/10 text-blue-400" 
+                      : "border-border hover:border-muted-foreground"
                   )}
-                </SelectContent>
-              </Select>
+                >
+                  <User className="w-5 h-5" />
+                  <span className="text-xs font-medium">Personal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('business'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    selectedType === 'business' 
+                      ? "border-purple-500 bg-purple-500/10 text-purple-400" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <Briefcase className="w-5 h-5" />
+                  <span className="text-xs font-medium">Business</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('taxes'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    selectedType === 'taxes' 
+                      ? "border-amber-500 bg-amber-500/10 text-amber-400" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <PiggyBank className="w-5 h-5" />
+                  <span className="text-xs font-medium">Taxes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSelectedType('other'); setSelectedGroup(null); setFormData(p => ({ ...p, category: '' })); }}
+                  className={cn(
+                    "p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
+                    selectedType === 'other' 
+                      ? "border-muted-foreground bg-muted text-foreground" 
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                  <span className="text-xs font-medium">Other</span>
+                </button>
+              </div>
             </div>
 
+            {/* Step 2: Category Selection - Visual Grid */}
             <div className="space-y-2">
-              <Label>
-                Amount {formData.recurrence === 'weekly' && <span className="text-muted-foreground">(per week)</span>}
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category</Label>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                {Object.entries(currentCategories).map(([group, items]) => (
+                  <div key={group}>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">{group}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(items as string[]).map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => setFormData(p => ({ ...p, category: item }))}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-sm border transition-all",
+                            formData.category === item
+                              ? selectedType === 'personal' ? "border-blue-500 bg-blue-500/20 text-blue-300"
+                              : selectedType === 'business' ? "border-purple-500 bg-purple-500/20 text-purple-300"
+                              : selectedType === 'taxes' ? "border-amber-500 bg-amber-500/20 text-amber-300"
+                              : "border-muted-foreground bg-muted text-foreground"
+                              : "border-border hover:border-muted-foreground bg-muted/30"
+                          )}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 3: Recurrence Type */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Frequency</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, recurrence: 'monthly' }))}
+                  className={cn(
+                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    formData.recurrence === 'monthly'
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <Repeat className="w-4 h-4" />
+                  <span className="text-sm font-medium">Monthly</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, recurrence: 'weekly' }))}
+                  className={cn(
+                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    formData.recurrence === 'weekly'
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Weekly</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, recurrence: 'one-time' }))}
+                  className={cn(
+                    "p-2.5 rounded-lg border-2 transition-all flex items-center justify-center gap-2",
+                    formData.recurrence === 'one-time'
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-muted-foreground"
+                  )}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm font-medium">One-time</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Step 4: Amount & Month */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Amount {formData.recurrence === 'weekly' && <span className="normal-case">(per week)</span>}
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="pl-7 h-11"
+                    value={formData.amount || ''}
+                    onChange={(e) => setFormData((p) => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                {formData.recurrence === 'weekly' && formData.amount && formData.amount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {formatCurrency(formData.amount * 4.33)}/month
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {formData.recurrence === 'one-time' ? 'Month' : 'Starting'}
+                </Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  className="pl-7"
-                  value={formData.amount || ''}
-                  onChange={(e) => setFormData((p) => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
-                  placeholder={formData.recurrence === 'weekly' ? '100.00' : '500.00'}
+                  type="month"
+                  className="h-11"
+                  value={formData.month}
+                  onChange={(e) => setFormData((p) => ({ ...p, month: e.target.value }))}
                 />
               </div>
-              {formData.recurrence === 'weekly' && formData.amount && (
-                <p className="text-xs text-muted-foreground">
-                  ≈ {formatCurrency(formData.amount * 4.33)}/month
-                </p>
-              )}
             </div>
 
+            {/* Step 5: Notes (Optional) */}
             <div className="space-y-2">
-              <Label>
-                {formData.recurrence === 'one-time' ? 'Month' : 'Starting From'}
-              </Label>
-              <Input
-                type="month"
-                value={formData.month}
-                onChange={(e) => setFormData((p) => ({ ...p, month: e.target.value }))}
-              />
-              {formData.recurrence !== 'one-time' && (
-                <p className="text-xs text-muted-foreground">
-                  This expense will repeat every {formData.recurrence === 'weekly' ? 'week' : 'month'}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
               <Input
                 value={formData.notes || ''}
                 onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
-                placeholder="Optional notes"
+                placeholder="Add a note..."
+                className="h-10"
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setShowDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave} className="btn-premium">
-              {editingId ? 'Save' : 'Add Expense'}
+            <Button 
+              onClick={handleSave} 
+              className="btn-premium"
+              disabled={!formData.category || !formData.amount}
+            >
+              {editingId ? 'Save Changes' : 'Add Expense'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>
+  );
+}
+
+// Expense Row Component
+function ExpenseRow({ 
+  expense, 
+  onEdit, 
+  onDelete,
+  getRecurrenceBadge,
+  getDisplayAmount 
+}: { 
+  expense: any; 
+  onEdit: () => void;
+  onDelete: () => void;
+  getRecurrenceBadge: (r: RecurrenceType) => JSX.Element;
+  getDisplayAmount: (e: any) => number;
+}) {
+  const recurrence = expense.recurrence || 'monthly';
+  
+  return (
+    <div 
+      className="p-3 flex items-center justify-between hover:bg-muted/30 cursor-pointer group transition-colors"
+      onClick={onEdit}
+    >
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="min-w-0">
+          <p className="font-medium truncate">{expense.category}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            {getRecurrenceBadge(recurrence)}
+            {expense.notes && (
+              <span className="text-xs text-muted-foreground truncate max-w-[150px]">{expense.notes}</span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="font-bold">{formatCurrency(getDisplayAmount(expense))}</p>
+          {recurrence === 'weekly' && (
+            <p className="text-xs text-muted-foreground">{formatCurrency(expense.amount)}/wk</p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 shrink-0 h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
   );
 }
