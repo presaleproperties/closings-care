@@ -80,7 +80,6 @@ export function useUpdateDeal() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<DealFormData> }) => {
       // Clean up empty strings to null for date and optional fields
       const cleanedData = Object.entries(data).reduce((acc, [key, value]) => {
-        // Convert empty strings to null for nullable fields
         if (value === '' || value === undefined) {
           acc[key] = null;
         } else {
@@ -97,11 +96,24 @@ export function useUpdateDeal() {
         .single();
       
       if (error) throw error;
+
+      // Auto-sync: For RESALE deals, update Completion payout due_date when closing date changes
+      if (deal.property_type === 'RESALE' && cleanedData.close_date_est !== undefined) {
+        const closingDate = cleanedData.close_date_est;
+        await supabase
+          .from('payouts')
+          .update({ due_date: closingDate })
+          .eq('deal_id', id)
+          .eq('payout_type', 'Completion');
+      }
+
       return deal as Deal;
     },
     onSuccess: (deal) => {
       queryClient.invalidateQueries({ queryKey: ['deals'] });
       queryClient.invalidateQueries({ queryKey: ['deal', deal.id] });
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', deal.id] });
       toast.success('Deal updated successfully');
     },
     onError: (error) => {
