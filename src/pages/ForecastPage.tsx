@@ -1,15 +1,13 @@
-import { useMemo } from 'react';
-import { format, parseISO, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, isSameDay } from 'date-fns';
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { format, parseISO, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePayouts } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useSettings } from '@/hooks/useSettings';
-import { formatCurrency, getCurrentMonth, getMonthRange } from '@/lib/format';
+import { formatCurrency, getMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 export default function ForecastPage() {
@@ -17,6 +15,7 @@ export default function ForecastPage() {
   const { data: expenses = [] } = useExpenses();
   const { data: settings } = useSettings();
 
+  const [view, setView] = useState<'table' | 'calendar'>('table');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
   // Generate forecast data for next 12 months
@@ -29,44 +28,60 @@ export default function ForecastPage() {
         return p.due_date.startsWith(monthStr);
       });
 
-      const projected = monthPayouts
-        .filter((p) => p.status === 'PROJECTED')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
-
-      const invoiced = monthPayouts
-        .filter((p) => p.status === 'INVOICED')
+      const income = monthPayouts
+        .filter((p) => p.status !== 'PAID')
         .reduce((sum, p) => sum + Number(p.amount), 0);
 
       const paid = monthPayouts
         .filter((p) => p.status === 'PAID')
         .reduce((sum, p) => sum + Number(p.amount), 0);
 
-      const totalExpected = projected + invoiced + paid;
+      const totalIncome = income + paid;
 
-      const monthExpenses = expenses
-        .filter((e) => e.month === monthStr)
+      // Calculate monthly expenses (recurring)
+      const monthlyExpenses = expenses
+        .filter(e => e.recurrence === 'monthly')
         .reduce((sum, e) => sum + Number(e.amount), 0);
 
-      let adjustedExpected = totalExpected;
+      const weeklyExpenses = expenses
+        .filter(e => e.recurrence === 'weekly')
+        .reduce((sum, e) => sum + Number(e.amount) * 4.33, 0);
+
+      const totalExpenses = monthlyExpenses + weeklyExpenses;
+
+      let adjustedIncome = totalIncome;
       if (settings?.apply_tax_to_forecasts && settings.tax_set_aside_percent) {
-        adjustedExpected = totalExpected * (1 - settings.tax_set_aside_percent / 100);
+        adjustedIncome = totalIncome * (1 - settings.tax_set_aside_percent / 100);
       }
 
-      const netCashflow = adjustedExpected - monthExpenses;
+      const net = adjustedIncome - totalExpenses;
 
       return {
         month: monthStr,
-        label: format(parseISO(`${monthStr}-01`), 'MMM yyyy'),
-        projected,
-        invoiced,
-        paid,
-        totalExpected,
-        expenses: monthExpenses,
-        adjustedExpected,
-        netCashflow,
+        label: format(parseISO(`${monthStr}-01`), 'MMM'),
+        fullLabel: format(parseISO(`${monthStr}-01`), 'MMMM yyyy'),
+        income: totalIncome,
+        expenses: totalExpenses,
+        net,
       };
     });
   }, [payouts, expenses, settings]);
+
+  // Running totals
+  const runningTotals = useMemo(() => {
+    let cumulative = 0;
+    return forecastData.map((month) => {
+      cumulative += month.net;
+      return { ...month, cumulative };
+    });
+  }, [forecastData]);
+
+  // Summary stats
+  const totals = useMemo(() => ({
+    income: runningTotals.reduce((s, m) => s + m.income, 0),
+    expenses: runningTotals.reduce((s, m) => s + m.expenses, 0),
+    net: runningTotals.reduce((s, m) => s + m.net, 0),
+  }), [runningTotals]);
 
   // Calendar data
   const calendarDays = useMemo(() => {
@@ -85,213 +100,198 @@ export default function ForecastPage() {
     return calendarPayouts.filter((p) => p.due_date === dayStr);
   };
 
-  // Running totals
-  const runningTotals = useMemo(() => {
-    let cumulativeNet = 0;
-    return forecastData.map((month) => {
-      cumulativeNet += month.netCashflow;
-      return { ...month, cumulativeNet };
-    });
-  }, [forecastData]);
-
   return (
     <AppLayout>
       <Header 
         title="Forecast" 
-        subtitle="12-month cashflow projection"
+        subtitle="12-month projection"
       />
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
-        <Tabs defaultValue="table">
-          <TabsList>
-            <TabsTrigger value="table">Table View</TabsTrigger>
-            <TabsTrigger value="calendar">Calendar View</TabsTrigger>
-          </TabsList>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="text-xs text-muted-foreground mb-1">12-Month Income</p>
+            <p className="text-2xl font-bold text-success">{formatCurrency(totals.income)}</p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="text-xs text-muted-foreground mb-1">12-Month Expenses</p>
+            <p className="text-2xl font-bold text-destructive">{formatCurrency(totals.expenses)}</p>
+          </div>
+          <div className="rounded-2xl bg-card border border-border p-5">
+            <p className="text-xs text-muted-foreground mb-1">Net Projection</p>
+            <p className={cn("text-2xl font-bold", totals.net >= 0 ? "text-primary" : "text-destructive")}>
+              {formatCurrency(totals.net)}
+            </p>
+          </div>
+        </div>
 
-          {/* Table View */}
-          <TabsContent value="table" className="mt-6">
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="data-table">
-                  <thead>
-                    <tr className="bg-muted/50">
-                      <th>Month</th>
-                      <th className="text-right">Projected</th>
-                      <th className="text-right">Invoiced</th>
-                      <th className="text-right">Paid</th>
-                      <th className="text-right">Total Expected</th>
-                      <th className="text-right">Expenses</th>
-                      <th className="text-right">Net Cashflow</th>
-                      <th className="text-right">Cumulative</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {runningTotals.map((month) => (
-                      <tr key={month.month}>
-                        <td className="font-medium">{month.label}</td>
-                        <td className="text-right text-muted-foreground">
-                          {formatCurrency(month.projected)}
-                        </td>
-                        <td className="text-right text-info">
-                          {formatCurrency(month.invoiced)}
-                        </td>
-                        <td className="text-right text-success">
-                          {formatCurrency(month.paid)}
-                        </td>
-                        <td className="text-right font-medium">
-                          {formatCurrency(month.totalExpected)}
-                        </td>
-                        <td className="text-right text-destructive">
-                          {formatCurrency(month.expenses)}
-                        </td>
-                        <td className={cn(
-                          'text-right font-semibold',
-                          month.netCashflow >= 0 ? 'text-success' : 'text-destructive'
+        {/* View Toggle */}
+        <div className="flex gap-2">
+          <Button 
+            variant={view === 'table' ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setView('table')}
+          >
+            Table
+          </Button>
+          <Button 
+            variant={view === 'calendar' ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setView('calendar')}
+          >
+            Calendar
+          </Button>
+        </div>
+
+        {/* Table View */}
+        {view === 'table' && (
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left text-xs font-medium text-muted-foreground p-4">Month</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Income</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Expenses</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Net</th>
+                    <th className="text-right text-xs font-medium text-muted-foreground p-4">Cumulative</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {runningTotals.map((month, i) => (
+                    <tr key={month.month} className={cn(
+                      "border-b border-border/50 hover:bg-muted/30 transition-colors",
+                      i === 0 && "bg-accent/5"
+                    )}>
+                      <td className="p-4">
+                        <span className="font-medium">{month.fullLabel}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="text-success">{formatCurrency(month.income)}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="text-destructive">{formatCurrency(month.expenses)}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className={cn(
+                          "inline-flex items-center gap-1 font-medium",
+                          month.net >= 0 ? "text-success" : "text-destructive"
                         )}>
-                          {formatCurrency(month.netCashflow)}
-                        </td>
-                        <td className={cn(
-                          'text-right font-semibold',
-                          month.cumulativeNet >= 0 ? 'text-success' : 'text-destructive'
+                          {month.net >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {formatCurrency(month.net)}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className={cn(
+                          "font-semibold",
+                          month.cumulative >= 0 ? "text-primary" : "text-destructive"
                         )}>
-                          {formatCurrency(month.cumulativeNet)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-muted/50 font-semibold">
-                      <td>Total (12 mo)</td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.projected, 0))}
+                          {formatCurrency(month.cumulative)}
+                        </span>
                       </td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.invoiced, 0))}
-                      </td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.paid, 0))}
-                      </td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.totalExpected, 0))}
-                      </td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.expenses, 0))}
-                      </td>
-                      <td className="text-right">
-                        {formatCurrency(runningTotals.reduce((s, m) => s + m.netCashflow, 0))}
-                      </td>
-                      <td></td>
                     </tr>
-                  </tfoot>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Calendar View */}
+        {view === 'calendar' && (
+          <div className="rounded-2xl bg-card border border-border p-6">
+            {/* Month Navigation */}
+            <div className="flex items-center justify-between mb-6">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setCalendarMonth((d) => addMonths(d, -1))}
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              
+              <h2 className="text-lg font-semibold">
+                {format(calendarMonth, 'MMMM yyyy')}
+              </h2>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setCalendarMonth((d) => addMonths(d, 1))}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
             </div>
 
-            {settings?.apply_tax_to_forecasts && (
-              <p className="text-sm text-muted-foreground mt-2">
-                * Net calculations include {settings.tax_set_aside_percent}% tax set-aside
-              </p>
-            )}
-          </TabsContent>
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
+              {/* Weekday Headers */}
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="text-center text-xs font-medium text-muted-foreground py-3">
+                  {day}
+                </div>
+              ))}
 
-          {/* Calendar View */}
-          <TabsContent value="calendar" className="mt-6">
-            <div className="bg-card border border-border rounded-lg p-6">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-6">
-                <Button variant="outline" size="icon" onClick={() => setCalendarMonth((d) => addMonths(d, -1))}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                
-                <h2 className="text-lg font-semibold">
-                  {format(calendarMonth, 'MMMM yyyy')}
-                </h2>
+              {/* Empty cells */}
+              {Array.from({ length: startOfMonth(calendarMonth).getDay() }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
 
-                <Button variant="outline" size="icon" onClick={() => setCalendarMonth((d) => addMonths(d, 1))}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+              {/* Days */}
+              {calendarDays.map((day) => {
+                const dayPayouts = getPayoutsForDay(day);
+                const hasPayouts = dayPayouts.length > 0;
+                const dayTotal = dayPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
 
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {/* Weekday Headers */}
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-
-                {/* Empty cells for days before month start */}
-                {Array.from({ length: startOfMonth(calendarMonth).getDay() }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[80px]" />
-                ))}
-
-                {/* Days */}
-                {calendarDays.map((day) => {
-                  const dayPayouts = getPayoutsForDay(day);
-                  const dayTotal = dayPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
-
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      className={cn(
-                        'min-h-[80px] p-2 border border-border rounded-lg',
-                        isToday(day) && 'border-accent bg-accent/5',
-                        !isSameMonth(day, calendarMonth) && 'opacity-50'
-                      )}
-                    >
-                      <div className={cn(
-                        'text-sm font-medium mb-1',
-                        isToday(day) && 'text-accent'
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "aspect-square flex flex-col items-center justify-center rounded-xl text-sm transition-colors",
+                      isToday(day) && "bg-primary text-primary-foreground",
+                      !isToday(day) && hasPayouts && "bg-success/10",
+                      !isToday(day) && !hasPayouts && "hover:bg-muted/50"
+                    )}
+                  >
+                    <span className={cn(
+                      "font-medium",
+                      !isSameMonth(day, calendarMonth) && "opacity-30"
+                    )}>
+                      {format(day, 'd')}
+                    </span>
+                    {hasPayouts && (
+                      <span className={cn(
+                        "text-[10px] font-medium mt-0.5",
+                        isToday(day) ? "text-primary-foreground/80" : "text-success"
                       )}>
-                        {format(day, 'd')}
-                      </div>
-                      
-                      {dayPayouts.length > 0 && (
-                        <div className="space-y-1">
-                          {dayPayouts.slice(0, 2).map((payout) => (
-                            <div
-                              key={payout.id}
-                              className={cn(
-                                'text-xs px-1.5 py-0.5 rounded truncate',
-                                payout.status === 'PAID' && 'bg-success/10 text-success',
-                                payout.status === 'INVOICED' && 'bg-info/10 text-info',
-                                payout.status === 'PROJECTED' && 'bg-muted text-muted-foreground'
-                              )}
-                            >
-                              {formatCurrency(payout.amount)}
-                            </div>
-                          ))}
-                          {dayPayouts.length > 2 && (
-                            <div className="text-xs text-muted-foreground">
-                              +{dayPayouts.length - 2} more
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        {formatCurrency(dayTotal).replace('$', '')}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Legend */}
-              <div className="flex items-center gap-6 mt-6 justify-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-success/20 border border-success" />
-                  <span className="text-sm">Paid</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-info/20 border border-info" />
-                  <span className="text-sm">Invoiced</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-muted border border-border" />
-                  <span className="text-sm">Projected</span>
-                </div>
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-6 mt-6 pt-4 border-t border-border">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-primary" />
+                <span className="text-xs text-muted-foreground">Today</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-success/30" />
+                <span className="text-xs text-muted-foreground">Payout Expected</span>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
+
+        {settings?.apply_tax_to_forecasts && (
+          <p className="text-xs text-muted-foreground">
+            * Includes {settings.tax_set_aside_percent}% tax set-aside
+          </p>
+        )}
       </div>
     </AppLayout>
   );
