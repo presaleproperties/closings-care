@@ -12,6 +12,9 @@ export interface Property {
   address: string | null;
   property_type: PropertyType;
   monthly_rent: number | null;
+  monthly_mortgage: number | null;
+  monthly_strata: number | null;
+  yearly_taxes: number | null;
   purchase_price: number | null;
   purchase_date: string | null;
   notes: string | null;
@@ -24,6 +27,9 @@ export interface PropertyFormData {
   address?: string;
   property_type: PropertyType;
   monthly_rent?: number;
+  monthly_mortgage?: number;
+  monthly_strata?: number;
+  yearly_taxes?: number;
   purchase_price?: number;
   purchase_date?: string;
   notes?: string;
@@ -126,14 +132,25 @@ export function useDeleteProperty() {
 }
 
 /**
+ * Calculate property monthly expenses from built-in fields
+ */
+export function getPropertyMonthlyExpenses(property: Property): number {
+  const mortgage = property.monthly_mortgage || 0;
+  const strata = property.monthly_strata || 0;
+  const taxesMonthly = (property.yearly_taxes || 0) / 12;
+  return mortgage + strata + taxesMonthly;
+}
+
+/**
  * Calculate property cashflow for a specific month
  */
 export function calculatePropertyCashflow(
   property: Property,
-  monthlyExpenses: number
+  additionalExpenses: number = 0
 ): { income: number; expenses: number; net: number; isCashFlowing: boolean } {
   const income = property.property_type === 'rental' ? (property.monthly_rent || 0) : 0;
-  const expenses = monthlyExpenses;
+  const builtInExpenses = getPropertyMonthlyExpenses(property);
+  const expenses = builtInExpenses + additionalExpenses;
   const net = income - expenses;
   const isCashFlowing = net >= 0;
   

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Building2, Pencil, Trash2, MapPin, DollarSign, Home, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { Plus, Building2, Pencil, Trash2, MapPin, DollarSign, Home, TrendingUp, TrendingDown, Wallet, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ import {
   PropertyFormData,
   PropertyType,
   calculatePropertyCashflow,
+  getPropertyMonthlyExpenses,
 } from '@/hooks/useProperties';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -42,6 +43,9 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
     address: '',
     property_type: 'personal',
     monthly_rent: undefined,
+    monthly_mortgage: undefined,
+    monthly_strata: undefined,
+    yearly_taxes: undefined,
     purchase_price: undefined,
     purchase_date: '',
     notes: '',
@@ -114,6 +118,9 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
       address: '',
       property_type: 'personal',
       monthly_rent: undefined,
+      monthly_mortgage: undefined,
+      monthly_strata: undefined,
+      yearly_taxes: undefined,
       purchase_price: undefined,
       purchase_date: '',
       notes: '',
@@ -128,6 +135,9 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
       address: property.address || '',
       property_type: property.property_type,
       monthly_rent: property.monthly_rent || undefined,
+      monthly_mortgage: property.monthly_mortgage || undefined,
+      monthly_strata: property.monthly_strata || undefined,
+      yearly_taxes: property.yearly_taxes || undefined,
       purchase_price: property.purchase_price || undefined,
       purchase_date: property.purchase_date || '',
       notes: property.notes || '',
@@ -254,7 +264,7 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                   <PropertyCard
                     key={property.id}
                     property={property}
-                    monthlyExpenses={getPropertyTotal(property.id)}
+                    additionalExpenses={getPropertyTotal(property.id)}
                     expenseCount={getPropertyExpenses(property.id).length}
                     onEdit={() => handleOpenEdit(property)}
                     onDelete={() => handleDelete(property.id)}
@@ -276,7 +286,7 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                   <PropertyCard
                     key={property.id}
                     property={property}
-                    monthlyExpenses={getPropertyTotal(property.id)}
+                    additionalExpenses={getPropertyTotal(property.id)}
                     expenseCount={getPropertyExpenses(property.id).length}
                     onEdit={() => handleOpenEdit(property)}
                     onDelete={() => handleDelete(property.id)}
@@ -351,8 +361,8 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
 
             {/* Monthly Rent - Only for Rental */}
             {formData.property_type === 'rental' && (
-              <div className="space-y-2 p-3 rounded-lg bg-teal-500/10 border border-teal-500/20">
-                <Label className="text-teal-400">Monthly Rent Income *</Label>
+              <div className="space-y-2 p-3 rounded-lg bg-success/10 border border-success/20">
+                <Label className="text-success">Monthly Rental Income *</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
@@ -363,9 +373,94 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
                     placeholder="2,500"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">This will be compared against expenses to calculate cashflow</p>
               </div>
             )}
+
+            {/* Monthly Expenses Section */}
+            <div className="space-y-3 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+              <div className="flex items-center gap-2 text-destructive">
+                <Receipt className="w-4 h-4" />
+                <Label className="text-destructive">Monthly Expenses</Label>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Mortgage Payment</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <Input
+                      type="number"
+                      className="pl-7 h-9"
+                      value={formData.monthly_mortgage || ''}
+                      onChange={(e) => setFormData(p => ({ ...p, monthly_mortgage: parseFloat(e.target.value) || undefined }))}
+                      placeholder="2,000"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Strata Fees</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <Input
+                      type="number"
+                      className="pl-7 h-9"
+                      value={formData.monthly_strata || ''}
+                      onChange={(e) => setFormData(p => ({ ...p, monthly_strata: parseFloat(e.target.value) || undefined }))}
+                      placeholder="400"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Property Taxes (Yearly)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    className="pl-7 h-9"
+                    value={formData.yearly_taxes || ''}
+                    onChange={(e) => setFormData(p => ({ ...p, yearly_taxes: parseFloat(e.target.value) || undefined }))}
+                    placeholder="5,000"
+                  />
+                </div>
+                {formData.yearly_taxes && formData.yearly_taxes > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {formatCurrency(formData.yearly_taxes / 12)}/month
+                  </p>
+                )}
+              </div>
+
+              {/* Preview monthly total */}
+              {(formData.monthly_mortgage || formData.monthly_strata || formData.yearly_taxes) && (
+                <div className="pt-2 border-t border-destructive/20">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Monthly Expenses</span>
+                    <span className="font-semibold text-destructive">
+                      {formatCurrency(
+                        (formData.monthly_mortgage || 0) + 
+                        (formData.monthly_strata || 0) + 
+                        ((formData.yearly_taxes || 0) / 12)
+                      )}
+                    </span>
+                  </div>
+                  {formData.property_type === 'rental' && formData.monthly_rent && (
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">Net Cashflow</span>
+                      {(() => {
+                        const expenses = (formData.monthly_mortgage || 0) + (formData.monthly_strata || 0) + ((formData.yearly_taxes || 0) / 12);
+                        const net = (formData.monthly_rent || 0) - expenses;
+                        return (
+                          <span className={cn("font-bold", net >= 0 ? "text-success" : "text-destructive")}>
+                            {net >= 0 ? '+' : ''}{formatCurrency(net)}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -422,18 +517,19 @@ export function PropertyManager({ expenses, currentMonth }: PropertyManagerProps
 // Property Card Component
 function PropertyCard({
   property,
-  monthlyExpenses,
+  additionalExpenses,
   expenseCount,
   onEdit,
   onDelete,
 }: {
   property: Property;
-  monthlyExpenses: number;
+  additionalExpenses: number;
   expenseCount: number;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const cashflow = calculatePropertyCashflow(property, monthlyExpenses);
+  const builtInExpenses = getPropertyMonthlyExpenses(property);
+  const cashflow = calculatePropertyCashflow(property, additionalExpenses);
   const isPersonal = property.property_type === 'personal';
   const isRental = property.property_type === 'rental';
 
@@ -477,64 +573,92 @@ function PropertyCard({
         </div>
       </div>
 
-      <div className="space-y-2">
-        {/* For Rental: Show Income, Expenses, Net */}
+      <div className="space-y-1.5 text-sm">
+        {/* For Rental: Show Income first */}
         {isRental && (
-          <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Rental Income</span>
-              <span className="font-medium text-success">+{formatCurrency(cashflow.income)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Expenses ({expenseCount})</span>
-              <span className="font-medium text-destructive">-{formatCurrency(cashflow.expenses)}</span>
-            </div>
-            <div className="border-t border-border/50 pt-2 mt-2">
-              <div className="flex items-center justify-between">
-                <span className={cn(
-                  "text-sm font-medium flex items-center gap-1",
-                  cashflow.isCashFlowing ? "text-success" : "text-destructive"
-                )}>
-                  {cashflow.isCashFlowing ? (
-                    <>
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      Cash Flowing
-                    </>
-                  ) : (
-                    <>
-                      <TrendingDown className="w-3.5 h-3.5" />
-                      Cash Burning
-                    </>
-                  )}
-                </span>
-                <span className={cn(
-                  "font-bold",
-                  cashflow.isCashFlowing ? "text-success" : "text-destructive"
-                )}>
-                  {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}
-                </span>
-              </div>
-            </div>
-          </>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Rental Income</span>
+            <span className="font-medium text-success">+{formatCurrency(cashflow.income)}</span>
+          </div>
         )}
 
-        {/* For Personal: Show Expenses Only */}
-        {isPersonal && (
-          <>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Monthly Expenses</span>
+        {/* Expense Breakdown */}
+        {property.monthly_mortgage && property.monthly_mortgage > 0 && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground pl-2">Mortgage</span>
+            <span className="text-destructive">-{formatCurrency(property.monthly_mortgage)}</span>
+          </div>
+        )}
+        {property.monthly_strata && property.monthly_strata > 0 && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground pl-2">Strata</span>
+            <span className="text-destructive">-{formatCurrency(property.monthly_strata)}</span>
+          </div>
+        )}
+        {property.yearly_taxes && property.yearly_taxes > 0 && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground pl-2">Taxes</span>
+            <span className="text-destructive">-{formatCurrency(property.yearly_taxes / 12)}/mo</span>
+          </div>
+        )}
+        {additionalExpenses > 0 && (
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground pl-2">Other ({expenseCount})</span>
+            <span className="text-destructive">-{formatCurrency(additionalExpenses)}</span>
+          </div>
+        )}
+
+        {/* Total Expenses */}
+        {cashflow.expenses > 0 && (
+          <div className="flex items-center justify-between pt-1 border-t border-border/30">
+            <span className="text-muted-foreground">Total Expenses</span>
+            <span className="font-medium text-destructive">-{formatCurrency(cashflow.expenses)}</span>
+          </div>
+        )}
+
+        {/* Net Cashflow for Rental */}
+        {isRental && (
+          <div className="border-t border-border/50 pt-2 mt-1">
+            <div className="flex items-center justify-between">
               <span className={cn(
-                "font-semibold",
-                cashflow.expenses > 0 ? "text-destructive" : "text-muted-foreground"
+                "font-medium flex items-center gap-1",
+                cashflow.isCashFlowing ? "text-success" : "text-destructive"
               )}>
-                {cashflow.expenses > 0 ? `-${formatCurrency(cashflow.expenses)}` : '—'}
+                {cashflow.isCashFlowing ? (
+                  <>
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    Cash Flowing
+                  </>
+                ) : (
+                  <>
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    Cash Burning
+                  </>
+                )}
+              </span>
+              <span className={cn(
+                "font-bold",
+                cashflow.isCashFlowing ? "text-success" : "text-destructive"
+              )}>
+                {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}
               </span>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Expense Items</span>
-              <span className="text-blue-400">{expenseCount}</span>
+          </div>
+        )}
+
+        {/* Carrying Cost for Personal */}
+        {isPersonal && cashflow.expenses > 0 && (
+          <div className="border-t border-border/50 pt-2 mt-1">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-destructive flex items-center gap-1">
+                <TrendingDown className="w-3.5 h-3.5" />
+                Carrying Cost
+              </span>
+              <span className="font-bold text-destructive">
+                -{formatCurrency(cashflow.expenses)}
+              </span>
             </div>
-          </>
+          </div>
         )}
 
         {/* Purchase Info */}
