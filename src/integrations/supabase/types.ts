@@ -173,6 +173,45 @@ export type Database = {
         }
         Relationships: []
       }
+      other_income: {
+        Row: {
+          amount: number
+          created_at: string
+          end_month: string | null
+          id: string
+          name: string
+          notes: string | null
+          recurrence: string
+          start_month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          recurrence?: string
+          start_month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          end_month?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          recurrence?: string
+          start_month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           amount: number
