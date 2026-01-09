@@ -293,39 +293,48 @@ export type Database = {
         Row: {
           apply_tax_to_forecasts: boolean
           brokerage_split_percent: number | null
+          country: string | null
           created_at: string
           currency: string
           id: string
           monthly_income_goal: number | null
           presale_template: Json | null
+          province: string | null
           resale_template: Json | null
           tax_set_aside_percent: number | null
+          tax_type: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           apply_tax_to_forecasts?: boolean
           brokerage_split_percent?: number | null
+          country?: string | null
           created_at?: string
           currency?: string
           id?: string
           monthly_income_goal?: number | null
           presale_template?: Json | null
+          province?: string | null
           resale_template?: Json | null
           tax_set_aside_percent?: number | null
+          tax_type?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           apply_tax_to_forecasts?: boolean
           brokerage_split_percent?: number | null
+          country?: string | null
           created_at?: string
           currency?: string
           id?: string
           monthly_income_goal?: number | null
           presale_template?: Json | null
+          province?: string | null
           resale_template?: Json | null
           tax_set_aside_percent?: number | null
+          tax_type?: string | null
           updated_at?: string
           user_id?: string
         }
