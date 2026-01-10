@@ -86,11 +86,16 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <Header 
-        title="Financial Dashboard" 
+        title="Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
       />
 
-      <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
+      <div className="p-4 lg:p-6 space-y-5 lg:space-y-6 animate-fade-in">
+        {/* Mobile: Date display */}
+        <p className="sm:hidden text-[13px] text-muted-foreground -mt-2">
+          {format(now, 'EEEE, MMMM d, yyyy')}
+        </p>
+
         {/* Overdue Payout Notification */}
         <OverduePayoutNotification
           payouts={payouts}
@@ -99,10 +104,7 @@ export default function DashboardPage() {
           isPending={markPaid.isPending || updatePayout.isPending}
         />
 
-        {/* Quick Actions */}
-        <QuickActions />
-
-        {/* Quick Stats */}
+        {/* Quick Stats - First on mobile for immediate value */}
         <QuickStats 
           deals={deals} 
           payouts={payouts} 
@@ -110,26 +112,32 @@ export default function DashboardPage() {
           onAutoMarkPaid={handleAutoMarkPaid}
         />
 
+        {/* Quick Actions */}
+        <QuickActions />
+
         {/* Tabbed Dashboard Sections */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="overview" className="gap-2">
-              <LayoutDashboard className="h-4 w-4 hidden sm:block" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="taxes" className="gap-2">
-              <Calculator className="h-4 w-4 hidden sm:block" />
-              Taxes
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-2">
-              <TrendingUp className="h-4 w-4 hidden sm:block" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="gap-2">
-              <Users className="h-4 w-4 hidden sm:block" />
-              Clients
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="overview" className="space-y-5 lg:space-y-6">
+          {/* Mobile: iOS-style segmented control */}
+          <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-grid h-10 p-1 bg-muted/60 backdrop-blur-sm">
+              <TabsTrigger value="overview" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <LayoutDashboard className="h-4 w-4 hidden sm:block" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="taxes" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <Calculator className="h-4 w-4 hidden sm:block" />
+                Taxes
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <TrendingUp className="h-4 w-4 hidden sm:block" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <Users className="h-4 w-4 hidden sm:block" />
+                Clients
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">

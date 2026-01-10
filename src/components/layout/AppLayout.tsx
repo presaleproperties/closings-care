@@ -10,7 +10,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="lg:ml-64 pb-24 lg:pb-0 min-h-screen">
+      {/* Extra bottom padding for iOS home indicator + tab bar */}
+      <main className="lg:ml-64 pb-[100px] lg:pb-0 min-h-screen">
         {children}
       </main>
       <MobileNav />

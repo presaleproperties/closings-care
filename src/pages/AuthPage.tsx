@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -42,9 +42,9 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-primary/80 p-12 flex-col justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-accent shadow-lg shadow-accent/30 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-accent-foreground" />
           </div>
           <span className="text-xl font-semibold text-primary-foreground">
@@ -53,7 +53,7 @@ export default function AuthPage() {
         </div>
 
         <div>
-          <h2 className="text-4xl font-bold text-primary-foreground mb-4">
+          <h2 className="text-4xl font-bold text-primary-foreground mb-4 tracking-tight">
             Track your real estate commissions with ease
           </h2>
           <p className="text-lg text-primary-foreground/80">
@@ -67,35 +67,35 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - auth form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary-foreground" />
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 bg-background">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo - iOS style centered */}
+          <div className="lg:hidden flex flex-col items-center gap-3 mb-10">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20 flex items-center justify-center">
+              <Building2 className="w-8 h-8 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold">Commission Tracker</span>
+            <span className="text-xl font-semibold tracking-tight">Commission Tracker</span>
           </div>
 
-          <h1 className="text-2xl font-bold mb-2">
+          <h1 className="text-2xl lg:text-2xl font-bold mb-2 text-center lg:text-left">
             {isLogin ? 'Welcome back' : 'Create your account'}
           </h1>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-muted-foreground mb-8 text-center lg:text-left text-[15px]">
             {isLogin
               ? 'Enter your credentials to access your dashboard'
               : 'Get started with Commission Tracker today'}
           </p>
 
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName" className="text-[15px]">Full Name</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -103,12 +103,13 @@ export default function AuthPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Smith"
                   required={!isLogin}
+                  className="h-12"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[15px]">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -116,11 +117,12 @@ export default function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                className="h-12"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[15px]">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -130,23 +132,35 @@ export default function AuthPage() {
                   placeholder="••••••••"
                   required
                   minLength={6}
+                  className="h-12 pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground active:opacity-50 transition-opacity"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            <Button type="submit" className="w-full btn-premium" disabled={loading}>
-              {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-[15px] font-semibold btn-premium mt-2" 
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+                  Please wait...
+                </span>
+              ) : (
+                isLogin ? 'Sign In' : 'Create Account'
+              )}
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-8 text-center text-[15px] text-muted-foreground">
             {isLogin ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"
@@ -154,7 +168,7 @@ export default function AuthPage() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-accent hover:underline font-medium"
+              className="text-primary font-semibold active:opacity-50 transition-opacity"
             >
               {isLogin ? 'Sign up' : 'Sign in'}
             </button>
