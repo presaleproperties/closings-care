@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor } from 'lucide-react';
+import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/hooks/useAuth';
+import { useDataExport } from '@/hooks/useDataExport';
 import {
   Select,
   SelectContent,
@@ -410,6 +413,12 @@ export default function SettingsPage() {
             All amounts are displayed in <strong>CAD (Canadian Dollars)</strong>
           </p>
         </section>
+
+        {/* Data Export */}
+        <DataExportSection />
+
+        {/* Delete Account */}
+        <DeleteAccountSection />
       </div>
     </AppLayout>
   );
@@ -514,6 +523,158 @@ function AppearanceSection() {
           </span>
         </button>
       </div>
+    </section>
+  );
+}
+
+// Data Export Section
+function DataExportSection() {
+  const { exportDeals, exportPayouts, exportExpenses, exportAll, counts } = useDataExport();
+
+  return (
+    <section className="bg-card border border-border rounded-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Download className="w-5 h-5 text-accent" />
+        <h2 className="font-semibold">Export Data</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-6">
+        Download your data as CSV files for backup or accounting purposes
+      </p>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div>
+            <p className="font-medium text-sm">Deals</p>
+            <p className="text-xs text-muted-foreground">{counts.deals} records</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportDeals} disabled={counts.deals === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div>
+            <p className="font-medium text-sm">Payouts</p>
+            <p className="text-xs text-muted-foreground">{counts.payouts} records</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportPayouts} disabled={counts.payouts === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+          <div>
+            <p className="font-medium text-sm">Expenses</p>
+            <p className="text-xs text-muted-foreground">{counts.expenses} records</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={exportExpenses} disabled={counts.expenses === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
+
+        <div className="pt-3 border-t border-border">
+          <Button onClick={exportAll} className="w-full">
+            <Download className="w-4 h-4 mr-2" />
+            Export All Data
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Delete Account Section
+function DeleteAccountSection() {
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { deleteAccount } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDelete = async () => {
+    if (confirmText !== 'DELETE') return;
+    
+    setLoading(true);
+    const { error } = await deleteAccount();
+    
+    if (error) {
+      console.error('Failed to delete account:', error);
+      setLoading(false);
+      return;
+    }
+    
+    navigate('/auth');
+  };
+
+  return (
+    <section className="bg-card border border-destructive/30 rounded-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <AlertTriangle className="w-5 h-5 text-destructive" />
+        <h2 className="font-semibold text-destructive">Danger Zone</h2>
+      </div>
+
+      {!showConfirm ? (
+        <>
+          <p className="text-sm text-muted-foreground mb-4">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+          <Button 
+            variant="destructive" 
+            onClick={() => setShowConfirm(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete Account
+          </Button>
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+            <p className="text-sm font-medium text-destructive mb-2">
+              ⚠️ This will permanently delete:
+            </p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>All your deals and payouts</li>
+              <li>All expense records</li>
+              <li>All properties and settings</li>
+              <li>Your account and profile</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">Type DELETE to confirm</Label>
+            <Input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="font-mono"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowConfirm(false);
+                setConfirmText('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={confirmText !== 'DELETE' || loading}
+              className="flex-1"
+            >
+              {loading ? 'Deleting...' : 'Confirm Delete'}
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

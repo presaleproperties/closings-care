@@ -20,6 +20,8 @@ import ForecastPage from "./pages/ForecastPage";
 import ImportPage from "./pages/ImportPage";
 import Import2025Page from "./pages/Import2025Page";
 import SettingsPage from "./pages/SettingsPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +73,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/dashboard/2025" element={<ProtectedRoute><Dashboard2025Page /></ProtectedRoute>} />
               <Route path="/dashboard/2026" element={<ProtectedRoute><Dashboard2026Page /></ProtectedRoute>} />
