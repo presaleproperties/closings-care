@@ -179,32 +179,32 @@ function DashboardMockup() {
             </div>
           </motion.div>
 
-          {/* KPI Row */}
+          {/* KPI Row - Based on BC Corporate Tax (11% small business rate + 5% buffer) */}
           <div className="grid grid-cols-4 gap-3 mb-5">
             <MockKpiCard 
               label="Safe to Spend" 
-              value="$4,850" 
+              value="$7,750" 
               delay={0.6}
               gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
             />
             <MockKpiCard 
               label="YTD Income" 
-              value="$127,450" 
-              trend="+23% vs last year"
+              value="$142,800" 
+              trend="+18% vs last year"
               trendUp={true}
               delay={0.7}
             />
             <MockKpiCard 
               label="Pipeline" 
-              value="$89,200" 
-              trend="6 pending deals"
+              value="$76,500" 
+              trend="5 pending deals"
               trendUp={true}
               delay={0.8}
             />
             <MockKpiCard 
               label="Tax Set Aside" 
-              value="$38,235" 
-              trend="On track"
+              value="$16,426" 
+              trend="11.5% rate"
               trendUp={true}
               delay={0.9}
             />
@@ -248,9 +248,9 @@ function DashboardMockup() {
               <h4 className="text-sm font-semibold text-slate-800 mb-3">Upcoming Payouts</h4>
               <div className="space-y-2.5">
                 {[
-                  { client: 'Chen Family', amount: '$12,500', date: 'Jan 15', type: 'Completion' },
-                  { client: 'Mike Torres', amount: '$8,200', date: 'Jan 22', type: 'Advance' },
-                  { client: 'Li Residence', amount: '$15,800', date: 'Feb 1', type: 'Completion' },
+                  { client: 'Chen Family', amount: '$18,500', date: 'Jan 15', type: 'Completion' },
+                  { client: 'Park Residence', amount: '$24,000', date: 'Feb 8', type: 'Completion' },
+                  { client: 'Singh Condo', amount: '$9,500', date: 'Feb 22', type: 'Advance' },
                 ].map((payout, i) => (
                   <motion.div 
                     key={payout.client}
@@ -272,7 +272,7 @@ function DashboardMockup() {
         </div>
       </motion.div>
 
-      {/* Floating elements */}
+      {/* Floating elements - BC Corp tax at 11% + 5% buffer = 11.55% */}
       <motion.div 
         className="absolute -right-6 top-20 bg-white rounded-xl shadow-xl shadow-slate-200/60 p-3 border border-slate-100"
         initial={{ opacity: 0, scale: 0.8, x: 20 }}
@@ -284,8 +284,8 @@ function DashboardMockup() {
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-500">Tax protected</p>
-            <p className="text-xs font-bold text-slate-800">$38,235 set aside</p>
+            <p className="text-[10px] text-slate-500">BC Corp Tax (11.5%)</p>
+            <p className="text-xs font-bold text-slate-800">$16,426 set aside</p>
           </div>
         </div>
       </motion.div>
@@ -302,7 +302,7 @@ function DashboardMockup() {
           </div>
           <div>
             <p className="text-[10px] text-slate-500">Pipeline coverage</p>
-            <p className="text-xs font-bold text-slate-800">8.2 months runway</p>
+            <p className="text-xs font-bold text-slate-800">7.4 months runway</p>
           </div>
         </div>
       </motion.div>
@@ -348,6 +348,8 @@ function FeatureShowcase({
 }
 
 // Mini chart mockups for feature sections
+// Safe to Spend calculation based on BC Corp Tax (11% + 5% buffer = 11.55%)
+// Monthly income $18,500 - Tax $2,137 - Fixed $6,800 - Business $1,813 = $7,750
 function SafeToSpendVisual() {
   return (
     <motion.div 
@@ -358,7 +360,7 @@ function SafeToSpendVisual() {
       <div className="text-center mb-6">
         <p className="text-sm text-slate-500 font-medium mb-2">Safe to Spend This Month</p>
         <p className="text-5xl font-bold text-emerald-600">
-          $<AnimatedNumber value={4850} />
+          $<AnimatedNumber value={7750} />
         </p>
         <div className="flex items-center justify-center gap-2 mt-3 text-emerald-600 bg-emerald-50 rounded-full px-4 py-1.5 text-sm font-medium w-fit mx-auto">
           <Shield className="h-4 w-4" />
@@ -372,27 +374,30 @@ function SafeToSpendVisual() {
           <span className="font-medium text-slate-700">$18,500</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Tax Set Aside</span>
-          <span className="font-medium text-red-500">-$5,550</span>
+          <span className="text-slate-500">Tax Set Aside (11.5%)</span>
+          <span className="font-medium text-red-500">-$2,128</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-slate-500">Fixed Expenses</span>
           <span className="font-medium text-red-500">-$6,800</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Upcoming Bills</span>
-          <span className="font-medium text-red-500">-$1,300</span>
+          <span className="text-slate-500">Business Costs</span>
+          <span className="font-medium text-red-500">-$1,822</span>
         </div>
       </div>
     </motion.div>
   );
 }
 
+// Tax visual based on BC Corp rates: 11% small business + 5% buffer
+// YTD Income $142,800 × 11.5% = $16,426 set aside
+// Actual BC Corp tax at 11% = $15,708
 function TaxVisual() {
   const taxData = [
-    { label: 'Income Received', amount: '$127,450', color: 'bg-emerald-500' },
-    { label: 'Tax Set Aside', amount: '$38,235', color: 'bg-blue-500' },
-    { label: 'Estimated Owed', amount: '$36,100', color: 'bg-slate-300' },
+    { label: 'YTD Income', amount: '$142,800', color: 'bg-emerald-500' },
+    { label: 'Tax Set Aside (11.5%)', amount: '$16,426', color: 'bg-blue-500' },
+    { label: 'Estimated Owed (11%)', amount: '$15,708', color: 'bg-slate-300' },
   ];
 
   return (
@@ -431,7 +436,7 @@ function TaxVisual() {
               <motion.div 
                 className={`h-full ${item.color} rounded-full`}
                 initial={{ width: 0 }}
-                whileInView={{ width: i === 0 ? '100%' : i === 1 ? '30%' : '28%' }}
+                whileInView={{ width: i === 0 ? '100%' : i === 1 ? '11.5%' : '11%' }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
               />
@@ -442,7 +447,7 @@ function TaxVisual() {
 
       <div className="mt-6 p-3 bg-emerald-50 rounded-xl text-center">
         <p className="text-sm text-emerald-700">
-          <span className="font-bold">$2,135</span> buffer above estimated taxes
+          <span className="font-bold">$718</span> buffer above estimated taxes
         </p>
       </div>
     </motion.div>
@@ -494,15 +499,15 @@ function ProjectionVisual() {
 
       <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100">
         <div className="text-center">
-          <p className="text-lg font-bold text-slate-800">$247K</p>
+          <p className="text-lg font-bold text-slate-800">$219K</p>
           <p className="text-xs text-slate-500">Projected</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-emerald-600">$156K</p>
+          <p className="text-lg font-bold text-emerald-600">$143K</p>
           <p className="text-xs text-slate-500">Confirmed</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-violet-600">$91K</p>
+          <p className="text-lg font-bold text-violet-600">$76K</p>
           <p className="text-xs text-slate-500">Pipeline</p>
         </div>
       </div>
