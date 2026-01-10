@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
 const ONBOARDING_KEY = 'commission_tracker_onboarding_complete';
 
 export function useOnboarding() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (loading) {
+      return;
+    }
+
     if (!user) {
+      setShowOnboarding(false);
       setIsChecking(false);
       return;
     }
@@ -18,28 +24,26 @@ export function useOnboarding() {
     const key = `${ONBOARDING_KEY}_${user.id}`;
     const completed = localStorage.getItem(key);
     
-    if (!completed) {
-      setShowOnboarding(true);
-    }
-    
+    // Only show onboarding if explicitly NOT completed
+    setShowOnboarding(completed !== 'true');
     setIsChecking(false);
-  }, [user]);
+  }, [user, loading]);
 
-  const completeOnboarding = () => {
+  const completeOnboarding = useCallback(() => {
     if (user) {
       const key = `${ONBOARDING_KEY}_${user.id}`;
       localStorage.setItem(key, 'true');
       setShowOnboarding(false);
     }
-  };
+  }, [user]);
 
-  const resetOnboarding = () => {
+  const resetOnboarding = useCallback(() => {
     if (user) {
       const key = `${ONBOARDING_KEY}_${user.id}`;
       localStorage.removeItem(key);
       setShowOnboarding(true);
     }
-  };
+  }, [user]);
 
   return {
     showOnboarding,
