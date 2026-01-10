@@ -558,14 +558,15 @@ function ProjectionVisual() {
           </span>
         </div>
         <motion.div 
-          className="flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full"
+          className="relative flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full"
           initial={{ opacity: 0, scale: 0.8 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.8 }}
         >
-          <AlertTriangle className="h-3 w-3" />
-          2 slow months ahead
+          <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-30" />
+          <AlertTriangle className="h-3 w-3 relative z-10" />
+          <span className="relative z-10">2 slow months ahead</span>
         </motion.div>
       </div>
 
