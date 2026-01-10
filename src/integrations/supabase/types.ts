@@ -371,6 +371,9 @@ export type Database = {
           presale_template: Json | null
           province: string | null
           resale_template: Json | null
+          subscription_ends_at: string | null
+          subscription_started_at: string | null
+          subscription_tier: string
           tax_buffer_percent: number | null
           tax_calculation_method: string | null
           tax_saved_amount: number | null
@@ -392,6 +395,9 @@ export type Database = {
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_tier?: string
           tax_buffer_percent?: number | null
           tax_calculation_method?: string | null
           tax_saved_amount?: number | null
@@ -413,6 +419,9 @@ export type Database = {
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null
+          subscription_ends_at?: string | null
+          subscription_started_at?: string | null
+          subscription_tier?: string
           tax_buffer_percent?: number | null
           tax_calculation_method?: string | null
           tax_saved_amount?: number | null

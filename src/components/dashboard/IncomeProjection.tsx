@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, Wallet, Home } from 'lucide-react';
+import { ArrowRight, TrendingUp, Wallet, Home, Lock } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
@@ -8,6 +8,7 @@ import { Payout, OtherIncome, Expense } from '@/lib/types';
 import { Property } from '@/hooks/useProperties';
 import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
 import { getTotalExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   ComposedChart,
   Bar,
@@ -106,15 +107,19 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
+  const { limits, isFree } = useSubscription();
 
   // Calculate property costs once (they're the same every month)
   const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
+
+  // Respect subscription projection limits
+  const projectionMonths = limits.projectionMonths;
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];
     let cumulativeNet = 0;
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < projectionMonths; i++) {
       const monthDate = addMonths(now, i);
       const monthLabel = format(monthDate, 'MMM');
       const monthStr = format(monthDate, 'yyyy-MM');
@@ -162,11 +167,11 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       });
     }
     return months;
-  }, [payouts, expenses, otherIncome, properties, propertyCosts]);
+  }, [payouts, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
-  const totalPropertyNet = propertyCosts.totalNet * 12; // Annual property impact (informational only)
+  const totalPropertyNet = propertyCosts.totalNet * projectionMonths; // Property impact (informational only)
   const totalProjectedIncome = totalCommissions + totalOtherIncome;
   const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
   const netProjection = chartData.reduce((sum, m) => sum + m.net, 0);
@@ -183,7 +188,13 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
         <div>
           <h3 className="font-semibold text-lg flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-accent" />
-            12-Month Projection
+            {projectionMonths}-Month Projection
+            {isFree && projectionMonths < 12 && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full">
+                <Lock className="h-3 w-3" />
+                Pro unlocks 12 months
+              </span>
+            )}
           </h3>
           <p className="text-sm text-muted-foreground">Click a bar for details</p>
         </div>
