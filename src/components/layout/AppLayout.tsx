@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { AIAssistant } from '@/components/AIAssistant';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -16,7 +15,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       <MobileNav />
-      <AIAssistant />
     </div>
   );
 }
