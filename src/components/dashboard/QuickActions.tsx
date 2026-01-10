@@ -53,34 +53,29 @@ export function QuickActions() {
         ))}
       </div>
 
-      {/* Mobile: iOS-style list */}
+      {/* Mobile: iOS-style 2x2 Grid */}
       <div className="sm:hidden">
-        <div className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/50 overflow-hidden shadow-ios divide-y divide-border/50">
-          {actions.map((action, index) => (
+        <div className="grid grid-cols-4 gap-2">
+          {actions.map((action) => (
             <Link 
               key={action.path} 
               to={action.path}
-              className={cn(
-                "flex items-center gap-4 px-4 py-3.5 transition-colors",
-                "active:bg-muted/80"
-              )}
+              className="flex flex-col items-center gap-1.5 active:scale-[0.95] transition-transform"
             >
               <div className={cn(
-                "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+                "w-14 h-14 rounded-2xl flex items-center justify-center shadow-ios",
                 action.primary 
-                  ? "bg-gradient-to-br from-accent to-amber-400 shadow-lg shadow-accent/25" 
-                  : "bg-primary/10"
+                  ? "bg-gradient-to-br from-accent to-amber-400" 
+                  : "bg-card/95 backdrop-blur-xl border border-border/50"
               )}>
                 <action.icon className={cn(
-                  "h-[18px] w-[18px]",
+                  "h-6 w-6",
                   action.primary ? "text-accent-foreground" : "text-primary"
                 )} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-[15px]">{action.label}</p>
-                <p className="text-[13px] text-muted-foreground">{action.description}</p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground/50" />
+              <span className="text-[11px] font-medium text-center leading-tight">
+                {action.label}
+              </span>
             </Link>
           ))}
         </div>

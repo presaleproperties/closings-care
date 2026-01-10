@@ -103,46 +103,81 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
 
   return (
     <div className="space-y-3">
-      {/* Mobile: Horizontal scroll with snap */}
-      <div className="sm:hidden -mx-4 px-4">
-        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1">
-          {statCards.map((stat, index) => (
-            <div
-              key={stat.label}
-              className={cn(
-                "flex-shrink-0 w-[75vw] max-w-[280px] snap-center rounded-2xl p-4 transition-all duration-200 active:scale-[0.98]",
-                stat.gradient 
-                  ? `bg-gradient-to-br ${stat.gradient} ${stat.textColor} shadow-lg`
-                  : "bg-card/95 backdrop-blur-xl border border-border/50 shadow-ios"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center",
-                  stat.gradient ? "bg-white/20" : "bg-primary/10"
-                )}>
-                  <stat.icon className={cn(
-                    "h-4 w-4",
-                    stat.gradient ? "opacity-90" : stat.accentColor
-                  )} />
-                </div>
-                <span className={cn(
-                  "text-[11px] font-medium uppercase tracking-wide",
-                  stat.gradient ? "opacity-80" : "text-muted-foreground"
-                )}>{stat.label}</span>
+      {/* Mobile: iOS Widget Grid Layout */}
+      <div className="sm:hidden">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Primary Large Widget - Projected Income */}
+          <div className="col-span-2 rounded-[20px] bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-primary-foreground" />
               </div>
-              <p className={cn(
-                "text-[28px] font-bold tracking-tight leading-none mb-1",
-                stat.accent && stat.accentColor
-              )}>
-                {stat.value}
-              </p>
-              <p className={cn(
-                "text-[12px]",
-                stat.gradient ? "opacity-70" : "text-muted-foreground"
-              )}>{stat.subtitle}</p>
+              <span className="text-[13px] font-medium text-primary-foreground/80 uppercase tracking-wide">
+                Projected Income
+              </span>
             </div>
-          ))}
+            <p className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight">
+              {formatCurrency(stats.totalProjected)}
+            </p>
+            <p className="text-[13px] text-primary-foreground/70 mt-1">
+              {stats.activeDeals} active deal{stats.activeDeals !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          {/* 2026 Projected - Widget */}
+          <div className="rounded-[20px] bg-gradient-to-br from-success to-success/80 p-4 shadow-lg">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Calendar className="h-3.5 w-3.5 text-success-foreground/80" />
+              <span className="text-[11px] font-medium text-success-foreground/80 uppercase tracking-wide">
+                {thisYear}
+              </span>
+            </div>
+            <p className="text-[22px] font-bold text-success-foreground tracking-tight leading-tight">
+              {formatCurrency(stats.thisYearProjected)}
+            </p>
+            <p className="text-[11px] text-success-foreground/70 mt-0.5">
+              Expected
+            </p>
+          </div>
+
+          {/* Monthly Expenses - Widget */}
+          <div className="rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Receipt className="h-3.5 w-3.5 text-destructive" />
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Expenses
+              </span>
+            </div>
+            <p className="text-[22px] font-bold text-destructive tracking-tight leading-tight">
+              {formatCurrency(stats.monthlyExpenses)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Monthly
+            </p>
+          </div>
+
+          {/* Avg Per Deal - Widget */}
+          <div className="col-span-2 rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Target className="h-3.5 w-3.5 text-accent" />
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                    Avg Per Deal
+                  </span>
+                </div>
+                <p className="text-[22px] font-bold text-accent tracking-tight">
+                  {formatCurrency(stats.avgDealValue)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[11px] text-muted-foreground">Gross commission</p>
+                <p className="text-[13px] font-medium text-muted-foreground">
+                  {deals.length} total deals
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
