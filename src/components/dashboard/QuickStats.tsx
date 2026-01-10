@@ -1,9 +1,11 @@
 import { useMemo, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Wallet, Receipt, Target, Calendar } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import { Deal, Payout } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 
 interface QuickStatsProps {
   deals: Deal[];
@@ -103,29 +105,53 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
 
   return (
     <div className="space-y-3">
-      {/* Mobile: iOS Widget Grid Layout */}
-      <div className="sm:hidden">
+      {/* Mobile: iOS Widget Grid Layout with Spring Animations */}
+      <motion.div 
+        className="sm:hidden"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         <div className="grid grid-cols-2 gap-3">
           {/* Primary Large Widget - Projected Income */}
-          <div className="col-span-2 rounded-[20px] bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg">
+          <motion.div 
+            variants={fadeInUp}
+            whileTap={tapScale}
+            onTapStart={() => triggerHaptic('light')}
+            className="col-span-2 rounded-[20px] bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg cursor-pointer"
+          >
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+              <motion.div 
+                className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={springConfigs.bouncy}
+              >
                 <Wallet className="h-4 w-4 text-primary-foreground" />
-              </div>
+              </motion.div>
               <span className="text-[13px] font-medium text-primary-foreground/80 uppercase tracking-wide">
                 Projected Income
               </span>
             </div>
-            <p className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight">
+            <motion.p 
+              className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ ...springConfigs.bouncy, delay: 0.2 }}
+            >
               {formatCurrency(stats.totalProjected)}
-            </p>
+            </motion.p>
             <p className="text-[13px] text-primary-foreground/70 mt-1">
               {stats.activeDeals} active deal{stats.activeDeals !== 1 ? 's' : ''}
             </p>
-          </div>
+          </motion.div>
 
           {/* 2026 Projected - Widget */}
-          <div className="rounded-[20px] bg-gradient-to-br from-success to-success/80 p-4 shadow-lg">
+          <motion.div 
+            variants={fadeInUp}
+            whileTap={tapScale}
+            onTapStart={() => triggerHaptic('light')}
+            className="rounded-[20px] bg-gradient-to-br from-success to-success/80 p-4 shadow-lg cursor-pointer"
+          >
             <div className="flex items-center gap-1.5 mb-1">
               <Calendar className="h-3.5 w-3.5 text-success-foreground/80" />
               <span className="text-[11px] font-medium text-success-foreground/80 uppercase tracking-wide">
@@ -138,10 +164,15 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             <p className="text-[11px] text-success-foreground/70 mt-0.5">
               Expected
             </p>
-          </div>
+          </motion.div>
 
           {/* Monthly Expenses - Widget */}
-          <div className="rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios">
+          <motion.div 
+            variants={fadeInUp}
+            whileTap={tapScale}
+            onTapStart={() => triggerHaptic('light')}
+            className="rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios cursor-pointer"
+          >
             <div className="flex items-center gap-1.5 mb-1">
               <Receipt className="h-3.5 w-3.5 text-destructive" />
               <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -154,10 +185,15 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Monthly
             </p>
-          </div>
+          </motion.div>
 
           {/* Avg Per Deal - Widget */}
-          <div className="col-span-2 rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios">
+          <motion.div 
+            variants={fadeInUp}
+            whileTap={tapScale}
+            onTapStart={() => triggerHaptic('light')}
+            className="col-span-2 rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios cursor-pointer"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -177,9 +213,9 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Desktop: Grid layout */}
       <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4">
