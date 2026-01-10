@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -11,7 +11,9 @@ import {
   Shield,
   ArrowUpCircle,
   ArrowDownCircle,
-  Loader2
+  Loader2,
+  Search,
+  X
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -19,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { 
@@ -38,6 +41,7 @@ export default function AdminPage() {
   const { data: analytics, isLoading, error } = useAdminAnalytics();
   const updateSubscription = useAdminUpdateSubscription();
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!isCheckingAdmin && !isAdmin) {
@@ -80,6 +84,16 @@ export default function AdminPage() {
   const summary = analytics?.summary;
   const signupsByMonth = analytics?.signupsByMonth || [];
   const users = analytics?.users || [];
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter(
+      (user) =>
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
 
   return (
     <AppLayout>
@@ -204,11 +218,35 @@ export default function AdminPage() {
 
         {/* Users Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              All Users ({users.length})
-            </CardTitle>
+          <CardHeader className="space-y-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                All Users ({users.length})
+              </CardTitle>
+              {searchQuery && (
+                <span className="text-xs text-muted-foreground">
+                  Showing {filteredUsers.length} of {users.length}
+                </span>
+              )}
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -223,7 +261,14 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => {
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                        No users found matching "{searchQuery}"
+                      </td>
+                    </tr>
+                  ) : null}
+                  {filteredUsers.map((user) => {
                     const isUpdating = updatingUserId === user.id;
                     const isPro = user.subscriptionTier === 'pro';
 
