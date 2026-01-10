@@ -42,17 +42,17 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
   const pendingCount = payouts.filter(p => p.status !== 'PAID').length;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-semibold text-lg flex items-center gap-2">
+          <h3 className="font-bold text-lg flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-accent" />
             Upcoming Payouts
           </h3>
           <p className="text-xs text-muted-foreground">{pendingCount} pending</p>
         </div>
         <Link to="/payouts">
-          <Button variant="ghost" size="sm" className="text-accent">
+          <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10">
             All <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
         </Link>
@@ -75,7 +75,7 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
               <Link
                 key={payout.id}
                 to={`/deals/${payout.deal_id}`}
-                className="block p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all group"
+                className="block p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-all group border border-transparent hover:border-border"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -83,12 +83,12 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
                       <p className="font-medium text-sm truncate">
                         {payout.deal?.client_name || 'Unknown'}
                       </p>
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                        badge.variant === 'destructive' ? 'bg-destructive/10 text-destructive' :
-                        badge.variant === 'warning' ? 'bg-warning/10 text-warning' :
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        badge.variant === 'destructive' ? 'bg-destructive/15 text-destructive' :
+                        badge.variant === 'warning' ? 'bg-warning/15 text-warning' :
                         'bg-muted text-muted-foreground'
                       }`}>
-                        <BadgeIcon className="h-3 w-3" />
+                        <BadgeIcon className="h-2.5 w-2.5" />
                         {badge.label}
                       </span>
                     </div>
@@ -97,13 +97,13 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-semibold text-sm">
+                    <span className="font-bold text-sm">
                       {formatCurrency(payout.amount)}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

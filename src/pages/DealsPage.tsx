@@ -1,23 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, Filter } from 'lucide-react';
-import { format, parseISO, isAfter, isBefore, startOfMonth, endOfMonth, addMonths } from 'date-fns';
+import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, Eye } from 'lucide-react';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
 import { useDeals } from '@/hooks/useDeals';
 import { formatCurrency } from '@/lib/format';
-import { Payout } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 type TimeFilter = 'all' | 'upcoming' | 'this-month' | 'next-month' | 'paid';
@@ -67,11 +59,13 @@ export default function DealsPage() {
         const dueDate = parseISO(payout.due_date);
 
         if (timeFilter === 'this-month') {
-          return isAfter(dueDate, thisMonthStart) && isBefore(dueDate, thisMonthEnd);
+          // Include dates from start of month through end of month (inclusive)
+          return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
         }
 
         if (timeFilter === 'next-month') {
-          return isAfter(dueDate, nextMonthStart) && isBefore(dueDate, nextMonthEnd);
+          // Include dates from start of next month through end of next month (inclusive)
+          return dueDate >= nextMonthStart && dueDate <= nextMonthEnd;
         }
 
         return true;
@@ -175,7 +169,9 @@ export default function DealsPage() {
                   .filter(p => {
                     if (p.status === 'PAID' || !p.due_date) return false;
                     const d = parseISO(p.due_date);
-                    return isAfter(d, startOfMonth(new Date())) && isBefore(d, endOfMonth(new Date()));
+                    const monthStart = startOfMonth(new Date());
+                    const monthEnd = endOfMonth(new Date());
+                    return d >= monthStart && d <= monthEnd;
                   })
                   .reduce((sum, p) => sum + Number(p.amount || 0), 0)
               )}
@@ -201,8 +197,9 @@ export default function DealsPage() {
                   .filter(p => {
                     if (p.status === 'PAID' || !p.due_date) return false;
                     const d = parseISO(p.due_date);
-                    return isAfter(d, startOfMonth(addMonths(new Date(), 1))) && 
-                           isBefore(d, endOfMonth(addMonths(new Date(), 1)));
+                    const nextMonthStart = startOfMonth(addMonths(new Date(), 1));
+                    const nextMonthEnd = endOfMonth(addMonths(new Date(), 1));
+                    return d >= nextMonthStart && d <= nextMonthEnd;
                   })
                   .reduce((sum, p) => sum + Number(p.amount || 0), 0)
               )}
@@ -255,7 +252,7 @@ export default function DealsPage() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {filteredPayouts.map((payout) => {
               const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
               
@@ -263,60 +260,70 @@ export default function DealsPage() {
                 <div
                   key={payout.id}
                   className={cn(
-                    "bg-card border rounded-xl p-4 transition-all hover:border-accent/50",
-                    overdue ? "border-destructive/50 bg-destructive/5" : "border-border",
-                    payout.status === 'PAID' && "opacity-60"
+                    "bg-card border rounded-xl p-4 transition-all hover:shadow-md group",
+                    overdue ? "border-destructive/50 bg-destructive/5" : "border-border hover:border-accent/30",
+                    payout.status === 'PAID' && "opacity-70"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
                     {/* Left: Client & Property */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1.5">
                         <Link
                           to={`/deals/${payout.deal_id}`}
-                          className="font-semibold hover:text-accent transition-colors truncate"
+                          className="font-semibold text-sm hover:text-accent transition-colors truncate"
                         >
                           {payout.deal?.client_name || 'Unknown'}
                         </Link>
-                        <Badge variant="outline" className={cn("text-xs shrink-0", getPayoutTypeColor(payout.payout_type))}>
+                        <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0", getPayoutTypeColor(payout.payout_type))}>
                           {payout.payout_type}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {payout.deal?.address || payout.deal?.project_name || '—'}
                       </p>
                     </div>
 
-                    {/* Right: Amount & Date */}
-                    <div className="text-right shrink-0">
+                    {/* Right: Amount & Actions */}
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
                       <p className={cn(
-                        "text-lg font-bold",
+                        "text-base font-bold",
                         payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : "text-foreground"
                       )}>
                         {formatCurrency(payout.amount)}
                       </p>
                       <p className={cn(
-                        "text-xs",
-                        overdue ? "text-destructive" : "text-muted-foreground"
+                        "text-[10px]",
+                        overdue ? "text-destructive font-medium" : "text-muted-foreground"
                       )}>
                         {payout.status === 'PAID' && payout.paid_date
-                          ? `Paid ${format(parseISO(payout.paid_date), 'MMM d, yyyy')}`
+                          ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
                           : payout.due_date
                             ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
-                            : 'No date set'}
-                        {overdue && ' (overdue)'}
+                            : 'No date'}
+                        {overdue && ' · Overdue'}
                       </p>
                     </div>
+                  </div>
 
-                    {/* Action */}
+                  {/* Actions Row */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                    <Link
+                      to={`/deals/${payout.deal_id}`}
+                      className="text-xs text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View Deal
+                    </Link>
                     {payout.status !== 'PAID' && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleMarkPaid(payout.id)}
-                        className="shrink-0 text-success hover:text-success hover:bg-success/10"
+                        className="h-7 text-xs text-success hover:text-success hover:bg-success/10"
                       >
-                        <CheckCircle2 className="w-4 h-4" />
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                        Mark Paid
                       </Button>
                     )}
                   </div>

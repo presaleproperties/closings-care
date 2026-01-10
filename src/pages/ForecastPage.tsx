@@ -114,17 +114,17 @@ export default function ForecastPage() {
 
       <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
         {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-2xl bg-card border border-border p-5">
-            <p className="text-xs text-muted-foreground mb-1">12-Month Income</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
+            <p className="text-xs text-muted-foreground mb-1 font-medium">12-Month Income</p>
             <p className="text-2xl font-bold text-success">{formatCurrency(totals.income)}</p>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-5">
-            <p className="text-xs text-muted-foreground mb-1">12-Month Expenses</p>
+          <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
+            <p className="text-xs text-muted-foreground mb-1 font-medium">12-Month Expenses</p>
             <p className="text-2xl font-bold text-destructive">{formatCurrency(totals.expenses)}</p>
           </div>
-          <div className="rounded-2xl bg-card border border-border p-5">
-            <p className="text-xs text-muted-foreground mb-1">Net Projection</p>
+          <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
+            <p className="text-xs text-muted-foreground mb-1 font-medium">Net Projection</p>
             <p className={cn("text-2xl font-bold", totals.net >= 0 ? "text-primary" : "text-destructive")}>
               {formatCurrency(totals.net)}
             </p>
@@ -132,9 +132,9 @@ export default function ForecastPage() {
         </div>
 
         {/* Bar Chart */}
-        <div className="rounded-2xl bg-card border border-border p-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Monthly Income vs Expenses</h3>
-          <div className="h-64">
+        <div className="rounded-2xl bg-card border border-border p-6 hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-4">Monthly Income vs Expenses</h3>
+          <div className="h-64 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={runningTotals} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -151,14 +151,15 @@ export default function ForecastPage() {
                   tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
                   tickLine={false}
                   axisLine={false}
-                  width={50}
+                  width={55}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     fontSize: '12px',
+                    boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
                   }}
                   formatter={(value: number, name: string) => [
                     formatCurrency(value),
@@ -168,19 +169,19 @@ export default function ForecastPage() {
                 />
                 <Legend 
                   formatter={(value) => value === 'income' ? 'Income' : 'Expenses'}
-                  wrapperStyle={{ fontSize: '12px' }}
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }}
                 />
                 <Bar 
                   dataKey="income" 
                   fill="hsl(142, 76%, 36%)" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={45}
                 />
                 <Bar 
                   dataKey="expenses" 
                   fill="hsl(0, 84%, 60%)" 
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={45}
                 />
               </BarChart>
             </ResponsiveContainer>
