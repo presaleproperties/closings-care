@@ -7,7 +7,7 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1.5rem",
       screens: {
         "2xl": "1400px",
       },
@@ -78,9 +78,16 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        xl: "0.875rem",
+        lg: "0.75rem",
+        md: "0.5rem",
+        sm: "0.375rem",
+      },
+      boxShadow: {
+        'ios': '0 0 0 1px hsl(var(--border) / 0.3), 0 1px 2px 0 hsl(0 0% 0% / 0.03), 0 2px 4px -1px hsl(0 0% 0% / 0.04)',
+        'ios-lg': '0 0 0 1px hsl(var(--border) / 0.3), 0 4px 8px -2px hsl(0 0% 0% / 0.08), 0 8px 16px -4px hsl(0 0% 0% / 0.08)',
+        'ios-xl': '0 0 0 1px hsl(var(--border) / 0.2), 0 8px 16px -4px hsl(0 0% 0% / 0.1), 0 16px 32px -8px hsl(0 0% 0% / 0.12)',
       },
       keyframes: {
         "accordion-down": {
@@ -99,15 +106,39 @@ export default {
           from: { transform: "translateX(-100%)" },
           to: { transform: "translateX(0)" },
         },
+        "scale-in": {
+          from: { opacity: "0", transform: "scale(0.96)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.3s ease-out",
-        "slide-in": "slide-in 0.3s ease-out",
+        "fade-in": "fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-in": "slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "scale-in": "scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-up": "slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Display"',
+          '"SF Pro Text"',
+          'system-ui',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
+        ],
+      },
+      backdropBlur: {
+        xs: '2px',
       },
     },
   },
