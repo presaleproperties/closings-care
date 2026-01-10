@@ -108,6 +108,7 @@ export default function DealDetailPage() {
 
   useEffect(() => {
     if (deal) {
+      const dealData = deal as any; // Handle extended fields from DB
       setFormData({
         client_name: deal.client_name,
         deal_type: deal.deal_type,
@@ -129,6 +130,12 @@ export default function DealDetailPage() {
         lead_source: deal.lead_source || '',
         notes: deal.notes || '',
         status: deal.status,
+        // Presale-specific fields
+        buyer_type: dealData.buyer_type || '',
+        advance_commission: dealData.advance_commission || undefined,
+        completion_commission: dealData.completion_commission || undefined,
+        advance_date: dealData.advance_date || '',
+        completion_date: dealData.completion_date || '',
       });
       setIsTeamDeal(!!deal.team_member);
     }
@@ -317,8 +324,8 @@ export default function DealDetailPage() {
                 <div className="space-y-2">
                   <Label htmlFor="buyer_type">Buyer Type</Label>
                   <Select
-                    value={(formData as any).buyer_type || ''}
-                    onValueChange={(v) => updateField('buyer_type' as any, v)}
+                    value={formData.buyer_type || ''}
+                    onValueChange={(v) => updateField('buyer_type', v)}
                   >
                     <SelectTrigger id="buyer_type">
                       <SelectValue placeholder="Select type" />
@@ -427,16 +434,16 @@ export default function DealDetailPage() {
                     <div className="space-y-2">
                       <Label>Advance Commission Date</Label>
                       <DatePicker
-                        value={(formData as any).advance_date}
-                        onChange={(val) => updateField('advance_date' as any, val)}
+                        value={formData.advance_date}
+                        onChange={(val) => updateField('advance_date', val)}
                         placeholder="Select advance date"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Completion Date</Label>
                       <DatePicker
-                        value={(formData as any).completion_date}
-                        onChange={(val) => updateField('completion_date' as any, val)}
+                        value={formData.completion_date}
+                        onChange={(val) => updateField('completion_date', val)}
                         placeholder="Select completion date"
                       />
                     </div>
@@ -487,11 +494,11 @@ export default function DealDetailPage() {
                         <Input
                           id="advance_commission"
                           className="pl-7"
-                          value={formatCurrencyInput((formData as any).advance_commission)}
+                          value={formatCurrencyInput(formData.advance_commission)}
                           onChange={(e) => {
                             const val = parseCurrency(e.target.value);
-                            updateField('advance_commission' as any, val);
-                            const completion = (formData as any).completion_commission || 0;
+                            updateField('advance_commission', val);
+                            const completion = formData.completion_commission || 0;
                             updateField('gross_commission_est', (val || 0) + completion);
                           }}
                           placeholder="5,000"
@@ -505,11 +512,11 @@ export default function DealDetailPage() {
                         <Input
                           id="completion_commission"
                           className="pl-7"
-                          value={formatCurrencyInput((formData as any).completion_commission)}
+                          value={formatCurrencyInput(formData.completion_commission)}
                           onChange={(e) => {
                             const val = parseCurrency(e.target.value);
-                            updateField('completion_commission' as any, val);
-                            const advance = (formData as any).advance_commission || 0;
+                            updateField('completion_commission', val);
+                            const advance = formData.advance_commission || 0;
                             updateField('gross_commission_est', advance + (val || 0));
                           }}
                           placeholder="26,250"
