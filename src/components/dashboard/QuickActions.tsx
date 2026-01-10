@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Plus, Receipt, TrendingUp, Upload, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, Receipt, TrendingUp, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic, springConfigs, staggerContainer } from '@/lib/haptics';
 
 const actions = [
   { 
@@ -53,33 +55,60 @@ export function QuickActions() {
         ))}
       </div>
 
-      {/* Mobile: iOS-style 2x2 Grid */}
-      <div className="sm:hidden">
+      {/* Mobile: iOS-style 2x2 Grid with Spring Animations */}
+      <motion.div 
+        className="sm:hidden"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         <div className="grid grid-cols-4 gap-2">
-          {actions.map((action) => (
+          {actions.map((action, index) => (
             <Link 
               key={action.path} 
               to={action.path}
-              className="flex flex-col items-center gap-1.5 active:scale-[0.95] transition-transform"
+              onClick={() => triggerHaptic('medium')}
             >
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center shadow-ios",
-                action.primary 
-                  ? "bg-gradient-to-br from-accent to-amber-400" 
-                  : "bg-card/95 backdrop-blur-xl border border-border/50"
-              )}>
-                <action.icon className={cn(
-                  "h-6 w-6",
-                  action.primary ? "text-accent-foreground" : "text-primary"
-                )} />
-              </div>
-              <span className="text-[11px] font-medium text-center leading-tight">
-                {action.label}
-              </span>
+              <motion.div
+                className="flex flex-col items-center gap-1.5"
+                variants={{
+                  hidden: { opacity: 0, y: 20, scale: 0.8 },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0, 
+                    scale: 1,
+                    transition: { ...springConfigs.bouncy, delay: index * 0.05 }
+                  }
+                }}
+                whileTap={{ scale: 0.85, transition: springConfigs.stiff }}
+                whileHover={{ scale: 1.05, transition: springConfigs.gentle }}
+              >
+                <motion.div 
+                  className={cn(
+                    "w-14 h-14 rounded-2xl flex items-center justify-center shadow-ios",
+                    action.primary 
+                      ? "bg-gradient-to-br from-accent to-amber-400" 
+                      : "bg-card/95 backdrop-blur-xl border border-border/50"
+                  )}
+                  whileHover={{ 
+                    boxShadow: action.primary 
+                      ? "0 8px 24px -4px hsl(43 96% 56% / 0.4)" 
+                      : "0 8px 24px -4px hsl(0 0% 0% / 0.15)"
+                  }}
+                >
+                  <action.icon className={cn(
+                    "h-6 w-6",
+                    action.primary ? "text-accent-foreground" : "text-primary"
+                  )} />
+                </motion.div>
+                <span className="text-[11px] font-medium text-center leading-tight">
+                  {action.label}
+                </span>
+              </motion.div>
             </Link>
           ))}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
