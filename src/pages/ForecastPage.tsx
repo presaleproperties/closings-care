@@ -3,11 +3,13 @@ import { format, parseISO, addMonths, startOfMonth, endOfMonth, eachDayOfInterva
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { usePayouts } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency, getMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
@@ -27,6 +29,7 @@ export default function ForecastPage() {
   const { data: expenses = [] } = useExpenses();
   const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
+  const refreshData = useRefreshData();
 
   const [view, setView] = useState<'table' | 'calendar'>('table');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -112,7 +115,8 @@ export default function ForecastPage() {
         subtitle="12-month projection"
       />
 
-      <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+        <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
@@ -354,7 +358,8 @@ export default function ForecastPage() {
             * Includes {settings.tax_set_aside_percent}% tax set-aside
           </p>
         )}
-      </div>
+        </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }

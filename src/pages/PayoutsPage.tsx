@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Search, Download, Check, Filter } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency, formatDate, getCurrentMonth, getMonthRange } from '@/lib/format';
 import { PayoutStatus, PayoutType } from '@/lib/types';
 
@@ -23,6 +25,7 @@ const payoutTypes: PayoutType[] = ['Advance', '2nd Payment', '3rd Deposit', '4th
 export default function PayoutsPage() {
   const { data: payouts = [], isLoading } = usePayouts();
   const markPaid = useMarkPayoutPaid();
+  const refreshData = useRefreshData();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<PayoutStatus | 'ALL'>('ALL');
@@ -85,7 +88,8 @@ export default function PayoutsPage() {
         }
       />
 
-      <div className="p-4 lg:p-6 space-y-4 animate-fade-in">
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+        <div className="p-4 lg:p-6 space-y-4 animate-fade-in">
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="relative flex-1">
@@ -209,7 +213,8 @@ export default function PayoutsPage() {
             </div>
           </div>
         )}
-      </div>
+        </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
