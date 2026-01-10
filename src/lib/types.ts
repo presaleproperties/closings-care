@@ -118,6 +118,12 @@ export interface DealFormData {
   lead_source?: string;
   notes?: string;
   status: DealStatus;
+  // Presale-specific fields
+  buyer_type?: string;
+  advance_commission?: number;
+  completion_commission?: number;
+  advance_date?: string;
+  completion_date?: string;
 }
 
 export interface PayoutFormData {
