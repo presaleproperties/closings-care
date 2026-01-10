@@ -9,6 +9,9 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,8 +60,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?mode=reset`,
+    });
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error };
+  };
+
+  const deleteAccount = async () => {
+    // Delete user data first (RLS will handle cascading)
+    const userId = user?.id;
+    if (!userId) return { error: new Error('Not authenticated') };
+
+    try {
+      // Delete in order of dependencies
+      await supabase.from('payouts').delete().eq('user_id', userId);
+      await supabase.from('expenses').delete().eq('user_id', userId);
+      await supabase.from('deals').delete().eq('user_id', userId);
+      await supabase.from('other_income').delete().eq('user_id', userId);
+      await supabase.from('properties').delete().eq('user_id', userId);
+      await supabase.from('expense_budgets').delete().eq('user_id', userId);
+      await supabase.from('settings').delete().eq('user_id', userId);
+      await supabase.from('profiles').delete().eq('user_id', userId);
+      
+      // Sign out (account deletion from auth.users requires admin API)
+      await signOut();
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      signIn, 
+      signUp, 
+      signOut, 
+      resetPassword,
+      updatePassword,
+      deleteAccount 
+    }}>
       {children}
     </AuthContext.Provider>
   );

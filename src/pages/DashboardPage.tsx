@@ -9,6 +9,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useOtherIncome } from '@/hooks/useOtherIncome';
 import { useProperties } from '@/hooks/useProperties';
 import { useRefreshData } from '@/hooks/useRefreshData';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -18,6 +19,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
+import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const { data: expenses = [] } = useExpenses();
   const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
+  const { showOnboarding, completeOnboarding } = useOnboarding();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
   const updatePayout = useUpdatePayout();
@@ -88,7 +91,8 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <Header 
+      <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
+      <Header
         title="Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
       />
