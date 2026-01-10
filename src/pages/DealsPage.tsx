@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Eye, Trash2 } from 'lucide-react';
+import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, Filter } from 'lucide-react';
+import { format, parseISO, isAfter, isBefore, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -13,129 +14,239 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useDeals, useDeleteDeal } from '@/hooks/useDeals';
-import { formatCurrency, formatDate } from '@/lib/format';
-import { DealStatus, DealType } from '@/lib/types';
+import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
+import { useDeals } from '@/hooks/useDeals';
+import { formatCurrency } from '@/lib/format';
+import { Payout } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+type TimeFilter = 'all' | 'upcoming' | 'this-month' | 'next-month' | 'paid';
 
 export default function DealsPage() {
-  const { data: deals = [], isLoading } = useDeals();
-  const deleteDeal = useDeleteDeal();
+  const { data: payouts = [], isLoading: payoutsLoading } = usePayouts();
+  const { data: deals = [], isLoading: dealsLoading } = useDeals();
+  const markPaid = useMarkPayoutPaid();
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<DealStatus | 'ALL'>('ALL');
-  const [typeFilter, setTypeFilter] = useState<DealType | 'ALL'>('ALL');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
 
-  const filteredDeals = useMemo(() => {
-    return deals
-      .filter((deal) => {
-        const matchesSearch =
-          deal.client_name.toLowerCase().includes(search.toLowerCase()) ||
-          deal.address?.toLowerCase().includes(search.toLowerCase()) ||
-          deal.project_name?.toLowerCase().includes(search.toLowerCase());
+  const isLoading = payoutsLoading || dealsLoading;
 
-        const matchesStatus = statusFilter === 'ALL' || deal.status === statusFilter;
-        const matchesType = typeFilter === 'ALL' || deal.deal_type === typeFilter;
+  // Filter and sort payouts
+  const filteredPayouts = useMemo(() => {
+    const now = new Date();
+    const thisMonthStart = startOfMonth(now);
+    const thisMonthEnd = endOfMonth(now);
+    const nextMonthStart = startOfMonth(addMonths(now, 1));
+    const nextMonthEnd = endOfMonth(addMonths(now, 1));
 
-        return matchesSearch && matchesStatus && matchesType;
+    return payouts
+      .filter((payout) => {
+        // Search filter
+        if (search) {
+          const searchLower = search.toLowerCase();
+          const matchesClient = payout.deal?.client_name?.toLowerCase().includes(searchLower);
+          const matchesAddress = payout.deal?.address?.toLowerCase().includes(searchLower);
+          const matchesProject = payout.deal?.project_name?.toLowerCase().includes(searchLower);
+          if (!matchesClient && !matchesAddress && !matchesProject) return false;
+        }
+
+        // Time filter
+        if (timeFilter === 'paid') {
+          return payout.status === 'PAID';
+        }
+
+        if (payout.status === 'PAID') return false;
+
+        if (timeFilter === 'upcoming') {
+          return true; // All unpaid
+        }
+
+        if (!payout.due_date) return timeFilter === 'all';
+
+        const dueDate = parseISO(payout.due_date);
+
+        if (timeFilter === 'this-month') {
+          return isAfter(dueDate, thisMonthStart) && isBefore(dueDate, thisMonthEnd);
+        }
+
+        if (timeFilter === 'next-month') {
+          return isAfter(dueDate, nextMonthStart) && isBefore(dueDate, nextMonthEnd);
+        }
+
+        return true;
       })
       .sort((a, b) => {
-        // Sort by close date (most recent first), then by created_at
-        const dateA = a.close_date_actual || a.close_date_est || a.created_at;
-        const dateB = b.close_date_actual || b.close_date_est || b.created_at;
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
+        // Paid items sorted by paid_date desc
+        if (a.status === 'PAID' && b.status === 'PAID') {
+          return new Date(b.paid_date || 0).getTime() - new Date(a.paid_date || 0).getTime();
+        }
+        // Unpaid items sorted by due_date asc (soonest first)
+        const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+        const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+        return dateA - dateB;
       });
-  }, [deals, search, statusFilter, typeFilter]);
+  }, [payouts, search, timeFilter]);
 
-  const stats = useMemo(() => ({
-    total: filteredDeals.length,
-    pending: filteredDeals.filter(d => d.status === 'PENDING').length,
-    closed: filteredDeals.filter(d => d.status === 'CLOSED').length,
-    commission: filteredDeals.reduce((sum, d) => sum + Number(d.gross_commission_actual || d.gross_commission_est || 0), 0),
-  }), [filteredDeals]);
+  // Stats
+  const stats = useMemo(() => {
+    const unpaid = payouts.filter(p => p.status !== 'PAID');
+    const paid = payouts.filter(p => p.status === 'PAID');
+    
+    return {
+      upcomingCount: unpaid.length,
+      upcomingAmount: unpaid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+      paidCount: paid.length,
+      paidAmount: paid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+      totalDeals: deals.length,
+    };
+  }, [payouts, deals]);
 
-  const handleDelete = async () => {
-    if (deleteId) {
-      await deleteDeal.mutateAsync(deleteId);
-      setDeleteId(null);
+  const handleMarkPaid = (id: string) => {
+    markPaid.mutate(id);
+  };
+
+  const getPayoutTypeColor = (type: string) => {
+    switch (type) {
+      case 'Advance': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'Completion': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case '2nd Payment': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case '3rd Deposit': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      default: return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const isOverdue = (dueDate: string | null) => {
+    if (!dueDate) return false;
+    return isBefore(parseISO(dueDate), new Date());
   };
 
   return (
     <AppLayout>
       <Header 
-        title="Deals" 
-        subtitle={`${stats.pending} pending · ${stats.closed} closed · ${formatCurrency(stats.commission)} total`}
+        title="Deals & Payouts" 
+        subtitle={`${stats.upcomingCount} pending · ${formatCurrency(stats.upcomingAmount)} expected`}
         action={
           <Button asChild className="btn-premium">
             <Link to="/deals/new">
               <Plus className="w-4 h-4 mr-2" />
-              Add Deal
+              New Deal
             </Link>
           </Button>
         }
       />
 
-      <div className="p-4 lg:p-6 space-y-4 animate-fade-in">
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search deals..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DealStatus | 'ALL')}>
-              <SelectTrigger className="w-28">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as DealType | 'ALL')}>
-              <SelectTrigger className="w-28">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All</SelectItem>
-                <SelectItem value="BUY">Buy</SelectItem>
-                <SelectItem value="SELL">Sell</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <button
+            onClick={() => setTimeFilter('upcoming')}
+            className={cn(
+              "p-4 rounded-xl border text-left transition-all",
+              timeFilter === 'upcoming' 
+                ? "bg-accent/10 border-accent" 
+                : "bg-card border-border hover:border-accent/50"
+            )}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Clock className="w-4 h-4" />
+              <span className="text-xs">Pending</span>
+            </div>
+            <p className="text-xl font-bold">{formatCurrency(stats.upcomingAmount)}</p>
+            <p className="text-xs text-muted-foreground">{stats.upcomingCount} payouts</p>
+          </button>
+
+          <button
+            onClick={() => setTimeFilter('this-month')}
+            className={cn(
+              "p-4 rounded-xl border text-left transition-all",
+              timeFilter === 'this-month' 
+                ? "bg-accent/10 border-accent" 
+                : "bg-card border-border hover:border-accent/50"
+            )}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs">This Month</span>
+            </div>
+            <p className="text-xl font-bold">
+              {formatCurrency(
+                payouts
+                  .filter(p => {
+                    if (p.status === 'PAID' || !p.due_date) return false;
+                    const d = parseISO(p.due_date);
+                    return isAfter(d, startOfMonth(new Date())) && isBefore(d, endOfMonth(new Date()));
+                  })
+                  .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+              )}
+            </p>
+          </button>
+
+          <button
+            onClick={() => setTimeFilter('next-month')}
+            className={cn(
+              "p-4 rounded-xl border text-left transition-all",
+              timeFilter === 'next-month' 
+                ? "bg-accent/10 border-accent" 
+                : "bg-card border-border hover:border-accent/50"
+            )}
+          >
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Calendar className="w-4 h-4" />
+              <span className="text-xs">Next Month</span>
+            </div>
+            <p className="text-xl font-bold">
+              {formatCurrency(
+                payouts
+                  .filter(p => {
+                    if (p.status === 'PAID' || !p.due_date) return false;
+                    const d = parseISO(p.due_date);
+                    return isAfter(d, startOfMonth(addMonths(new Date(), 1))) && 
+                           isBefore(d, endOfMonth(addMonths(new Date(), 1)));
+                  })
+                  .reduce((sum, p) => sum + Number(p.amount || 0), 0)
+              )}
+            </p>
+          </button>
+
+          <button
+            onClick={() => setTimeFilter('paid')}
+            className={cn(
+              "p-4 rounded-xl border text-left transition-all",
+              timeFilter === 'paid' 
+                ? "bg-success/10 border-success" 
+                : "bg-card border-border hover:border-success/50"
+            )}
+          >
+            <div className="flex items-center gap-2 text-success mb-1">
+              <CheckCircle2 className="w-4 h-4" />
+              <span className="text-xs">Received</span>
+            </div>
+            <p className="text-xl font-bold text-success">{formatCurrency(stats.paidAmount)}</p>
+            <p className="text-xs text-muted-foreground">{stats.paidCount} paid</p>
+          </button>
         </div>
 
-        {/* Deals Table */}
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by client or property..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        {/* Payouts List */}
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
-        ) : filteredDeals.length === 0 ? (
+        ) : filteredPayouts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No deals found</p>
+            <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground mb-4">
+              {timeFilter === 'paid' ? 'No paid payouts yet' : 'No pending payouts'}
+            </p>
             <Button asChild className="btn-premium">
               <Link to="/deals/new">
                 <Plus className="w-4 h-4 mr-2" />
@@ -144,91 +255,87 @@ export default function DealsPage() {
             </Button>
           </div>
         ) : (
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Client</TableHead>
-                  <TableHead className="hidden md:table-cell">Property</TableHead>
-                  <TableHead className="hidden sm:table-cell">Close Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Commission</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDeals.map((deal) => {
-                  const displayDate = deal.close_date_actual || deal.close_date_est;
-                  const commission = deal.gross_commission_actual || deal.gross_commission_est;
-
-                  return (
-                    <TableRow key={deal.id} className="group">
-                      <TableCell>
+          <div className="space-y-2">
+            {filteredPayouts.map((payout) => {
+              const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
+              
+              return (
+                <div
+                  key={payout.id}
+                  className={cn(
+                    "bg-card border rounded-xl p-4 transition-all hover:border-accent/50",
+                    overdue ? "border-destructive/50 bg-destructive/5" : "border-border",
+                    payout.status === 'PAID' && "opacity-60"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left: Client & Property */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
                         <Link
-                          to={`/deals/${deal.id}`}
-                          className="font-medium hover:text-accent transition-colors"
+                          to={`/deals/${payout.deal_id}`}
+                          className="font-semibold hover:text-accent transition-colors truncate"
                         >
-                          {deal.client_name}
+                          {payout.deal?.client_name || 'Unknown'}
                         </Link>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {deal.deal_type}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {deal.address || deal.project_name || '—'}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {displayDate ? formatDate(displayDate) : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={deal.status} />
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-success">
-                        {formatCurrency(commission)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <Link to={`/deals/${deal.id}`}>
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeleteId(deal.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        <Badge variant="outline" className={cn("text-xs shrink-0", getPayoutTypeColor(payout.payout_type))}>
+                          {payout.payout_type}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {payout.deal?.address || payout.deal?.project_name || '—'}
+                      </p>
+                    </div>
+
+                    {/* Right: Amount & Date */}
+                    <div className="text-right shrink-0">
+                      <p className={cn(
+                        "text-lg font-bold",
+                        payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : "text-foreground"
+                      )}>
+                        {formatCurrency(payout.amount)}
+                      </p>
+                      <p className={cn(
+                        "text-xs",
+                        overdue ? "text-destructive" : "text-muted-foreground"
+                      )}>
+                        {payout.status === 'PAID' && payout.paid_date
+                          ? `Paid ${format(parseISO(payout.paid_date), 'MMM d, yyyy')}`
+                          : payout.due_date
+                            ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
+                            : 'No date set'}
+                        {overdue && ' (overdue)'}
+                      </p>
+                    </div>
+
+                    {/* Action */}
+                    {payout.status !== 'PAID' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMarkPaid(payout.id)}
+                        className="shrink-0 text-success hover:text-success hover:bg-success/10"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-      </div>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Deal</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this deal and all associated payouts.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Quick link to all deals */}
+        <div className="text-center pt-4 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            {stats.totalDeals} total deals · 
+            <Link to="/payouts" className="text-accent hover:underline ml-1">
+              View full payout schedule →
+            </Link>
+          </p>
+        </div>
+      </div>
     </AppLayout>
   );
 }
