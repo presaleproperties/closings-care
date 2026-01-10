@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { Activity, TrendingUp, TrendingDown, AlertCircle, CheckCircle, Target, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Banknote, PiggyBank, Calendar, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import { Deal, Payout } from '@/lib/types';
-import { Progress } from '@/components/ui/progress';
 
 interface FinancialHealthProps {
   deals: Deal[];
@@ -11,241 +10,139 @@ interface FinancialHealthProps {
   annualExpenses: number;
 }
 
-interface HealthMetric {
-  label: string;
-  value: number;
-  target: number;
-  unit: string;
-  status: 'good' | 'warning' | 'critical';
-  insight: string;
-}
-
 export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
-    const currentMonth = now.getMonth();
+    const currentMonth = now.getMonth() + 1;
 
-    // YTD Income
-    const ytdPaid = payouts
+    // Money you've received this year
+    const moneyReceived = payouts
       .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Pipeline value
-    const pipeline = payouts
+    // Money coming (pending payouts)
+    const moneyComing = payouts
       .filter(p => p.status !== 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // Deal count this year
-    const ytdDeals = deals.filter(d => new Date(d.created_at).getFullYear() === thisYear).length;
+    // What you've spent (estimate based on monthly × months elapsed)
+    const moneySpent = monthlyExpenses * currentMonth;
 
-    // Average deal value
-    const avgDealValue = ytdDeals > 0 ? ytdPaid / ytdDeals : 0;
+    // What's left after expenses
+    const netProfit = moneyReceived - moneySpent;
 
-    // Monthly average income
-    const monthsElapsed = currentMonth + 1;
-    const monthlyAvgIncome = ytdPaid / monthsElapsed;
+    // How many months your pipeline covers
+    const monthsCovered = monthlyExpenses > 0 ? Math.floor(moneyComing / monthlyExpenses) : 0;
 
-    // Expense ratio
-    const expenseRatio = ytdPaid > 0 ? (annualExpenses / ytdPaid) * 100 : 0;
-
-    // Cash runway (months of expenses covered by pipeline)
-    const cashRunway = monthlyExpenses > 0 ? pipeline / monthlyExpenses : 0;
-
-    // Conversion rate (closed vs pending)
-    const closedDeals = deals.filter(d => d.status === 'CLOSED').length;
-    const conversionRate = deals.length > 0 ? (closedDeals / deals.length) * 100 : 0;
-
-    // Lead source diversity
-    const leadSources = new Set(deals.map(d => d.lead_source).filter(Boolean));
-    const leadDiversity = leadSources.size;
-
-    // Business health metrics
-    const healthMetrics: HealthMetric[] = [
-      {
-        label: 'Monthly Income',
-        value: monthlyAvgIncome,
-        target: 15000, // Target $15k/month
-        unit: 'currency',
-        status: monthlyAvgIncome >= 15000 ? 'good' : monthlyAvgIncome >= 10000 ? 'warning' : 'critical',
-        insight: monthlyAvgIncome >= 15000 
-          ? 'Great income pace!' 
-          : 'Consider increasing deal volume or commission rates',
-      },
-      {
-        label: 'Expense Ratio',
-        value: expenseRatio,
-        target: 30, // Target under 30%
-        unit: 'percent',
-        status: expenseRatio <= 20 ? 'good' : expenseRatio <= 35 ? 'warning' : 'critical',
-        insight: expenseRatio <= 20 
-          ? 'Excellent expense management' 
-          : 'Look for ways to reduce overhead costs',
-      },
-      {
-        label: 'Cash Runway',
-        value: cashRunway,
-        target: 6, // Target 6 months
-        unit: 'months',
-        status: cashRunway >= 6 ? 'good' : cashRunway >= 3 ? 'warning' : 'critical',
-        insight: cashRunway >= 6 
-          ? 'Strong financial buffer' 
-          : 'Build more pipeline to increase security',
-      },
-      {
-        label: 'Deal Conversion',
-        value: conversionRate,
-        target: 80, // Target 80%
-        unit: 'percent',
-        status: conversionRate >= 80 ? 'good' : conversionRate >= 60 ? 'warning' : 'critical',
-        insight: conversionRate >= 80 
-          ? 'Excellent close rate' 
-          : 'Review pending deals for bottlenecks',
-      },
-    ];
-
-    // Business insights
-    const insights: string[] = [];
-
-    if (leadDiversity < 3) {
-      insights.push("🎯 Diversify lead sources - you're relying on too few channels. Consider adding referral programs, social media, or open houses.");
-    }
-
-    if (monthlyAvgIncome < monthlyExpenses * 1.5) {
-      insights.push("⚠️ Income is too close to expenses. Aim for income to be at least 2x your monthly expenses.");
-    }
-
-    if (pipeline < annualExpenses) {
-      insights.push("📈 Build your pipeline - aim to have at least one year of expenses covered by pending deals.");
-    }
-
-    if (avgDealValue < 8000) {
-      insights.push("💎 Consider focusing on higher-value properties to increase your average commission.");
-    }
-
-    if (ytdDeals < currentMonth) {
-      insights.push("📅 Deal velocity is low - aim for at least 1-2 deals per month for stable income.");
-    }
-
-    if (insights.length === 0) {
-      insights.push("✅ Your business metrics look healthy! Keep up the great work.");
+    // Simple health status
+    let healthStatus: 'great' | 'good' | 'needs-attention';
+    if (netProfit > 0 && monthsCovered >= 3) {
+      healthStatus = 'great';
+    } else if (netProfit >= 0 || monthsCovered >= 2) {
+      healthStatus = 'good';
+    } else {
+      healthStatus = 'needs-attention';
     }
 
     return {
-      ytdPaid,
-      pipeline,
-      ytdDeals,
-      avgDealValue,
-      monthlyAvgIncome,
-      expenseRatio,
-      cashRunway,
-      healthMetrics,
-      insights,
+      moneyReceived,
+      moneyComing,
+      moneySpent,
+      netProfit,
+      monthsCovered,
+      healthStatus,
     };
-  }, [deals, payouts, monthlyExpenses, annualExpenses]);
+  }, [payouts, monthlyExpenses]);
 
-  const getStatusColor = (status: 'good' | 'warning' | 'critical') => {
-    switch (status) {
-      case 'good': return 'text-success';
-      case 'warning': return 'text-warning';
-      case 'critical': return 'text-destructive';
+  const getStatusConfig = () => {
+    switch (metrics.healthStatus) {
+      case 'great':
+        return {
+          label: "You're doing great!",
+          color: 'text-success',
+          bg: 'bg-success/10 border-success/20',
+          icon: CheckCircle2,
+        };
+      case 'good':
+        return {
+          label: "Looking good",
+          color: 'text-primary',
+          bg: 'bg-primary/10 border-primary/20',
+          icon: TrendingUp,
+        };
+      case 'needs-attention':
+        return {
+          label: "Needs attention",
+          color: 'text-warning',
+          bg: 'bg-warning/10 border-warning/20',
+          icon: TrendingDown,
+        };
     }
   };
 
-  const getStatusBg = (status: 'good' | 'warning' | 'critical') => {
-    switch (status) {
-      case 'good': return 'bg-success';
-      case 'warning': return 'bg-warning';
-      case 'critical': return 'bg-destructive';
-    }
-  };
-
-  const getStatusIcon = (status: 'good' | 'warning' | 'critical') => {
-    switch (status) {
-      case 'good': return CheckCircle;
-      case 'warning': return AlertCircle;
-      case 'critical': return AlertCircle;
-    }
-  };
+  const status = getStatusConfig();
+  const StatusIcon = status.icon;
 
   return (
-    <div className="space-y-6">
-      {/* Health Score Card */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 rounded-xl bg-accent/10">
-            <Activity className="h-5 w-5 text-accent" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-lg">Financial Health</h3>
-            <p className="text-xs text-muted-foreground">Key business metrics</p>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-3 rounded-xl bg-muted/50">
-            <p className="text-xs text-muted-foreground mb-1">YTD Income</p>
-            <p className="text-lg font-bold">{formatCurrency(metrics.ytdPaid)}</p>
-          </div>
-          <div className="text-center p-3 rounded-xl bg-muted/50">
-            <p className="text-xs text-muted-foreground mb-1">Pipeline</p>
-            <p className="text-lg font-bold">{formatCurrency(metrics.pipeline)}</p>
-          </div>
-          <div className="text-center p-3 rounded-xl bg-muted/50">
-            <p className="text-xs text-muted-foreground mb-1">YTD Deals</p>
-            <p className="text-lg font-bold">{metrics.ytdDeals}</p>
-          </div>
-          <div className="text-center p-3 rounded-xl bg-muted/50">
-            <p className="text-xs text-muted-foreground mb-1">Avg Deal</p>
-            <p className="text-lg font-bold">{formatCurrency(metrics.avgDealValue)}</p>
-          </div>
-        </div>
-
-        {/* Health Metrics */}
-        <div className="space-y-4">
-          {metrics.healthMetrics.map((metric, i) => {
-            const StatusIcon = getStatusIcon(metric.status);
-            const progress = metric.unit === 'percent' || metric.unit === 'months'
-              ? Math.min((metric.value / metric.target) * 100, 100)
-              : Math.min((metric.value / metric.target) * 100, 100);
-
-            return (
-              <div key={i} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <StatusIcon className={`h-4 w-4 ${getStatusColor(metric.status)}`} />
-                    <span className="text-sm font-medium">{metric.label}</span>
-                  </div>
-                  <span className={`text-sm font-bold ${getStatusColor(metric.status)}`}>
-                    {metric.unit === 'currency' 
-                      ? formatCurrency(metric.value)
-                      : metric.unit === 'percent'
-                      ? `${metric.value.toFixed(0)}%`
-                      : `${metric.value.toFixed(1)} ${metric.unit}`
-                    }
-                  </span>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <p className="text-xs text-muted-foreground">{metric.insight}</p>
-              </div>
-            );
-          })}
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+      {/* Header with status */}
+      <div className={`flex items-center gap-3 p-3 rounded-xl border ${status.bg} mb-5`}>
+        <StatusIcon className={`h-5 w-5 ${status.color}`} />
+        <div>
+          <p className={`font-semibold ${status.color}`}>{status.label}</p>
+          <p className="text-xs text-muted-foreground">Your financial snapshot</p>
         </div>
       </div>
 
-      {/* Business Insights */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <Target className="h-5 w-5 text-accent" />
-          <h3 className="font-semibold">Business Insights</h3>
+      {/* Simple 4-metric grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Money Received */}
+        <div className="p-4 rounded-xl bg-success/5 border border-success/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Banknote className="h-4 w-4 text-success" />
+            <span className="text-xs text-muted-foreground">Received (YTD)</span>
+          </div>
+          <p className="text-xl font-bold text-success">{formatCurrency(metrics.moneyReceived)}</p>
         </div>
-        <div className="space-y-3">
-          {metrics.insights.map((insight, i) => (
-            <div key={i} className="p-3 rounded-lg bg-muted/30 text-sm">
-              {insight}
-            </div>
-          ))}
+
+        {/* Money Coming */}
+        <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span className="text-xs text-muted-foreground">Coming In</span>
+          </div>
+          <p className="text-xl font-bold text-primary">{formatCurrency(metrics.moneyComing)}</p>
+        </div>
+
+        {/* Money Spent */}
+        <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+          <div className="flex items-center gap-2 mb-2">
+            <PiggyBank className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Spent (YTD)</span>
+          </div>
+          <p className="text-xl font-bold">{formatCurrency(metrics.moneySpent)}</p>
+        </div>
+
+        {/* Months Covered */}
+        <div className="p-4 rounded-xl bg-accent/5 border border-accent/10">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="h-4 w-4 text-accent" />
+            <span className="text-xs text-muted-foreground">Pipeline Covers</span>
+          </div>
+          <p className="text-xl font-bold text-accent">
+            {metrics.monthsCovered} <span className="text-sm font-normal text-muted-foreground">months</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Net profit highlight */}
+      <div className={`mt-4 p-4 rounded-xl border ${metrics.netProfit >= 0 ? 'bg-success/5 border-success/20' : 'bg-destructive/5 border-destructive/20'}`}>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Net Profit (YTD)</span>
+          <span className={`text-xl font-bold ${metrics.netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {metrics.netProfit >= 0 ? '+' : ''}{formatCurrency(metrics.netProfit)}
+          </span>
         </div>
       </div>
     </div>
