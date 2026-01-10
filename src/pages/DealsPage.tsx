@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, ChevronRight } from 'lucide-react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore, getYear, getMonth } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -27,7 +27,7 @@ export default function DealsPage() {
 
   const isLoading = payoutsLoading || dealsLoading;
 
-  // Filter and sort payouts
+  // Filter payouts
   const filteredPayouts = useMemo(() => {
     const now = new Date();
     const thisMonthStart = startOfMonth(now);
@@ -80,6 +80,54 @@ export default function DealsPage() {
         return dateA - dateB;
       });
   }, [payouts, search, timeFilter]);
+
+  // Group payouts by year and month
+  const groupedPayouts = useMemo(() => {
+    const groups: Map<number, Map<number, typeof filteredPayouts>> = new Map();
+    
+    filteredPayouts.forEach((payout) => {
+      const date = payout.status === 'PAID' && payout.paid_date 
+        ? parseISO(payout.paid_date)
+        : payout.due_date 
+          ? parseISO(payout.due_date) 
+          : new Date();
+      
+      const year = getYear(date);
+      const month = getMonth(date);
+      
+      if (!groups.has(year)) {
+        groups.set(year, new Map());
+      }
+      
+      const yearGroup = groups.get(year)!;
+      if (!yearGroup.has(month)) {
+        yearGroup.set(month, []);
+      }
+      
+      yearGroup.get(month)!.push(payout);
+    });
+
+    // Convert to array and sort
+    const result: { year: number; months: { month: number; monthName: string; payouts: typeof filteredPayouts; total: number }[] }[] = [];
+    
+    const sortedYears = Array.from(groups.keys()).sort((a, b) => a - b);
+    
+    sortedYears.forEach((year) => {
+      const yearGroup = groups.get(year)!;
+      const months = Array.from(yearGroup.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([month, monthPayouts]) => ({
+          month,
+          monthName: format(new Date(year, month), 'MMMM'),
+          payouts: monthPayouts,
+          total: monthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+        }));
+      
+      result.push({ year, months });
+    });
+
+    return result;
+  }, [filteredPayouts]);
 
   // Stats
   const stats = useMemo(() => {
@@ -142,6 +190,143 @@ export default function DealsPage() {
     { key: 'next-month' as TimeFilter, label: 'Next Month', icon: Calendar, count: stats.nextMonthCount, amount: stats.nextMonthAmount },
     { key: 'paid' as TimeFilter, label: 'Received', icon: CheckCircle2, count: stats.paidCount, amount: stats.paidAmount, success: true },
   ];
+
+  const currentYear = new Date().getFullYear();
+
+  // Render payout item
+  const renderPayoutItem = (payout: typeof payouts[0], isMobile: boolean) => {
+    const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
+
+    if (isMobile) {
+      return (
+        <Link
+          key={payout.id}
+          to={`/deals/${payout.deal_id}`}
+          className={cn(
+            "flex items-center gap-3 px-4 py-3.5 transition-colors active:bg-muted/50",
+            payout.status === 'PAID' && "opacity-60"
+          )}
+        >
+          {/* Status indicator */}
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+            payout.status === 'PAID' 
+              ? "bg-success/15"
+              : overdue 
+                ? "bg-destructive/15"
+                : "bg-primary/10"
+          )}>
+            {payout.status === 'PAID' ? (
+              <CheckCircle2 className="w-5 h-5 text-success" />
+            ) : (
+              <DollarSign className={cn(
+                "w-5 h-5",
+                overdue ? "text-destructive" : "text-primary"
+              )} />
+            )}
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-[15px] truncate">
+                {payout.deal?.client_name || 'Unknown'}
+              </p>
+              <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
+                {payout.payout_type}
+              </Badge>
+            </div>
+            <p className={cn(
+              "text-[13px]",
+              overdue ? "text-destructive" : "text-muted-foreground"
+            )}>
+              {payout.status === 'PAID' && payout.paid_date
+                ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
+                : payout.due_date
+                  ? `Due ${format(parseISO(payout.due_date), 'MMM d')}`
+                  : 'No date set'}
+              {overdue && ' · Overdue'}
+            </p>
+          </div>
+          
+          {/* Amount & chevron */}
+          <div className="flex items-center gap-2 shrink-0">
+            <p className={cn(
+              "text-[15px] font-semibold",
+              payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
+            )}>
+              {formatCurrency(payout.amount)}
+            </p>
+            <ChevronRight className="w-5 h-5 text-muted-foreground/40" />
+          </div>
+        </Link>
+      );
+    }
+
+    return (
+      <div
+        key={payout.id}
+        className={cn(
+          "bg-card/95 backdrop-blur-xl border rounded-2xl p-4 transition-all hover:shadow-ios-lg group",
+          overdue ? "border-destructive/50 bg-destructive/5" : "border-border/50 hover:border-primary/30",
+          payout.status === 'PAID' && "opacity-70"
+        )}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Link
+                to={`/deals/${payout.deal_id}`}
+                className="font-semibold text-sm hover:text-primary transition-colors truncate"
+              >
+                {payout.deal?.client_name || 'Unknown'}
+              </Link>
+              <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
+                {payout.payout_type}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground truncate">
+              {payout.deal?.address || payout.deal?.project_name || '—'}
+            </p>
+          </div>
+
+          <div className="text-right shrink-0">
+            <p className={cn(
+              "text-base font-bold",
+              payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
+            )}>
+              {formatCurrency(payout.amount)}
+            </p>
+            <p className={cn(
+              "text-[10px]",
+              overdue ? "text-destructive" : "text-muted-foreground"
+            )}>
+              {payout.status === 'PAID' && payout.paid_date
+                ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
+                : payout.due_date
+                  ? `Due ${format(parseISO(payout.due_date), 'MMM d')}`
+                  : 'No date'}
+              {overdue && ' · Overdue'}
+            </p>
+          </div>
+        </div>
+
+        {payout.status !== 'PAID' && (
+          <div className="flex justify-end mt-3 pt-3 border-t border-border/30">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleMarkPaid(payout.id)}
+              className="h-8 text-xs text-success hover:text-success hover:bg-success/10"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+              Mark Paid
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <AppLayout>
@@ -226,7 +411,7 @@ export default function DealsPage() {
           />
         </div>
 
-        {/* Payouts List */}
+        {/* Grouped Payouts List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -247,158 +432,57 @@ export default function DealsPage() {
             </Button>
           </div>
         ) : (
-          <>
-            {/* Mobile: iOS-style list */}
-            <div className="sm:hidden">
-              <div className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/50 overflow-hidden shadow-ios divide-y divide-border/30">
-                {filteredPayouts.map((payout) => {
-                  const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
-                  
-                  return (
-                    <Link
-                      key={payout.id}
-                      to={`/deals/${payout.deal_id}`}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3.5 transition-colors active:bg-muted/50",
-                        payout.status === 'PAID' && "opacity-60"
-                      )}
-                    >
-                      {/* Status indicator */}
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                        payout.status === 'PAID' 
-                          ? "bg-success/15"
-                          : overdue 
-                            ? "bg-destructive/15"
-                            : "bg-primary/10"
-                      )}>
-                        {payout.status === 'PAID' ? (
-                          <CheckCircle2 className="w-5 h-5 text-success" />
-                        ) : (
-                          <DollarSign className={cn(
-                            "w-5 h-5",
-                            overdue ? "text-destructive" : "text-primary"
-                          )} />
-                        )}
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-[15px] truncate">
-                            {payout.deal?.client_name || 'Unknown'}
+          <div className="space-y-6">
+            {groupedPayouts.map((yearGroup) => (
+              <div key={yearGroup.year} className="space-y-4">
+                {/* Year Header - only show if not current year or if there are multiple years */}
+                {(yearGroup.year !== currentYear || groupedPayouts.length > 1 || groupedPayouts.some(g => g.year !== currentYear)) && (
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    <h2 className="text-lg font-bold text-foreground px-3 py-1 bg-primary/10 rounded-full">
+                      {yearGroup.year}
+                    </h2>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                  </div>
+                )}
+
+                {yearGroup.months.map((monthGroup) => (
+                  <div key={`${yearGroup.year}-${monthGroup.month}`}>
+                    {/* Month Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-foreground">{monthGroup.monthName}</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {monthGroup.payouts.length} payout{monthGroup.payouts.length !== 1 ? 's' : ''}
                           </p>
-                          <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
-                            {payout.payout_type}
-                          </Badge>
                         </div>
-                        <p className={cn(
-                          "text-[13px]",
-                          overdue ? "text-destructive" : "text-muted-foreground"
-                        )}>
-                          {payout.status === 'PAID' && payout.paid_date
-                            ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
-                            : payout.due_date
-                              ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
-                              : 'No date set'}
-                          {overdue && ' · Overdue'}
-                        </p>
                       </div>
-                      
-                      {/* Amount & chevron */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        <p className={cn(
-                          "text-[15px] font-semibold",
-                          payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
-                        )}>
-                          {formatCurrency(payout.amount)}
-                        </p>
-                        <ChevronRight className="w-5 h-5 text-muted-foreground/40" />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-              
-              {/* Mark paid action (shown as floating for pending items) */}
-              {timeFilter !== 'paid' && filteredPayouts.length > 0 && (
-                <p className="text-center text-[13px] text-muted-foreground mt-4">
-                  Tap a payout to view details or mark as paid
-                </p>
-              )}
-            </div>
-
-            {/* Desktop: Grid cards */}
-            <div className="hidden sm:grid gap-3 grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              {filteredPayouts.map((payout) => {
-                const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
-                
-                return (
-                  <div
-                    key={payout.id}
-                    className={cn(
-                      "bg-card/95 backdrop-blur-xl border rounded-2xl p-4 transition-all hover:shadow-ios-lg group",
-                      overdue ? "border-destructive/50 bg-destructive/5" : "border-border/50 hover:border-primary/30",
-                      payout.status === 'PAID' && "opacity-70"
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <Link
-                            to={`/deals/${payout.deal_id}`}
-                            className="font-semibold text-sm hover:text-primary transition-colors truncate"
-                          >
-                            {payout.deal?.client_name || 'Unknown'}
-                          </Link>
-                          <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
-                            {payout.payout_type}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {payout.deal?.address || payout.deal?.project_name || '—'}
-                        </p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <p className={cn(
-                          "text-base font-bold",
-                          payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
-                        )}>
-                          {formatCurrency(payout.amount)}
-                        </p>
-                        <p className={cn(
-                          "text-[10px]",
-                          overdue ? "text-destructive" : "text-muted-foreground"
-                        )}>
-                          {payout.status === 'PAID' && payout.paid_date
-                            ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
-                            : payout.due_date
-                              ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
-                              : 'No date'}
-                          {overdue && ' · Overdue'}
-                        </p>
+                      <div className="text-right">
+                        <p className="font-bold text-foreground">{formatCurrency(monthGroup.total)}</p>
+                        <p className="text-xs text-muted-foreground">expected</p>
                       </div>
                     </div>
 
-                    {payout.status !== 'PAID' && (
-                      <div className="flex justify-end mt-3 pt-3 border-t border-border/30">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMarkPaid(payout.id)}
-                          className="h-8 text-xs text-success hover:text-success hover:bg-success/10"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-                          Mark Paid
-                        </Button>
+                    {/* Mobile: iOS-style list */}
+                    <div className="sm:hidden">
+                      <div className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/50 overflow-hidden shadow-ios divide-y divide-border/30">
+                        {monthGroup.payouts.map((payout) => renderPayoutItem(payout, true))}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Desktop: Grid cards */}
+                    <div className="hidden sm:grid gap-3 grid-cols-1 xl:grid-cols-2">
+                      {monthGroup.payouts.map((payout) => renderPayoutItem(payout, false))}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </>
+                ))}
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Quick link */}
@@ -406,6 +490,16 @@ export default function DealsPage() {
           <Link to="/payouts" className="text-[13px] text-primary font-medium active:opacity-50 transition-opacity">
             View full payout schedule →
           </Link>
+        </div>
+
+        {/* Desktop: Floating add button */}
+        <div className="hidden sm:block">
+          <Button asChild size="lg" className="btn-premium">
+            <Link to="/deals/new">
+              <Plus className="w-5 h-5 mr-2" />
+              New Deal
+            </Link>
+          </Button>
         </div>
         </div>
       </PullToRefresh>
