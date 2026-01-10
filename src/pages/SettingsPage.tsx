@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle, PiggyBank } from 'lucide-react';
+import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useDataExport } from '@/hooks/useDataExport';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   Select,
   SelectContent,
@@ -569,6 +570,9 @@ export default function SettingsPage() {
           </p>
         </section>
 
+        {/* Subscription */}
+        <SubscriptionSection />
+
         {/* Data Export */}
         <DataExportSection />
 
@@ -678,6 +682,110 @@ function AppearanceSection() {
           </span>
         </button>
       </div>
+    </section>
+  );
+}
+
+// Subscription Section
+function SubscriptionSection() {
+  const { tier, limits, usage, isPro, isFree } = useSubscription();
+
+  const PRO_FEATURES = [
+    'Unlimited deals',
+    'Full expense tracking',
+    '12-month projections',
+    'Tax set-aside calculator',
+    'Safe-to-spend tracking',
+    'Data export',
+    'Priority support',
+  ];
+
+  return (
+    <section id="subscription" className="bg-card border border-border rounded-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Crown className={cn("w-5 h-5", isPro ? "text-amber-400" : "text-muted-foreground")} />
+        <h2 className="font-semibold">Subscription</h2>
+        <span className={cn(
+          "px-2 py-0.5 rounded-full text-xs font-medium",
+          isPro ? "bg-amber-500/15 text-amber-500" : "bg-muted text-muted-foreground"
+        )}>
+          {isPro ? 'Pro' : 'Free'}
+        </span>
+      </div>
+
+      {isFree ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-muted/50 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Deals Used</span>
+              <span className="text-sm font-bold">{usage.dealsUsed} / {limits.maxDeals}</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${Math.min(100, usage.percentUsed)}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/30">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold">Upgrade to Pro</p>
+                <p className="text-sm text-muted-foreground">Unlock unlimited deals and all features</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {PRO_FEATURES.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-xs">
+                  <Check className="w-3 h-3 text-success shrink-0" />
+                  <span>{f}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-2xl font-bold">$29</span>
+              <span className="text-muted-foreground">/month</span>
+            </div>
+
+            <Button className="w-full btn-premium">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Start 14-Day Free Trial
+            </Button>
+            <p className="text-xs text-center text-muted-foreground mt-2">
+              No credit card required • Cancel anytime
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <Crown className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold">Pro Plan Active</p>
+                <p className="text-sm text-muted-foreground">You have access to all features</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {PRO_FEATURES.map((f) => (
+              <div key={f} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-muted/50">
+                <Check className="w-4 h-4 text-success shrink-0" />
+                <span>{f}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

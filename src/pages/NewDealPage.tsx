@@ -19,6 +19,8 @@ import {
 import { useCreateDeal } from '@/hooks/useDeals';
 import { useSettings } from '@/hooks/useSettings';
 import { useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UpgradePrompt, UsageLimitIndicator } from '@/components/UpgradePrompt';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
 
 // Format number with commas
@@ -39,6 +41,8 @@ export default function NewDealPage() {
   const createDeal = useCreateDeal();
   const { data: settings } = useSettings();
   const createPayoutsFromTemplate = useCreatePayoutsFromTemplate();
+  const { canAddDeal, usage, isFree } = useSubscription();
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({
     client_name: '',
@@ -54,6 +58,12 @@ export default function NewDealPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check subscription limit
+    if (!canAddDeal) {
+      setShowUpgradePrompt(true);
+      return;
+    }
 
     if (!formData.client_name || !formData.deal_type || !formData.property_type) return;
 
@@ -119,6 +129,19 @@ export default function NewDealPage() {
       />
 
       <form onSubmit={handleSubmit} className="p-4 lg:p-6 max-w-3xl animate-fade-in">
+        {/* Subscription limit indicator for free users */}
+        {isFree && (
+          <div className="mb-4">
+            <UsageLimitIndicator />
+          </div>
+        )}
+
+        <UpgradePrompt 
+          open={showUpgradePrompt} 
+          onOpenChange={setShowUpgradePrompt}
+          reason={`You've reached the limit of ${usage.dealsUsed} deals on the free plan.`}
+        />
+
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           {/* Step 1: Essential Info */}
           <div className="p-4 border-b border-border bg-muted/30">
