@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -107,13 +108,20 @@ export default function ExpensesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<ExpenseType>('personal');
   const [activeTab, setActiveTab] = useState<'overview' | 'personal' | 'business' | 'rental' | 'taxes' | 'properties'>('overview');
-  const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType; rental_property_id?: string }>({
+  const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType; rental_property_id?: string; is_fixed?: boolean; is_tax_deductible?: boolean }>({
     category: '',
     amount: 0,
     month: currentMonth,
     recurrence: 'monthly',
     rental_property_id: undefined,
+    is_fixed: true,
+    is_tax_deductible: true,
   });
+
+  // Auto-set tax deductible based on expense type
+  const getDefaultTaxDeductible = (type: ExpenseType): boolean => {
+    return type === 'business' || type === 'rental';
+  };
 
   const handlePrevMonth = () => {
     const date = parseISO(`${currentMonth}-01`);
@@ -178,9 +186,18 @@ export default function ExpensesPage() {
   }, [monthExpenses]);
 
   const handleOpenAdd = (type?: ExpenseType, propertyId?: string) => {
+    const expenseType = type || 'personal';
     setEditingId(null);
-    setSelectedType(type || 'personal');
-    setFormData({ category: '', amount: 0, month: currentMonth, recurrence: 'monthly', rental_property_id: propertyId });
+    setSelectedType(expenseType);
+    setFormData({ 
+      category: '', 
+      amount: 0, 
+      month: currentMonth, 
+      recurrence: 'monthly', 
+      rental_property_id: propertyId,
+      is_fixed: true,
+      is_tax_deductible: getDefaultTaxDeductible(expenseType),
+    });
     setShowDialog(true);
   };
 
@@ -195,6 +212,8 @@ export default function ExpensesPage() {
       notes: expense.notes || '',
       recurrence: (expense as any).recurrence || 'monthly',
       rental_property_id: (expense as any).rental_property_id || undefined,
+      is_fixed: (expense as any).is_fixed !== false,
+      is_tax_deductible: (expense as any).is_tax_deductible !== false,
     });
     setShowDialog(true);
   };
@@ -205,6 +224,8 @@ export default function ExpensesPage() {
       ...formData,
       recurrence: formData.recurrence || 'monthly',
       rental_property_id: selectedType === 'rental' ? formData.rental_property_id : null,
+      is_fixed: formData.is_fixed !== false,
+      is_tax_deductible: formData.is_tax_deductible !== false,
     };
     if (editingId) {
       await updateExpense.mutateAsync({ id: editingId, data: dataToSave });
@@ -462,7 +483,14 @@ export default function ExpensesPage() {
                     <button
                       key={type}
                       type="button"
-                      onClick={() => { setSelectedType(type); setFormData(p => ({ ...p, category: '' })); }}
+                      onClick={() => { 
+                        setSelectedType(type); 
+                        setFormData(p => ({ 
+                          ...p, 
+                          category: '',
+                          is_tax_deductible: getDefaultTaxDeductible(type),
+                        })); 
+                      }}
                       className={cn(
                         "p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
                         selectedType === type ? `${config.border} ${config.bg}` : "border-border hover:border-muted-foreground"
@@ -561,6 +589,62 @@ export default function ExpensesPage() {
               />
             </div>
 
+            {/* Classification Toggles */}
+            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Classification</Label>
+              
+              {/* Tax Deductible Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "p-1.5 rounded-lg",
+                    formData.is_tax_deductible ? "bg-success/10" : "bg-muted"
+                  )}>
+                    <Receipt className={cn(
+                      "w-4 h-4",
+                      formData.is_tax_deductible ? "text-success" : "text-muted-foreground"
+                    )} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Tax Deductible</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.is_tax_deductible ? 'Reduces taxable income' : 'Not deductible'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.is_tax_deductible !== false}
+                  onCheckedChange={(checked) => setFormData(p => ({ ...p, is_tax_deductible: checked }))}
+                />
+              </div>
+
+              {/* Fixed vs Variable Toggle */}
+              <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "p-1.5 rounded-lg",
+                    formData.is_fixed ? "bg-sky-500/10" : "bg-orange-500/10"
+                  )}>
+                    {formData.is_fixed ? (
+                      <Repeat className="w-4 h-4 text-sky-400" />
+                    ) : (
+                      <TrendingDown className="w-4 h-4 text-orange-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{formData.is_fixed ? 'Fixed Expense' : 'Variable Expense'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.is_fixed ? 'Required every month' : 'Can be reduced if needed'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={formData.is_fixed !== false}
+                  onCheckedChange={(checked) => setFormData(p => ({ ...p, is_fixed: checked }))}
+                />
+              </div>
+            </div>
+
             {/* Notes */}
             <div className="space-y-2">
               <Label>Notes</Label>
@@ -638,6 +722,11 @@ function ExpenseRow({
             {getRecurrenceIcon()}
             {getRecurrenceLabel()}
           </Badge>
+          {(expense as any).is_tax_deductible !== false && (
+            <Badge variant="outline" className="text-xs text-success border-success/30 bg-success/5">
+              Tax Deductible
+            </Badge>
+          )}
           {recurrence === 'weekly' && (
             <span className="text-xs text-muted-foreground">
               ${expense.amount} × 4.33

@@ -75,13 +75,18 @@ export function QuickAddExpense({ currentMonth, onExpenseAdded }: QuickAddExpens
   const handleSave = async () => {
     if (!selectedCategory || !amount) return;
 
+    // Business expenses are tax deductible by default
+    const isTaxDeductible = selectedCategory.type === 'business';
+
     await createExpense.mutateAsync({
       category: selectedCategory.name,
       amount,
       month,
       recurrence,
       notes: notes || undefined,
-    });
+      is_tax_deductible: isTaxDeductible,
+      is_fixed: isRecurring,
+    } as any);
 
     setShowDialog(false);
     setSelectedCategory(null);
