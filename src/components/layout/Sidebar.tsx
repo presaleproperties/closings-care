@@ -9,10 +9,12 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -31,6 +33,7 @@ const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
 export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { data: isAdmin } = useIsAdmin();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
@@ -129,6 +132,52 @@ export function Sidebar() {
 
           return linkContent;
         })}
+
+        {/* Admin link - only show for admins */}
+        {isAdmin && (
+          <>
+            <div className={cn(
+              "border-t border-sidebar-border/30 my-2",
+              isCollapsed && "mx-2"
+            )} />
+            {isCollapsed ? (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/admin"
+                    className={cn(
+                      'flex items-center justify-center py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                      location.pathname === '/admin'
+                        ? 'bg-amber-500/20 text-amber-400' 
+                        : 'text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10'
+                    )}
+                  >
+                    <Shield className="w-[18px] h-[18px]" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">
+                  Admin Dashboard
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link
+                to="/admin"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  location.pathname === '/admin'
+                    ? 'bg-amber-500/20 text-amber-400' 
+                    : 'text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10'
+                )}
+              >
+                <Shield className="w-[18px] h-[18px]" />
+                <span>Admin</span>
+                {location.pathname === '/admin' && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400" />
+                )}
+              </Link>
+            )}
+          </>
+        )}
       </nav>
 
       {/* Sign out */}
