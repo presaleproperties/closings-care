@@ -101,76 +101,85 @@ export default function DashboardPage() {
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-        <div className="p-4 lg:p-6 space-y-5 lg:space-y-6 animate-fade-in">
-          {/* Mobile: Date display */}
-          <p className="sm:hidden text-[13px] text-muted-foreground -mt-2">
-            {format(now, 'EEEE, MMMM d, yyyy')}
-          </p>
+        {/* Mobile-first iOS dashboard */}
+        <div className="sm:hidden animate-fade-in">
+          {/* Greeting Section */}
+          <div className="px-5 pt-2 pb-4">
+            <p className="text-[13px] text-muted-foreground">
+              {format(now, 'EEEE, MMMM d')}
+            </p>
+            <h1 className="text-[28px] font-bold tracking-tight mt-0.5">
+              Dashboard
+            </h1>
+          </div>
 
           {/* Overdue Payout Notification */}
-          <OverduePayoutNotification
-            payouts={payouts}
-            onMarkPaid={(id) => markPaid.mutate(id)}
-            onUpdateDueDate={handleUpdatePayoutDueDate}
-            isPending={markPaid.isPending || updatePayout.isPending}
-          />
+          <div className="px-5">
+            <OverduePayoutNotification
+              payouts={payouts}
+              onMarkPaid={(id) => markPaid.mutate(id)}
+              onUpdateDueDate={handleUpdatePayoutDueDate}
+              isPending={markPaid.isPending || updatePayout.isPending}
+            />
+          </div>
 
-          {/* Quick Stats - First on mobile for immediate value */}
-          <QuickStats 
-            deals={deals} 
-            payouts={payouts} 
-            monthlyExpenses={expenseTotals.monthly}
-            onAutoMarkPaid={handleAutoMarkPaid}
-          />
+          {/* iOS Widget-style Stats */}
+          <div className="px-5 py-4">
+            <QuickStats 
+              deals={deals} 
+              payouts={payouts} 
+              monthlyExpenses={expenseTotals.monthly}
+              onAutoMarkPaid={handleAutoMarkPaid}
+            />
+          </div>
 
-          {/* Quick Actions */}
-          <QuickActions />
+          {/* Quick Actions - iOS style */}
+          <div className="px-5 pb-4">
+            <QuickActions />
+          </div>
 
-          {/* Tabbed Dashboard Sections */}
-          <Tabs defaultValue="overview" className="space-y-5 lg:space-y-6">
-            {/* Mobile: iOS-style segmented control */}
-            <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-              <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-grid h-10 p-1 bg-muted/60 backdrop-blur-sm">
-                <TabsTrigger value="overview" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
-                  <LayoutDashboard className="h-4 w-4 hidden sm:block" />
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger value="taxes" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
-                  <Calculator className="h-4 w-4 hidden sm:block" />
-                  Taxes
-                </TabsTrigger>
-                <TabsTrigger value="analytics" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
-                  <TrendingUp className="h-4 w-4 hidden sm:block" />
-                  Analytics
-                </TabsTrigger>
-                <TabsTrigger value="clients" className="text-[13px] sm:text-sm gap-1.5 data-[state=active]:shadow-sm">
-                  <Users className="h-4 w-4 hidden sm:block" />
-                  Clients
-                </TabsTrigger>
-              </TabsList>
+          {/* Tabbed Content - iOS Segmented Control */}
+          <Tabs defaultValue="overview" className="pb-6">
+            <div className="px-5 pb-4">
+              <div className="bg-muted/60 backdrop-blur-sm rounded-[10px] p-[3px]">
+                <TabsList className="w-full grid grid-cols-4 h-[32px] bg-transparent p-0 gap-0">
+                  <TabsTrigger 
+                    value="overview" 
+                    className="text-[13px] font-medium rounded-[8px] h-full data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="taxes" 
+                    className="text-[13px] font-medium rounded-[8px] h-full data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
+                  >
+                    Taxes
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="analytics" 
+                    className="text-[13px] font-medium rounded-[8px] h-full data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
+                  >
+                    Analytics
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="clients" 
+                    className="text-[13px] font-medium rounded-[8px] h-full data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground transition-all"
+                  >
+                    Clients
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              {/* Main Content Grid */}
-              <div className="grid lg:grid-cols-3 gap-6">
-                {/* Income Projection - Takes 2 columns */}
-                <div className="lg:col-span-2">
-                  <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
-                </div>
-
-                {/* Upcoming Payouts */}
-                <UpcomingPayouts 
-                  payouts={payouts} 
-                  onMarkPaid={(id) => markPaid.mutate(id)}
-                  isPending={markPaid.isPending}
-                />
-              </div>
-
-              {/* Other Income Manager */}
+            {/* Overview Tab - Mobile */}
+            <TabsContent value="overview" className="px-5 space-y-4 mt-0">
+              <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+              <UpcomingPayouts 
+                payouts={payouts} 
+                onMarkPaid={(id) => markPaid.mutate(id)}
+                isPending={markPaid.isPending}
+              />
               <OtherIncomeManager />
-
-              {/* Financial Health */}
               <FinancialHealth 
                 deals={deals}
                 payouts={payouts}
@@ -179,31 +188,159 @@ export default function DashboardPage() {
               />
             </TabsContent>
 
-            {/* Taxes Tab */}
+            {/* Taxes Tab - Mobile */}
+            <TabsContent value="taxes" className="px-5 space-y-4 mt-0">
+              <TaxSafetyCard 
+                paidIncome={incomeTotals.paid}
+                projectedIncome={incomeTotals.projected}
+                deductibleExpenses={expenseTotals.annual}
+              />
+              <SafeToSpendCard
+                projectedCashIn={incomeTotals.projected}
+                monthlyExpenses={expenseTotals.monthly}
+                taxSetAsideRequired={incomeTotals.paid * 0.3}
+              />
+              <TaxProjection 
+                projectedIncome={incomeTotals.projected}
+                paidIncome={incomeTotals.paid}
+                totalExpenses={expenseTotals.annual}
+              />
+              <ExpenseIntelligence 
+                expenses={expenses}
+                monthlyFixedExpenses={expenseTotals.monthly}
+                pipelineValue={incomeTotals.projected}
+              />
+            </TabsContent>
+
+            {/* Analytics Tab - Mobile */}
+            <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
+              <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+              <ExpenseAnalytics expenses={expenses} />
+              <FinancialHealth 
+                deals={deals}
+                payouts={payouts}
+                monthlyExpenses={expenseTotals.monthly}
+                annualExpenses={expenseTotals.annual}
+              />
+            </TabsContent>
+
+            {/* Clients Tab - Mobile */}
+            <TabsContent value="clients" className="px-5 space-y-4 mt-0">
+              <ClientAnalytics deals={deals} payouts={payouts} />
+              <UpcomingPayouts 
+                payouts={payouts} 
+                onMarkPaid={(id) => markPaid.mutate(id)}
+                isPending={markPaid.isPending}
+              />
+              {/* Deal Summary Card - iOS style */}
+              <div className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/50 overflow-hidden shadow-ios">
+                <div className="px-4 py-3 border-b border-border/50">
+                  <h3 className="font-semibold text-[17px]">Deal Summary</h3>
+                </div>
+                <div className="divide-y divide-border/50">
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <span className="text-[15px]">Total Deals</span>
+                    <span className="font-semibold text-[15px]">{deals.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <span className="text-[15px]">Active Deals</span>
+                    <span className="font-semibold text-[15px]">{deals.filter(d => d.status === 'PENDING').length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <span className="text-[15px]">Closed Deals</span>
+                    <span className="font-semibold text-[15px]">{deals.filter(d => d.status === 'CLOSED').length}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3.5 bg-success/5">
+                    <span className="text-[15px]">Close Rate</span>
+                    <span className="font-semibold text-[15px] text-success">
+                      {deals.length > 0 
+                        ? ((deals.filter(d => d.status === 'CLOSED').length / deals.length) * 100).toFixed(0)
+                        : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:block p-4 lg:p-6 space-y-5 lg:space-y-6 animate-fade-in">
+          <OverduePayoutNotification
+            payouts={payouts}
+            onMarkPaid={(id) => markPaid.mutate(id)}
+            onUpdateDueDate={handleUpdatePayoutDueDate}
+            isPending={markPaid.isPending || updatePayout.isPending}
+          />
+
+          <QuickStats 
+            deals={deals} 
+            payouts={payouts} 
+            monthlyExpenses={expenseTotals.monthly}
+            onAutoMarkPaid={handleAutoMarkPaid}
+          />
+
+          <QuickActions />
+
+          <Tabs defaultValue="overview" className="space-y-5 lg:space-y-6">
+            <TabsList className="w-auto inline-grid grid-cols-4 h-10 p-1 bg-muted/60 backdrop-blur-sm">
+              <TabsTrigger value="overview" className="text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <LayoutDashboard className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="taxes" className="text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <Calculator className="h-4 w-4" />
+                Taxes
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <TrendingUp className="h-4 w-4" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="text-sm gap-1.5 data-[state=active]:shadow-sm">
+                <Users className="h-4 w-4" />
+                Clients
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                </div>
+                <UpcomingPayouts 
+                  payouts={payouts} 
+                  onMarkPaid={(id) => markPaid.mutate(id)}
+                  isPending={markPaid.isPending}
+                />
+              </div>
+              <OtherIncomeManager />
+              <FinancialHealth 
+                deals={deals}
+                payouts={payouts}
+                monthlyExpenses={expenseTotals.monthly}
+                annualExpenses={expenseTotals.annual}
+              />
+            </TabsContent>
+
             <TabsContent value="taxes" className="space-y-6">
               <div className="grid lg:grid-cols-2 gap-6">
-                {/* Tax Safety Card - Primary */}
                 <TaxSafetyCard 
                   paidIncome={incomeTotals.paid}
                   projectedIncome={incomeTotals.projected}
                   deductibleExpenses={expenseTotals.annual}
                 />
-                
-                {/* Safe to Spend Card */}
                 <SafeToSpendCard
                   projectedCashIn={incomeTotals.projected}
                   monthlyExpenses={expenseTotals.monthly}
                   taxSetAsideRequired={incomeTotals.paid * 0.3}
                 />
               </div>
-
               <div className="grid lg:grid-cols-2 gap-6">
                 <TaxProjection 
                   projectedIncome={incomeTotals.projected}
                   paidIncome={incomeTotals.paid}
                   totalExpenses={expenseTotals.annual}
                 />
-                
                 <ExpenseIntelligence 
                   expenses={expenses}
                   monthlyFixedExpenses={expenseTotals.monthly}
@@ -212,13 +349,11 @@ export default function DashboardPage() {
               </div>
             </TabsContent>
 
-            {/* Analytics Tab */}
             <TabsContent value="analytics" className="space-y-6">
               <div className="grid lg:grid-cols-2 gap-6">
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <ExpenseAnalytics expenses={expenses} />
               </div>
-              
               <FinancialHealth 
                 deals={deals}
                 payouts={payouts}
@@ -227,10 +362,8 @@ export default function DashboardPage() {
               />
             </TabsContent>
 
-            {/* Clients Tab */}
             <TabsContent value="clients" className="space-y-6">
               <ClientAnalytics deals={deals} payouts={payouts} />
-              
               <div className="grid lg:grid-cols-2 gap-6">
                 <UpcomingPayouts 
                   payouts={payouts} 

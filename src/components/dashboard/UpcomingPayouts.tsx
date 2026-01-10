@@ -42,48 +42,55 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
   const pendingCount = payouts.filter(p => p.status !== 'PAID').length;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl shadow-ios hover:shadow-ios-lg transition-shadow">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50">
         <div>
-          <h3 className="font-bold text-lg flex items-center gap-2">
+          <h3 className="font-bold text-[17px] sm:text-lg flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-accent" />
             Upcoming Payouts
           </h3>
-          <p className="text-xs text-muted-foreground">{pendingCount} pending</p>
+          <p className="text-[13px] text-muted-foreground">{pendingCount} pending</p>
         </div>
         <Link to="/payouts">
-          <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10">
+          <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10 h-8 px-2 sm:px-3">
             All <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
         </Link>
       </div>
 
-      {upcomingPayouts.length === 0 ? (
-        <div className="text-center py-12">
-          <DollarSign className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground mb-2">No pending payouts</p>
-          <Link to="/deals/new">
-            <Button variant="outline" size="sm">Create a deal</Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {upcomingPayouts.map((payout) => {
-            const badge = getDueBadge(payout.due_date);
-            const BadgeIcon = badge.icon;
-            return (
-              <Link
-                key={payout.id}
-                to={`/deals/${payout.deal_id}`}
-                className="block p-3 rounded-xl bg-muted/30 hover:bg-muted/60 transition-all group border border-transparent hover:border-border"
-              >
-                <div className="flex items-center justify-between gap-3">
+      {/* Content */}
+      <div className="p-2 sm:p-4">
+        {upcomingPayouts.length === 0 ? (
+          <div className="text-center py-10 px-4">
+            <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+              <DollarSign className="w-7 h-7 text-muted-foreground/40" />
+            </div>
+            <p className="text-[15px] font-medium text-muted-foreground mb-1">No pending payouts</p>
+            <p className="text-[13px] text-muted-foreground/70 mb-4">Create a deal to get started</p>
+            <Link to="/deals/new">
+              <Button variant="outline" size="sm" className="rounded-full">
+                Create Deal
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-border/50 sm:space-y-2 sm:divide-y-0">
+            {upcomingPayouts.map((payout) => {
+              const badge = getDueBadge(payout.due_date);
+              const BadgeIcon = badge.icon;
+              return (
+                <Link
+                  key={payout.id}
+                  to={`/deals/${payout.deal_id}`}
+                  className="flex items-center gap-3 px-3 py-3.5 sm:p-3 sm:rounded-xl sm:bg-muted/30 sm:hover:bg-muted/60 transition-all group active:bg-muted/60"
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate">
+                      <p className="font-medium text-[15px] sm:text-sm truncate">
                         {payout.deal?.client_name || 'Unknown'}
                       </p>
-                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
                         badge.variant === 'destructive' ? 'bg-destructive/15 text-destructive' :
                         badge.variant === 'warning' ? 'bg-warning/15 text-warning' :
                         'bg-muted text-muted-foreground'
@@ -92,18 +99,18 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
                         {badge.label}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-[13px] text-muted-foreground mt-0.5">
                       {payout.payout_type}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-bold text-sm">
+                    <span className="font-bold text-[15px] sm:text-sm">
                       {formatCurrency(payout.amount)}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 p-0 text-success opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-8 w-8 p-0 text-success opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-full bg-success/10 sm:bg-transparent"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -114,12 +121,12 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
                       <Check className="w-4 h-4" />
                     </Button>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
