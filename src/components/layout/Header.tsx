@@ -29,8 +29,8 @@ export function Header({
       
       <div className="relative flex items-center justify-between h-11 lg:h-14 px-4 lg:px-6 safe-area-inset-top">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {/* Mobile back button or menu */}
-          {showBackButton ? (
+          {/* Mobile back button only - no menu since we have bottom tab bar */}
+          {showBackButton && (
             <Link 
               to={backPath}
               className="lg:hidden -ml-2 flex items-center text-primary active:opacity-50 transition-opacity"
@@ -38,21 +38,22 @@ export function Header({
               <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
               <span className="text-[17px] -ml-1">Back</span>
             </Link>
-          ) : (
-            <Sheet>
-              <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon" className="shrink-0 -ml-2 h-9 w-9 active:scale-95 transition-transform">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[280px] border-r border-sidebar-border/50 bg-sidebar">
-                <Sidebar />
-              </SheetContent>
-            </Sheet>
           )}
+          
+          {/* Desktop sidebar menu trigger */}
+          <Sheet>
+            <SheetTrigger asChild className="hidden lg:flex">
+              <Button variant="ghost" size="icon" className="shrink-0 -ml-2 h-9 w-9 active:scale-95 transition-transform">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px] border-r border-sidebar-border/50 bg-sidebar">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
 
-          <div className="min-w-0 lg:ml-0">
-            {/* iOS-style large title on mobile */}
+          <div className="min-w-0">
+            {/* iOS-style centered title on mobile */}
             <h1 className="text-[17px] lg:text-lg font-semibold tracking-tight truncate">
               {title}
             </h1>
