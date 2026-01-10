@@ -689,6 +689,8 @@ function AppearanceSection() {
 // Subscription Section
 function SubscriptionSection() {
   const { tier, limits, usage, isPro, isFree } = useSubscription();
+  const [loading, setLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
 
   const PRO_FEATURES = [
     'Unlimited deals',
@@ -699,6 +701,74 @@ function SubscriptionSection() {
     'Data export',
     'Priority support',
   ];
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Please sign in to upgrade');
+      }
+
+      const response = await supabase.functions.invoke('create-checkout', {
+        body: { returnUrl: window.location.origin },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      const { toast } = await import('@/hooks/use-toast');
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to start checkout',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Please sign in');
+      }
+
+      const response = await supabase.functions.invoke('create-portal-session', {
+        body: { returnUrl: window.location.origin },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      if (response.data?.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (error) {
+      console.error('Error creating portal session:', error);
+      const { toast } = await import('@/hooks/use-toast');
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to open subscription portal',
+        variant: 'destructive',
+      });
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   return (
     <section id="subscription" className="bg-card border border-border rounded-lg p-6">
@@ -750,15 +820,28 @@ function SubscriptionSection() {
 
             <div className="flex items-baseline gap-2 mb-4">
               <span className="text-2xl font-bold">$29</span>
-              <span className="text-muted-foreground">/month</span>
+              <span className="text-muted-foreground">CAD/month</span>
             </div>
 
-            <Button className="w-full btn-premium">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Start 14-Day Free Trial
+            <Button 
+              className="w-full btn-premium" 
+              onClick={handleUpgrade}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Start 14-Day Free Trial
+                </>
+              )}
             </Button>
             <p className="text-xs text-center text-muted-foreground mt-2">
-              No credit card required • Cancel anytime
+              14-day free trial • Cancel anytime
             </p>
           </div>
         </div>
@@ -769,7 +852,7 @@ function SubscriptionSection() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
                 <Crown className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold">Pro Plan Active</p>
                 <p className="text-sm text-muted-foreground">You have access to all features</p>
               </div>
@@ -784,6 +867,22 @@ function SubscriptionSection() {
               </div>
             ))}
           </div>
+
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={handleManageSubscription}
+            disabled={portalLoading}
+          >
+            {portalLoading ? (
+              <>
+                <span className="w-4 h-4 mr-2 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Manage Subscription'
+            )}
+          </Button>
         </div>
       )}
     </section>
