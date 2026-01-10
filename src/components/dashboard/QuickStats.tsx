@@ -1,8 +1,9 @@
 import { useMemo, useEffect } from 'react';
-import { TrendingUp, Wallet, Receipt, Target, Calendar } from 'lucide-react';
+import { Wallet, Receipt, Target, Calendar } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import { Deal, Payout } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface QuickStatsProps {
   deals: Deal[];
@@ -65,60 +66,125 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
     };
   }, [deals, payouts, monthlyExpenses, thisYear]);
 
+  const statCards = [
+    {
+      icon: Wallet,
+      label: 'Projected Income',
+      value: formatCurrency(stats.totalProjected),
+      subtitle: `${stats.activeDeals} active deals`,
+      gradient: 'from-primary to-primary/70',
+      textColor: 'text-primary-foreground',
+    },
+    {
+      icon: Calendar,
+      label: `${thisYear} Projected`,
+      value: formatCurrency(stats.thisYearProjected),
+      subtitle: 'Expected this year',
+      gradient: 'from-success to-success/70',
+      textColor: 'text-success-foreground',
+    },
+    {
+      icon: Receipt,
+      label: 'Monthly Expenses',
+      value: formatCurrency(stats.monthlyExpenses),
+      subtitle: 'Recurring costs',
+      accent: true,
+      accentColor: 'text-destructive',
+    },
+    {
+      icon: Target,
+      label: 'Avg Per Deal',
+      value: formatCurrency(stats.avgDealValue),
+      subtitle: 'Gross commission',
+      accent: true,
+      accentColor: 'text-accent',
+    },
+  ];
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Total Projected Income */}
-      <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 text-primary-foreground shadow-xl transition-transform hover:scale-[1.02]">
-        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <Wallet className="h-4 w-4 opacity-80" />
-            <span className="text-xs font-medium opacity-80">Projected Income</span>
+    <div className="space-y-3">
+      {/* Mobile: Horizontal scroll with snap */}
+      <div className="sm:hidden -mx-4 px-4">
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1">
+          {statCards.map((stat, index) => (
+            <div
+              key={stat.label}
+              className={cn(
+                "flex-shrink-0 w-[75vw] max-w-[280px] snap-center rounded-2xl p-4 transition-all duration-200 active:scale-[0.98]",
+                stat.gradient 
+                  ? `bg-gradient-to-br ${stat.gradient} ${stat.textColor} shadow-lg`
+                  : "bg-card/95 backdrop-blur-xl border border-border/50 shadow-ios"
+              )}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  "w-7 h-7 rounded-lg flex items-center justify-center",
+                  stat.gradient ? "bg-white/20" : "bg-primary/10"
+                )}>
+                  <stat.icon className={cn(
+                    "h-4 w-4",
+                    stat.gradient ? "opacity-90" : stat.accentColor
+                  )} />
+                </div>
+                <span className={cn(
+                  "text-[11px] font-medium uppercase tracking-wide",
+                  stat.gradient ? "opacity-80" : "text-muted-foreground"
+                )}>{stat.label}</span>
+              </div>
+              <p className={cn(
+                "text-[28px] font-bold tracking-tight leading-none mb-1",
+                stat.accent && stat.accentColor
+              )}>
+                {stat.value}
+              </p>
+              <p className={cn(
+                "text-[12px]",
+                stat.gradient ? "opacity-70" : "text-muted-foreground"
+              )}>{stat.subtitle}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop: Grid layout */}
+      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat, index) => (
+          <div
+            key={stat.label}
+            className={cn(
+              "relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
+              stat.gradient 
+                ? `bg-gradient-to-br ${stat.gradient} ${stat.textColor} shadow-xl`
+                : "bg-card/95 backdrop-blur-xl border border-border/50 shadow-ios hover:shadow-ios-lg"
+            )}
+          >
+            {stat.gradient && (
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+            )}
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon className={cn(
+                  "h-4 w-4",
+                  stat.gradient ? "opacity-80" : stat.accentColor
+                )} />
+                <span className={cn(
+                  "text-xs font-medium",
+                  stat.gradient ? "opacity-80" : "text-muted-foreground"
+                )}>{stat.label}</span>
+              </div>
+              <p className={cn(
+                "text-2xl lg:text-3xl font-bold tracking-tight",
+                stat.accent && stat.accentColor
+              )}>
+                {stat.value}
+              </p>
+              <p className={cn(
+                "text-xs mt-1",
+                stat.gradient ? "opacity-70" : "text-muted-foreground"
+              )}>{stat.subtitle}</p>
+            </div>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold tracking-tight">
-            {formatCurrency(stats.totalProjected)}
-          </p>
-          <p className="text-xs opacity-70 mt-1">{stats.activeDeals} active deals</p>
-        </div>
-      </div>
-
-      {/* This Year Projected */}
-      <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-success to-success/80 p-5 text-success-foreground shadow-xl transition-transform hover:scale-[1.02]">
-        <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="h-4 w-4 opacity-80" />
-            <span className="text-xs font-medium opacity-80">{thisYear} Projected</span>
-          </div>
-          <p className="text-2xl lg:text-3xl font-bold tracking-tight">
-            {formatCurrency(stats.thisYearProjected)}
-          </p>
-          <p className="text-xs opacity-70 mt-1">Expected this year</p>
-        </div>
-      </div>
-
-      {/* Monthly Expenses */}
-      <div className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm transition-all hover:border-accent/50 hover:shadow-md">
-        <div className="flex items-center gap-2 mb-2">
-          <Receipt className="h-4 w-4 text-destructive" />
-          <span className="text-xs font-medium text-muted-foreground">Monthly Expenses</span>
-        </div>
-        <p className="text-2xl lg:text-3xl font-bold tracking-tight text-destructive">
-          {formatCurrency(stats.monthlyExpenses)}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">Recurring costs</p>
-      </div>
-
-      {/* Avg Per Deal */}
-      <div className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm transition-all hover:border-accent/50 hover:shadow-md">
-        <div className="flex items-center gap-2 mb-2">
-          <Target className="h-4 w-4 text-accent" />
-          <span className="text-xs font-medium text-muted-foreground">Avg Per Deal</span>
-        </div>
-        <p className="text-2xl lg:text-3xl font-bold tracking-tight">
-          {formatCurrency(stats.avgDealValue)}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">Gross commission</p>
+        ))}
       </div>
     </div>
   );

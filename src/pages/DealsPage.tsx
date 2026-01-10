@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, Eye } from 'lucide-react';
+import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, ChevronRight } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -59,23 +59,19 @@ export default function DealsPage() {
         const dueDate = parseISO(payout.due_date);
 
         if (timeFilter === 'this-month') {
-          // Include dates from start of month through end of month (inclusive)
           return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
         }
 
         if (timeFilter === 'next-month') {
-          // Include dates from start of next month through end of next month (inclusive)
           return dueDate >= nextMonthStart && dueDate <= nextMonthEnd;
         }
 
         return true;
       })
       .sort((a, b) => {
-        // Paid items sorted by paid_date desc
         if (a.status === 'PAID' && b.status === 'PAID') {
           return new Date(b.paid_date || 0).getTime() - new Date(a.paid_date || 0).getTime();
         }
-        // Unpaid items sorted by due_date asc (soonest first)
         const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
         const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
         return dateA - dateB;
@@ -87,12 +83,34 @@ export default function DealsPage() {
     const unpaid = payouts.filter(p => p.status !== 'PAID');
     const paid = payouts.filter(p => p.status === 'PAID');
     
+    const now = new Date();
+    const thisMonthStart = startOfMonth(now);
+    const thisMonthEnd = endOfMonth(now);
+    const nextMonthStart = startOfMonth(addMonths(now, 1));
+    const nextMonthEnd = endOfMonth(addMonths(now, 1));
+    
+    const thisMonthPayouts = payouts.filter(p => {
+      if (p.status === 'PAID' || !p.due_date) return false;
+      const d = parseISO(p.due_date);
+      return d >= thisMonthStart && d <= thisMonthEnd;
+    });
+    
+    const nextMonthPayouts = payouts.filter(p => {
+      if (p.status === 'PAID' || !p.due_date) return false;
+      const d = parseISO(p.due_date);
+      return d >= nextMonthStart && d <= nextMonthEnd;
+    });
+    
     return {
       upcomingCount: unpaid.length,
       upcomingAmount: unpaid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
       paidCount: paid.length,
       paidAmount: paid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
       totalDeals: deals.length,
+      thisMonthAmount: thisMonthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+      thisMonthCount: thisMonthPayouts.length,
+      nextMonthAmount: nextMonthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
+      nextMonthCount: nextMonthPayouts.length,
     };
   }, [payouts, deals]);
 
@@ -102,10 +120,10 @@ export default function DealsPage() {
 
   const getPayoutTypeColor = (type: string) => {
     switch (type) {
-      case 'Advance': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'Completion': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case '2nd Payment': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case '3rd Deposit': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+      case 'Advance': return 'bg-info/15 text-info';
+      case 'Completion': return 'bg-success/15 text-success';
+      case '2nd Payment': return 'bg-purple-500/15 text-purple-500';
+      case '3rd Deposit': return 'bg-warning/15 text-warning';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -115,132 +133,105 @@ export default function DealsPage() {
     return isBefore(parseISO(dueDate), new Date());
   };
 
+  const filterButtons = [
+    { key: 'upcoming' as TimeFilter, label: 'Pending', icon: Clock, count: stats.upcomingCount, amount: stats.upcomingAmount },
+    { key: 'this-month' as TimeFilter, label: 'This Month', icon: Calendar, count: stats.thisMonthCount, amount: stats.thisMonthAmount },
+    { key: 'next-month' as TimeFilter, label: 'Next Month', icon: Calendar, count: stats.nextMonthCount, amount: stats.nextMonthAmount },
+    { key: 'paid' as TimeFilter, label: 'Received', icon: CheckCircle2, count: stats.paidCount, amount: stats.paidAmount, success: true },
+  ];
+
   return (
     <AppLayout>
       <Header 
-        title="Deals & Payouts" 
-        subtitle={`${stats.upcomingCount} pending · ${formatCurrency(stats.upcomingAmount)} expected`}
+        title="Deals" 
+        subtitle={`${stats.upcomingCount} pending · ${formatCurrency(stats.upcomingAmount)}`}
+        showAddDeal={false}
         action={
-          <Button asChild className="btn-premium">
-            <Link to="/deals/new">
-              <Plus className="w-4 h-4 mr-2" />
-              New Deal
-            </Link>
-          </Button>
+          <Link 
+            to="/deals/new"
+            className="sm:hidden text-primary font-semibold text-[17px] active:opacity-50 transition-opacity"
+          >
+            <Plus className="h-6 w-6" strokeWidth={2.5} />
+          </Link>
         }
       />
 
-      <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <button
-            onClick={() => setTimeFilter('upcoming')}
-            className={cn(
-              "p-4 rounded-xl border text-left transition-all",
-              timeFilter === 'upcoming' 
-                ? "bg-accent/10 border-accent" 
-                : "bg-card border-border hover:border-accent/50"
-            )}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs">Pending</span>
-            </div>
-            <p className="text-xl font-bold">{formatCurrency(stats.upcomingAmount)}</p>
-            <p className="text-xs text-muted-foreground">{stats.upcomingCount} payouts</p>
-          </button>
-
-          <button
-            onClick={() => setTimeFilter('this-month')}
-            className={cn(
-              "p-4 rounded-xl border text-left transition-all",
-              timeFilter === 'this-month' 
-                ? "bg-accent/10 border-accent" 
-                : "bg-card border-border hover:border-accent/50"
-            )}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs">This Month</span>
-            </div>
-            <p className="text-xl font-bold">
-              {formatCurrency(
-                payouts
-                  .filter(p => {
-                    if (p.status === 'PAID' || !p.due_date) return false;
-                    const d = parseISO(p.due_date);
-                    const monthStart = startOfMonth(new Date());
-                    const monthEnd = endOfMonth(new Date());
-                    return d >= monthStart && d <= monthEnd;
-                  })
-                  .reduce((sum, p) => sum + Number(p.amount || 0), 0)
-              )}
-            </p>
-          </button>
-
-          <button
-            onClick={() => setTimeFilter('next-month')}
-            className={cn(
-              "p-4 rounded-xl border text-left transition-all",
-              timeFilter === 'next-month' 
-                ? "bg-accent/10 border-accent" 
-                : "bg-card border-border hover:border-accent/50"
-            )}
-          >
-            <div className="flex items-center gap-2 text-muted-foreground mb-1">
-              <Calendar className="w-4 h-4" />
-              <span className="text-xs">Next Month</span>
-            </div>
-            <p className="text-xl font-bold">
-              {formatCurrency(
-                payouts
-                  .filter(p => {
-                    if (p.status === 'PAID' || !p.due_date) return false;
-                    const d = parseISO(p.due_date);
-                    const nextMonthStart = startOfMonth(addMonths(new Date(), 1));
-                    const nextMonthEnd = endOfMonth(addMonths(new Date(), 1));
-                    return d >= nextMonthStart && d <= nextMonthEnd;
-                  })
-                  .reduce((sum, p) => sum + Number(p.amount || 0), 0)
-              )}
-            </p>
-          </button>
-
-          <button
-            onClick={() => setTimeFilter('paid')}
-            className={cn(
-              "p-4 rounded-xl border text-left transition-all",
-              timeFilter === 'paid' 
-                ? "bg-success/10 border-success" 
-                : "bg-card border-border hover:border-success/50"
-            )}
-          >
-            <div className="flex items-center gap-2 text-success mb-1">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="text-xs">Received</span>
-            </div>
-            <p className="text-xl font-bold text-success">{formatCurrency(stats.paidAmount)}</p>
-            <p className="text-xs text-muted-foreground">{stats.paidCount} paid</p>
-          </button>
+      <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 animate-fade-in">
+        {/* Mobile: Horizontal scroll filter pills */}
+        <div className="sm:hidden -mx-4 px-4">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+            {filterButtons.map((btn) => (
+              <button
+                key={btn.key}
+                onClick={() => setTimeFilter(btn.key)}
+                className={cn(
+                  "flex-shrink-0 px-4 py-2.5 rounded-full text-[13px] font-medium transition-all active:scale-95",
+                  timeFilter === btn.key 
+                    ? btn.success 
+                      ? "bg-success text-success-foreground"
+                      : "bg-primary text-primary-foreground"
+                    : "bg-secondary/80 text-secondary-foreground"
+                )}
+              >
+                {btn.label}
+                <span className="ml-1.5 opacity-80">({btn.count})</span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Search */}
+        {/* Desktop: Grid stats */}
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {filterButtons.map((btn) => (
+            <button
+              key={btn.key}
+              onClick={() => setTimeFilter(btn.key)}
+              className={cn(
+                "p-4 rounded-2xl border text-left transition-all active:scale-[0.98]",
+                timeFilter === btn.key 
+                  ? btn.success 
+                    ? "bg-success/10 border-success" 
+                    : "bg-primary/10 border-primary"
+                  : "bg-card/95 backdrop-blur-xl border-border/50 hover:border-primary/30 shadow-ios"
+              )}
+            >
+              <div className={cn(
+                "flex items-center gap-2 mb-1",
+                btn.success && timeFilter === btn.key ? "text-success" : "text-muted-foreground"
+              )}>
+                <btn.icon className="w-4 h-4" />
+                <span className="text-xs font-medium">{btn.label}</span>
+              </div>
+              <p className={cn(
+                "text-xl font-bold",
+                btn.success && timeFilter === btn.key && "text-success"
+              )}>{formatCurrency(btn.amount)}</p>
+              <p className="text-xs text-muted-foreground">{btn.count} payouts</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Search - iOS style */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
           <Input
             placeholder="Search by client or property..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-10 h-10 sm:h-11 bg-secondary/60 border-0 rounded-xl placeholder:text-muted-foreground/50"
           />
         </div>
 
         {/* Payouts List */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          <div className="flex items-center justify-center py-16">
+            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
         ) : filteredPayouts.length === 0 ? (
-          <div className="text-center py-12">
-            <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+          <div className="text-center py-16">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+              <DollarSign className="w-8 h-8 text-muted-foreground/50" />
+            </div>
             <p className="text-muted-foreground mb-4">
               {timeFilter === 'paid' ? 'No paid payouts yet' : 'No pending payouts'}
             </p>
@@ -252,95 +243,165 @@ export default function DealsPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {filteredPayouts.map((payout) => {
-              const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
-              
-              return (
-                <div
-                  key={payout.id}
-                  className={cn(
-                    "bg-card border rounded-xl p-4 transition-all hover:shadow-md group",
-                    overdue ? "border-destructive/50 bg-destructive/5" : "border-border hover:border-accent/30",
-                    payout.status === 'PAID' && "opacity-70"
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    {/* Left: Client & Property */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Link
-                          to={`/deals/${payout.deal_id}`}
-                          className="font-semibold text-sm hover:text-accent transition-colors truncate"
-                        >
-                          {payout.deal?.client_name || 'Unknown'}
-                        </Link>
-                        <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0", getPayoutTypeColor(payout.payout_type))}>
-                          {payout.payout_type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {payout.deal?.address || payout.deal?.project_name || '—'}
-                      </p>
-                    </div>
-
-                    {/* Right: Amount & Actions */}
-                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                      <p className={cn(
-                        "text-base font-bold",
-                        payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : "text-foreground"
-                      )}>
-                        {formatCurrency(payout.amount)}
-                      </p>
-                      <p className={cn(
-                        "text-[10px]",
-                        overdue ? "text-destructive font-medium" : "text-muted-foreground"
-                      )}>
-                        {payout.status === 'PAID' && payout.paid_date
-                          ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
-                          : payout.due_date
-                            ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
-                            : 'No date'}
-                        {overdue && ' · Overdue'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions Row */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+          <>
+            {/* Mobile: iOS-style list */}
+            <div className="sm:hidden">
+              <div className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/50 overflow-hidden shadow-ios divide-y divide-border/30">
+                {filteredPayouts.map((payout) => {
+                  const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
+                  
+                  return (
                     <Link
+                      key={payout.id}
                       to={`/deals/${payout.deal_id}`}
-                      className="text-xs text-muted-foreground hover:text-accent transition-colors flex items-center gap-1"
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 transition-colors active:bg-muted/50",
+                        payout.status === 'PAID' && "opacity-60"
+                      )}
                     >
-                      <Eye className="w-3 h-3" />
-                      View Deal
+                      {/* Status indicator */}
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                        payout.status === 'PAID' 
+                          ? "bg-success/15"
+                          : overdue 
+                            ? "bg-destructive/15"
+                            : "bg-primary/10"
+                      )}>
+                        {payout.status === 'PAID' ? (
+                          <CheckCircle2 className="w-5 h-5 text-success" />
+                        ) : (
+                          <DollarSign className={cn(
+                            "w-5 h-5",
+                            overdue ? "text-destructive" : "text-primary"
+                          )} />
+                        )}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-[15px] truncate">
+                            {payout.deal?.client_name || 'Unknown'}
+                          </p>
+                          <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
+                            {payout.payout_type}
+                          </Badge>
+                        </div>
+                        <p className={cn(
+                          "text-[13px]",
+                          overdue ? "text-destructive" : "text-muted-foreground"
+                        )}>
+                          {payout.status === 'PAID' && payout.paid_date
+                            ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
+                            : payout.due_date
+                              ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
+                              : 'No date set'}
+                          {overdue && ' · Overdue'}
+                        </p>
+                      </div>
+                      
+                      {/* Amount & chevron */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className={cn(
+                          "text-[15px] font-semibold",
+                          payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
+                        )}>
+                          {formatCurrency(payout.amount)}
+                        </p>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground/40" />
+                      </div>
                     </Link>
+                  );
+                })}
+              </div>
+              
+              {/* Mark paid action (shown as floating for pending items) */}
+              {timeFilter !== 'paid' && filteredPayouts.length > 0 && (
+                <p className="text-center text-[13px] text-muted-foreground mt-4">
+                  Tap a payout to view details or mark as paid
+                </p>
+              )}
+            </div>
+
+            {/* Desktop: Grid cards */}
+            <div className="hidden sm:grid gap-3 grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              {filteredPayouts.map((payout) => {
+                const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
+                
+                return (
+                  <div
+                    key={payout.id}
+                    className={cn(
+                      "bg-card/95 backdrop-blur-xl border rounded-2xl p-4 transition-all hover:shadow-ios-lg group",
+                      overdue ? "border-destructive/50 bg-destructive/5" : "border-border/50 hover:border-primary/30",
+                      payout.status === 'PAID' && "opacity-70"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <Link
+                            to={`/deals/${payout.deal_id}`}
+                            className="font-semibold text-sm hover:text-primary transition-colors truncate"
+                          >
+                            {payout.deal?.client_name || 'Unknown'}
+                          </Link>
+                          <Badge variant="outline" className={cn("text-[10px] shrink-0 px-1.5 py-0 border-0", getPayoutTypeColor(payout.payout_type))}>
+                            {payout.payout_type}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {payout.deal?.address || payout.deal?.project_name || '—'}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className={cn(
+                          "text-base font-bold",
+                          payout.status === 'PAID' ? "text-success" : overdue ? "text-destructive" : ""
+                        )}>
+                          {formatCurrency(payout.amount)}
+                        </p>
+                        <p className={cn(
+                          "text-[10px]",
+                          overdue ? "text-destructive" : "text-muted-foreground"
+                        )}>
+                          {payout.status === 'PAID' && payout.paid_date
+                            ? `Paid ${format(parseISO(payout.paid_date), 'MMM d')}`
+                            : payout.due_date
+                              ? `Due ${format(parseISO(payout.due_date), 'MMM d, yyyy')}`
+                              : 'No date'}
+                          {overdue && ' · Overdue'}
+                        </p>
+                      </div>
+                    </div>
+
                     {payout.status !== 'PAID' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleMarkPaid(payout.id)}
-                        className="h-7 text-xs text-success hover:text-success hover:bg-success/10"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                        Mark Paid
-                      </Button>
+                      <div className="flex justify-end mt-3 pt-3 border-t border-border/30">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMarkPaid(payout.id)}
+                          className="h-8 text-xs text-success hover:text-success hover:bg-success/10"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                          Mark Paid
+                        </Button>
+                      </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
-        {/* Quick link to all deals */}
-        <div className="text-center pt-4 border-t border-border">
-          <p className="text-sm text-muted-foreground">
-            {stats.totalDeals} total deals · 
-            <Link to="/payouts" className="text-accent hover:underline ml-1">
-              View full payout schedule →
-            </Link>
-          </p>
+        {/* Quick link */}
+        <div className="text-center pt-4">
+          <Link to="/payouts" className="text-[13px] text-primary font-medium active:opacity-50 transition-opacity">
+            View full payout schedule →
+          </Link>
         </div>
       </div>
     </AppLayout>
