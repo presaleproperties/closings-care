@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useToast } from './use-toast';
 
 interface AdminUser {
   id: string;
@@ -79,5 +80,39 @@ export function useAdminAnalytics() {
     enabled: isAdmin === true,
     staleTime: 60 * 1000, // 1 minute
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+  });
+}
+
+export function useAdminUpdateSubscription() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ targetUserId, tier }: { targetUserId: string; tier: 'free' | 'pro' }) => {
+      const { data, error } = await supabase.functions.invoke('admin-update-subscription', {
+        body: { targetUserId, tier },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: 'Subscription Updated',
+        description: `User has been ${variables.tier === 'pro' ? 'upgraded to Pro' : 'downgraded to Free'}.`,
+      });
+      // Refetch admin analytics to update the UI
+      queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 }
