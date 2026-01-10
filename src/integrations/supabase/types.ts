@@ -143,6 +143,8 @@ export type Database = {
           category: string
           created_at: string
           id: string
+          is_fixed: boolean | null
+          is_tax_deductible: boolean | null
           month: string
           notes: string | null
           recurrence: string | null
@@ -155,6 +157,8 @@ export type Database = {
           category: string
           created_at?: string
           id?: string
+          is_fixed?: boolean | null
+          is_tax_deductible?: boolean | null
           month: string
           notes?: string | null
           recurrence?: string | null
@@ -167,6 +171,8 @@ export type Database = {
           category?: string
           created_at?: string
           id?: string
+          is_fixed?: boolean | null
+          is_tax_deductible?: boolean | null
           month?: string
           notes?: string | null
           recurrence?: string | null
@@ -358,11 +364,16 @@ export type Database = {
           country: string | null
           created_at: string
           currency: string
+          gst_rate: number | null
+          gst_registered: boolean | null
           id: string
           monthly_income_goal: number | null
           presale_template: Json | null
           province: string | null
           resale_template: Json | null
+          tax_buffer_percent: number | null
+          tax_calculation_method: string | null
+          tax_saved_amount: number | null
           tax_set_aside_percent: number | null
           tax_type: string | null
           updated_at: string
@@ -374,11 +385,16 @@ export type Database = {
           country?: string | null
           created_at?: string
           currency?: string
+          gst_rate?: number | null
+          gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null
+          tax_buffer_percent?: number | null
+          tax_calculation_method?: string | null
+          tax_saved_amount?: number | null
           tax_set_aside_percent?: number | null
           tax_type?: string | null
           updated_at?: string
@@ -390,11 +406,16 @@ export type Database = {
           country?: string | null
           created_at?: string
           currency?: string
+          gst_rate?: number | null
+          gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null
+          tax_buffer_percent?: number | null
+          tax_calculation_method?: string | null
+          tax_saved_amount?: number | null
           tax_set_aside_percent?: number | null
           tax_type?: string | null
           updated_at?: string

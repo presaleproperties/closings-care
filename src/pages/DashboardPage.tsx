@@ -17,6 +17,9 @@ import { ExpenseAnalytics } from '@/components/dashboard/ExpenseAnalytics';
 import { UpcomingPayouts } from '@/components/dashboard/UpcomingPayouts';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
+import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
+import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
+import { ExpenseIntelligence } from '@/components/dashboard/ExpenseIntelligence';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -179,15 +182,33 @@ export default function DashboardPage() {
             {/* Taxes Tab */}
             <TabsContent value="taxes" className="space-y-6">
               <div className="grid lg:grid-cols-2 gap-6">
+                {/* Tax Safety Card - Primary */}
+                <TaxSafetyCard 
+                  paidIncome={incomeTotals.paid}
+                  projectedIncome={incomeTotals.projected}
+                  deductibleExpenses={expenseTotals.annual}
+                />
+                
+                {/* Safe to Spend Card */}
+                <SafeToSpendCard
+                  projectedCashIn={incomeTotals.projected}
+                  monthlyExpenses={expenseTotals.monthly}
+                  taxSetAsideRequired={incomeTotals.paid * 0.3}
+                />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-6">
                 <TaxProjection 
                   projectedIncome={incomeTotals.projected}
                   paidIncome={incomeTotals.paid}
                   totalExpenses={expenseTotals.annual}
                 />
                 
-                <div className="space-y-6">
-                  <ExpenseAnalytics expenses={expenses} />
-                </div>
+                <ExpenseIntelligence 
+                  expenses={expenses}
+                  monthlyFixedExpenses={expenseTotals.monthly}
+                  pipelineValue={incomeTotals.projected}
+                />
               </div>
             </TabsContent>
 

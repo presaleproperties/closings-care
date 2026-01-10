@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle } from 'lucide-react';
+import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle, PiggyBank } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -38,6 +38,13 @@ export default function SettingsPage() {
   const [resaleTemplate, setResaleTemplate] = useState<string[]>(defaultResale);
   const [newPresaleItem, setNewPresaleItem] = useState('');
   const [newResaleItem, setNewResaleItem] = useState('');
+  
+  // Tax safety settings
+  const [gstRegistered, setGstRegistered] = useState(false);
+  const [gstRate, setGstRate] = useState(5);
+  const [taxBuffer, setTaxBuffer] = useState(5);
+  const [taxCalculationMethod, setTaxCalculationMethod] = useState<'progressive' | 'flat'>('progressive');
+  const [taxSavedAmount, setTaxSavedAmount] = useState(0);
 
   useEffect(() => {
     if (settings) {
@@ -49,6 +56,12 @@ export default function SettingsPage() {
       setTaxType(((settings as any).tax_type || 'self-employed') as TaxType);
       setPresaleTemplate(settings.presale_template || defaultPresale);
       setResaleTemplate(settings.resale_template || defaultResale);
+      // New tax settings
+      setGstRegistered((settings as any).gst_registered || false);
+      setGstRate(((settings as any).gst_rate || 0.05) * 100);
+      setTaxBuffer((settings as any).tax_buffer_percent || 5);
+      setTaxCalculationMethod((settings as any).tax_calculation_method || 'progressive');
+      setTaxSavedAmount((settings as any).tax_saved_amount || 0);
     }
   }, [settings]);
 
@@ -62,6 +75,12 @@ export default function SettingsPage() {
       tax_type: taxType,
       presale_template: presaleTemplate,
       resale_template: resaleTemplate,
+      // New tax settings
+      gst_registered: gstRegistered,
+      gst_rate: gstRate / 100,
+      tax_buffer_percent: taxBuffer,
+      tax_calculation_method: taxCalculationMethod,
+      tax_saved_amount: taxSavedAmount,
     } as any);
   };
 
@@ -267,28 +286,178 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Financial Settings */}
+        {/* Tax Safety Settings */}
         <section className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">Financial Settings</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <PiggyBank className="w-5 h-5 text-warning" />
+            <h2 className="font-semibold">Tax Safety Settings</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            Configure how the app calculates and tracks your tax obligations
+          </p>
           
           <div className="space-y-6">
+            {/* Tax Calculation Method */}
+            <div className="space-y-3">
+              <Label>Tax Calculation Method</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setTaxCalculationMethod('progressive')}
+                  className={cn(
+                    'p-4 rounded-xl border-2 transition-all text-left',
+                    taxCalculationMethod === 'progressive'
+                      ? 'border-accent bg-accent/10'
+                      : 'border-border hover:border-muted-foreground'
+                  )}
+                >
+                  <span className={cn('font-medium', taxCalculationMethod === 'progressive' && 'text-accent')}>
+                    Progressive (Recommended)
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Uses actual CRA tax brackets for accurate calculations
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTaxCalculationMethod('flat')}
+                  className={cn(
+                    'p-4 rounded-xl border-2 transition-all text-left',
+                    taxCalculationMethod === 'flat'
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border hover:border-muted-foreground'
+                  )}
+                >
+                  <span className={cn('font-medium', taxCalculationMethod === 'flat' && 'text-primary')}>
+                    Flat Percentage
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Simple flat rate for quick estimates
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* Flat Tax Rate (only shown if flat method selected) */}
+            {taxCalculationMethod === 'flat' && (
+              <div className="space-y-2">
+                <Label htmlFor="tax">Flat Tax Rate (%)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Percentage of income to set aside for taxes
+                </p>
+                <Input
+                  id="tax"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={taxPercent}
+                  onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)}
+                  className="w-32"
+                />
+              </div>
+            )}
+
+            {/* Conservative Buffer */}
             <div className="space-y-2">
-              <Label htmlFor="tax">Tax Set-Aside (%)</Label>
+              <Label htmlFor="buffer">Conservative Buffer (%)</Label>
               <p className="text-sm text-muted-foreground">
-                Percentage of income to set aside for taxes
+                Extra buffer to protect from underestimating taxes
+              </p>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="buffer"
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="1"
+                  value={taxBuffer}
+                  onChange={(e) => setTaxBuffer(parseFloat(e.target.value) || 0)}
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">Default: 5%</span>
+              </div>
+              <div className="p-3 rounded-lg bg-warning/10 border border-warning/30 mt-2">
+                <p className="text-xs text-warning">
+                  This extra buffer protects you from tax surprises. The higher the buffer, the more conservative your estimates.
+                </p>
+              </div>
+            </div>
+
+            {/* GST Settings */}
+            <div className="space-y-4 pt-4 border-t border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="gstRegistered">GST/HST Registered</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Are you registered to collect GST/HST?
+                  </p>
+                </div>
+                <Switch
+                  id="gstRegistered"
+                  checked={gstRegistered}
+                  onCheckedChange={setGstRegistered}
+                />
+              </div>
+
+              {gstRegistered && (
+                <div className="space-y-2 pl-4 border-l-2 border-warning/30">
+                  <Label htmlFor="gstRate">GST/HST Rate (%)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Your applicable GST/HST rate (BC: 5% GST, Ontario: 13% HST)
+                  </p>
+                  <Input
+                    id="gstRate"
+                    type="number"
+                    min="0"
+                    max="15"
+                    step="0.5"
+                    value={gstRate}
+                    onChange={(e) => setGstRate(parseFloat(e.target.value) || 5)}
+                    className="w-24"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Tax Saved Amount */}
+            <div className="space-y-2 pt-4 border-t border-border">
+              <Label htmlFor="taxSaved">Tax Already Saved ($)</Label>
+              <p className="text-sm text-muted-foreground">
+                How much have you already set aside for taxes this year?
               </p>
               <Input
-                id="tax"
+                id="taxSaved"
                 type="number"
                 min="0"
-                max="100"
-                step="0.5"
-                value={taxPercent}
-                onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)}
-                className="w-32"
+                step="100"
+                value={taxSavedAmount}
+                onChange={(e) => setTaxSavedAmount(parseFloat(e.target.value) || 0)}
+                className="w-40"
               />
             </div>
 
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div>
+                <Label htmlFor="applyTax">Apply Tax Set-Aside to Forecasts</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show net amounts after tax deduction in forecast
+                </p>
+              </div>
+              <Switch
+                id="applyTax"
+                checked={applyTaxToForecasts}
+                onCheckedChange={setApplyTaxToForecasts}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Financial Settings */}
+        <section className="bg-card border border-border rounded-lg p-6">
+          <h2 className="font-semibold mb-4">Brokerage Settings</h2>
+          
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="brokerage">Brokerage Split (%)</Label>
               <p className="text-sm text-muted-foreground">
@@ -303,20 +472,6 @@ export default function SettingsPage() {
                 value={brokeragePercent}
                 onChange={(e) => setBrokeragePercent(parseFloat(e.target.value) || 0)}
                 className="w-32"
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="applyTax">Apply Tax Set-Aside to Forecasts</Label>
-                <p className="text-sm text-muted-foreground">
-                  Show net amounts after tax deduction in forecast
-                </p>
-              </div>
-              <Switch
-                id="applyTax"
-                checked={applyTaxToForecasts}
-                onCheckedChange={setApplyTaxToForecasts}
               />
             </div>
           </div>
