@@ -107,6 +107,27 @@ export function useUpdateDeal() {
           .eq('payout_type', 'Completion');
       }
 
+      // Auto-sync: For PRESALE deals, update payout due_dates when deal dates change
+      if (deal.property_type === 'PRESALE') {
+        // Sync advance_date with Advance payout
+        if (cleanedData.advance_date !== undefined) {
+          await supabase
+            .from('payouts')
+            .update({ due_date: cleanedData.advance_date })
+            .eq('deal_id', id)
+            .eq('payout_type', 'Advance');
+        }
+        
+        // Sync completion_date with Completion payout
+        if (cleanedData.completion_date !== undefined) {
+          await supabase
+            .from('payouts')
+            .update({ due_date: cleanedData.completion_date })
+            .eq('deal_id', id)
+            .eq('payout_type', 'Completion');
+        }
+      }
+
       return deal as Deal;
     },
     onSuccess: (deal) => {
