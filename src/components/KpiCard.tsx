@@ -24,7 +24,7 @@ export function KpiCard({
   variant = 'default'
 }: KpiCardProps) {
   const variantClasses = {
-    default: 'bg-card border border-border',
+    default: 'bg-card/95 backdrop-blur-xl border border-border/50',
     primary: 'gradient-card-primary text-primary-foreground border-0',
     accent: 'gradient-card-accent text-accent-foreground border-0',
     success: 'gradient-card-success text-success-foreground border-0',
@@ -34,8 +34,10 @@ export function KpiCard({
 
   return (
     <div className={cn(
-      'rounded-xl p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5',
+      'rounded-2xl p-5 transition-all duration-300 ease-out',
       variantClasses[variant],
+      variant === 'default' && 'shadow-[0_0_0_1px_hsl(var(--border)/0.3),0_1px_2px_0_hsl(0_0%_0%/0.03),0_2px_4px_-1px_hsl(0_0%_0%/0.04)] hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.15),0_8px_16px_-4px_hsl(0_0%_0%/0.1),0_4px_8px_-2px_hsl(0_0%_0%/0.06)] hover:-translate-y-0.5 hover:border-primary/20',
+      isColored && 'shadow-lg hover:shadow-xl hover:-translate-y-0.5',
       className
     )}>
       <div className="flex items-start justify-between mb-3">
@@ -45,8 +47,8 @@ export function KpiCard({
         )}>{title}</p>
         {icon && (
           <div className={cn(
-            'w-9 h-9 rounded-lg flex items-center justify-center',
-            isColored ? 'bg-white/15' : 'bg-accent/10'
+            'w-9 h-9 rounded-xl flex items-center justify-center transition-transform duration-200',
+            isColored ? 'bg-white/15' : 'bg-primary/10'
           )}>
             {icon}
           </div>
@@ -56,11 +58,11 @@ export function KpiCard({
       <p className="text-2xl lg:text-3xl font-bold tracking-tight">{value}</p>
       
       {(subtitle || trend) && (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-3">
           {trend && (
             <span
               className={cn(
-                'flex items-center text-xs font-medium px-2 py-0.5 rounded-full',
+                'flex items-center text-xs font-medium px-2 py-1 rounded-lg',
                 trend === 'up' && (isColored ? 'bg-white/20' : 'bg-success/10 text-success'),
                 trend === 'down' && (isColored ? 'bg-white/20' : 'bg-destructive/10 text-destructive'),
                 trend === 'neutral' && (isColored ? 'bg-white/20' : 'bg-muted text-muted-foreground')
