@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, X, MapPin, Building2, User, Info } from 'lucide-react';
+import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,9 @@ export default function SettingsPage() {
       />
 
       <div className="p-4 lg:p-6 max-w-2xl space-y-6 animate-fade-in">
+        {/* Appearance */}
+        <AppearanceSection />
+
         {/* Tax Jurisdiction */}
         <section className="bg-card border border-border rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -408,5 +412,108 @@ export default function SettingsPage() {
         </section>
       </div>
     </AppLayout>
+  );
+}
+
+// Appearance Section Component
+function AppearanceSection() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <section className="bg-card border border-border rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sun className="w-5 h-5 text-accent" />
+          <h2 className="font-semibold">Appearance</h2>
+        </div>
+        <div className="h-16 animate-pulse bg-muted rounded-lg" />
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-card border border-border rounded-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Sun className="w-5 h-5 text-accent" />
+        <h2 className="font-semibold">Appearance</h2>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4">
+        Choose your preferred theme
+      </p>
+      
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={() => setTheme('light')}
+          className={cn(
+            'p-4 rounded-xl border-2 transition-all text-center',
+            theme === 'light'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-muted-foreground'
+          )}
+        >
+          <Sun className={cn(
+            'w-6 h-6 mx-auto mb-2',
+            theme === 'light' ? 'text-accent' : 'text-muted-foreground'
+          )} />
+          <span className={cn(
+            'text-sm font-medium',
+            theme === 'light' && 'text-accent'
+          )}>
+            Light
+          </span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => setTheme('dark')}
+          className={cn(
+            'p-4 rounded-xl border-2 transition-all text-center',
+            theme === 'dark'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-muted-foreground'
+          )}
+        >
+          <Moon className={cn(
+            'w-6 h-6 mx-auto mb-2',
+            theme === 'dark' ? 'text-accent' : 'text-muted-foreground'
+          )} />
+          <span className={cn(
+            'text-sm font-medium',
+            theme === 'dark' && 'text-accent'
+          )}>
+            Dark
+          </span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => setTheme('system')}
+          className={cn(
+            'p-4 rounded-xl border-2 transition-all text-center',
+            theme === 'system'
+              ? 'border-accent bg-accent/10'
+              : 'border-border hover:border-muted-foreground'
+          )}
+        >
+          <Monitor className={cn(
+            'w-6 h-6 mx-auto mb-2',
+            theme === 'system' ? 'text-accent' : 'text-muted-foreground'
+          )} />
+          <span className={cn(
+            'text-sm font-medium',
+            theme === 'system' && 'text-accent'
+          )}>
+            System
+          </span>
+        </button>
+      </div>
+    </section>
   );
 }
