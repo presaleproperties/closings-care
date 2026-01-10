@@ -34,7 +34,7 @@ export default function DashboardPage() {
   const { data: expenses = [] } = useExpenses();
   const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
-  const { showOnboarding, completeOnboarding } = useOnboarding();
+  const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
   const updatePayout = useUpdatePayout();
@@ -91,6 +91,17 @@ export default function DashboardPage() {
   const handleUpdatePayoutDueDate = useCallback((payoutId: string, newDate: string) => {
     updatePayout.mutate({ id: payoutId, data: { due_date: newDate } });
   }, [updatePayout]);
+
+  // Don't render onboarding wizard until we've checked localStorage
+  if (isChecking) {
+    return (
+      <AppLayout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
