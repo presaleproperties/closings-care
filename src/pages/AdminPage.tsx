@@ -43,6 +43,18 @@ export default function AdminPage() {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const users = analytics?.users || [];
+  
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users;
+    const query = searchQuery.toLowerCase();
+    return users.filter(
+      (user) =>
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+    );
+  }, [users, searchQuery]);
+
   useEffect(() => {
     if (!isCheckingAdmin && !isAdmin) {
       navigate('/dashboard');
@@ -83,17 +95,6 @@ export default function AdminPage() {
 
   const summary = analytics?.summary;
   const signupsByMonth = analytics?.signupsByMonth || [];
-  const users = analytics?.users || [];
-
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const query = searchQuery.toLowerCase();
-    return users.filter(
-      (user) =>
-        user.name?.toLowerCase().includes(query) ||
-        user.email?.toLowerCase().includes(query)
-    );
-  }, [users, searchQuery]);
 
   return (
     <AppLayout>
