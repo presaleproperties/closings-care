@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -61,32 +62,34 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/dashboard/2025" element={<ProtectedRoute><Dashboard2025Page /></ProtectedRoute>} />
-            <Route path="/dashboard/2026" element={<ProtectedRoute><Dashboard2026Page /></ProtectedRoute>} />
-            <Route path="/dashboard/2027" element={<ProtectedRoute><Dashboard2027Page /></ProtectedRoute>} />
-            <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
-            <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
-            <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
-            <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
-            <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-            <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
-            <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
-            <Route path="/import/2025" element={<ProtectedRoute><Import2025Page /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+              <Route path="/dashboard/2025" element={<ProtectedRoute><Dashboard2025Page /></ProtectedRoute>} />
+              <Route path="/dashboard/2026" element={<ProtectedRoute><Dashboard2026Page /></ProtectedRoute>} />
+              <Route path="/dashboard/2027" element={<ProtectedRoute><Dashboard2027Page /></ProtectedRoute>} />
+              <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
+              <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
+              <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
+              <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
+              <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+              <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
+              <Route path="/import" element={<ProtectedRoute><ImportPage /></ProtectedRoute>} />
+              <Route path="/import/2025" element={<ProtectedRoute><Import2025Page /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
