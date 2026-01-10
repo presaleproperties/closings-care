@@ -197,7 +197,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       {/* Summary Stats - Two rows for better visual */}
       <div className="space-y-3 mb-6">
         {/* Income row */}
-        <div className={`grid gap-3 ${propertyCosts.totalNet !== 0 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-3'}`}>
+        <div className="grid grid-cols-3 gap-3">
           <div className="p-3 rounded-xl bg-success/10 border border-success/20">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Commissions</p>
             <p className="text-lg font-bold text-success">{formatCurrency(totalCommissions)}</p>
@@ -209,17 +209,6 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
             </div>
             <p className="text-lg font-bold text-sky-400">{formatCurrency(totalOtherIncome)}</p>
           </div>
-          {propertyCosts.totalNet !== 0 && (
-            <div className={`p-3 rounded-xl border ${propertyCosts.totalNet >= 0 ? 'bg-teal-500/10 border-teal-500/20' : 'bg-orange-500/10 border-orange-500/20'}`}>
-              <div className="flex items-center gap-1 mb-0.5">
-                <Home className="h-3 w-3" />
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Property Net/yr</p>
-              </div>
-              <p className={`text-lg font-bold ${propertyCosts.totalNet >= 0 ? 'text-teal-400' : 'text-orange-400'}`}>
-                {propertyCosts.totalNet >= 0 ? '+' : ''}{formatCurrency(totalPropertyNet)}
-              </p>
-            </div>
-          )}
           <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-sky-500/10 border border-primary/20">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Income</p>
             <p className="text-lg font-bold text-primary">{formatCurrency(totalProjectedIncome)}</p>
