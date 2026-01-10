@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
@@ -9,14 +9,17 @@ import {
   UserPlus,
   Calendar,
   Shield,
-  ChevronRight
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Loader2
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useIsAdmin, useAdminAnalytics } from '@/hooks/useAdmin';
+import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { 
   BarChart, 
@@ -33,6 +36,8 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { data: isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
   const { data: analytics, isLoading, error } = useAdminAnalytics();
+  const updateSubscription = useAdminUpdateSubscription();
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isCheckingAdmin && !isAdmin) {
@@ -214,56 +219,100 @@ export default function AdminPage() {
                     <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Joined</th>
                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
                     <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Deals</th>
+                    <th className="text-center p-3 text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="p-3">
-                        <div>
-                          <p className="font-medium text-sm truncate max-w-[200px]">
-                            {user.name || 'Unnamed'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                            {user.email}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="p-3 hidden sm:table-cell">
-                        <span className="text-sm text-muted-foreground">
-                          {formatDate(user.createdAt)}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <Badge 
-                          variant="outline"
-                          className={cn(
-                            "text-xs",
-                            user.subscriptionTier === 'pro'
-                              ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                              : "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          {user.subscriptionTier === 'pro' ? (
-                            <>
-                              <Crown className="w-3 h-3 mr-1" />
-                              Pro
-                            </>
-                          ) : (
-                            'Free'
-                          )}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-center hidden md:table-cell">
-                        <div className="flex items-center justify-center gap-2 text-sm">
-                          <span className="font-medium">{user.dealsCount}</span>
-                          <span className="text-muted-foreground text-xs">
-                            ({user.closedDeals} closed)
+                  {users.map((user) => {
+                    const isUpdating = updatingUserId === user.id;
+                    const isPro = user.subscriptionTier === 'pro';
+
+                    const handleSubscriptionChange = async () => {
+                      setUpdatingUserId(user.id);
+                      try {
+                        await updateSubscription.mutateAsync({
+                          targetUserId: user.id,
+                          tier: isPro ? 'free' : 'pro',
+                        });
+                      } finally {
+                        setUpdatingUserId(null);
+                      }
+                    };
+
+                    return (
+                      <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="p-3">
+                          <div>
+                            <p className="font-medium text-sm truncate max-w-[200px]">
+                              {user.name || 'Unnamed'}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {user.email}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="p-3 hidden sm:table-cell">
+                          <span className="text-sm text-muted-foreground">
+                            {formatDate(user.createdAt)}
                           </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              "text-xs",
+                              isPro
+                                ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                                : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {isPro ? (
+                              <>
+                                <Crown className="w-3 h-3 mr-1" />
+                                Pro
+                              </>
+                            ) : (
+                              'Free'
+                            )}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-center hidden md:table-cell">
+                          <div className="flex items-center justify-center gap-2 text-sm">
+                            <span className="font-medium">{user.dealsCount}</span>
+                            <span className="text-muted-foreground text-xs">
+                              ({user.closedDeals} closed)
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <Button
+                            size="sm"
+                            variant={isPro ? "outline" : "default"}
+                            className={cn(
+                              "text-xs h-7 px-2",
+                              !isPro && "bg-amber-500 hover:bg-amber-600 text-white"
+                            )}
+                            onClick={handleSubscriptionChange}
+                            disabled={isUpdating}
+                          >
+                            {isUpdating ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : isPro ? (
+                              <>
+                                <ArrowDownCircle className="w-3 h-3 mr-1" />
+                                Downgrade
+                              </>
+                            ) : (
+                              <>
+                                <ArrowUpCircle className="w-3 h-3 mr-1" />
+                                Upgrade
+                              </>
+                            )}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
