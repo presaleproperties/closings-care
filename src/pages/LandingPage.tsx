@@ -455,6 +455,32 @@ function TaxVisual() {
 }
 
 function ProjectionVisual() {
+  // Monthly data with income, expenses, and status
+  const monthlyData = [
+    { month: 'Jan', income: 18500, expense: 8600, status: 'good' },
+    { month: 'Feb', income: 12400, expense: 8600, status: 'caution' },
+    { month: 'Mar', income: 6200, expense: 8600, status: 'danger' },
+    { month: 'Apr', income: 24000, expense: 8600, status: 'good' },
+    { month: 'May', income: 15200, expense: 8600, status: 'good' },
+    { month: 'Jun', income: 8800, expense: 8600, status: 'caution' },
+    { month: 'Jul', income: 21500, expense: 8600, status: 'good' },
+    { month: 'Aug', income: 5400, expense: 8600, status: 'danger' },
+    { month: 'Sep', income: 28000, expense: 8600, status: 'good' },
+    { month: 'Oct', income: 16800, expense: 8600, status: 'good' },
+    { month: 'Nov', income: 19200, expense: 8600, status: 'good' },
+    { month: 'Dec', income: 22500, expense: 8600, status: 'good' },
+  ];
+
+  const maxIncome = Math.max(...monthlyData.map(d => d.income));
+
+  const getBarColor = (status: string) => {
+    switch (status) {
+      case 'danger': return 'from-red-500 to-red-400';
+      case 'caution': return 'from-amber-500 to-amber-400';
+      default: return 'from-emerald-500 to-emerald-400';
+    }
+  };
+
   return (
     <motion.div 
       className="bg-white rounded-2xl shadow-xl shadow-violet-100/50 border border-violet-100 p-6 max-w-md mx-auto"
@@ -464,42 +490,89 @@ function ProjectionVisual() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-            <TrendingUp className="h-5 w-5 text-white" />
+            <BarChart3 className="h-5 w-5 text-white" />
           </div>
           <div>
             <h4 className="font-semibold text-slate-800 text-sm">12-Month Forecast</h4>
-            <p className="text-xs text-slate-500">Income vs Expenses</p>
+            <p className="text-xs text-slate-500">Income vs Fixed Expenses</p>
           </div>
         </div>
       </div>
 
-      {/* Mini chart */}
-      <div className="h-36 flex items-end justify-between gap-1.5 mb-4">
-        {[65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 82].map((height, i) => (
-          <motion.div
-            key={i}
-            className="flex-1 flex flex-col gap-0.5"
-            initial={{ scaleY: 0 }}
-            whileInView={{ scaleY: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-            style={{ transformOrigin: 'bottom' }}
-          >
-            <div 
-              className="w-full bg-gradient-to-t from-violet-500 to-violet-400 rounded-t-sm"
-              style={{ height: `${height}%` }}
-            />
-            <div 
-              className="w-full bg-slate-200 rounded-t-sm"
-              style={{ height: `${height * 0.3}%` }}
-            />
-          </motion.div>
+      {/* Chart with expense line */}
+      <div className="relative h-40 mb-2">
+        {/* Expense threshold line */}
+        <div className="absolute left-0 right-0 border-t-2 border-dashed border-slate-300" style={{ top: `${100 - (8600 / maxIncome) * 100}%` }}>
+          <span className="absolute -top-5 right-0 text-[10px] text-slate-400 font-medium">$8.6K expenses</span>
+        </div>
+        
+        {/* Bars */}
+        <div className="flex items-end justify-between gap-1.5 h-full pt-6">
+          {monthlyData.map((data, i) => {
+            const heightPercent = (data.income / maxIncome) * 100;
+            return (
+              <motion.div
+                key={data.month}
+                className="flex-1 flex flex-col items-center"
+                initial={{ scaleY: 0 }}
+                whileInView={{ scaleY: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
+                style={{ transformOrigin: 'bottom' }}
+              >
+                <div className="w-full relative" style={{ height: '100%' }}>
+                  <div 
+                    className={`absolute bottom-0 w-full bg-gradient-to-t ${getBarColor(data.status)} rounded-t-sm transition-all`}
+                    style={{ height: `${heightPercent}%` }}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Month labels */}
+      <div className="flex justify-between gap-1.5 mb-4">
+        {monthlyData.map((data) => (
+          <span key={data.month} className="flex-1 text-center text-[9px] text-slate-400 font-medium">
+            {data.month}
+          </span>
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-100">
+      {/* Legend and alert */}
+      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-3 text-[10px]">
+          <span className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+            Profitable
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+            Tight
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-2.5 h-2.5 rounded-sm bg-red-500" />
+            Loss
+          </span>
+        </div>
+        <motion.div 
+          className="flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full"
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.8 }}
+        >
+          <AlertTriangle className="h-3 w-3" />
+          2 slow months ahead
+        </motion.div>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-3 gap-3 pt-4 mt-4 border-t border-slate-100">
         <div className="text-center">
-          <p className="text-lg font-bold text-slate-800">$219K</p>
+          <p className="text-lg font-bold text-slate-800">$199K</p>
           <p className="text-xs text-slate-500">Projected</p>
         </div>
         <div className="text-center">
@@ -507,7 +580,7 @@ function ProjectionVisual() {
           <p className="text-xs text-slate-500">Confirmed</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-violet-600">$76K</p>
+          <p className="text-lg font-bold text-violet-600">$56K</p>
           <p className="text-xs text-slate-500">Pipeline</p>
         </div>
       </div>
