@@ -4,11 +4,13 @@ import { Plus, Search, Calendar, DollarSign, CheckCircle2, Clock, ChevronRight }
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
 import { useDeals } from '@/hooks/useDeals';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +19,7 @@ type TimeFilter = 'all' | 'upcoming' | 'this-month' | 'next-month' | 'paid';
 export default function DealsPage() {
   const { data: payouts = [], isLoading: payoutsLoading } = usePayouts();
   const { data: deals = [], isLoading: dealsLoading } = useDeals();
+  const refreshData = useRefreshData();
   const markPaid = useMarkPayoutPaid();
 
   const [search, setSearch] = useState('');
@@ -156,7 +159,8 @@ export default function DealsPage() {
         }
       />
 
-      <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 animate-fade-in">
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+        <div className="p-4 lg:p-6 space-y-4 lg:space-y-6 animate-fade-in">
         {/* Mobile: Horizontal scroll filter pills */}
         <div className="sm:hidden -mx-4 px-4">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
@@ -403,7 +407,8 @@ export default function DealsPage() {
             View full payout schedule →
           </Link>
         </div>
-      </div>
+        </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
