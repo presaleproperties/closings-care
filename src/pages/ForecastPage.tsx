@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
-import { format, parseISO, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday } from 'date-fns';
+import { format, parseISO, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, setMonth, setYear } from 'date-fns';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -267,7 +274,7 @@ export default function ForecastPage() {
         {/* Calendar View */}
         {view === 'calendar' && (
           <div className="rounded-2xl bg-card border border-border p-6">
-            {/* Month Navigation */}
+            {/* Month Navigation with Dropdowns */}
             <div className="flex items-center justify-between mb-6">
               <Button 
                 variant="ghost" 
@@ -277,9 +284,44 @@ export default function ForecastPage() {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               
-              <h2 className="text-lg font-semibold">
-                {format(calendarMonth, 'MMMM yyyy')}
-              </h2>
+              <div className="flex items-center gap-2">
+                {/* Month Dropdown */}
+                <Select
+                  value={calendarMonth.getMonth().toString()}
+                  onValueChange={(value) => setCalendarMonth((d) => setMonth(d, parseInt(value)))}
+                >
+                  <SelectTrigger className="w-[120px] h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={i} value={i.toString()}>
+                        {format(new Date(2024, i, 1), 'MMMM')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Year Dropdown */}
+                <Select
+                  value={calendarMonth.getFullYear().toString()}
+                  onValueChange={(value) => setCalendarMonth((d) => setYear(d, parseInt(value)))}
+                >
+                  <SelectTrigger className="w-[90px] h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <Button 
                 variant="ghost" 
