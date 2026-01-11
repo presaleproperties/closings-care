@@ -424,7 +424,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC]">
+    <div className="min-h-screen bg-[#FAFBFC] snap-container">
       {/* Navigation - Mobile Optimized */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -491,7 +491,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section - Mobile First */}
-      <section className="pt-20 sm:pt-24 lg:pt-32 pb-12 lg:pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="snap-section pt-20 sm:pt-24 lg:pt-32 pb-12 lg:pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-[100svh] sm:min-h-0 flex flex-col justify-center">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Text content */}
@@ -573,7 +573,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pain Points - Mobile optimized grid */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
+      <section className="snap-section py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-5xl mx-auto">
           <motion.div 
             className="text-center mb-8 sm:mb-10"
@@ -616,7 +616,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features - Mobile Cards */}
-      <section id="features" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="features" className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             className="text-center mb-10 sm:mb-14"
@@ -660,7 +660,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works - Mobile optimized */}
-      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <section className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto">
           <motion.div 
             className="text-center mb-10 sm:mb-14"
@@ -705,7 +705,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials - Horizontal scroll on mobile */}
-      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
+      <section className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <motion.div 
             className="text-center mb-8 sm:mb-14"
@@ -767,7 +767,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing - Mobile optimized */}
-      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <section className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto">
           <motion.div 
             className="text-center mb-10 sm:mb-12"
@@ -848,7 +848,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA - Mobile optimized */}
-      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50">
+      <section className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50">
         <motion.div 
           className="max-w-2xl mx-auto text-center"
           initial={{ opacity: 0, y: 20 }}

@@ -171,6 +171,21 @@
   }
 }
 
+/* Mobile scroll snap container */
+@media (max-width: 640px) {
+  .snap-container {
+    scroll-snap-type: y proximity;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .snap-section {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+  }
+}
+
 @layer components {
   /* iOS-style card with subtle shadow and blur */
   .ios-card {
