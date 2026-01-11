@@ -247,12 +247,12 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
           <ComposedChart data={chartData} barGap={0} onClick={handleBarClick} style={{ cursor: 'pointer' }}>
             <defs>
               <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(142, 76%, 42%)" stopOpacity={1} />
-                <stop offset="100%" stopColor="hsl(142, 76%, 32%)" stopOpacity={1} />
+                <stop offset="0%" stopColor="hsl(160, 84%, 45%)" stopOpacity={1} />
+                <stop offset="100%" stopColor="hsl(160, 84%, 35%)" stopOpacity={1} />
               </linearGradient>
               <linearGradient id="otherIncomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(199, 89%, 55%)" stopOpacity={1} />
-                <stop offset="100%" stopColor="hsl(199, 89%, 42%)" stopOpacity={1} />
+                <stop offset="0%" stopColor="hsl(187, 92%, 50%)" stopOpacity={1} />
+                <stop offset="100%" stopColor="hsl(187, 92%, 40%)" stopOpacity={1} />
               </linearGradient>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(0, 84%, 65%)" stopOpacity={0.9} />

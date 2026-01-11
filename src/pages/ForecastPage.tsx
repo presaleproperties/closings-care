@@ -177,7 +177,7 @@ export default function ForecastPage() {
                 />
                 <Bar 
                   dataKey="income" 
-                  fill="hsl(142, 76%, 36%)" 
+                  fill="hsl(160, 84%, 39%)" 
                   radius={[6, 6, 0, 0]}
                   maxBarSize={45}
                 />
