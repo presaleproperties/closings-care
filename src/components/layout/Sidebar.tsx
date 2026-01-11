@@ -5,7 +5,6 @@ import {
   Wallet, 
   Receipt, 
   TrendingUp, 
-  Upload, 
   Settings,
   LogOut,
   ChevronLeft,
@@ -24,7 +23,6 @@ const navItems = [
   { icon: Wallet, label: 'Payouts', path: '/payouts' },
   { icon: Receipt, label: 'Expenses', path: '/expenses' },
   { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
-  { icon: Upload, label: 'Import', path: '/import' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
