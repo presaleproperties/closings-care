@@ -9,117 +9,117 @@
 
 @layer base {
   :root {
-    /* iOS-inspired color palette - Light mode */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 9%;
+    /* Bank-level light theme - matching landing page */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 215 25% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 215 25% 17%;
 
-    /* Primary - Deep blue (iOS system blue) */
-    --primary: 211 100% 50%;
+    /* Primary - Emerald/Teal (matching landing page) */
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Light gray */
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 0 0% 9%;
+    /* Secondary - Slate gray */
+    --secondary: 210 14% 96%;
+    --secondary-foreground: 215 25% 27%;
 
-    /* Muted - Subtle gray */
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    /* Muted - Soft slate */
+    --muted: 210 14% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    /* Accent - Warm gold */
-    --accent: 43 96% 56%;
-    --accent-foreground: 0 0% 9%;
+    /* Accent - Teal gradient accent */
+    --accent: 168 76% 42%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Success - iOS green */
-    --success: 142 71% 45%;
+    /* Success - Emerald green */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning - iOS orange */
-    --warning: 32 95% 44%;
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Info - iOS teal */
-    --info: 199 89% 48%;
+    /* Info - Teal blue */
+    --info: 187 92% 42%;
     --info-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 211 100% 50%;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 160 84% 39%;
 
     --radius: 0.875rem;
 
-    /* Sidebar - Premium dark with depth */
-    --sidebar-background: 220 16% 12%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 43 96% 56%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 220 16% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 16% 18%;
-    --sidebar-ring: 43 96% 56%;
+    /* Sidebar - Premium slate with emerald accent */
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 160 84% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 23%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 25% 23%;
+    --sidebar-ring: 160 84% 45%;
 
-    /* Chart colors */
-    --chart-1: 43 96% 56%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 199 89% 48%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 262 83% 58%;
+    /* Chart colors - Emerald/Teal palette */
+    --chart-1: 160 84% 39%;
+    --chart-2: 168 76% 42%;
+    --chart-3: 187 92% 42%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
   }
 
   .dark {
-    --background: 220 16% 8%;
-    --foreground: 0 0% 98%;
+    --background: 215 28% 10%;
+    --foreground: 210 20% 98%;
 
-    --card: 220 16% 11%;
-    --card-foreground: 0 0% 98%;
+    --card: 215 25% 13%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 220 16% 11%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 215 25% 13%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 211 100% 60%;
+    --primary: 160 84% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 16% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 210 20% 98%;
 
-    --muted: 220 16% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 16% 60%;
 
-    --accent: 43 96% 56%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 168 76% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 160 84% 45%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 32 95% 50%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --info: 199 89% 58%;
+    --info: 187 92% 50%;
     --info-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 18%;
-    --input: 220 16% 18%;
-    --ring: 211 100% 60%;
+    --border: 215 25% 20%;
+    --input: 215 25% 20%;
+    --ring: 160 84% 45%;
 
-    --sidebar-background: 220 16% 6%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 43 96% 56%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 220 16% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 220 16% 12%;
-    --sidebar-ring: 43 96% 56%;
+    --sidebar-background: 215 28% 8%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 160 84% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 14%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 25% 14%;
+    --sidebar-ring: 160 84% 45%;
   }
 }
 
