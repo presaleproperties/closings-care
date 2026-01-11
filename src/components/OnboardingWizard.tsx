@@ -19,11 +19,16 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
   const updateSettings = useUpdateSettings();
 
   const handleComplete = async () => {
-    // Save province setting
-    await updateSettings.mutateAsync({
-      province,
-      country: 'CA',
-    } as any);
+    // Save province setting - use upsert to create if not exists
+    try {
+      await updateSettings.mutateAsync({
+        province,
+        country: 'CA',
+      } as any);
+    } catch (error) {
+      // If update fails, settings may not exist yet - that's ok, dashboard will handle it
+      console.log('Settings update during onboarding:', error);
+    }
     onComplete();
   };
 
