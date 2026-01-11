@@ -55,8 +55,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="p-4 border-b border-sidebar-border/50">
         <Link to="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sidebar-primary to-amber-400 flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
-            <Building2 className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
+            <Building2 className="w-5 h-5 text-white" />
           </div>
           <div className={cn(
             "overflow-hidden transition-all duration-300",
