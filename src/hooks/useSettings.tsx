@@ -55,15 +55,35 @@ export function useUpdateSettings() {
     mutationFn: async (data: Partial<Settings>) => {
       if (!user) throw new Error('Not authenticated');
       
-      const { data: settings, error } = await supabase
+      // First try to update existing settings
+      const { data: existing } = await supabase
         .from('settings')
-        .update(data)
+        .select('id')
         .eq('user_id', user.id)
-        .select()
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
-      return settings as Settings;
+      if (existing) {
+        // Update existing record
+        const { data: settings, error } = await supabase
+          .from('settings')
+          .update(data)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return settings as Settings;
+      } else {
+        // Create new settings record
+        const { data: settings, error } = await supabase
+          .from('settings')
+          .insert({ ...data, user_id: user.id })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return settings as Settings;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
