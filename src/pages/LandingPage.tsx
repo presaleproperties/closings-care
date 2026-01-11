@@ -297,8 +297,8 @@ function DashboardMockup() {
         transition={{ delay: 1.7, duration: 0.4 }}
       >
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+          <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+            <TrendingUp className="h-4 w-4 text-teal-600" />
           </div>
           <div>
             <p className="text-[10px] text-slate-500">Pipeline coverage</p>
@@ -396,18 +396,18 @@ function SafeToSpendVisual() {
 function TaxVisual() {
   const taxData = [
     { label: 'YTD Income', amount: '$142,800', color: 'bg-emerald-500' },
-    { label: 'Tax Set Aside (11.5%)', amount: '$16,426', color: 'bg-blue-500' },
+    { label: 'Tax Set Aside (11.5%)', amount: '$16,426', color: 'bg-teal-500' },
     { label: 'Estimated Owed (11%)', amount: '$15,708', color: 'bg-slate-300' },
   ];
 
   return (
     <motion.div 
-      className="bg-white rounded-2xl shadow-xl shadow-blue-100/50 border border-blue-100 p-6 max-w-sm mx-auto"
+      className="bg-white rounded-2xl shadow-xl shadow-teal-100/50 border border-teal-100 p-6 max-w-sm mx-auto"
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
           <Calculator className="h-6 w-6 text-white" />
         </div>
         <div>
