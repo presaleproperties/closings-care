@@ -299,20 +299,21 @@
     @apply placeholder:text-muted-foreground/70 transition-all duration-200;
   }
 
-  /* Premium button with iOS feel */
+  /* Premium button with iOS feel - Emerald gradient */
   .btn-premium {
-    @apply bg-accent text-accent-foreground font-semibold rounded-xl;
+    @apply text-white font-semibold rounded-xl;
     @apply hover:brightness-105 active:scale-[0.98] active:brightness-95;
     @apply transition-all duration-200;
+    background: linear-gradient(135deg, hsl(160 84% 39%) 0%, hsl(168 76% 36%) 100%);
     box-shadow: 
-      0 1px 2px 0 hsl(var(--accent) / 0.3),
-      0 4px 12px -2px hsl(var(--accent) / 0.25);
+      0 1px 2px 0 hsl(160 84% 39% / 0.3),
+      0 4px 12px -2px hsl(160 84% 39% / 0.25);
   }
 
   .btn-premium:hover {
     box-shadow: 
-      0 2px 4px 0 hsl(var(--accent) / 0.35),
-      0 8px 20px -4px hsl(var(--accent) / 0.3);
+      0 2px 4px 0 hsl(160 84% 39% / 0.35),
+      0 8px 20px -4px hsl(160 84% 39% / 0.3);
   }
 
   /* iOS-style glass effect */
