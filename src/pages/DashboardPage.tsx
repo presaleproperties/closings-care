@@ -22,6 +22,7 @@ import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { ExpenseIntelligence } from '@/components/dashboard/ExpenseIntelligence';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
+import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
@@ -103,6 +104,9 @@ export default function DashboardPage() {
     );
   }
 
+  // Check if user has no deals yet - show empty state
+  const isEmpty = deals.length === 0;
+
   return (
     <AppLayout>
       <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
@@ -110,6 +114,10 @@ export default function DashboardPage() {
         title="Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
       />
+
+      {isEmpty ? (
+        <EmptyDashboard />
+      ) : (
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         {/* Mobile-first iOS dashboard */}
@@ -411,6 +419,7 @@ export default function DashboardPage() {
           </Tabs>
         </div>
       </PullToRefresh>
+      )}
     </AppLayout>
   );
 }
