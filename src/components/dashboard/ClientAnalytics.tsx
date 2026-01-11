@@ -9,7 +9,7 @@ interface ClientAnalyticsProps {
   payouts: Payout[];
 }
 
-const COLORS = ['hsl(43, 96%, 56%)', 'hsl(142, 76%, 36%)', 'hsl(217, 91%, 60%)', 'hsl(262, 83%, 58%)', 'hsl(0, 84%, 60%)'];
+const COLORS = ['hsl(160, 84%, 39%)', 'hsl(168, 76%, 42%)', 'hsl(187, 92%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(0, 84%, 60%)'];
 
 export function ClientAnalytics({ deals, payouts }: ClientAnalyticsProps) {
   const analytics = useMemo(() => {

@@ -17,8 +17,8 @@ interface ExpenseAnalyticsProps {
   expenses: Expense[];
 }
 
-const PERSONAL_COLOR = 'hsl(217, 91%, 60%)'; // blue
-const BUSINESS_COLOR = 'hsl(262, 83%, 58%)'; // purple
+const PERSONAL_COLOR = 'hsl(187, 92%, 42%)'; // teal
+const BUSINESS_COLOR = 'hsl(160, 84%, 39%)'; // emerald
 const OTHER_COLOR = 'hsl(var(--muted-foreground))';
 
 // Helper to determine expense type
