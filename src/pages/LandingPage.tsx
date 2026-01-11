@@ -483,13 +483,13 @@ function ProjectionVisual() {
 
   return (
     <motion.div 
-      className="bg-white rounded-2xl shadow-xl shadow-violet-100/50 border border-violet-100 p-6 max-w-md mx-auto"
+      className="bg-white rounded-2xl shadow-xl shadow-emerald-100/50 border border-emerald-100 p-6 max-w-md mx-auto"
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
             <BarChart3 className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -581,7 +581,7 @@ function ProjectionVisual() {
           <p className="text-xs text-slate-500">Confirmed</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-violet-600">$56K</p>
+          <p className="text-lg font-bold text-teal-600">$56K</p>
           <p className="text-xs text-slate-500">Pipeline</p>
         </div>
       </div>
@@ -720,7 +720,7 @@ export default function LandingPage() {
               { icon: Wallet, text: "Overspending after big commissions, then scrambling", color: "text-orange-500", bg: "bg-orange-50" },
               { icon: HeartPulse, text: "Slow month stress — wondering if you'll make rent", color: "text-rose-500", bg: "bg-rose-50" },
               { icon: FileSpreadsheet, text: "Spreadsheets that break when deals change", color: "text-slate-500", bg: "bg-slate-50" },
-              { icon: Clock, text: "Hours wasted on bookkeeping instead of selling", color: "text-purple-500", bg: "bg-purple-50" },
+              { icon: Clock, text: "Hours wasted on bookkeeping instead of selling", color: "text-teal-600", bg: "bg-teal-50" },
             ].map((pain, i) => (
               <motion.div
                 key={pain.text}
