@@ -87,12 +87,12 @@ export function QuickActions() {
                   className={cn(
                     "w-14 h-14 rounded-2xl flex items-center justify-center shadow-ios",
                     action.primary 
-                      ? "bg-gradient-to-br from-accent to-amber-400" 
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-600" 
                       : "bg-card/95 backdrop-blur-xl border border-border/50"
                   )}
                   whileHover={{ 
                     boxShadow: action.primary 
-                      ? "0 8px 24px -4px hsl(43 96% 56% / 0.4)" 
+                      ? "0 8px 24px -4px hsl(160 84% 39% / 0.4)" 
                       : "0 8px 24px -4px hsl(0 0% 0% / 0.15)"
                   }}
                 >
