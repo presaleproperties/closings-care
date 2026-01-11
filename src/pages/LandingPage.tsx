@@ -20,9 +20,11 @@ import {
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles
+  Sparkles,
+  Menu,
+  X
 } from "lucide-react";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
 // Animated counter component
@@ -59,84 +61,131 @@ function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { val
   );
 }
 
-// Animated bar chart component for hero
-function AnimatedBarChart() {
-  const bars = [
-    { height: 45, income: 8500, expense: 3200, month: 'Jan' },
-    { height: 65, income: 12400, expense: 4100, month: 'Feb' },
-    { height: 35, income: 6200, expense: 3800, month: 'Mar' },
-    { height: 85, income: 18500, expense: 5200, month: 'Apr' },
-    { height: 55, income: 9800, expense: 3500, month: 'May' },
-    { height: 75, income: 15200, expense: 4800, month: 'Jun' },
-  ];
-
+// Mobile Phone Mockup for Hero - Simplified for mobile viewing
+function MobilePhoneMockup() {
   return (
-    <div className="flex items-end justify-between gap-2 h-32 px-2">
-      {bars.map((bar, i) => (
-        <motion.div
-          key={bar.month}
-          className="flex-1 flex flex-col items-center gap-1"
-          initial={{ opacity: 0, scaleY: 0 }}
-          animate={{ opacity: 1, scaleY: 1 }}
-          transition={{ delay: 0.8 + i * 0.1, duration: 0.5, ease: "easeOut" }}
-          style={{ transformOrigin: 'bottom' }}
-        >
-          <div className="w-full flex gap-0.5">
-            <div 
-              className="flex-1 bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t-sm"
-              style={{ height: `${bar.height}px` }}
-            />
-            <div 
-              className="flex-1 bg-gradient-to-t from-slate-300 to-slate-200 rounded-t-sm"
-              style={{ height: `${bar.height * 0.35}px` }}
-            />
-          </div>
-          <span className="text-[10px] text-slate-400 font-medium">{bar.month}</span>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-// KPI Card component for dashboard preview
-function MockKpiCard({ 
-  label, 
-  value, 
-  trend, 
-  trendUp, 
-  delay,
-  gradient
-}: { 
-  label: string; 
-  value: string; 
-  trend?: string; 
-  trendUp?: boolean; 
-  delay: number;
-  gradient?: string;
-}) {
-  return (
-    <motion.div
-      className={`rounded-xl p-4 ${gradient || 'bg-white'} shadow-lg shadow-slate-200/50 border border-slate-100/50`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
+    <motion.div 
+      className="relative mx-auto"
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
     >
-      <p className="text-xs text-slate-500 font-medium mb-1">{label}</p>
-      <p className={`text-xl font-bold ${gradient ? 'text-white' : 'text-slate-800'}`}>{value}</p>
-      {trend && (
-        <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${trendUp ? 'text-emerald-600' : 'text-red-500'}`}>
-          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {trend}
+      {/* Phone frame */}
+      <div className="relative w-[260px] sm:w-[280px] mx-auto">
+        {/* Phone body */}
+        <div className="bg-slate-900 rounded-[2.5rem] p-2 shadow-2xl shadow-slate-400/30">
+          {/* Screen */}
+          <div className="bg-white rounded-[2rem] overflow-hidden">
+            {/* Status bar */}
+            <div className="bg-slate-50 px-5 py-2 flex items-center justify-between">
+              <span className="text-[10px] font-medium text-slate-600">9:41</span>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-2 bg-slate-600 rounded-sm" />
+              </div>
+            </div>
+            
+            {/* App content */}
+            <div className="px-4 py-4 space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-slate-500">Good morning</p>
+                  <p className="text-sm font-semibold text-slate-800">Sarah Chen</p>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] font-bold">
+                  SC
+                </div>
+              </div>
+              
+              {/* Safe to Spend Card */}
+              <motion.div 
+                className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <p className="text-[10px] text-emerald-100 mb-1">Safe to Spend</p>
+                <p className="text-2xl font-bold">$7,750</p>
+                <div className="flex items-center gap-1 mt-2 text-[10px] text-emerald-100">
+                  <Shield className="h-3 w-3" />
+                  All obligations covered
+                </div>
+              </motion.div>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-2">
+                <motion.div 
+                  className="bg-slate-50 rounded-xl p-3"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <p className="text-[9px] text-slate-500">YTD Income</p>
+                  <p className="text-sm font-bold text-slate-800">$142,800</p>
+                  <p className="text-[9px] text-emerald-600 flex items-center gap-0.5">
+                    <ArrowUpRight className="h-2 w-2" />+18%
+                  </p>
+                </motion.div>
+                <motion.div 
+                  className="bg-slate-50 rounded-xl p-3"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.9 }}
+                >
+                  <p className="text-[9px] text-slate-500">Tax Set Aside</p>
+                  <p className="text-sm font-bold text-slate-800">$16,426</p>
+                  <p className="text-[9px] text-teal-600">11.5% rate</p>
+                </motion.div>
+              </div>
+              
+              {/* Mini Chart Preview */}
+              <motion.div 
+                className="bg-slate-50 rounded-xl p-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0 }}
+              >
+                <p className="text-[9px] text-slate-500 mb-2">12-Month Projection</p>
+                <div className="flex items-end justify-between gap-1 h-12">
+                  {[45, 65, 35, 85, 55, 75, 40, 90, 70, 80, 60, 85].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      className={`flex-1 rounded-t-sm ${i === 2 || i === 6 ? 'bg-amber-400' : 'bg-emerald-500'}`}
+                      initial={{ scaleY: 0 }}
+                      animate={{ scaleY: 1 }}
+                      transition={{ delay: 1.1 + i * 0.03 }}
+                      style={{ height: `${h}%`, transformOrigin: 'bottom' }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </div>
-      )}
+        
+        {/* Floating notification - adjusted for mobile */}
+        <motion.div 
+          className="absolute -right-2 top-24 bg-white rounded-lg shadow-lg shadow-slate-200/60 p-2 border border-slate-100 text-[10px]"
+          initial={{ opacity: 0, scale: 0.8, x: 10 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          transition={{ delay: 1.4, duration: 0.3 }}
+        >
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+            </div>
+            <span className="font-medium text-slate-700">Tax ready ✓</span>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
 
-// Animated dashboard mockup
-function DashboardMockup() {
+// Desktop Dashboard Mockup (hidden on mobile)
+function DesktopDashboardMockup() {
   return (
-    <div className="relative">
+    <div className="relative hidden lg:block">
       {/* Browser frame */}
       <motion.div 
         className="bg-white rounded-2xl shadow-2xl shadow-slate-300/40 border border-slate-200/80 overflow-hidden"
@@ -172,107 +221,77 @@ function DashboardMockup() {
               <h3 className="text-lg font-semibold text-slate-800">Good morning, Sarah</h3>
               <p className="text-xs text-slate-500">Here's your financial snapshot</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold">
-                SC
-              </div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-bold">
+              SC
             </div>
           </motion.div>
 
-          {/* KPI Row - Based on BC Corporate Tax (11% small business rate + 5% buffer) */}
+          {/* KPI Row */}
           <div className="grid grid-cols-4 gap-3 mb-5">
-            <MockKpiCard 
-              label="Safe to Spend" 
-              value="$7,750" 
-              delay={0.6}
-              gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-            />
-            <MockKpiCard 
-              label="YTD Income" 
-              value="$142,800" 
-              trend="+18% vs last year"
-              trendUp={true}
-              delay={0.7}
-            />
-            <MockKpiCard 
-              label="Pipeline" 
-              value="$76,500" 
-              trend="5 pending deals"
-              trendUp={true}
-              delay={0.8}
-            />
-            <MockKpiCard 
-              label="Tax Set Aside" 
-              value="$16,426" 
-              trend="11.5% rate"
-              trendUp={true}
-              delay={0.9}
-            />
+            {[
+              { label: "Safe to Spend", value: "$7,750", gradient: true },
+              { label: "YTD Income", value: "$142,800", trend: "+18% vs last year" },
+              { label: "Pipeline", value: "$76,500", trend: "5 pending deals" },
+              { label: "Tax Set Aside", value: "$16,426", trend: "11.5% rate" },
+            ].map((kpi, i) => (
+              <motion.div
+                key={kpi.label}
+                className={`rounded-xl p-4 ${kpi.gradient ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-white'} shadow-lg shadow-slate-200/50 border border-slate-100/50`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + i * 0.1 }}
+              >
+                <p className={`text-xs ${kpi.gradient ? 'text-emerald-100' : 'text-slate-500'} font-medium mb-1`}>{kpi.label}</p>
+                <p className={`text-xl font-bold ${kpi.gradient ? 'text-white' : 'text-slate-800'}`}>{kpi.value}</p>
+                {kpi.trend && (
+                  <p className="text-xs text-emerald-600 mt-1 flex items-center gap-0.5">
+                    <ArrowUpRight className="h-3 w-3" />{kpi.trend}
+                  </p>
+                )}
+              </motion.div>
+            ))}
           </div>
 
-          {/* Charts Row */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* Income Chart */}
-            <motion.div 
-              className="col-span-2 bg-white rounded-xl p-4 shadow-sm border border-slate-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="text-sm font-semibold text-slate-800">12-Month Projection</h4>
-                  <p className="text-xs text-slate-500">Income vs Expenses</p>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    Income
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                    Expenses
-                  </span>
-                </div>
+          {/* Charts placeholder */}
+          <motion.div 
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-slate-800">12-Month Projection</h4>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  Income
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                  Expenses
+                </span>
               </div>
-              <AnimatedBarChart />
-            </motion.div>
-
-            {/* Upcoming Payouts */}
-            <motion.div 
-              className="bg-white rounded-xl p-4 shadow-sm border border-slate-100"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1 }}
-            >
-              <h4 className="text-sm font-semibold text-slate-800 mb-3">Upcoming Payouts</h4>
-              <div className="space-y-2.5">
-                {[
-                  { client: 'Chen Family', amount: '$18,500', date: 'Jan 15', type: 'Completion' },
-                  { client: 'Park Residence', amount: '$24,000', date: 'Feb 8', type: 'Completion' },
-                  { client: 'Singh Condo', amount: '$9,500', date: 'Feb 22', type: 'Advance' },
-                ].map((payout, i) => (
-                  <motion.div 
-                    key={payout.client}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50/80"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 1.2 + i * 0.1 }}
-                  >
-                    <div>
-                      <p className="text-xs font-medium text-slate-700">{payout.client}</p>
-                      <p className="text-[10px] text-slate-400">{payout.type} • {payout.date}</p>
-                    </div>
-                    <span className="text-sm font-bold text-emerald-600">{payout.amount}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+            </div>
+            <div className="flex items-end justify-between gap-2 h-24">
+              {[45, 65, 35, 85, 55, 75].map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="flex-1 flex gap-0.5"
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ delay: 1.1 + i * 0.1 }}
+                  style={{ transformOrigin: 'bottom' }}
+                >
+                  <div className="flex-1 bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t-sm" style={{ height: `${h}%` }} />
+                  <div className="flex-1 bg-slate-200 rounded-t-sm" style={{ height: `${h * 0.35}%` }} />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </motion.div>
 
-      {/* Floating elements - BC Corp tax at 11% + 5% buffer = 11.55% */}
+      {/* Floating elements */}
       <motion.div 
         className="absolute -right-6 top-20 bg-white rounded-xl shadow-xl shadow-slate-200/60 p-3 border border-slate-100"
         initial={{ opacity: 0, scale: 0.8, x: 20 }}
@@ -310,300 +329,117 @@ function DashboardMockup() {
   );
 }
 
-// Feature showcase with mini mockups
-function FeatureShowcase({ 
+// Mobile-optimized feature cards
+function MobileFeatureCard({ 
   icon: Icon, 
   title, 
-  description, 
-  visual,
-  reverse = false 
+  description,
+  stat,
+  statLabel,
+  color = "emerald"
 }: { 
   icon: React.ElementType;
-  title: string; 
-  description: string; 
-  visual: React.ReactNode;
-  reverse?: boolean;
+  title: string;
+  description: string;
+  stat: string;
+  statLabel: string;
+  color?: "emerald" | "teal" | "amber";
 }) {
-  return (
-    <motion.div 
-      className={`grid lg:grid-cols-2 gap-8 lg:gap-16 items-center ${reverse ? 'lg:flex-row-reverse' : ''}`}
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className={reverse ? 'lg:order-2' : ''}>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium mb-4">
-          <Icon className="h-4 w-4" />
-          <span>Feature</span>
-        </div>
-        <h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-4">{title}</h3>
-        <p className="text-slate-500 text-lg leading-relaxed">{description}</p>
-      </div>
-      <div className={reverse ? 'lg:order-1' : ''}>
-        {visual}
-      </div>
-    </motion.div>
-  );
-}
-
-// Mini chart mockups for feature sections
-// Safe to Spend calculation based on BC Corp Tax (11% + 5% buffer = 11.55%)
-// Monthly income $18,500 - Tax $2,137 - Fixed $6,800 - Business $1,813 = $7,750
-function SafeToSpendVisual() {
-  return (
-    <motion.div 
-      className="bg-white rounded-2xl shadow-xl shadow-emerald-100/50 border border-emerald-100 p-6 max-w-sm mx-auto"
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-    >
-      <div className="text-center mb-6">
-        <p className="text-sm text-slate-500 font-medium mb-2">Safe to Spend This Month</p>
-        <p className="text-5xl font-bold text-emerald-600">
-          $<AnimatedNumber value={7750} />
-        </p>
-        <div className="flex items-center justify-center gap-2 mt-3 text-emerald-600 bg-emerald-50 rounded-full px-4 py-1.5 text-sm font-medium w-fit mx-auto">
-          <Shield className="h-4 w-4" />
-          All obligations covered
-        </div>
-      </div>
-      
-      <div className="space-y-3 pt-4 border-t border-slate-100">
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Projected Income</span>
-          <span className="font-medium text-slate-700">$18,500</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Tax Set Aside (11.5%)</span>
-          <span className="font-medium text-red-500">-$2,128</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Fixed Expenses</span>
-          <span className="font-medium text-red-500">-$6,800</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-500">Business Costs</span>
-          <span className="font-medium text-red-500">-$1,822</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// Tax visual based on BC Corp rates: 11% small business + 5% buffer
-// YTD Income $142,800 × 11.5% = $16,426 set aside
-// Actual BC Corp tax at 11% = $15,708
-function TaxVisual() {
-  const taxData = [
-    { label: 'YTD Income', amount: '$142,800', color: 'bg-emerald-500' },
-    { label: 'Tax Set Aside (11.5%)', amount: '$16,426', color: 'bg-teal-500' },
-    { label: 'Estimated Owed (11%)', amount: '$15,708', color: 'bg-slate-300' },
-  ];
-
-  return (
-    <motion.div 
-      className="bg-white rounded-2xl shadow-xl shadow-teal-100/50 border border-teal-100 p-6 max-w-sm mx-auto"
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-          <Calculator className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h4 className="font-semibold text-slate-800">Tax Status</h4>
-          <p className="text-sm text-emerald-600 font-medium flex items-center gap-1">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            On Track
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        {taxData.map((item, i) => (
-          <motion.div 
-            key={item.label}
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-          >
-            <div className="flex justify-between text-sm mb-1.5">
-              <span className="text-slate-500">{item.label}</span>
-              <span className="font-semibold text-slate-700">{item.amount}</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <motion.div 
-                className={`h-full ${item.color} rounded-full`}
-                initial={{ width: 0 }}
-                whileInView={{ width: i === 0 ? '100%' : i === 1 ? '11.5%' : '11%' }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 + i * 0.1, duration: 0.8 }}
-              />
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-6 p-3 bg-emerald-50 rounded-xl text-center">
-        <p className="text-sm text-emerald-700">
-          <span className="font-bold">$718</span> buffer above estimated taxes
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-function ProjectionVisual() {
-  // Monthly data with income, expenses, and status
-  const monthlyData = [
-    { month: 'Jan', income: 18500, expense: 8600, status: 'good' },
-    { month: 'Feb', income: 12400, expense: 8600, status: 'caution' },
-    { month: 'Mar', income: 6200, expense: 8600, status: 'danger' },
-    { month: 'Apr', income: 24000, expense: 8600, status: 'good' },
-    { month: 'May', income: 15200, expense: 8600, status: 'good' },
-    { month: 'Jun', income: 8800, expense: 8600, status: 'caution' },
-    { month: 'Jul', income: 21500, expense: 8600, status: 'good' },
-    { month: 'Aug', income: 5400, expense: 8600, status: 'danger' },
-    { month: 'Sep', income: 28000, expense: 8600, status: 'good' },
-    { month: 'Oct', income: 16800, expense: 8600, status: 'good' },
-    { month: 'Nov', income: 19200, expense: 8600, status: 'good' },
-    { month: 'Dec', income: 22500, expense: 8600, status: 'good' },
-  ];
-
-  const maxIncome = Math.max(...monthlyData.map(d => d.income));
-
-  const getBarColor = (status: string) => {
-    switch (status) {
-      case 'danger': return 'from-red-500 to-red-400';
-      case 'caution': return 'from-amber-500 to-amber-400';
-      default: return 'from-emerald-500 to-emerald-400';
-    }
+  const colorClasses = {
+    emerald: "from-emerald-500 to-emerald-600 bg-emerald-100 text-emerald-600",
+    teal: "from-teal-500 to-teal-600 bg-teal-100 text-teal-600",
+    amber: "from-amber-500 to-amber-600 bg-amber-100 text-amber-600",
   };
 
   return (
     <motion.div 
-      className="bg-white rounded-2xl shadow-xl shadow-emerald-100/50 border border-emerald-100 p-6 max-w-md mx-auto"
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
+      className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h4 className="font-semibold text-slate-800 text-sm">12-Month Forecast</h4>
-            <p className="text-xs text-slate-500">Income vs Fixed Expenses</p>
-          </div>
-        </div>
+      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses[color].split(' ').slice(0, 2).join(' ')} flex items-center justify-center mb-4`}>
+        <Icon className="h-6 w-6 text-white" />
       </div>
-
-      {/* Chart with expense line */}
-      <div className="relative h-40 mb-2">
-        {/* Expense threshold line */}
-        <div className="absolute left-0 right-0 border-t-2 border-dashed border-slate-300" style={{ top: `${100 - (8600 / maxIncome) * 100}%` }}>
-          <span className="absolute -top-5 right-0 text-[10px] text-slate-400 font-medium">$8.6K expenses</span>
-        </div>
-        
-        {/* Bars */}
-        <div className="flex items-end justify-between gap-1.5 h-full pt-6">
-          {monthlyData.map((data, i) => {
-            const heightPercent = (data.income / maxIncome) * 100;
-            return (
-              <motion.div
-                key={data.month}
-                className="flex-1 flex flex-col items-center"
-                initial={{ scaleY: 0 }}
-                whileInView={{ scaleY: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 + i * 0.05, duration: 0.4 }}
-                style={{ transformOrigin: 'bottom' }}
-              >
-                <div className="w-full relative" style={{ height: '100%' }}>
-                  <div 
-                    className={`absolute bottom-0 w-full bg-gradient-to-t ${getBarColor(data.status)} rounded-t-sm transition-all`}
-                    style={{ height: `${heightPercent}%` }}
-                  />
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Month labels */}
-      <div className="flex justify-between gap-1.5 mb-4">
-        {monthlyData.map((data) => (
-          <span key={data.month} className="flex-1 text-center text-[9px] text-slate-400 font-medium">
-            {data.month}
-          </span>
-        ))}
-      </div>
-
-      {/* Legend and alert */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-        <div className="flex items-center gap-3 text-[10px]">
-          <span className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
-            Profitable
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
-            Tight
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-2.5 h-2.5 rounded-sm bg-red-500" />
-            Loss
-          </span>
-        </div>
-        <motion.div 
-          className="relative flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full"
-          initial={{ opacity: 0, scale: 0.8 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.8 }}
-        >
-          <span className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-30" />
-          <AlertTriangle className="h-3 w-3 relative z-10" />
-          <span className="relative z-10">2 slow months ahead</span>
-        </motion.div>
-      </div>
-
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-3 pt-4 mt-4 border-t border-slate-100">
-        <div className="text-center">
-          <p className="text-lg font-bold text-slate-800">$199K</p>
-          <p className="text-xs text-slate-500">Projected</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-emerald-600">$143K</p>
-          <p className="text-xs text-slate-500">Confirmed</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-teal-600">$56K</p>
-          <p className="text-xs text-slate-500">Pipeline</p>
-        </div>
+      <h3 className="text-lg font-semibold text-slate-800 mb-2">{title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed mb-4">{description}</p>
+      <div className="pt-4 border-t border-slate-100">
+        <p className="text-2xl font-bold text-slate-800">{stat}</p>
+        <p className="text-xs text-slate-500">{statLabel}</p>
       </div>
     </motion.div>
   );
 }
+
+// Horizontal scroll testimonials for mobile
+function TestimonialScroll() {
+  const testimonials = [
+    {
+      quote: "For the first time in 8 years, I didn't stress about taxes in April.",
+      name: "Sarah Chen",
+      title: "Top 1% Producer • Vancouver"
+    },
+    {
+      quote: "I used to check my bank 5 times a day. Now I just know where I stand.",
+      name: "Michael Torres",
+      title: "Team Lead • Burnaby"
+    },
+    {
+      quote: "The only tool that shows my presale income 2-3 years out clearly.",
+      name: "Jennifer Liu",
+      title: "Presale Specialist • Richmond"
+    },
+  ];
+
+  return (
+    <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+      <div className="flex gap-4" style={{ width: 'max-content' }}>
+        {testimonials.map((testimonial, i) => (
+          <motion.div
+            key={testimonial.name}
+            className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 border border-slate-100 shadow-sm w-[280px] flex-shrink-0"
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.1 }}
+          >
+            <div className="flex gap-0.5 mb-3">
+              {[...Array(5)].map((_, j) => (
+                <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              ))}
+            </div>
+            <p className="text-slate-600 text-sm mb-4 leading-relaxed">"{testimonial.quote}"</p>
+            <div className="pt-3 border-t border-slate-100">
+              <p className="font-semibold text-slate-800 text-sm">{testimonial.name}</p>
+              <p className="text-xs text-slate-500">{testimonial.title}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#FAFBFC]">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+      {/* Navigation - Mobile Optimized */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                <Shield className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <span className="font-semibold text-lg text-slate-800">Commission Tracker</span>
+              <span className="font-semibold text-base sm:text-lg text-slate-800">Commission Tracker</span>
             </div>
-            <div className="flex items-center gap-3">
+            
+            {/* Desktop nav */}
+            <div className="hidden sm:flex items-center gap-3">
               <Link to="/auth">
-                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 hover:bg-slate-100">
+                <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800">
                   Sign In
                 </Button>
               </Link>
@@ -613,200 +449,254 @@ export default function LandingPage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Mobile menu button */}
+            <button 
+              className="sm:hidden p-2 -mr-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6 text-slate-600" />
+              ) : (
+                <Menu className="h-6 w-6 text-slate-600" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              className="sm:hidden bg-white border-t border-slate-100"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <div className="px-4 py-4 space-y-3">
+                <Link to="/auth" className="block">
+                  <Button variant="outline" className="w-full h-12 text-base">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth" className="block">
+                  <Button className="w-full h-12 text-base bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-24 pb-8 lg:pt-32 lg:pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* Hero Section - Mobile First */}
+      <section className="pt-20 sm:pt-24 lg:pt-32 pb-12 lg:pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-            {/* Left side - Text */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Text content */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center lg:text-left"
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-sm font-medium mb-5">
-                <Sparkles className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4 sm:mb-5">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Built for Canadian Real Estate Agents
               </div>
               
-              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-slate-800 tracking-tight leading-[1.1] mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-[3.5rem] font-bold text-slate-800 tracking-tight leading-[1.15] mb-4 sm:mb-6">
                 Finally understand
                 <span className="block bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                   your money.
                 </span>
               </h1>
               
-              <p className="text-xl text-slate-500 mb-8 leading-relaxed max-w-lg">
-                See your real income, plan for taxes, and know exactly what you can spend — 
-                even when deals fall apart.
+              <p className="text-base sm:text-xl text-slate-500 mb-6 sm:mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                See your real income, plan for taxes, and know exactly what you can spend — even when deals fall apart.
               </p>
               
+              {/* CTA Buttons - Stacked on mobile */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <Link to="/auth">
-                  <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-8 h-13 gap-2 shadow-xl shadow-emerald-500/30 transition-all hover:shadow-2xl hover:shadow-emerald-500/40 hover:-translate-y-0.5">
+                <Link to="/auth" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-6 sm:px-8 h-14 sm:h-13 gap-2 shadow-xl shadow-emerald-500/30">
                     Start Free — No Card Required
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="#features">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-6 h-13 border-slate-300 text-slate-600 hover:bg-slate-50">
+                <a href="#features" className="w-full sm:w-auto">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-6 h-14 sm:h-13 border-slate-300 text-slate-600">
                     See What's Inside
                   </Button>
                 </a>
               </div>
 
-              {/* Trust badges */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  Free forever plan
+              {/* Trust badges - Compact on mobile */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-500">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+                  Free forever
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  BC tax brackets built-in
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+                  BC tax built-in
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  5-minute setup
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
+                  5-min setup
                 </span>
               </div>
             </motion.div>
 
-            {/* Right side - Dashboard mockup */}
-            <div className="lg:ml-8">
-              <DashboardMockup />
+            {/* Mockups - Phone for mobile, Dashboard for desktop */}
+            <div>
+              <div className="lg:hidden">
+                <MobilePhoneMockup />
+              </div>
+              <DesktopDashboardMockup />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Social Proof Bar */}
-      <section className="py-8 border-y border-slate-100 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
-            <p className="text-sm font-medium text-slate-400 uppercase tracking-wider">Trusted by agents at</p>
-            <div className="flex flex-wrap items-center justify-center gap-8 text-slate-400">
-              {['RE/MAX', 'Royal LePage', 'Sutton', 'Oakwyn', 'Macdonald Realty'].map((brand) => (
-                <span key={brand} className="text-lg font-semibold">{brand}</span>
-              ))}
-            </div>
+      {/* Social Proof - Simplified for mobile */}
+      <section className="py-6 sm:py-8 border-y border-slate-100 bg-white overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4">
+          <p className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider text-center mb-4">Trusted by agents at</p>
+          <div className="flex items-center justify-center gap-4 sm:gap-8 flex-wrap text-slate-400">
+            {['RE/MAX', 'Royal LePage', 'Sutton', 'Oakwyn'].map((brand) => (
+              <span key={brand} className="text-sm sm:text-lg font-semibold">{brand}</span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Pain Points - Compact */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
+      {/* Pain Points - Mobile optimized grid */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-5xl mx-auto">
           <motion.div 
-            className="text-center mb-10"
+            className="text-center mb-8 sm:mb-10"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
               Sound familiar?
             </h2>
-            <p className="text-slate-500 text-lg">The struggles that keep agents up at night</p>
+            <p className="text-slate-500 text-base sm:text-lg">The struggles that keep agents up at night</p>
           </motion.div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* 2-column grid on mobile, 3 on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {[
-              { icon: AlertTriangle, text: "Unpredictable income — great months followed by silence", color: "text-amber-500", bg: "bg-amber-50" },
-              { icon: Calculator, text: "Tax season panic — realizing you didn't set enough aside", color: "text-red-500", bg: "bg-red-50" },
-              { icon: Wallet, text: "Overspending after big commissions, then scrambling", color: "text-orange-500", bg: "bg-orange-50" },
-              { icon: HeartPulse, text: "Slow month stress — wondering if you'll make rent", color: "text-rose-500", bg: "bg-rose-50" },
-              { icon: FileSpreadsheet, text: "Spreadsheets that break when deals change", color: "text-slate-500", bg: "bg-slate-50" },
-              { icon: Clock, text: "Hours wasted on bookkeeping instead of selling", color: "text-teal-600", bg: "bg-teal-50" },
+              { icon: AlertTriangle, text: "Unpredictable income", color: "text-amber-500", bg: "bg-amber-50" },
+              { icon: Calculator, text: "Tax season panic", color: "text-red-500", bg: "bg-red-50" },
+              { icon: Wallet, text: "Overspending after big deals", color: "text-orange-500", bg: "bg-orange-50" },
+              { icon: HeartPulse, text: "Slow month stress", color: "text-rose-500", bg: "bg-rose-50" },
+              { icon: FileSpreadsheet, text: "Broken spreadsheets", color: "text-slate-500", bg: "bg-slate-100" },
+              { icon: Clock, text: "Hours on bookkeeping", color: "text-teal-600", bg: "bg-teal-50" },
             ].map((pain, i) => (
               <motion.div
                 key={pain.text}
-                className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-100 shadow-sm"
-                initial={{ opacity: 0, y: 20 }}
+                className="flex flex-col items-center text-center p-3 sm:p-4 bg-white rounded-xl border border-slate-100 shadow-sm"
+                initial={{ opacity: 0, y: 15 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
               >
-                <div className={`h-9 w-9 rounded-lg ${pain.bg} flex items-center justify-center shrink-0`}>
-                  <pain.icon className={`h-4 w-4 ${pain.color}`} />
+                <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl ${pain.bg} flex items-center justify-center mb-2 sm:mb-3`}>
+                  <pain.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${pain.color}`} />
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed">{pain.text}</p>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-snug">{pain.text}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Feature Showcases with Visuals */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-6xl mx-auto space-y-24">
-          {/* Safe to Spend */}
-          <FeatureShowcase
-            icon={Shield}
-            title="The only number that actually matters"
-            description="Stop guessing what you can afford. Our Safe-to-Spend calculator automatically accounts for taxes, fixed expenses, and upcoming obligations — so you can spend with confidence, not anxiety."
-            visual={<SafeToSpendVisual />}
-          />
-
-          {/* Tax Protection */}
-          <FeatureShowcase
-            icon={Calculator}
-            title="Never get surprised by taxes again"
-            description="Automatic BC-specific tax calculations with conservative buffers. We set aside exactly what you'll owe — including CPP and provincial taxes — so tax season feels like a formality, not a crisis."
-            visual={<TaxVisual />}
-            reverse
-          />
-
-          {/* 12-Month Projection */}
-          <FeatureShowcase
-            icon={TrendingUp}
-            title="See slow months before they hurt"
-            description="A 12-month projection that actually makes sense. See your confirmed income, pending deals, and projected expenses — so you can prepare for slow periods instead of panicking through them."
-            visual={<ProjectionVisual />}
-          />
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-4xl mx-auto">
+      {/* Features - Mobile Cards */}
+      <section id="features" className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-6xl mx-auto">
           <motion.div 
-            className="text-center mb-14"
+            className="text-center mb-10 sm:mb-14"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
+              Everything you need
+            </h2>
+            <p className="text-slate-500 text-base sm:text-lg">Financial clarity without the complexity</p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <MobileFeatureCard
+              icon={Shield}
+              title="Safe to Spend"
+              description="Know what you can actually spend after taxes, expenses, and obligations are covered."
+              stat="$7,750"
+              statLabel="Available this month"
+              color="emerald"
+            />
+            <MobileFeatureCard
+              icon={Calculator}
+              title="Tax Set-Aside"
+              description="BC-specific tax calculations with conservative buffers. No April surprises."
+              stat="11.5%"
+              statLabel="Auto-calculated rate"
+              color="teal"
+            />
+            <MobileFeatureCard
+              icon={TrendingUp}
+              title="12-Month Forecast"
+              description="See slow months before they hurt. Plan ahead instead of panicking."
+              stat="2"
+              statLabel="Slow months flagged"
+              color="amber"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works - Mobile optimized */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+        <div className="max-w-4xl mx-auto">
+          <motion.div 
+            className="text-center mb-10 sm:mb-14"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
               Get clarity in 5 minutes
             </h2>
-            <p className="text-slate-500 text-lg">No learning curve. No complex setup.</p>
+            <p className="text-slate-500 text-base sm:text-lg">No learning curve. No complex setup.</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
             {[
               { step: "1", icon: Banknote, title: "Add your deals", description: "Enter pending and closed deals. 2 minutes max." },
-              { step: "2", icon: Wallet, title: "Add your expenses", description: "Fixed costs, business expenses, tax obligations." },
-              { step: "3", icon: Eye, title: "Get financial clarity", description: "Instant safe-to-spend, projections, and tax set-aside." },
+              { step: "2", icon: Wallet, title: "Add expenses", description: "Fixed costs, business expenses, obligations." },
+              { step: "3", icon: Eye, title: "Get clarity", description: "Instant safe-to-spend and projections." },
             ].map((item, i) => (
               <motion.div
                 key={item.step}
                 className="text-center"
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <div className="relative inline-block mb-5">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 mx-auto">
-                    <item.icon className="h-7 w-7 text-white" />
+                <div className="relative inline-block mb-4 sm:mb-5">
+                  <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 mx-auto">
+                    <item.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
                   </div>
-                  <div className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-slate-800 text-white text-sm font-bold flex items-center justify-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-slate-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center">
                     {item.step}
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">{item.title}</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-1 sm:mb-2">{item.title}</h3>
                 <p className="text-slate-500 text-sm">{item.description}</p>
               </motion.div>
             ))}
@@ -814,22 +704,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      {/* Testimonials - Horizontal scroll on mobile */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <motion.div 
-            className="text-center mb-14"
+            className="text-center mb-8 sm:mb-14"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
-              Agents who finally feel in control
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
+              Agents who feel in control
             </h2>
-            <p className="text-slate-500 text-lg">Real stories about financial clarity</p>
+            <p className="text-slate-500 text-base sm:text-lg">Real stories about financial clarity</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          {/* Mobile: horizontal scroll, Desktop: grid */}
+          <div className="sm:hidden">
+            <TestimonialScroll />
+          </div>
+          
+          <div className="hidden sm:grid md:grid-cols-3 gap-6">
             {[
               {
                 quote: "For the first time in 8 years, I didn't stress about taxes in April. The set-aside calculator changed everything.",
@@ -871,144 +766,144 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      {/* Pricing - Mobile optimized */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto">
           <motion.div 
-            className="text-center mb-12"
+            className="text-center mb-10 sm:mb-12"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
               Simple, honest pricing
             </h2>
-            <p className="text-slate-500 text-lg">Costs less than one missed tax deduction.</p>
+            <p className="text-slate-500 text-base sm:text-lg">Costs less than one missed tax deduction.</p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
             {/* Free */}
             <motion.div
-              className="bg-white rounded-2xl p-7 border border-slate-200 shadow-sm"
+              className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-200 shadow-sm"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-xl font-semibold text-slate-800 mb-1">Free</h3>
-              <p className="text-slate-500 text-sm mb-5">Perfect for getting started</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-slate-800">$0</span>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Free</h3>
+              <p className="text-slate-500 text-sm mb-4 sm:mb-5">Perfect for getting started</p>
+              <div className="mb-5 sm:mb-6">
+                <span className="text-3xl sm:text-4xl font-bold text-slate-800">$0</span>
                 <span className="text-slate-400 ml-1">/month</span>
               </div>
-              <div className="space-y-3 mb-7">
+              <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
                 {["Up to 10 deals", "Basic expense tracking", "3-month projections", "Mobile-friendly"].map((f) => (
-                  <div key={f} className="flex items-center gap-2.5">
+                  <div key={f} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     <span className="text-sm text-slate-600">{f}</span>
                   </div>
                 ))}
               </div>
               <Link to="/auth" className="block">
-                <Button variant="outline" className="w-full h-11 border-slate-300">Get Started Free</Button>
+                <Button variant="outline" className="w-full h-12 sm:h-11 text-base sm:text-sm border-slate-300">Get Started Free</Button>
               </Link>
             </motion.div>
 
             {/* Pro */}
             <motion.div
-              className="bg-white rounded-2xl p-7 border-2 border-emerald-500 shadow-xl shadow-emerald-100/50 relative"
+              className="bg-white rounded-2xl p-5 sm:p-7 border-2 border-emerald-500 shadow-xl shadow-emerald-100/50 relative"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-1 text-xs font-semibold rounded-full shadow-lg">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 sm:px-4 py-1 text-[10px] sm:text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
                 RECOMMENDED
               </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-1">Professional</h3>
-              <p className="text-slate-500 text-sm mb-5">For serious producers</p>
-              <div className="mb-6">
-                <span className="text-4xl font-bold text-slate-800">$29</span>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Professional</h3>
+              <p className="text-slate-500 text-sm mb-4 sm:mb-5">For serious producers</p>
+              <div className="mb-5 sm:mb-6">
+                <span className="text-3xl sm:text-4xl font-bold text-slate-800">$29</span>
                 <span className="text-slate-400 ml-1">/month</span>
               </div>
-              <div className="space-y-3 mb-7">
+              <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
                 {["Unlimited deals", "Full expense tracking", "12-month projections", "Tax set-aside calculator", "Safe-to-spend tracking", "Data export", "Priority support"].map((f) => (
-                  <div key={f} className="flex items-center gap-2.5">
+                  <div key={f} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     <span className="text-sm text-slate-600">{f}</span>
                   </div>
                 ))}
               </div>
               <Link to="/auth" className="block">
-                <Button className="w-full h-11 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25">
+                <Button className="w-full h-12 sm:h-11 text-base sm:text-sm bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25">
                   Start 14-Day Free Trial
                 </Button>
               </Link>
             </motion.div>
           </div>
 
-          <p className="text-center text-sm text-slate-400 mt-6">
+          <p className="text-center text-xs sm:text-sm text-slate-400 mt-5 sm:mt-6">
             No credit card required • Cancel anytime
           </p>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50">
+      {/* Final CTA - Mobile optimized */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50">
         <motion.div 
           className="max-w-2xl mx-auto text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-4">
-            Ready to finally understand your finances?
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 sm:mb-4">
+            Ready to understand your finances?
           </h2>
-          <p className="text-slate-500 text-lg mb-8">
+          <p className="text-slate-500 text-base sm:text-lg mb-6 sm:mb-8">
             Join agents who've stopped guessing and started feeling calm about money.
           </p>
           <Link to="/auth">
-            <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-8 h-13 gap-2 shadow-xl shadow-emerald-500/30 transition-all hover:shadow-2xl hover:shadow-emerald-500/40 hover:-translate-y-0.5">
+            <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-6 sm:px-8 h-14 sm:h-13 gap-2 shadow-xl shadow-emerald-500/30">
               Get Financial Clarity — Free
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <p className="text-sm text-slate-400 mt-4">Setup takes 5 minutes</p>
+          <p className="text-xs sm:text-sm text-slate-400 mt-4">Setup takes 5 minutes</p>
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-white border-t border-slate-100">
+      {/* Footer - Mobile optimized */}
+      <footer className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white border-t border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <div className="grid sm:grid-cols-4 gap-8">
-            <div className="sm:col-span-2">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <Shield className="h-5 w-5 text-white" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+            <div className="col-span-2">
+              <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="font-semibold text-lg text-slate-800">Commission Tracker</span>
+                <span className="font-semibold text-base sm:text-lg text-slate-800">Commission Tracker</span>
               </div>
-              <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-500 max-w-xs leading-relaxed">
                 Financial clarity for commission-based real estate agents. 
                 Know what you can spend — before it becomes a problem.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-slate-800 mb-4 text-sm">Product</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
+              <h4 className="font-semibold text-slate-800 mb-3 sm:mb-4 text-sm">Product</h4>
+              <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-slate-500">
                 <li><a href="#features" className="hover:text-slate-800 transition-colors">Features</a></li>
                 <li><Link to="/auth" className="hover:text-slate-800 transition-colors">Pricing</Link></li>
                 <li><Link to="/auth" className="hover:text-slate-800 transition-colors">Sign Up</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-slate-800 mb-4 text-sm">Legal</h4>
-              <ul className="space-y-2.5 text-sm text-slate-500">
+              <h4 className="font-semibold text-slate-800 mb-3 sm:mb-4 text-sm">Legal</h4>
+              <ul className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-slate-500">
                 <li><Link to="/terms" className="hover:text-slate-800 transition-colors">Terms of Service</Link></li>
                 <li><Link to="/privacy" className="hover:text-slate-800 transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-slate-100 mt-10 pt-8 text-center text-sm text-slate-400">
+          <div className="border-t border-slate-100 mt-8 sm:mt-10 pt-6 sm:pt-8 text-center text-xs sm:text-sm text-slate-400">
             <p>© {new Date().getFullYear()} Commission Tracker. Built for Canadian agents.</p>
           </div>
         </div>
