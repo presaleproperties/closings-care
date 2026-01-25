@@ -82,8 +82,8 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
       label: `${thisYear} Projected`,
       value: formatCurrency(stats.thisYearProjected),
       subtitle: 'Expected this year',
-      gradient: 'from-success to-success/70',
-      textColor: 'text-success-foreground',
+      gradient: 'from-amber-500 to-orange-500',
+      textColor: 'text-white',
     },
     {
       icon: Receipt,
@@ -145,23 +145,23 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             </p>
           </motion.div>
 
-          {/* 2026 Projected - Widget */}
+          {/* This Year Projected - Widget */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-[20px] bg-gradient-to-br from-success to-success/80 p-4 shadow-lg cursor-pointer"
+            className="rounded-[20px] bg-gradient-to-br from-amber-500 to-orange-500 p-4 shadow-lg cursor-pointer"
           >
             <div className="flex items-center gap-1.5 mb-1">
-              <Calendar className="h-3.5 w-3.5 text-success-foreground/80" />
-              <span className="text-[11px] font-medium text-success-foreground/80 uppercase tracking-wide">
+              <Calendar className="h-3.5 w-3.5 text-white/80" />
+              <span className="text-[11px] font-medium text-white/80 uppercase tracking-wide">
                 {thisYear}
               </span>
             </div>
-            <p className="text-[22px] font-bold text-success-foreground tracking-tight leading-tight">
+            <p className="text-[22px] font-bold text-white tracking-tight leading-tight">
               {formatCurrency(stats.thisYearProjected)}
             </p>
-            <p className="text-[11px] text-success-foreground/70 mt-0.5">
+            <p className="text-[11px] text-white/70 mt-0.5">
               Expected
             </p>
           </motion.div>
