@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { AlertTriangle, Shield, TrendingUp, Info, PiggyBank, Receipt, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '@/lib/format';
@@ -20,6 +21,10 @@ interface TaxSafetyCardProps {
 }
 
 type TaxStatus = 'safe' | 'caution' | 'at-risk';
+
+const springConfigs = {
+  gentle: { type: "spring" as const, stiffness: 120, damping: 20 },
+};
 
 export function TaxSafetyCard({ paidIncome, projectedIncome, deductibleExpenses }: TaxSafetyCardProps) {
   const { data: settings } = useSettings();
@@ -81,6 +86,7 @@ export function TaxSafetyCard({ paidIncome, projectedIncome, deductibleExpenses 
       bg: 'bg-success/10',
       border: 'border-success/30',
       iconColor: 'text-success',
+      iconGradient: 'icon-gradient-primary',
     },
     'caution': {
       icon: AlertTriangle,
@@ -89,6 +95,7 @@ export function TaxSafetyCard({ paidIncome, projectedIncome, deductibleExpenses 
       bg: 'bg-warning/10',
       border: 'border-warning/30',
       iconColor: 'text-warning',
+      iconGradient: 'icon-gradient-accent',
     },
     'at-risk': {
       icon: AlertTriangle,
@@ -97,6 +104,7 @@ export function TaxSafetyCard({ paidIncome, projectedIncome, deductibleExpenses 
       bg: 'bg-destructive/10',
       border: 'border-destructive/30',
       iconColor: 'text-destructive',
+      iconGradient: 'icon-gradient-accent',
     },
   };
 
@@ -104,109 +112,112 @@ export function TaxSafetyCard({ paidIncome, projectedIncome, deductibleExpenses 
   const StatusIcon = config.icon;
 
   return (
-    <div className={cn(
-      "rounded-2xl border-2 bg-card p-5 transition-all",
-      config.border,
-      config.bg
-    )}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2.5 rounded-xl", config.bg)}>
-            <StatusIcon className={cn("h-5 w-5", config.iconColor)} />
+    <motion.div 
+      className="landing-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springConfigs.gentle}
+    >
+      <div className={cn("p-5", config.bg)}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className={cn("icon-gradient-sm", config.iconGradient)}>
+              <StatusIcon className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg text-foreground">Tax Safety</h3>
+              <p className={cn("text-sm font-medium", config.color)}>{config.label}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-lg">Tax Safety</h3>
-            <p className={cn("text-sm font-medium", config.color)}>{config.label}</p>
-          </div>
+          <Link to="/settings">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
-        <Link to="/settings">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
 
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="p-3 rounded-xl bg-muted/50">
-          <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Recommended</span>
+        {/* Main Stats Grid */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <div className="p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Recommended</span>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(taxData.recommendedSetAside)}</p>
+            <p className="text-xs text-muted-foreground">to set aside YTD</p>
           </div>
-          <p className="text-lg font-bold">{formatCurrency(taxData.recommendedSetAside)}</p>
-          <p className="text-xs text-muted-foreground">to set aside YTD</p>
+          
+          <div className="p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50">
+            <div className="flex items-center gap-1.5 mb-1">
+              <PiggyBank className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Saved</span>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(taxData.actualSaved)}</p>
+            <p className="text-xs text-muted-foreground">set aside</p>
+          </div>
+          
+          <div className={cn("p-3 rounded-xl border", taxData.difference >= 0 ? "bg-success/10 border-success/30" : "bg-destructive/10 border-destructive/30")}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Difference</span>
+            </div>
+            <p className={cn("text-lg font-bold", taxData.difference >= 0 ? "text-success" : "text-destructive")}>
+              {taxData.difference >= 0 ? '+' : ''}{formatCurrency(taxData.difference)}
+            </p>
+            <p className="text-xs text-muted-foreground">{taxData.difference >= 0 ? 'surplus' : 'shortfall'}</p>
+          </div>
         </div>
-        
-        <div className="p-3 rounded-xl bg-muted/50">
-          <div className="flex items-center gap-1.5 mb-1">
-            <PiggyBank className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Saved</span>
-          </div>
-          <p className="text-lg font-bold">{formatCurrency(taxData.actualSaved)}</p>
-          <p className="text-xs text-muted-foreground">set aside</p>
-        </div>
-        
-        <div className={cn("p-3 rounded-xl", taxData.difference >= 0 ? "bg-success/10" : "bg-destructive/10")}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Difference</span>
-          </div>
-          <p className={cn("text-lg font-bold", taxData.difference >= 0 ? "text-success" : "text-destructive")}>
-            {taxData.difference >= 0 ? '+' : ''}{formatCurrency(taxData.difference)}
+
+        {/* Warning Message */}
+        <div className={cn("p-4 rounded-xl border bg-card/60 backdrop-blur-sm", config.border, "mb-4")}>
+          <p className="text-sm text-foreground">
+            <span className="font-medium">If you stopped working today,</span>{' '}
+            you would owe approximately{' '}
+            <span className={cn("font-bold", config.color)}>
+              {formatCurrency(taxData.taxOwedIfStoppedToday)}
+            </span>{' '}
+            in taxes.
           </p>
-          <p className="text-xs text-muted-foreground">{taxData.difference >= 0 ? 'surplus' : 'shortfall'}</p>
         </div>
-      </div>
 
-      {/* Warning Message */}
-      <div className={cn("p-4 rounded-xl border", config.border, config.bg, "mb-4")}>
-        <p className="text-sm">
-          <span className="font-medium">If you stopped working today,</span>{' '}
-          you would owe approximately{' '}
-          <span className={cn("font-bold", config.color)}>
-            {formatCurrency(taxData.taxOwedIfStoppedToday)}
-          </span>{' '}
-          in taxes.
-        </p>
-      </div>
-
-      {/* Tax Breakdown */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Income Tax (YTD)</span>
-          <span className="font-medium">{formatCurrency(taxData.incomeTax)}</span>
-        </div>
-        {gstRegistered && (
+        {/* Tax Breakdown */}
+        <div className="space-y-2 mb-4 p-4 rounded-xl bg-card/60 backdrop-blur-sm border border-border/50">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">GST Owed (Est.)</span>
-            <span className="font-medium">{formatCurrency(taxData.gstOwed)}</span>
+            <span className="text-muted-foreground">Income Tax (YTD)</span>
+            <span className="font-medium text-foreground">{formatCurrency(taxData.incomeTax)}</span>
           </div>
-        )}
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">Buffer (+{taxData.bufferPercent}%)</span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>This extra buffer protects you from underestimating taxes. Adjust in settings.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          {gstRegistered && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">GST Owed (Est.)</span>
+              <span className="font-medium text-foreground">{formatCurrency(taxData.gstOwed)}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">Buffer (+{taxData.bufferPercent}%)</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>This extra buffer protects you from underestimating taxes. Adjust in settings.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <span className="font-medium text-muted-foreground">included</span>
           </div>
-          <span className="font-medium text-muted-foreground">included</span>
+        </div>
+
+        {/* CTA */}
+        <div className="pt-3 border-t border-border/50">
+          <p className="text-xs text-muted-foreground text-center">
+            ⚠️ Do not treat tax set-aside as spendable income. It belongs to CRA.
+          </p>
         </div>
       </div>
-
-      {/* CTA */}
-      <div className="pt-3 border-t border-border/50">
-        <p className="text-xs text-muted-foreground text-center">
-          ⚠️ Do not treat tax set-aside as spendable income. It belongs to CRA.
-        </p>
-      </div>
-    </div>
+    </motion.div>
   );
 }
