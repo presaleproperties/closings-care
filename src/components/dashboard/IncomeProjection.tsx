@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, TrendingUp, Wallet, Home, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowRight, TrendingUp, Wallet, Home, Lock, Plus, BarChart3, Sparkles } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
@@ -175,12 +176,76 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
   const totalProjectedIncome = totalCommissions + totalOtherIncome;
   const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
   const netProjection = chartData.reduce((sum, m) => sum + m.net, 0);
+  const hasNoCommissions = totalCommissions === 0 && totalOtherIncome === 0;
 
   const handleBarClick = (data: any) => {
     if (data?.activePayload?.[0]?.payload) {
       setSelectedMonth(data.activePayload[0].payload as MonthData);
     }
   };
+
+  // Show empty state when there's no income data
+  if (hasNoCommissions && totalExpenses === 0) {
+    return (
+      <div className="landing-card h-full">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+          <div className="flex items-center gap-3">
+            <div className="icon-gradient-primary icon-gradient-sm">
+              <TrendingUp className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+                {projectionMonths}-Month Projection
+              </h3>
+              <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Income & expense forecast</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 flex flex-col items-center justify-center min-h-[400px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            className="text-center"
+          >
+            <motion.div 
+              className="w-20 h-20 mx-auto mb-5 rounded-3xl bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-primary/20 dark:to-accent/20 flex items-center justify-center shadow-lg"
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <BarChart3 className="w-10 h-10 text-emerald-600 dark:text-primary" />
+            </motion.div>
+            
+            <h3 className="text-lg font-bold text-slate-800 dark:text-foreground mb-2">
+              Your forecast awaits
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-muted-foreground mb-6 max-w-[280px]">
+              Add deals with expected payout dates to see your {projectionMonths}-month income projection
+            </p>
+            
+            <div className="space-y-3">
+              <Link to="/deals/new">
+                <motion.div whileTap={{ scale: 0.95 }}>
+                  <Button className="btn-premium h-11 px-6 gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Your First Deal
+                  </Button>
+                </motion.div>
+              </Link>
+              
+              <div className="flex items-center justify-center gap-4 pt-4">
+                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-muted-foreground">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Auto-calculates tax set-asides</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="landing-card">
