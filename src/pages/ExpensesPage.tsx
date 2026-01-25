@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProgress';
 import { PropertyManager } from '@/components/expenses/PropertyManager';
 import { QuickAddExpense } from '@/components/expenses/QuickAddExpense';
+import { ExpenseVisualBreakdown } from '@/components/expenses/ExpenseVisualBreakdown';
 
 // Categorized expenses for real estate agents
 const expenseCategories = {
@@ -387,6 +388,13 @@ export default function ExpensesPage() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-5">
+            {/* Visual Expense Breakdown */}
+            <ExpenseVisualBreakdown 
+              expenses={expenses} 
+              currentMonth={currentMonth}
+              onCategoryClick={(type) => setActiveTab(type)}
+            />
+
             {/* Quick Add Section */}
             <QuickAddExpense currentMonth={currentMonth} />
 
