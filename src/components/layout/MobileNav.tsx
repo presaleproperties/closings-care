@@ -21,23 +21,42 @@ export function MobileNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[env(safe-area-inset-bottom,8px)]">
-      {/* Liquid glass container with rounded edges */}
+      {/* Premium liquid glass container */}
       <div className="relative mx-auto max-w-md">
-        {/* Outer glow for premium depth - emerald tint */}
-        <div className="absolute -inset-1 bg-gradient-to-t from-emerald-500/10 via-transparent to-transparent rounded-[28px] blur-xl" />
+        {/* Multi-layer outer glow for luxurious depth */}
+        <div className="absolute -inset-2 rounded-[32px] opacity-60"
+          style={{
+            background: 'radial-gradient(ellipse at bottom, hsl(158 64% 32% / 0.15) 0%, transparent 70%)',
+            filter: 'blur(20px)',
+          }}
+        />
+        <div className="absolute -inset-1 bg-gradient-to-t from-primary/8 via-transparent to-transparent rounded-[28px] blur-xl" />
         
-        {/* Main liquid glass container */}
-        <div className="relative overflow-hidden rounded-[24px] border border-emerald-500/[0.08]">
-          {/* Multi-layer glass effect for liquid look */}
-          <div className="absolute inset-0 bg-card/40 backdrop-blur-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-t from-card/60 via-card/30 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent" />
+        {/* Main premium glass container */}
+        <div 
+          className="relative overflow-hidden rounded-[24px]"
+          style={{
+            boxShadow: `
+              inset 0 1px 0 0 rgba(255,255,255,0.12),
+              inset 0 -1px 0 0 rgba(0,0,0,0.05),
+              0 0 0 1px hsl(var(--border) / 0.25),
+              0 4px 12px -2px hsl(220 25% 10% / 0.1),
+              0 12px 24px -6px hsl(220 25% 10% / 0.12),
+              0 20px 40px -8px hsl(158 64% 32% / 0.08)
+            `,
+          }}
+        >
+          {/* Multi-layer glass effect for premium liquid look */}
+          <div className="absolute inset-0 bg-card/50 backdrop-blur-3xl backdrop-saturate-150" />
+          <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-card/40 to-card/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] via-transparent to-transparent" />
           
-          {/* Subtle inner highlight at top - emerald tint */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/20 to-transparent" />
+          {/* Premium inner highlight at top */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
           
-          {/* Bottom reflection */}
-          <div className="absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-400/[0.08] to-transparent" />
+          {/* Subtle bottom reflection */}
+          <div className="absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
           
           {/* Nav items */}
           <div className="relative flex justify-around items-center h-[72px] px-2">
@@ -50,7 +69,7 @@ export function MobileNav() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-300 ease-out',
+                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-400 ease-out',
                     'active:scale-90 active:opacity-70',
                     isActive 
                       ? 'text-primary' 
@@ -58,23 +77,26 @@ export function MobileNav() {
                   )}
                 >
                   <div className={cn(
-                    "relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-300 ease-out",
-                    isActive && "bg-emerald-500/10"
+                    "relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-400 ease-out",
+                    isActive && "bg-primary/12"
                   )}>
-                    {/* Soft glow behind active icon - emerald */}
+                    {/* Premium glow behind active icon */}
                     {isActive && (
-                      <div className="absolute inset-0 rounded-2xl bg-emerald-500/25 blur-md" />
+                      <>
+                        <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-lg" />
+                        <div className="absolute inset-1 rounded-xl bg-primary/15 blur-md" />
+                      </>
                     )}
                     <item.icon 
                       className={cn(
-                        "relative w-[22px] h-[22px] transition-all duration-300",
-                        isActive && "drop-shadow-[0_0_6px_hsl(160_84%_39%/0.6)]"
+                        "relative w-[22px] h-[22px] transition-all duration-400",
+                        isActive && "drop-shadow-[0_0_8px_hsl(158_64%_32%/0.7)]"
                       )}
                       strokeWidth={isActive ? 2.25 : 1.5} 
                     />
                   </div>
                   <span className={cn(
-                    "text-[10px] tracking-wide transition-all duration-300",
+                    "text-[10px] tracking-wide transition-all duration-400",
                     isActive 
                       ? "font-semibold" 
                       : "font-medium opacity-80"
