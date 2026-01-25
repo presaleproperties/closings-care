@@ -114,19 +114,6 @@ function HeroSection() {
             transition={{ duration: 0.5 }}
             className="text-center lg:text-left lg:col-span-3"
           >
-            {/* Logo above hero content */}
-            <motion.div
-              className="flex justify-center lg:justify-start mb-6"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <img 
-                src="/favicon.png" 
-                alt="Dealzflow" 
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-xl shadow-emerald-500/30"
-              />
-            </motion.div>
 
             <motion.div 
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs sm:text-sm font-medium mb-5"
