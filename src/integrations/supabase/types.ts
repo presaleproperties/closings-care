@@ -374,6 +374,7 @@ export type Database = {
           gst_registered: boolean | null
           id: string
           monthly_income_goal: number | null
+          onboarding_completed: boolean | null
           presale_template: Json | null
           province: string | null
           resale_template: Json | null
@@ -401,6 +402,7 @@ export type Database = {
           gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
+          onboarding_completed?: boolean | null
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null
@@ -428,6 +430,7 @@ export type Database = {
           gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
+          onboarding_completed?: boolean | null
           presale_template?: Json | null
           province?: string | null
           resale_template?: Json | null

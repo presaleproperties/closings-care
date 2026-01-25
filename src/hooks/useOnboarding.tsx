@@ -1,49 +1,61 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
-
-const ONBOARDING_KEY = 'commissioniq_onboarding_complete';
+import { useSettings, useUpdateSettings } from './useSettings';
 
 export function useOnboarding() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
+  const updateSettings = useUpdateSettings();
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
 
+  // Determine if onboarding should show based on settings
   useEffect(() => {
-    // Wait for auth to finish loading
-    if (loading) {
+    // Wait for auth and settings to load
+    if (authLoading || settingsLoading) {
       return;
     }
 
     if (!user) {
       setShowOnboarding(false);
-      setIsChecking(false);
       return;
     }
 
-    // Check if user has completed onboarding
-    const key = `${ONBOARDING_KEY}_${user.id}`;
-    const completed = localStorage.getItem(key);
-    
-    // Only show onboarding if explicitly NOT completed
-    setShowOnboarding(completed !== 'true');
-    setIsChecking(false);
-  }, [user, loading]);
+    // Check if onboarding_completed flag exists in settings
+    // If settings exist and onboarding_completed is true, don't show
+    // If settings don't exist or onboarding_completed is false/undefined, show onboarding
+    const hasCompletedOnboarding = settings?.onboarding_completed === true;
+    setShowOnboarding(!hasCompletedOnboarding);
+  }, [user, authLoading, settings, settingsLoading]);
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback(async () => {
     if (user) {
-      const key = `${ONBOARDING_KEY}_${user.id}`;
-      localStorage.setItem(key, 'true');
-      setShowOnboarding(false);
+      try {
+        await updateSettings.mutateAsync({
+          onboarding_completed: true,
+        } as any);
+        setShowOnboarding(false);
+      } catch (error) {
+        console.error('Failed to save onboarding status:', error);
+        // Still hide the wizard even if save fails
+        setShowOnboarding(false);
+      }
     }
-  }, [user]);
+  }, [user, updateSettings]);
 
-  const resetOnboarding = useCallback(() => {
+  const resetOnboarding = useCallback(async () => {
     if (user) {
-      const key = `${ONBOARDING_KEY}_${user.id}`;
-      localStorage.removeItem(key);
-      setShowOnboarding(true);
+      try {
+        await updateSettings.mutateAsync({
+          onboarding_completed: false,
+        } as any);
+        setShowOnboarding(true);
+      } catch (error) {
+        console.error('Failed to reset onboarding:', error);
+      }
     }
-  }, [user]);
+  }, [user, updateSettings]);
+
+  const isChecking = authLoading || settingsLoading;
 
   return {
     showOnboarding,
