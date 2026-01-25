@@ -37,7 +37,15 @@ import {
   FileText,
   Percent,
   ChevronRight,
-  Play
+  Play,
+  ArrowUpRight,
+  ArrowDownRight,
+  Landmark,
+  Car,
+  Smartphone,
+  MapPin,
+  Circle,
+  ChevronDown
 } from "lucide-react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
@@ -118,7 +126,302 @@ function FloatingElements() {
   );
 }
 
-// Dashboard Preview Component
+// Interactive animated bar chart component
+function AnimatedBarChart({ className = "" }: { className?: string }) {
+  const bars = [
+    { month: "Jan", income: 8200, expenses: 2400 },
+    { month: "Feb", income: 12500, expenses: 3100 },
+    { month: "Mar", income: 6800, expenses: 2800 },
+    { month: "Apr", income: 18200, expenses: 3500 },
+    { month: "May", income: 14500, expenses: 2900 },
+    { month: "Jun", income: 22000, expenses: 4200 },
+    { month: "Jul", income: 9800, expenses: 2600 },
+    { month: "Aug", income: 28500, expenses: 5100 },
+    { month: "Sep", income: 16200, expenses: 3300 },
+    { month: "Oct", income: 21000, expenses: 3800 },
+    { month: "Nov", income: 12800, expenses: 2700 },
+    { month: "Dec", income: 24500, expenses: 4500 },
+  ];
+  
+  const maxValue = Math.max(...bars.map(b => b.income));
+  
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-slate-800">12-Month Income vs Expenses</h4>
+        <div className="flex items-center gap-4 text-xs">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500" />
+            Income
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-slate-300" />
+            Expenses
+          </span>
+        </div>
+      </div>
+      <div className="flex items-end justify-between gap-1 h-32">
+        {bars.map((bar, i) => (
+          <div key={bar.month} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full flex gap-0.5 items-end" style={{ height: '100px' }}>
+              <motion.div
+                className="flex-1 bg-gradient-to-t from-emerald-500 to-teal-400 rounded-t-sm"
+                initial={{ height: 0 }}
+                whileInView={{ height: `${(bar.income / maxValue) * 100}%` }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 + i * 0.05, duration: 0.5, ease: "easeOut" }}
+              />
+              <motion.div
+                className="flex-1 bg-slate-300 rounded-t-sm"
+                initial={{ height: 0 }}
+                whileInView={{ height: `${(bar.expenses / maxValue) * 100}%` }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6 + i * 0.05, duration: 0.5, ease: "easeOut" }}
+              />
+            </div>
+            <span className="text-[10px] text-slate-400">{bar.month}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Deal Pipeline Visualization
+function DealPipelinePreview() {
+  const deals = [
+    { client: "Sarah Chen", address: "1245 Oak Street", status: "pending", amount: 18500, date: "Mar 15", progress: 65 },
+    { client: "Mike Johnson", address: "892 Maple Ave", status: "closing", amount: 24200, date: "Mar 28", progress: 90 },
+    { client: "Lisa Park", address: "567 Pine Road", status: "paid", amount: 12800, date: "Mar 02", progress: 100 },
+    { client: "James Wilson", address: "234 Cedar Lane", status: "new", amount: 31500, date: "Apr 10", progress: 25 },
+  ];
+
+  const statusConfig = {
+    new: { color: "bg-blue-500", label: "New Deal", bg: "bg-blue-50" },
+    pending: { color: "bg-amber-500", label: "Pending", bg: "bg-amber-50" },
+    closing: { color: "bg-emerald-500", label: "Closing", bg: "bg-emerald-50" },
+    paid: { color: "bg-teal-500", label: "Paid", bg: "bg-teal-50" },
+  };
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <Briefcase className="h-4 w-4 text-white" />
+          </div>
+          <h4 className="font-semibold text-slate-800">Deal Pipeline</h4>
+        </div>
+        <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">4 active deals</span>
+      </div>
+      <div className="divide-y divide-slate-50">
+        {deals.map((deal, i) => {
+          const config = statusConfig[deal.status as keyof typeof statusConfig];
+          return (
+            <motion.div
+              key={deal.client}
+              className="p-4 hover:bg-slate-50/50 transition-colors"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 * i }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-sm font-medium text-slate-600">
+                    {deal.client.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-800 text-sm">{deal.client}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {deal.address}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-emerald-600">${deal.amount.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">{deal.date}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className={`h-full ${config.color} rounded-full`}
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${deal.progress}%` }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
+                  />
+                </div>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${config.bg} text-slate-700`}>
+                  {config.label}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+// Expense Categories Preview
+function ExpenseCategoriesPreview() {
+  const categories = [
+    { name: "Vehicle & Gas", icon: Car, amount: 1850, budget: 2000, color: "from-blue-500 to-blue-600" },
+    { name: "Marketing", icon: Smartphone, amount: 980, budget: 1500, color: "from-purple-500 to-purple-600" },
+    { name: "Office", icon: Briefcase, amount: 450, budget: 600, color: "from-amber-500 to-amber-600" },
+    { name: "Insurance", icon: Shield, amount: 320, budget: 350, color: "from-emerald-500 to-teal-600" },
+  ];
+
+  return (
+    <motion.div
+      className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+    >
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+            <Receipt className="h-4 w-4 text-white" />
+          </div>
+          <h4 className="font-semibold text-slate-800">Expense Tracking</h4>
+        </div>
+        <span className="text-sm font-bold text-slate-800">$3,600<span className="text-slate-400 font-normal">/mo</span></span>
+      </div>
+      <div className="space-y-4">
+        {categories.map((cat, i) => {
+          const percentage = (cat.amount / cat.budget) * 100;
+          const isOverBudget = percentage > 100;
+          return (
+            <motion.div
+              key={cat.name}
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 * i }}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${cat.color} flex items-center justify-center`}>
+                    <cat.icon className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">{cat.name}</span>
+                </div>
+                <span className="text-sm text-slate-600">
+                  <span className="font-semibold">${cat.amount}</span>
+                  <span className="text-slate-400"> / ${cat.budget}</span>
+                </span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full rounded-full bg-gradient-to-r ${cat.color}`}
+                  initial={{ width: 0 }}
+                  whileInView={{ width: `${Math.min(percentage, 100)}%` }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }}
+                />
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+      <div className="mt-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">Tax Deductible</span>
+          <span className="text-emerald-600 font-semibold">$2,890 (80%)</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Tax Safety Gauge Preview
+function TaxSafetyGauge() {
+  const percentage = 78;
+  const circumference = 2 * Math.PI * 45;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <motion.div
+      className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-xl shadow-amber-100/60 border border-amber-200 p-5"
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+          <Landmark className="h-4 w-4 text-white" />
+        </div>
+        <h4 className="font-semibold text-slate-800">Tax Safety</h4>
+      </div>
+      
+      <div className="flex items-center justify-center mb-4">
+        <div className="relative">
+          <svg className="w-32 h-32 -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="none"
+              className="text-amber-200"
+            />
+            <motion.circle
+              cx="50"
+              cy="50"
+              r="45"
+              stroke="url(#taxGradient)"
+              strokeWidth="8"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              whileInView={{ strokeDashoffset }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, delay: 0.3 }}
+            />
+            <defs>
+              <linearGradient id="taxGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#f59e0b" />
+                <stop offset="100%" stopColor="#ea580c" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-2xl font-bold text-slate-800">{percentage}%</span>
+            <span className="text-xs text-amber-600 font-medium">On Track</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-600">Tax Set Aside</span>
+          <span className="font-bold text-slate-800">$16,426</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-600">Recommended</span>
+          <span className="font-medium text-slate-600">$21,000</span>
+        </div>
+        <div className="flex items-center justify-between text-sm pt-2 border-t border-amber-200/50">
+          <span className="text-slate-600">Gap to fill</span>
+          <span className="font-semibold text-amber-600">$4,574</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Enhanced Dashboard Preview Component
 function DashboardPreview() {
   return (
     <motion.div 
@@ -146,12 +449,13 @@ function DashboardPreview() {
         </div>
         
         <div className="p-3 sm:p-5 bg-gradient-to-br from-slate-50 to-slate-100/50">
+          {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-5">
             {[
-              { label: "Safe to Spend", value: "$7,750", gradient: true },
-              { label: "Pipeline", value: "$76,500", trend: "+5 deals" },
-              { label: "YTD Income", value: "$142,800", trend: "+18%" },
-              { label: "Tax Set Aside", value: "$16,426", trend: "Ready" },
+              { label: "Safe to Spend", value: "$7,750", gradient: true, icon: Wallet },
+              { label: "Pipeline", value: "$76,500", trend: "+5 deals", icon: TrendingUp },
+              { label: "YTD Income", value: "$142,800", trend: "+18%", icon: BarChart3 },
+              { label: "Tax Set Aside", value: "$16,426", trend: "Ready", icon: Shield },
             ].map((kpi, i) => (
               <motion.div
                 key={kpi.label}
@@ -160,13 +464,17 @@ function DashboardPreview() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
               >
-                <p className={`text-[9px] sm:text-xs ${kpi.gradient ? 'text-emerald-100' : 'text-slate-500'} font-medium mb-1`}>{kpi.label}</p>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <kpi.icon className={`h-3 w-3 ${kpi.gradient ? 'text-emerald-100' : 'text-slate-400'}`} />
+                  <p className={`text-[9px] sm:text-xs ${kpi.gradient ? 'text-emerald-100' : 'text-slate-500'} font-medium`}>{kpi.label}</p>
+                </div>
                 <p className={`text-sm sm:text-xl font-bold ${kpi.gradient ? 'text-white' : 'text-slate-800'}`}>{kpi.value}</p>
-                {kpi.trend && <p className="text-[8px] sm:text-xs text-emerald-600 mt-0.5">{kpi.trend}</p>}
+                {kpi.trend && <p className={`text-[8px] sm:text-xs ${kpi.gradient ? 'text-emerald-100' : 'text-emerald-600'} mt-0.5`}>{kpi.trend}</p>}
               </motion.div>
             ))}
           </div>
 
+          {/* Chart */}
           <motion.div 
             className="bg-white rounded-xl p-2 sm:p-4 shadow-sm border border-slate-100"
             initial={{ opacity: 0, y: 20 }}
@@ -240,6 +548,203 @@ function DashboardPreview() {
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+// Interactive App Preview Section
+function AppPreviewSection() {
+  const [activeTab, setActiveTab] = useState<'deals' | 'expenses' | 'taxes'>('deals');
+  
+  return (
+    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-slate-50 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <motion.div 
+          className="text-center mb-10 sm:mb-14"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4">
+            <Eye className="h-4 w-4" />
+            See It In Action
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-4">
+            Experience the full dashboard
+          </h2>
+          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
+            Track every deal, expense, and tax obligation in one beautiful interface
+          </p>
+        </motion.div>
+
+        {/* Tab Navigation */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex bg-slate-100 p-1 rounded-xl">
+            {[
+              { id: 'deals', label: 'Deal Pipeline', icon: Briefcase },
+              { id: 'expenses', label: 'Expenses', icon: Receipt },
+              { id: 'taxes', label: 'Tax Safety', icon: Calculator },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'deals' && (
+            <motion.div
+              key="deals"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="grid lg:grid-cols-5 gap-6"
+            >
+              <div className="lg:col-span-3">
+                <DealPipelinePreview />
+              </div>
+              <div className="lg:col-span-2 space-y-4">
+                <motion.div
+                  className="bg-white rounded-2xl shadow-lg border border-slate-100 p-5"
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h4 className="text-sm font-semibold text-slate-800 mb-4">Pipeline Summary</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Total Pipeline</span>
+                      <span className="text-lg font-bold text-emerald-600">$87,000</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Closing This Month</span>
+                      <span className="font-semibold text-slate-800">$42,700</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Average Commission</span>
+                      <span className="font-semibold text-slate-800">$21,750</span>
+                    </div>
+                  </div>
+                </motion.div>
+                <motion.div
+                  className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg p-5 text-white"
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-5 w-5" />
+                    <span className="font-medium">Quick Actions</span>
+                  </div>
+                  <div className="space-y-2">
+                    <button className="w-full bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-3 text-left text-sm">
+                      + Add New Deal
+                    </button>
+                    <button className="w-full bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-3 text-left text-sm">
+                      📊 View Income Forecast
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'expenses' && (
+            <motion.div
+              key="expenses"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="grid lg:grid-cols-2 gap-6"
+            >
+              <ExpenseCategoriesPreview />
+              <motion.div
+                className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5"
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <AnimatedBarChart />
+              </motion.div>
+            </motion.div>
+          )}
+
+          {activeTab === 'taxes' && (
+            <motion.div
+              key="taxes"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="grid lg:grid-cols-3 gap-6"
+            >
+              <TaxSafetyGauge />
+              <div className="lg:col-span-2">
+                <motion.div
+                  className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5"
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                        <Calculator className="h-4 w-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-slate-800">Tax Breakdown</h4>
+                    </div>
+                    <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full font-medium">BC Taxes</span>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { label: "Federal Tax", amount: 9856, percentage: 15.3 },
+                      { label: "Provincial Tax (BC)", amount: 4712, percentage: 7.3 },
+                      { label: "CPP Contributions", amount: 3867, percentage: 6.0 },
+                      { label: "GST/HST Collected", amount: 1858, percentage: 2.9 },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.label}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded-xl"
+                        initial={{ opacity: 0, y: 10 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.1 }}
+                      >
+                        <div>
+                          <p className="font-medium text-slate-800">{item.label}</p>
+                          <p className="text-xs text-slate-500">{item.percentage}% rate</p>
+                        </div>
+                        <p className="text-lg font-bold text-slate-800">${item.amount.toLocaleString()}</p>
+                      </motion.div>
+                    ))}
+                    <div className="pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-800">Total Estimated Taxes</span>
+                        <span className="text-2xl font-bold text-emerald-600">$20,293</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
   );
 }
 
@@ -344,7 +849,7 @@ function CostSection() {
   );
 }
 
-// Section 4: The Solution
+// Section 4: The Solution with Visual Demo
 function SolutionSection() {
   const features = [
     { icon: Target, text: "Deal-level commission tracking" },
@@ -356,7 +861,7 @@ function SolutionSection() {
 
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -389,30 +894,59 @@ function SolutionSection() {
             </div>
           </motion.div>
 
+          {/* Interactive Safe to Spend Demo */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             className="relative"
           >
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 border border-emerald-200">
-              <div className="space-y-4">
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-slate-500">Safe to Spend</span>
-                    <Shield className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-emerald-600">$7,750</p>
-                  <p className="text-xs text-slate-500 mt-1">After taxes, expenses & obligations</p>
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 blur-3xl scale-110" />
+            <div className="relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 border border-emerald-200 shadow-xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                  <Wallet className="h-6 w-6 text-white" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Pipeline</p>
-                    <p className="text-lg font-bold text-slate-800">$76,500</p>
-                  </div>
-                  <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">Tax Ready</p>
-                    <p className="text-lg font-bold text-teal-600">$16,426</p>
+                <div>
+                  <h3 className="font-bold text-slate-800">Safe to Spend</h3>
+                  <p className="text-xs text-emerald-600">Updated in real-time</p>
+                </div>
+              </div>
+              
+              <div className="text-center mb-6">
+                <motion.p 
+                  className="text-5xl font-bold text-emerald-600"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3, type: "spring" }}
+                >
+                  $7,750
+                </motion.p>
+                <p className="text-sm text-slate-500 mt-2">What you can safely spend this month</p>
+              </div>
+              
+              <div className="space-y-3 bg-white/60 rounded-xl p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Projected Cash In</span>
+                  <span className="font-semibold text-emerald-600">+$24,200</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Tax Set-Aside (30%)</span>
+                  <span className="font-semibold text-red-500">-$7,260</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Fixed Expenses</span>
+                  <span className="font-semibold text-red-500">-$5,890</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Upcoming Bills</span>
+                  <span className="font-semibold text-red-500">-$3,300</span>
+                </div>
+                <div className="pt-3 border-t border-emerald-200">
+                  <div className="flex justify-between">
+                    <span className="font-semibold text-slate-800">Safe to Spend</span>
+                    <span className="font-bold text-emerald-600">$7,750</span>
                   </div>
                 </div>
               </div>
@@ -583,7 +1117,7 @@ function ForAgentsBrokers() {
   );
 }
 
-// Section 7: Tax Section
+// Section 7: Tax Section with Visual
 function TaxSection() {
   const taxFeatures = [
     "Live tax reserve tracking",
@@ -594,7 +1128,7 @@ function TaxSection() {
 
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -630,38 +1164,7 @@ function TaxSection() {
             </p>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 sm:p-8 border border-amber-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                  <Percent className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">Tax Set Aside</p>
-                  <p className="text-3xl font-bold text-slate-800">$16,426</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <span className="text-sm text-slate-600">Federal</span>
-                  <span className="text-sm font-semibold text-slate-800">$9,856</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <span className="text-sm text-slate-600">Provincial (BC)</span>
-                  <span className="text-sm font-semibold text-slate-800">$4,712</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg">
-                  <span className="text-sm text-slate-600">GST/HST</span>
-                  <span className="text-sm font-semibold text-slate-800">$1,858</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          <TaxSafetyGauge />
         </div>
       </div>
     </section>
@@ -962,6 +1465,11 @@ export default function LandingPage() {
 
       {/* Section 4: The Solution */}
       <SolutionSection />
+
+      {/* NEW: Interactive App Preview Section */}
+      <div id="features">
+        <AppPreviewSection />
+      </div>
 
       {/* Section 5: How It Works */}
       <div id="how-it-works">
