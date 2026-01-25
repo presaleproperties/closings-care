@@ -45,29 +45,32 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
 
   return (
     <motion.div 
-      className="rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl shadow-ios hover:shadow-ios-lg transition-shadow"
+      className="landing-card"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springConfigs.gentle}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-border/50">
-        <div>
-          <h3 className="font-bold text-[17px] sm:text-lg flex items-center gap-2">
-            <motion.div
-              initial={{ rotate: -10 }}
-              animate={{ rotate: 0 }}
-              transition={springConfigs.bouncy}
-            >
-              <DollarSign className="h-5 w-5 text-accent" />
-            </motion.div>
-            Upcoming Payouts
-          </h3>
-          <p className="text-[13px] text-muted-foreground">{pendingCount} pending</p>
+      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-border/50">
+        <div className="flex items-center gap-3">
+          <motion.div
+            className="icon-gradient-accent icon-gradient-sm"
+            initial={{ rotate: -10 }}
+            animate={{ rotate: 0 }}
+            transition={springConfigs.bouncy}
+          >
+            <DollarSign className="h-4 w-4 text-white" />
+          </motion.div>
+          <div>
+            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+              Upcoming Payouts
+            </h3>
+            <p className="text-[12px] text-slate-500 dark:text-muted-foreground">{pendingCount} pending</p>
+          </div>
         </div>
         <Link to="/payouts">
           <motion.div whileTap={{ scale: 0.95 }} whileHover={{ x: 3 }}>
-            <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/10 h-8 px-2 sm:px-3">
+            <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-accent hover:bg-emerald-50 dark:hover:bg-accent/10 h-8 px-2 sm:px-3">
               All <ArrowRight className="w-3 h-3 ml-1" />
             </Button>
           </motion.div>

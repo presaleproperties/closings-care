@@ -104,21 +104,25 @@ export function OtherIncomeManager() {
   const totalMonthly = monthlyTotal + weeklyTotal;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-sky-400" />
-            Other Income
-          </h3>
-          <p className="text-sm text-muted-foreground">Revenue share, side income, etc.</p>
+    <div className="landing-card">
+      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="icon-gradient-blue icon-gradient-sm">
+            <Wallet className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+              Other Income
+            </h3>
+            <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Revenue share, side income, etc.</p>
+          </div>
         </div>
 
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1.5 bg-sky-500 hover:bg-sky-600">
               <Plus className="h-4 w-4" />
-              Add Income
+              Add
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
@@ -230,6 +234,7 @@ export function OtherIncomeManager() {
         </Dialog>
       </div>
 
+      <div className="p-5">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="text-center p-3 rounded-xl bg-sky-500/10">
@@ -316,9 +321,10 @@ export function OtherIncomeManager() {
         <div className="text-center py-6 text-muted-foreground">
           <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No other income added yet</p>
-          <p className="text-xs">Add revenue share, rental income, or side income</p>
+        <p className="text-xs">Add revenue share, rental income, or side income</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

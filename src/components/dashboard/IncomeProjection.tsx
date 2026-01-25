@@ -183,27 +183,33 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-accent" />
-            {projectionMonths}-Month Projection
-            {isFree && projectionMonths < 12 && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1 bg-muted px-2 py-0.5 rounded-full">
-                <Lock className="h-3 w-3" />
-                Pro unlocks 12 months
-              </span>
-            )}
-          </h3>
-          <p className="text-sm text-muted-foreground">Click a bar for details</p>
+    <div className="landing-card">
+      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+        <div className="flex items-center gap-3">
+          <div className="icon-gradient-primary icon-gradient-sm">
+            <TrendingUp className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground flex items-center gap-2">
+              {projectionMonths}-Month Projection
+              {isFree && projectionMonths < 12 && (
+                <span className="text-[10px] text-slate-500 dark:text-muted-foreground flex items-center gap-1 bg-slate-100 dark:bg-muted px-1.5 py-0.5 rounded-full">
+                  <Lock className="h-2.5 w-2.5" />
+                  Pro
+                </span>
+              )}
+            </h3>
+            <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Click a bar for details</p>
+          </div>
         </div>
         <Link to="/forecast">
-          <Button variant="ghost" size="sm" className="text-accent">
+          <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-accent hover:bg-emerald-50 dark:hover:bg-accent/10">
             Full Forecast <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
         </Link>
       </div>
+
+      <div className="p-5">
 
       {/* Summary Stats - Two rows for better visual */}
       <div className="space-y-3 mb-6">
@@ -325,12 +331,13 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       </div>
 
       {/* Legend note */}
-      <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border/50">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <div className="w-4 h-0.5 bg-primary rounded" />
+      <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-border/50">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-muted-foreground">
+          <div className="w-4 h-0.5 bg-emerald-600 dark:bg-primary rounded" />
           <span>Net Income Trend</span>
         </div>
       </div>
+    </div>
 
       {/* Month Detail Dialog */}
       <Dialog open={!!selectedMonth} onOpenChange={() => setSelectedMonth(null)}>
