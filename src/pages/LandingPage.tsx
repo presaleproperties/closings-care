@@ -37,18 +37,10 @@ import {
   FileText,
   Percent,
   ChevronRight,
-  Play,
-  Smartphone,
-  Monitor
+  Play
 } from "lucide-react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
-
-// Import product images and demo video
-import productMobile from "@/assets/product-mobile-1.jpg";
-import productDesktop from "@/assets/product-desktop-1.jpg";
-import productCombo from "@/assets/product-combo.jpg";
-import demoVideo from "@/assets/demo-video.mp4";
 
 // Animated counter component
 function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
@@ -720,165 +712,6 @@ function EmotionalPayoff() {
   );
 }
 
-// Product Showcase Section with images and video
-function ProductShowcase() {
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const handlePlayVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.play();
-      setIsVideoPlaying(true);
-    }
-  };
-
-  return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        <motion.div 
-          className="text-center mb-12 sm:mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4">
-            <Play className="h-4 w-4" />
-            See it in action
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3">
-            Your finances, crystal clear
-          </h2>
-          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
-            Watch how CommissionIQ transforms chaotic spreadsheets into real-time financial clarity
-          </p>
-        </motion.div>
-
-        {/* Demo Video */}
-        <motion.div 
-          className="mb-12 sm:mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-slate-300/50 border border-slate-200 max-w-4xl mx-auto">
-            <div className="bg-slate-900 px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400" />
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-amber-400" />
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400" />
-              </div>
-              <div className="flex-1 text-center">
-                <span className="text-slate-400 text-xs sm:text-sm">CommissionIQ Demo</span>
-              </div>
-            </div>
-            <div className="relative aspect-video bg-slate-900">
-              <video 
-                ref={videoRef}
-                src={demoVideo}
-                className="w-full h-full object-cover"
-                loop
-                muted
-                playsInline
-                onEnded={() => setIsVideoPlaying(false)}
-              />
-              {!isVideoPlaying && (
-                <motion.div 
-                  className="absolute inset-0 flex items-center justify-center bg-slate-900/30 cursor-pointer"
-                  onClick={handlePlayVideo}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <motion.div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-xl shadow-emerald-500/30"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Play className="h-6 w-6 sm:h-8 sm:w-8 text-white ml-1" fill="white" />
-                  </motion.div>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Product Photos Grid */}
-        <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
-          {/* Mobile App */}
-          <motion.div
-            className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-          >
-            <img 
-              src={productMobile} 
-              alt="CommissionIQ Mobile App" 
-              className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Smartphone className="h-4 w-4 text-emerald-400" />
-                <span className="text-emerald-400 text-xs font-medium uppercase tracking-wider">Mobile</span>
-              </div>
-              <h3 className="text-white font-semibold text-lg">Track deals on the go</h3>
-              <p className="text-slate-300 text-sm mt-1">Full dashboard in your pocket</p>
-            </div>
-          </motion.div>
-
-          {/* Desktop App */}
-          <motion.div
-            className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <img 
-              src={productDesktop} 
-              alt="CommissionIQ Desktop Dashboard" 
-              className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Monitor className="h-4 w-4 text-teal-400" />
-                <span className="text-teal-400 text-xs font-medium uppercase tracking-wider">Desktop</span>
-              </div>
-              <h3 className="text-white font-semibold text-lg">Deep dive analytics</h3>
-              <p className="text-slate-300 text-sm mt-1">Powerful projections at a glance</p>
-            </div>
-          </motion.div>
-
-          {/* Sync Across Devices */}
-          <motion.div
-            className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-          >
-            <img 
-              src={productCombo} 
-              alt="CommissionIQ on all devices" 
-              className="w-full h-64 sm:h-80 object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-amber-400" />
-                <span className="text-amber-400 text-xs font-medium uppercase tracking-wider">Synced</span>
-              </div>
-              <h3 className="text-white font-semibold text-lg">Real-time sync</h3>
-              <p className="text-slate-300 text-sm mt-1">Your data, anywhere you need it</p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // Section 9: Authority/Built By
 function AuthoritySection() {
   return (
@@ -1120,9 +953,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Product Showcase Section */}
-      <ProductShowcase />
 
       {/* Section 2: The Problem */}
       <ProblemSection />
