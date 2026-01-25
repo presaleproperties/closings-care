@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -11,7 +11,8 @@ import {
   DollarSign, 
   Users, 
   FileText,
-  MoreHorizontal
+  MoreHorizontal,
+  Info
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -53,6 +54,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useDeal, useUpdateDeal, useDeleteDeal } from '@/hooks/useDeals';
+import { useSettings } from '@/hooks/useSettings';
+import { usePayouts } from '@/hooks/usePayouts';
 import { 
   useDealPayouts, 
   useCreatePayout, 
@@ -62,6 +65,7 @@ import {
 } from '@/hooks/usePayouts';
 import { formatCurrency as formatCurrencyDisplay, formatDate } from '@/lib/format';
 import { DealFormData, DealType, DealStatus, PropertyType, PayoutType, PayoutStatus, PayoutFormData } from '@/lib/types';
+import { calculateNetCommission } from '@/lib/commissionCalculations';
 
 const payoutTypes: PayoutType[] = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion', 'Custom'];
 
@@ -84,6 +88,8 @@ export default function DealDetailPage() {
   
   const { data: deal, isLoading } = useDeal(id);
   const { data: payouts = [] } = useDealPayouts(id);
+  const { data: allPayouts = [] } = usePayouts();
+  const { data: settings } = useSettings();
   const updateDeal = useUpdateDeal();
   const deleteDeal = useDeleteDeal();
   const createPayout = useCreatePayout();
@@ -105,6 +111,27 @@ export default function DealDetailPage() {
 
   const isPresale = formData.property_type === 'PRESALE';
   const isResale = formData.property_type === 'RESALE';
+
+  // Auto-calculate net commission when gross changes
+  const netCommissionResult = useMemo(() => {
+    return calculateNetCommission(
+      formData.gross_commission_est || 0,
+      settings as any,
+      allPayouts,
+      isTeamDeal ? formData.team_member_portion : undefined
+    );
+  }, [formData.gross_commission_est, formData.team_member_portion, settings, allPayouts, isTeamDeal]);
+
+  // Update net commission when calculation changes
+  useEffect(() => {
+    if (formData.gross_commission_est && formData.gross_commission_est > 0) {
+      const newNet = netCommissionResult.netAmount;
+      if (newNet !== formData.net_commission_est) {
+        setFormData(prev => ({ ...prev, net_commission_est: newNet }));
+        setHasChanges(true);
+      }
+    }
+  }, [netCommissionResult.netAmount]);
 
   useEffect(() => {
     if (deal) {
@@ -542,7 +569,45 @@ export default function DealDetailPage() {
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="net_commission_est">
+                    Net Commission <span className="text-xs text-muted-foreground">(auto-calculated)</span>
+                  </Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                    <Input
+                      id="net_commission_est"
+                      className="pl-7 bg-muted/50"
+                      value={formatCurrencyInput(formData.net_commission_est)}
+                      readOnly
+                      placeholder="Auto-calculated"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Commission breakdown */}
+              {formData.gross_commission_est && formData.gross_commission_est > 0 && (
+                <div className="flex items-start gap-2 p-3 mt-4 bg-muted/40 rounded-lg">
+                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>
+                      <span className="font-medium text-foreground">Gross:</span> ${formatCurrencyInput(formData.gross_commission_est)}
+                      {netCommissionResult.brokeragePortion > 0 && (
+                        <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
+                      )}
+                      {netCommissionResult.teamPortion > 0 && (
+                        <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.teamPortion)}</span> team</>
+                      )}
+                      {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
+                    </p>
+                    {netCommissionResult.capReached && (
+                      <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Team Split */}
