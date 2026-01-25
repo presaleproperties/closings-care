@@ -7,7 +7,6 @@ import {
   Calendar,
   Shield,
   BarChart3,
-  Star,
   DollarSign,
   AlertTriangle,
   Clock,
@@ -15,18 +14,12 @@ import {
   FileSpreadsheet,
   Calculator,
   Banknote,
-  PieChart,
   Sparkles,
   Menu,
   X,
   Zap,
   Lock,
   Users,
-  Building2,
-  Target,
-  LineChart,
-  Receipt,
-  Bell,
   Home,
   Briefcase,
   CreditCard,
@@ -35,19 +28,16 @@ import {
   Coffee,
   TrendingDown,
   FileText,
-  Percent,
   ChevronRight,
   Play,
-  ArrowUpRight,
-  ArrowDownRight,
   Landmark,
   Car,
   Smartphone,
   MapPin,
-  Circle,
-  ChevronDown
+  Receipt,
+  ArrowDown
 } from "lucide-react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
+import { motion, useInView, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
 // Animated counter component
@@ -81,6 +71,28 @@ function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { val
     <span ref={ref}>
       {prefix}{decimals > 0 ? displayValue.toFixed(decimals) : Math.floor(displayValue).toLocaleString()}{suffix}
     </span>
+  );
+}
+
+// Story transition element - visual cue for narrative flow
+function StoryTransition({ direction = "down", label }: { direction?: "down" | "up"; label?: string }) {
+  return (
+    <motion.div 
+      className="py-8 sm:py-12 flex flex-col items-center gap-3"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+    >
+      {label && (
+        <span className="text-xs sm:text-sm font-medium text-slate-400 uppercase tracking-wider">{label}</span>
+      )}
+      <motion.div
+        animate={{ y: direction === "down" ? [0, 8, 0] : [0, -8, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <ArrowDown className={`h-5 w-5 text-slate-300 ${direction === "up" ? "rotate-180" : ""}`} />
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -299,7 +311,6 @@ function ExpenseCategoriesPreview() {
       <div className="space-y-4">
         {categories.map((cat, i) => {
           const percentage = (cat.amount / cat.budget) * 100;
-          const isOverBudget = percentage > 100;
           return (
             <motion.div
               key={cat.name}
@@ -748,27 +759,43 @@ function AppPreviewSection() {
   );
 }
 
-// Section 2: The Problem
+// Section 2: The Problem - Enhanced with narrative
 function ProblemSection() {
   const problems = [
-    { icon: FileSpreadsheet, text: "Commissions spread across emails, spreadsheets, and portals" },
-    { icon: Eye, text: "No clear view of pending vs paid income" },
-    { icon: AlertTriangle, text: "Surprise tax bills every year" },
-    { icon: Clock, text: "Pre-sales and trails feel invisible" },
-    { icon: TrendingDown, text: "Broker statements don't match reality" },
+    { icon: FileSpreadsheet, text: "Commissions spread across emails, spreadsheets, and portals", delay: 0 },
+    { icon: Eye, text: "No clear view of pending vs paid income", delay: 0.1 },
+    { icon: AlertTriangle, text: "Surprise tax bills every year", delay: 0.2 },
+    { icon: Clock, text: "Pre-sales and trails feel invisible", delay: 0.3 },
+    { icon: TrendingDown, text: "Broker statements don't match reality", delay: 0.4 },
   ];
 
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-4xl mx-auto">
+    <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+      {/* Background stress visual */}
+      <div className="absolute inset-0 opacity-[0.03]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(239,68,68,0.5) 35px, rgba(239,68,68,0.5) 70px)`
+        }} />
+      </div>
+      
+      <div className="max-w-4xl mx-auto relative">
         <motion.div 
           className="text-center mb-10 sm:mb-14"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs sm:text-sm font-medium mb-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            Sound familiar?
+          </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
-            You're closing deals — but your money feels unclear.
+            You're closing deals — but your money feels <span className="text-red-500">unclear.</span>
           </h2>
         </motion.div>
         
@@ -776,127 +803,200 @@ function ProblemSection() {
           {problems.map((problem, i) => (
             <motion.div
               key={problem.text}
-              className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border border-slate-200 shadow-sm"
-              initial={{ opacity: 0, x: -20 }}
+              className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-white rounded-xl border border-red-100 shadow-sm hover:shadow-md hover:border-red-200 transition-all"
+              initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: problem.delay, type: "spring", stiffness: 100 }}
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+              <motion.div 
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"
+                whileHover={{ scale: 1.1, rotate: -5 }}
+              >
                 <problem.icon className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
-              </div>
+              </motion.div>
               <p className="text-slate-700 text-sm sm:text-base font-medium pt-2">{problem.text}</p>
             </motion.div>
           ))}
         </div>
 
-        <motion.p 
-          className="text-center text-lg sm:text-xl text-slate-600 font-medium italic"
+        <motion.div 
+          className="text-center p-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl border border-red-100"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          If your income feels stressful despite earning well — this is why.
-        </motion.p>
+          <p className="text-lg sm:text-xl text-slate-700 font-medium">
+            If your income feels <span className="text-red-600 font-bold">stressful</span> despite earning well — <span className="italic">this is why.</span>
+          </p>
+        </motion.div>
       </div>
     </section>
   );
 }
 
-// Section 3: Cost of Doing Nothing
+// Section 3: Cost of Doing Nothing - Enhanced emotional impact
 function CostSection() {
   const costs = [
-    { icon: CreditCard, text: "Overspending money that isn't yours" },
-    { icon: Receipt, text: "Missed write-offs and incentives" },
-    { icon: Briefcase, text: "Poor hiring and investing decisions" },
-    { icon: Heart, text: "Constant money anxiety" },
-    { icon: FileText, text: "Dependence on accountants after the damage is done" },
+    { icon: CreditCard, text: "Overspending money that isn't yours", color: "from-red-500 to-red-600" },
+    { icon: Receipt, text: "Missed write-offs and incentives", color: "from-orange-500 to-orange-600" },
+    { icon: Briefcase, text: "Poor hiring and investing decisions", color: "from-amber-500 to-amber-600" },
+    { icon: Heart, text: "Constant money anxiety", color: "from-rose-500 to-rose-600" },
+    { icon: FileText, text: "Dependence on accountants after the damage is done", color: "from-red-600 to-red-700" },
   ];
 
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
+  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.5, 1, 1, 0.5]);
+
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white">
-      <div className="max-w-4xl mx-auto">
+    <section ref={containerRef} className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white overflow-hidden">
+      {/* Animated background gradient */}
+      <motion.div 
+        className="absolute inset-0"
+        style={{ opacity }}
+      >
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl" />
+      </motion.div>
+
+      <div className="max-w-4xl mx-auto relative">
         <motion.div 
           className="text-center mb-10 sm:mb-14"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 text-xs sm:text-sm font-medium mb-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            The Hidden Cost
+          </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4">
-            What unclear income really costs you
+            What unclear income <span className="text-red-400">really</span> costs you
           </h2>
         </motion.div>
         
-        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid sm:grid-cols-2 gap-4 mb-10">
           {costs.map((cost, i) => (
             <motion.div
               key={cost.text}
-              className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-slate-800/50 rounded-xl border border-slate-700"
+              className="flex items-center gap-4 p-5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all group"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-                <cost.icon className="h-5 w-5 sm:h-6 sm:w-6 text-amber-400" />
-              </div>
-              <p className="text-slate-200 text-sm sm:text-base font-medium pt-2">{cost.text}</p>
+              <motion.div 
+                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cost.color} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform`}
+              >
+                <cost.icon className="h-6 w-6 text-white" />
+              </motion.div>
+              <p className="text-white/90 text-sm sm:text-base font-medium">{cost.text}</p>
             </motion.div>
           ))}
         </div>
+
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+        >
+          <p className="text-xl sm:text-2xl text-white/70 font-medium mb-2">
+            Every month without clarity is money <span className="text-red-400 font-bold">lost.</span>
+          </p>
+        </motion.div>
       </div>
     </section>
   );
 }
 
-// Section 4: The Solution with Visual Demo
+// Section 4: The Solution - Enhanced with transformation visual
 function SolutionSection() {
   const features = [
-    { icon: Target, text: "Deal-level commission tracking" },
+    { icon: Banknote, text: "Deal-level commission tracking" },
     { icon: TrendingUp, text: "Real-time income forecast" },
     { icon: Calculator, text: "Automatic tax set-aside" },
     { icon: Receipt, text: "Expense tracking tied to income" },
-    { icon: Building2, text: "Pre-sale, assignment & trail support" },
+    { icon: Calendar, text: "Pre-sale, assignment & trail support" },
   ];
 
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
+    <section id="features" className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50/30 overflow-hidden">
+      {/* Transformation visual - from chaos to clarity */}
+      <div className="absolute inset-0 pointer-events-none">
+        <motion.div 
+          className="absolute top-1/4 left-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-teal-400/20 rounded-full blur-3xl"
+          initial={{ x: -100, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
+        />
+        <motion.div 
+          className="absolute bottom-1/4 right-0 w-48 h-48 bg-gradient-to-br from-teal-400/20 to-cyan-400/20 rounded-full blur-3xl"
+          initial={{ x: 100, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, delay: 0.2 }}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto relative">
+        <motion.div 
+          className="text-center mb-10 sm:mb-14"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-4 sm:mb-6">
-              One dashboard for your entire deal pipeline.
-            </h2>
-            <p className="text-slate-600 text-base sm:text-lg mb-8 leading-relaxed">
-              This app gives you a live view of every deal, every commission, every expense, and every dollar you owe — before it hits your bank account.
-            </p>
-            
-            <div className="space-y-4">
-              {features.map((feature, i) => (
-                <motion.div
-                  key={feature.text}
-                  className="flex items-center gap-3 sm:gap-4"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+            <Sparkles className="h-4 w-4" />
+            The Solution
+          </motion.div>
+          <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
+            One dashboard for your <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">entire deal pipeline.</span>
+          </h2>
+          <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
+            This app gives you a live view of every deal, every commission, every expense, and every dollar you owe — <span className="font-semibold text-slate-800">before it hits your bank account.</span>
+          </p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          {/* Feature List */}
+          <motion.div className="space-y-4">
+            {features.map((feature, i) => (
+              <motion.div
+                key={feature.text}
+                className="flex items-center gap-4 p-4 bg-white rounded-xl border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group"
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
+              >
+                <motion.div 
+                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition-transform"
+                  whileHover={{ rotate: 5 }}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/25">
-                    <feature.icon className="h-5 w-5 text-white" />
-                  </div>
-                  <p className="text-slate-700 text-sm sm:text-base font-medium">{feature.text}</p>
+                  <feature.icon className="h-6 w-6 text-white" />
                 </motion.div>
-              ))}
-            </div>
+                <p className="text-slate-700 text-sm sm:text-base font-medium">{feature.text}</p>
+                <ChevronRight className="h-5 w-5 text-emerald-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </motion.div>
+            ))}
           </motion.div>
 
-          {/* Interactive Safe to Spend Demo */}
+          {/* Safe to Spend Visualization */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             className="relative"
@@ -904,9 +1004,13 @@ function SolutionSection() {
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 blur-3xl scale-110" />
             <div className="relative bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 border border-emerald-200 shadow-xl">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                <motion.div 
+                  className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
                   <Wallet className="h-6 w-6 text-white" />
-                </div>
+                </motion.div>
                 <div>
                   <h3 className="font-bold text-slate-800">Safe to Spend</h3>
                   <p className="text-xs text-emerald-600">Updated in real-time</p>
@@ -927,27 +1031,35 @@ function SolutionSection() {
               </div>
               
               <div className="space-y-3 bg-white/60 rounded-xl p-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Projected Cash In</span>
-                  <span className="font-semibold text-emerald-600">+$24,200</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Tax Set-Aside (30%)</span>
-                  <span className="font-semibold text-red-500">-$7,260</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Fixed Expenses</span>
-                  <span className="font-semibold text-red-500">-$5,890</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Upcoming Bills</span>
-                  <span className="font-semibold text-red-500">-$3,300</span>
-                </div>
+                {[
+                  { label: "Projected Cash In", value: "+$24,200", positive: true },
+                  { label: "Tax Set-Aside (30%)", value: "-$7,260", positive: false },
+                  { label: "Fixed Expenses", value: "-$5,890", positive: false },
+                  { label: "Upcoming Bills", value: "-$3,300", positive: false },
+                ].map((item, i) => (
+                  <motion.div 
+                    key={item.label}
+                    className="flex justify-between text-sm"
+                    initial={{ opacity: 0, x: -10 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                  >
+                    <span className="text-slate-600">{item.label}</span>
+                    <span className={`font-semibold ${item.positive ? 'text-emerald-600' : 'text-red-500'}`}>{item.value}</span>
+                  </motion.div>
+                ))}
                 <div className="pt-3 border-t border-emerald-200">
-                  <div className="flex justify-between">
+                  <motion.div 
+                    className="flex justify-between"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.9 }}
+                  >
                     <span className="font-semibold text-slate-800">Safe to Spend</span>
                     <span className="font-bold text-emerald-600">$7,750</span>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </div>
@@ -958,26 +1070,29 @@ function SolutionSection() {
   );
 }
 
-// Section 5: How It Works
+// Section 5: How It Works - Enhanced with flow visualization
 function HowItWorks() {
   const steps = [
     { 
       step: "1", 
       title: "Add your deal", 
       description: "Accepted, conditional, or completed — log it once.",
-      icon: Banknote
+      icon: Banknote,
+      color: "from-blue-500 to-blue-600"
     },
     { 
       step: "2", 
       title: "Watch it flow", 
       description: "See commissions move from pending → earned → paid.",
-      icon: TrendingUp
+      icon: TrendingUp,
+      color: "from-emerald-500 to-teal-600"
     },
     { 
       step: "3", 
       title: "Stay in control", 
       description: "Know what you can spend, save, or reinvest — anytime.",
-      icon: Shield
+      icon: Shield,
+      color: "from-amber-500 to-orange-600"
     },
   ];
 
@@ -1004,26 +1119,42 @@ function HowItWorks() {
             <motion.div
               key={item.step}
               className="text-center relative"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
+              transition={{ delay: i * 0.2, type: "spring", stiffness: 100 }}
             >
+              {/* Connecting line */}
               {i < 2 && (
-                <div className="hidden sm:block absolute top-10 left-[60%] w-[80%] h-[2px] bg-gradient-to-r from-emerald-300 to-emerald-100" />
+                <motion.div 
+                  className="hidden sm:block absolute top-10 left-[60%] w-[80%] h-[2px]"
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.5 + i * 0.2, duration: 0.5 }}
+                  style={{ transformOrigin: 'left' }}
+                >
+                  <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-100" />
+                </motion.div>
               )}
               
               <div className="relative inline-block mb-5">
                 <motion.div 
-                  className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-xl shadow-emerald-500/25 mx-auto"
-                  whileHover={{ scale: 1.05, rotate: 5 }}
+                  className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center shadow-xl shadow-emerald-500/25 mx-auto`}
+                  whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <item.icon className="h-7 w-7 sm:h-9 sm:w-9 text-white" />
                 </motion.div>
-                <div className="absolute -top-2 -right-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-slate-800 text-white text-sm font-bold flex items-center justify-center shadow-lg">
+                <motion.div 
+                  className="absolute -top-2 -right-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-slate-800 text-white text-sm font-bold flex items-center justify-center shadow-lg"
+                  initial={{ scale: 0 }}
+                  whileInView={{ scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.2, type: "spring" }}
+                >
                   {item.step}
-                </div>
+                </motion.div>
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-2">{item.title}</h3>
               <p className="text-slate-500 text-sm sm:text-base">{item.description}</p>
@@ -1068,46 +1199,66 @@ function ForAgentsBrokers() {
         <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
           {/* For Realtors */}
           <motion.div
-            className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 border border-emerald-200"
-            initial={{ opacity: 0, x: -20 }}
+            className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 sm:p-8 border border-emerald-200 hover:shadow-xl transition-shadow"
+            initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+              <motion.div 
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
                 <Home className="h-6 w-6 text-white" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-bold text-slate-800">For Realtors</h3>
             </div>
             <ul className="space-y-3">
-              {realtorFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
+              {realtorFeatures.map((feature, i) => (
+                <motion.li 
+                  key={feature} 
+                  className="flex items-start gap-3"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
                   <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700 text-sm sm:text-base">{feature}</span>
-                </li>
+                </motion.li>
               ))}
             </ul>
           </motion.div>
 
           {/* For Mortgage Brokers */}
           <motion.div
-            className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 sm:p-8 border border-teal-200"
-            initial={{ opacity: 0, x: 20 }}
+            className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 sm:p-8 border border-teal-200 hover:shadow-xl transition-shadow"
+            initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/25">
+              <motion.div 
+                className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/25"
+                whileHover={{ scale: 1.1, rotate: -5 }}
+              >
                 <Briefcase className="h-6 w-6 text-white" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-bold text-slate-800">For Mortgage Brokers</h3>
             </div>
             <ul className="space-y-3">
-              {brokerFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
+              {brokerFeatures.map((feature, i) => (
+                <motion.li 
+                  key={feature} 
+                  className="flex items-start gap-3"
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
                   <CheckCircle2 className="h-5 w-5 text-teal-500 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700 text-sm sm:text-base">{feature}</span>
-                </li>
+                </motion.li>
               ))}
             </ul>
           </motion.div>
@@ -1159,9 +1310,15 @@ function TaxSection() {
               ))}
             </div>
 
-            <p className="text-lg sm:text-xl font-semibold text-emerald-600 italic">
-              Stop guessing what's yours. Know it.
-            </p>
+            <motion.p 
+              className="text-lg sm:text-xl font-semibold text-emerald-600 italic"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+            >
+              Stop guessing what's yours. <span className="font-bold">Know it.</span>
+            </motion.p>
           </motion.div>
 
           <TaxSafetyGauge />
@@ -1171,7 +1328,7 @@ function TaxSection() {
   );
 }
 
-// Section 8: Emotional Payoff
+// Section 8: Emotional Payoff - Enhanced with transformation narrative
 function EmotionalPayoff() {
   const benefits = [
     { icon: Users, text: "Hire with clarity" },
@@ -1181,15 +1338,47 @@ function EmotionalPayoff() {
   ];
 
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-white">
-      <div className="max-w-4xl mx-auto text-center">
+    <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-600 to-teal-700 text-white overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-4 h-4 rounded-full bg-white/10"
+            style={{
+              left: `${10 + i * 15}%`,
+              top: `${20 + (i % 3) * 30}%`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{
+              duration: 3 + i * 0.5,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-4xl mx-auto text-center relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 text-white text-xs sm:text-sm font-medium mb-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <Heart className="h-4 w-4" />
+            The Real Payoff
+          </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold mb-8 sm:mb-12">
-            Confidence changes everything.
+            Confidence changes <span className="underline decoration-white/50 underline-offset-4">everything.</span>
           </h2>
         </motion.div>
 
@@ -1197,15 +1386,19 @@ function EmotionalPayoff() {
           {benefits.map((benefit, i) => (
             <motion.div
               key={benefit.text}
-              className="flex flex-col items-center p-4 sm:p-6 bg-white/10 backdrop-blur-sm rounded-2xl"
-              initial={{ opacity: 0, y: 20 }}
+              className="flex flex-col items-center p-4 sm:p-6 bg-white/10 backdrop-blur-sm rounded-2xl hover:bg-white/20 transition-all group"
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.1, type: "spring" }}
+              whileHover={{ y: -5 }}
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4">
+              <motion.div 
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-white/30 transition-colors"
+                whileHover={{ rotate: 10, scale: 1.1 }}
+              >
                 <benefit.icon className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
-              </div>
+              </motion.div>
               <p className="text-white/90 text-sm sm:text-base font-medium text-center">{benefit.text}</p>
             </motion.div>
           ))}
@@ -1247,11 +1440,12 @@ function AuthoritySection() {
           ].map((stat, i) => (
             <motion.div 
               key={stat.label}
-              className="p-4 sm:p-6 bg-slate-50 rounded-2xl"
+              className="p-4 sm:p-6 bg-slate-50 rounded-2xl hover:shadow-lg transition-shadow"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -3 }}
             >
               <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
                 <AnimatedNumber 
@@ -1270,14 +1464,22 @@ function AuthoritySection() {
   );
 }
 
-// Section 10: Final CTA
+// Section 10: Final CTA - Enhanced with urgency
 function FinalCTA() {
   return (
-    <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white relative overflow-hidden">
+    <section className="relative py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl" />
+        <motion.div 
+          className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.3, 0.2] }}
+          transition={{ duration: 4, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute bottom-0 right-1/4 w-80 h-80 bg-teal-500/20 rounded-full blur-3xl"
+          animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.2, 0.3] }}
+          transition={{ duration: 4, repeat: Infinity, delay: 2 }}
+        />
       </div>
 
       <div className="max-w-3xl mx-auto text-center relative">
@@ -1389,7 +1591,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-24 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden relative">
+      <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden relative">
         <FloatingElements />
         
         <div className="max-w-7xl mx-auto relative">
@@ -1457,11 +1659,22 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Story transition: Hero to Problem */}
+      <StoryTransition label="But here's the reality" />
+
       {/* Section 2: The Problem */}
       <ProblemSection />
 
+      {/* Story transition: Problem to Cost */}
+      <StoryTransition label="And it's costing you" />
+
       {/* Section 3: Cost of Doing Nothing */}
       <CostSection />
+
+      {/* Story transition: Cost to Solution */}
+      <div className="bg-white">
+        <StoryTransition label="There's a better way" />
+      </div>
 
       {/* Section 4: The Solution */}
       <SolutionSection />
