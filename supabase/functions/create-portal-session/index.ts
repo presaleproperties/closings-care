@@ -7,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  console.log(`[CREATE-PORTAL-SESSION] ${step}`, details ? JSON.stringify(details) : '');
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -14,11 +18,14 @@ serve(async (req) => {
   }
 
   try {
+    logStep("Function started");
+
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("No authorization header");
     }
+    logStep("Authorization header found");
 
     // Create Supabase client with the user's token
     const supabaseClient = createClient(
@@ -36,6 +43,7 @@ serve(async (req) => {
     if (userError || !user) {
       throw new Error("User not authenticated");
     }
+    logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -49,10 +57,43 @@ serve(async (req) => {
     });
 
     if (customers.data.length === 0) {
-      throw new Error("No subscription found. Please subscribe first.");
+      logStep("No Stripe customer found - user may have been manually upgraded");
+      // Return a specific response indicating no Stripe subscription exists
+      // This is not an error - user may have been manually upgraded by admin
+      return new Response(
+        JSON.stringify({ 
+          noStripeCustomer: true,
+          message: "Your subscription was set up by an administrator. There is no billing to manage."
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     const customerId = customers.data[0].id;
+    logStep("Found Stripe customer", { customerId });
+
+    // Check if customer has any subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      limit: 1,
+    });
+
+    if (subscriptions.data.length === 0) {
+      logStep("Customer exists but has no active subscriptions");
+      return new Response(
+        JSON.stringify({ 
+          noActiveSubscription: true,
+          message: "You don't have an active subscription to manage."
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
 
     // Parse the request body for return URL
     const { returnUrl } = await req.json();
@@ -63,6 +104,7 @@ serve(async (req) => {
       customer: customerId,
       return_url: `${baseUrl}/settings`,
     });
+    logStep("Portal session created", { sessionId: session.id });
 
     return new Response(
       JSON.stringify({ url: session.url }),
