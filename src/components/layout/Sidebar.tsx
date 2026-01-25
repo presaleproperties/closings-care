@@ -46,21 +46,54 @@ export function Sidebar() {
   return (
     <aside 
       className={cn(
-        "hidden lg:flex flex-col bg-sidebar h-screen fixed left-0 top-0 border-r border-sidebar-border/50 transition-all duration-300 ease-in-out z-40",
+        "hidden lg:flex flex-col h-screen fixed left-0 top-0 transition-all duration-300 ease-in-out z-40",
         isCollapsed ? "w-[72px]" : "w-64"
       )}
     >
+      {/* Premium glass background */}
+      <div 
+        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
+        style={{
+          background: 'linear-gradient(180deg, hsl(var(--sidebar-background) / 0.95) 0%, hsl(var(--sidebar-background) / 0.88) 100%)',
+        }}
+      />
+      {/* Right edge shadow and border */}
+      <div 
+        className="absolute inset-y-0 right-0 w-px"
+        style={{
+          background: 'linear-gradient(180deg, hsl(var(--sidebar-border) / 0.3) 0%, hsl(var(--sidebar-border) / 0.15) 50%, hsl(var(--sidebar-border) / 0.3) 100%)',
+        }}
+      />
+      <div 
+        className="absolute inset-y-0 -right-4 w-4 pointer-events-none"
+        style={{
+          background: 'linear-gradient(90deg, hsl(220 25% 10% / 0.04) 0%, transparent 100%)',
+        }}
+      />
+      {/* Premium inner glow */}
+      <div className="absolute inset-x-0 top-0 h-24 pointer-events-none bg-gradient-to-b from-white/[0.03] to-transparent" />
+
       {/* Logo */}
-      <div className="p-4 border-b border-sidebar-border/50">
+      <div className="relative p-4 border-b border-sidebar-border/30">
         <Link to="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
-            <Building2 className="w-5 h-5 text-white" />
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, hsl(158 64% 52%) 0%, hsl(168 64% 42%) 100%)',
+              boxShadow: `
+                inset 0 1px 0 0 rgba(255,255,255,0.2),
+                0 2px 8px -2px hsl(158 64% 32% / 0.4),
+                0 4px 16px -4px hsl(158 64% 32% / 0.3)
+              `,
+            }}
+          >
+            <Building2 className="w-5 h-5 text-white drop-shadow-sm" />
           </div>
           <div className={cn(
             "overflow-hidden transition-all duration-300",
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
-            <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-tight whitespace-nowrap">
+            <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-[-0.01em] whitespace-nowrap">
               Commission
             </h1>
             <p className="text-xs text-sidebar-foreground/50 font-medium whitespace-nowrap">Tracker</p>
@@ -71,7 +104,15 @@ export function Sidebar() {
       {/* Collapse toggle button */}
       <button
         onClick={toggleCollapse}
-        className="absolute -right-3 top-[72px] w-6 h-6 rounded-full bg-sidebar border border-sidebar-border/50 flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200 shadow-sm"
+        className="absolute -right-3 top-[72px] w-6 h-6 rounded-full flex items-center justify-center text-sidebar-foreground/60 hover:text-sidebar-foreground transition-all duration-200 z-10"
+        style={{
+          background: 'linear-gradient(135deg, hsl(var(--sidebar-background)) 0%, hsl(var(--sidebar-accent)) 100%)',
+          boxShadow: `
+            inset 0 1px 0 0 rgba(255,255,255,0.1),
+            0 0 0 1px hsl(var(--sidebar-border) / 0.3),
+            0 2px 8px -2px hsl(220 25% 10% / 0.15)
+          `,
+        }}
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? (
@@ -82,7 +123,7 @@ export function Sidebar() {
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+      <nav className="relative flex-1 p-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path || 
             (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -179,7 +220,9 @@ export function Sidebar() {
       </nav>
 
       {/* Sign out */}
-      <div className="p-3 border-t border-sidebar-border/50">
+      <div className="relative p-3 border-t border-sidebar-border/30">
+        {/* Top edge highlight */}
+        <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
