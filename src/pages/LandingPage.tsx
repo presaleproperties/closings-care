@@ -40,6 +40,7 @@ import {
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FloatingNotifications } from "@/components/landing/FloatingNotifications";
 
 // Animated counter component
 function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
@@ -179,6 +180,8 @@ function HeroSection() {
             className="lg:col-span-2 relative"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 blur-3xl scale-105" />
+            {/* Floating Notifications */}
+            <FloatingNotifications />
             <div className="relative bg-white rounded-2xl shadow-2xl shadow-slate-300/50 border border-slate-200 overflow-hidden">
               {/* Browser Chrome */}
               <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center gap-3">
