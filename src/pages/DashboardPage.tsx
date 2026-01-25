@@ -8,6 +8,7 @@ import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout 
 import { useExpenses } from '@/hooks/useExpenses';
 import { useOtherIncome } from '@/hooks/useOtherIncome';
 import { useProperties } from '@/hooks/useProperties';
+import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { QuickStats } from '@/components/dashboard/QuickStats';
@@ -31,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
+import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
 export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
@@ -38,6 +40,7 @@ export default function DashboardPage() {
   const { data: expenses = [] } = useExpenses();
   const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
+  const { data: settings } = useSettings();
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
@@ -49,6 +52,13 @@ export default function DashboardPage() {
 
   const now = new Date();
   const thisYear = now.getFullYear();
+
+  // Get tax settings
+  const province = ((settings as any)?.province || 'BC') as Province;
+  const taxType = ((settings as any)?.tax_type || 'self-employed') as TaxType;
+  const taxBuffer = (settings as any)?.tax_buffer_percent || 5;
+  const gstRegistered = (settings as any)?.gst_registered || false;
+  const gstRate = (settings as any)?.gst_rate || 0.05;
 
   // Calculate expense totals including property costs
   const expenseTotals = useMemo(() => {
@@ -78,6 +88,23 @@ export default function DashboardPage() {
 
     return { paid, projected };
   }, [payouts, thisYear]);
+
+  // Calculate dynamic tax set-aside required (replacing hardcoded 30%)
+  const taxSetAsideRequired = useMemo(() => {
+    const totalIncome = incomeTotals.paid + incomeTotals.projected;
+    const deductibleRatio = totalIncome > 0 ? incomeTotals.projected / totalIncome : 0;
+    const deductibleForProjected = expenseTotals.annual * deductibleRatio;
+    
+    // Calculate tax on projected income
+    const taxBreakdown = calculateTax(incomeTotals.projected, deductibleForProjected, province, taxType);
+    
+    // Add GST if registered
+    const gstOwed = gstRegistered ? incomeTotals.projected * gstRate : 0;
+    
+    // Apply buffer
+    const bufferMultiplier = 1 + (taxBuffer / 100);
+    return (taxBreakdown.totalTax + gstOwed) * bufferMultiplier;
+  }, [incomeTotals.paid, incomeTotals.projected, expenseTotals.annual, province, taxType, taxBuffer, gstRegistered, gstRate]);
 
   // Handle auto-marking payouts as paid when due date passes
   const handleAutoMarkPaid = useCallback((payoutIds: string[]) => {
@@ -224,7 +251,7 @@ export default function DashboardPage() {
               <SafeToSpendCard
                 projectedCashIn={incomeTotals.projected}
                 monthlyExpenses={expenseTotals.monthly}
-                taxSetAsideRequired={incomeTotals.paid * 0.3}
+                taxSetAsideRequired={taxSetAsideRequired}
               />
               <TaxProjection 
                 projectedIncome={incomeTotals.projected}
@@ -368,7 +395,7 @@ export default function DashboardPage() {
                 <SafeToSpendCard
                   projectedCashIn={incomeTotals.projected}
                   monthlyExpenses={expenseTotals.monthly}
-                  taxSetAsideRequired={incomeTotals.paid * 0.3}
+                  taxSetAsideRequired={taxSetAsideRequired}
                 />
               </div>
               <div className="grid lg:grid-cols-2 gap-6">
