@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Target, AlertTriangle, CheckCircle, Settings2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Target, AlertTriangle, CheckCircle, Settings2, TrendingUp } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,10 @@ interface CategorySpending {
   isOverBudget: boolean;
 }
 
+const springConfigs = {
+  gentle: { type: "spring" as const, stiffness: 120, damping: 20 },
+};
+
 export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudgetProgressProps) {
   const { data: budgets = [] } = useExpenseBudgets();
   const upsertBudget = useUpsertExpenseBudget();
@@ -66,7 +71,6 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
   // Combine spending with budgets
   const categoriesWithBudgets = useMemo(() => {
     const result: CategorySpending[] = [];
-    const budgetMap = new Map(budgets.map(b => [b.category, b]));
     
     // Categories with budgets
     budgets.forEach(budget => {
@@ -112,11 +116,11 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
     await deleteBudget.mutateAsync(budgetId);
   };
 
-  const getProgressColor = (percentage: number, isOverBudget: boolean) => {
-    if (isOverBudget) return 'bg-destructive';
-    if (percentage >= 80) return 'bg-amber-500';
-    if (percentage >= 50) return 'bg-accent';
-    return 'bg-emerald-500';
+  const getStatusConfig = (percentage: number, isOverBudget: boolean) => {
+    if (isOverBudget) return { color: 'bg-destructive', icon: AlertTriangle, iconColor: 'text-destructive' };
+    if (percentage >= 80) return { color: 'bg-warning', icon: AlertTriangle, iconColor: 'text-warning' };
+    if (percentage >= 50) return { color: 'bg-amber-500', icon: TrendingUp, iconColor: 'text-amber-500' };
+    return { color: 'bg-success', icon: CheckCircle, iconColor: 'text-success' };
   };
 
   if (categoriesWithBudgets.length === 0 && categoriesWithoutBudgets.length === 0) {
@@ -124,80 +128,79 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Target className="w-5 h-5 text-accent" />
-          <h3 className="font-semibold">Budget Goals</h3>
+    <motion.div 
+      className="landing-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springConfigs.gentle}
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="icon-gradient-primary icon-gradient-sm">
+            <Target className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">Budget Goals</h3>
+            <p className="text-sm text-muted-foreground">{categoriesWithBudgets.length} categories tracked</p>
+          </div>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {categoriesWithBudgets.length} categories tracked
-        </span>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-5 space-y-4">
         {/* Categories with budgets */}
-        {categoriesWithBudgets.map(({ category, spending, budget, percentage, isOverBudget }) => (
-          <div key={category} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isOverBudget ? (
-                  <AlertTriangle className="w-4 h-4 text-destructive" />
-                ) : percentage >= 80 ? (
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
-                ) : (
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                )}
-                <span className="font-medium text-sm">{category}</span>
+        {categoriesWithBudgets.map(({ category, spending, budget, percentage, isOverBudget }) => {
+          const status = getStatusConfig(percentage, isOverBudget);
+          const StatusIcon = status.icon;
+          
+          return (
+            <div key={category} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <StatusIcon className={cn("w-4 h-4", status.iconColor)} />
+                  <span className="font-medium text-sm text-foreground">{category}</span>
+                </div>
+                <button
+                  onClick={() => handleSetBudget(category, budget?.monthly_limit)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => handleSetBudget(category, budget?.monthly_limit)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Settings2 className="w-3.5 h-3.5" />
-              </button>
+              
+              <div className="relative h-2.5 bg-muted/50 rounded-full overflow-hidden">
+                <motion.div 
+                  className={cn("absolute inset-y-0 left-0 rounded-full", status.color)}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(percentage, 100)}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                />
+              </div>
+              
+              <div className="flex items-center justify-between text-xs">
+                <span className={cn(
+                  isOverBudget ? "text-destructive font-medium" : "text-muted-foreground"
+                )}>
+                  {formatCurrency(spending)} spent
+                </span>
+                <span className="text-muted-foreground">
+                  of {formatCurrency(budget?.monthly_limit || 0)}
+                </span>
+              </div>
+              
+              {isOverBudget && (
+                <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 px-2 py-1 rounded-lg">
+                  <AlertTriangle className="w-3 h-3" />
+                  Over budget by {formatCurrency(spending - (budget?.monthly_limit || 0))}
+                </div>
+              )}
             </div>
-            
-            <div className="relative">
-              <Progress 
-                value={percentage} 
-                className={cn(
-                  "h-2.5",
-                  isOverBudget && "bg-destructive/20"
-                )}
-              />
-              <div 
-                className={cn(
-                  "absolute inset-0 h-2.5 rounded-full transition-all",
-                  getProgressColor(percentage, isOverBudget)
-                )}
-                style={{ width: `${Math.min(percentage, 100)}%` }}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between text-xs">
-              <span className={cn(
-                isOverBudget ? "text-destructive font-medium" : "text-muted-foreground"
-              )}>
-                {formatCurrency(spending)} spent
-              </span>
-              <span className="text-muted-foreground">
-                of {formatCurrency(budget?.monthly_limit || 0)}
-              </span>
-            </div>
-            
-            {isOverBudget && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                Over budget by {formatCurrency(spending - (budget?.monthly_limit || 0))}
-              </p>
-            )}
-          </div>
-        ))}
+          );
+        })}
 
         {/* Quick add for categories without budgets */}
         {categoriesWithoutBudgets.length > 0 && (
-          <div className="pt-4 border-t border-border">
+          <div className="pt-4 border-t border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">
               Set budgets for:
             </p>
@@ -206,7 +209,7 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
                 <button
                   key={category}
                   onClick={() => handleSetBudget(category)}
-                  className="px-3 py-1.5 rounded-full text-xs border border-dashed border-border hover:border-accent hover:text-accent transition-colors flex items-center gap-1.5 bg-muted/30"
+                  className="px-3 py-1.5 rounded-full text-xs border border-dashed border-border hover:border-primary hover:text-primary transition-colors flex items-center gap-1.5 bg-card/80"
                 >
                   <Target className="w-3 h-3" />
                   {category}
@@ -228,7 +231,7 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Category</p>
-              <p className="font-medium">{editingCategory}</p>
+              <p className="font-medium text-foreground">{editingCategory}</p>
             </div>
             
             <div>
@@ -282,6 +285,6 @@ export function CategoryBudgetProgress({ expenses, currentMonth }: CategoryBudge
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 }
