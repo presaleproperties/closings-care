@@ -503,18 +503,18 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4 sm:mb-5">
                 <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                Built for Canadian Real Estate Agents
+                Built for Vancouver Real Estate Agents
               </div>
               
               <h1 className="text-3xl sm:text-4xl lg:text-[3.5rem] font-bold text-slate-800 tracking-tight leading-[1.15] mb-4 sm:mb-6">
-                Finally understand
+                Stop guessing.
                 <span className="block bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  your money.
+                  Start knowing.
                 </span>
               </h1>
               
               <p className="text-base sm:text-xl text-slate-500 mb-6 sm:mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                See your real income, plan for taxes, and know exactly what you can spend — even when deals fall apart.
+                Track commissions, project cashflow, and know your safe-to-spend — so you never overspend after a big close or panic before tax season.
               </p>
               
               {/* CTA Buttons - Stacked on mobile */}
@@ -527,7 +527,7 @@ export default function LandingPage() {
                 </Link>
                 <a href="#features" className="w-full sm:w-auto">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-6 h-14 sm:h-13 border-slate-300 text-slate-600">
-                    See What's Inside
+                    See How It Works
                   </Button>
                 </a>
               </div>
@@ -536,15 +536,15 @@ export default function LandingPage() {
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-2 text-xs sm:text-sm text-slate-500">
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
-                  Free forever
+                  Free plan available
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
-                  BC tax built-in
+                  BC/AB tax built-in
                 </span>
                 <span className="flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-500" />
-                  5-min setup
+                  Setup in 5 minutes
                 </span>
               </div>
             </motion.div>
@@ -767,7 +767,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing - Mobile optimized */}
-      <section className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
+      <section id="pricing" className="snap-section py-12 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-4xl mx-auto">
           <motion.div 
             className="text-center mb-10 sm:mb-12"
@@ -776,9 +776,9 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2 sm:mb-3">
-              Simple, honest pricing
+              Simple, transparent pricing
             </h2>
-            <p className="text-slate-500 text-base sm:text-lg">Costs less than one missed tax deduction.</p>
+            <p className="text-slate-500 text-base sm:text-lg">Costs less than one missed tax deduction. Pays for itself in April.</p>
           </motion.div>
           
           <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
@@ -789,14 +789,20 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Free</h3>
-              <p className="text-slate-500 text-sm mb-4 sm:mb-5">Perfect for getting started</p>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Starter</h3>
+              <p className="text-slate-500 text-sm mb-4 sm:mb-5">Perfect for new agents</p>
               <div className="mb-5 sm:mb-6">
                 <span className="text-3xl sm:text-4xl font-bold text-slate-800">$0</span>
-                <span className="text-slate-400 ml-1">/month</span>
+                <span className="text-slate-400 ml-1">/forever</span>
               </div>
               <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
-                {["Up to 10 deals", "Basic expense tracking", "3-month projections", "Mobile-friendly"].map((f) => (
+                {[
+                  "Up to 10 active deals",
+                  "Basic expense tracking", 
+                  "3-month income projections",
+                  "Mobile & desktop access",
+                  "BC & Alberta tax rates"
+                ].map((f) => (
                   <div key={f} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     <span className="text-sm text-slate-600">{f}</span>
@@ -817,16 +823,25 @@ export default function LandingPage() {
               transition={{ delay: 0.1 }}
             >
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 sm:px-4 py-1 text-[10px] sm:text-xs font-semibold rounded-full shadow-lg whitespace-nowrap">
-                RECOMMENDED
+                MOST POPULAR
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Professional</h3>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Pro</h3>
               <p className="text-slate-500 text-sm mb-4 sm:mb-5">For serious producers</p>
               <div className="mb-5 sm:mb-6">
                 <span className="text-3xl sm:text-4xl font-bold text-slate-800">$29</span>
-                <span className="text-slate-400 ml-1">/month</span>
+                <span className="text-slate-400 ml-1">CAD/month</span>
               </div>
               <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-7">
-                {["Unlimited deals", "Full expense tracking", "12-month projections", "Tax set-aside calculator", "Safe-to-spend tracking", "Data export", "Priority support"].map((f) => (
+                {[
+                  "Unlimited deals",
+                  "Full expense & property tracking",
+                  "12-month cashflow projections", 
+                  "Tax set-aside calculator",
+                  "Safe-to-spend tracking",
+                  "Client analytics & lead sources",
+                  "CSV data export",
+                  "Priority email support"
+                ].map((f) => (
                   <div key={f} className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                     <span className="text-sm text-slate-600">{f}</span>
@@ -842,7 +857,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-center text-xs sm:text-sm text-slate-400 mt-5 sm:mt-6">
-            No credit card required • Cancel anytime
+            No credit card required to start • Cancel anytime • Prices in CAD
           </p>
         </div>
       </section>
@@ -856,18 +871,18 @@ export default function LandingPage() {
           viewport={{ once: true }}
         >
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3 sm:mb-4">
-            Ready to understand your finances?
+            Ready to take control of your income?
           </h2>
           <p className="text-slate-500 text-base sm:text-lg mb-6 sm:mb-8">
-            Join agents who've stopped guessing and started feeling calm about money.
+            Join hundreds of Vancouver agents who've stopped stressing about money and started building wealth with clarity.
           </p>
           <Link to="/auth">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-6 sm:px-8 h-14 sm:h-13 gap-2 shadow-xl shadow-emerald-500/30">
-              Get Financial Clarity — Free
+              Start Your Free Account
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <p className="text-xs sm:text-sm text-slate-400 mt-4">Setup takes 5 minutes</p>
+          <p className="text-xs sm:text-sm text-slate-400 mt-4">Free forever on Starter plan • Pro trial requires no card</p>
         </motion.div>
       </section>
 
