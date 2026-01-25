@@ -85,15 +85,19 @@ export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpense
   const StatusIcon = status.icon;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+    <div className="landing-card">
       {/* Header with status */}
-      <div className={`flex items-center gap-3 p-3 rounded-xl border ${status.bg} mb-5`}>
-        <StatusIcon className={`h-5 w-5 ${status.color}`} />
-        <div>
-          <p className={`font-semibold ${status.color}`}>{status.label}</p>
-          <p className="text-xs text-muted-foreground">Your financial snapshot</p>
+      <div className="p-5 border-b border-slate-100 dark:border-border/50">
+        <div className={`flex items-center gap-3 p-3 rounded-xl border ${status.bg}`}>
+          <StatusIcon className={`h-5 w-5 ${status.color}`} />
+          <div>
+            <p className={`font-semibold ${status.color}`}>{status.label}</p>
+            <p className="text-xs text-slate-500 dark:text-muted-foreground">Your financial snapshot</p>
+          </div>
         </div>
       </div>
+
+      <div className="p-5">
 
       {/* Simple 4-metric grid */}
       <div className="grid grid-cols-2 gap-3">
@@ -144,6 +148,7 @@ export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpense
             {metrics.netProfit >= 0 ? '+' : ''}{formatCurrency(metrics.netProfit)}
           </span>
         </div>
+      </div>
       </div>
     </div>
   );

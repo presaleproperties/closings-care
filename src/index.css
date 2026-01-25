@@ -478,7 +478,52 @@
   .text-shadow-premium {
     text-shadow: 0 1px 2px hsl(220 25% 10% / 0.08);
   }
-}
+  }
+
+  /* Landing page style white card with refined shadow */
+  .landing-card {
+    @apply bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border/50 overflow-hidden;
+    box-shadow: 
+      0 4px 6px -1px hsl(220 25% 10% / 0.05),
+      0 10px 25px -5px hsl(220 25% 10% / 0.08),
+      0 20px 50px -12px hsl(220 25% 10% / 0.1);
+  }
+
+  .landing-card:hover {
+    box-shadow: 
+      0 8px 12px -2px hsl(220 25% 10% / 0.08),
+      0 16px 35px -8px hsl(220 25% 10% / 0.12),
+      0 28px 60px -15px hsl(220 25% 10% / 0.15);
+  }
+
+  /* Premium icon container - gradient style from landing */
+  .icon-gradient-primary {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center;
+    background: linear-gradient(145deg, hsl(158 64% 42%) 0%, hsl(175 60% 35%) 100%);
+    box-shadow: 0 4px 12px -2px hsl(158 64% 32% / 0.4);
+  }
+
+  .icon-gradient-accent {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center;
+    background: linear-gradient(145deg, hsl(38 75% 55%) 0%, hsl(32 85% 50%) 100%);
+    box-shadow: 0 4px 12px -2px hsl(38 75% 50% / 0.4);
+  }
+
+  .icon-gradient-purple {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center;
+    background: linear-gradient(145deg, hsl(280 60% 55%) 0%, hsl(300 50% 45%) 100%);
+    box-shadow: 0 4px 12px -2px hsl(280 60% 50% / 0.4);
+  }
+
+  .icon-gradient-blue {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center;
+    background: linear-gradient(145deg, hsl(210 80% 55%) 0%, hsl(200 70% 45%) 100%);
+    box-shadow: 0 4px 12px -2px hsl(210 80% 50% / 0.4);
+  }
+
+  .icon-gradient-sm {
+    @apply w-8 h-8 rounded-lg;
+  }
 
 @layer utilities {
   /* Currency formatting */

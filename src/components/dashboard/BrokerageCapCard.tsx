@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { Target, TrendingUp, Calendar, Sparkles, Trophy } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useBrokerageCap } from '@/hooks/useBrokerageCap';
 import { format } from 'date-fns';
@@ -23,48 +22,51 @@ export function BrokerageCapCard() {
   };
 
   return (
-    <Card className={cn(
-      "relative overflow-hidden transition-all",
-      capStatus.capReached && "border-success bg-gradient-to-br from-success/5 to-success/10"
-    )}>
+    <motion.div 
+      className={cn(
+        "landing-card relative overflow-hidden transition-all",
+        capStatus.capReached && "border-emerald-200 dark:border-success bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-success/5 dark:to-success/10"
+      )}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
       {/* Achievement glow effect when cap reached */}
       {capStatus.capReached && (
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-success/20 via-success/10 to-success/20"
+          className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-400/5 to-teal-500/10 dark:from-success/20 dark:via-success/10 dark:to-success/20"
           animate={{ opacity: [0.5, 0.8, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
       )}
 
-      <CardHeader className="pb-2 relative">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {capStatus.capReached ? (
-              <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
-                <Trophy className="h-4 w-4 text-success" />
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Target className="h-4 w-4 text-primary" />
-              </div>
-            )}
-            <CardTitle className="text-sm font-medium">Brokerage Cap</CardTitle>
-          </div>
-          {capStatus.capReached && (
-            <motion.div
-              className="flex items-center gap-1 px-2 py-1 rounded-full bg-success/20 text-success text-xs font-medium"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200 }}
-            >
-              <Sparkles className="h-3 w-3" />
-              100% Split!
-            </motion.div>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-border/50 relative">
+        <div className="flex items-center gap-3">
+          {capStatus.capReached ? (
+            <div className="icon-gradient-primary icon-gradient-sm">
+              <Trophy className="h-4 w-4 text-white" />
+            </div>
+          ) : (
+            <div className="icon-gradient-primary icon-gradient-sm">
+              <Target className="h-4 w-4 text-white" />
+            </div>
           )}
+          <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">Brokerage Cap</h3>
         </div>
-      </CardHeader>
+        {capStatus.capReached && (
+          <motion.div
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 dark:bg-success/20 text-emerald-700 dark:text-success text-xs font-medium"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200 }}
+          >
+            <Sparkles className="h-3 w-3" />
+            100% Split!
+          </motion.div>
+        )}
+      </div>
 
-      <CardContent className="relative space-y-4">
+      <div className="p-4 sm:p-5 relative space-y-4">
         {/* Progress visualization */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
@@ -154,7 +156,7 @@ export function BrokerageCapCard() {
         <div className="text-xs text-center text-muted-foreground pt-2">
           Annual Cap Goal: <span className="font-semibold text-foreground">{formatCurrency(capStatus.capAmount)}</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }

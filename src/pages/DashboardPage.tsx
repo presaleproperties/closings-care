@@ -24,6 +24,7 @@ import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
+import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LayoutDashboard, Calculator, TrendingUp, Users } from 'lucide-react';
@@ -110,6 +111,9 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
+      {/* Floating gradient background - landing page style */}
+      <FloatingBackground />
+      
       <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
       <Header
         title="Dashboard" 
@@ -120,7 +124,7 @@ export default function DashboardPage() {
         <EmptyDashboard />
       ) : (
 
-      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)] relative z-10">
         {/* Mobile-first iOS dashboard */}
         <div className="sm:hidden animate-fade-in">
           {/* Greeting Section */}
