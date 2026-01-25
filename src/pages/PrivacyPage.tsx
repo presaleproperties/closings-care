@@ -10,10 +10,10 @@ export default function PrivacyPage() {
           <Link to="/" className="flex items-center gap-3">
             <img 
               src="/favicon.png" 
-              alt="CommissionIQ" 
+              alt="Dealzflow" 
               className="w-10 h-10 rounded-xl shadow-lg shadow-primary/25"
             />
-            <span className="font-semibold">CommissionIQ</span>
+            <span className="font-semibold">Dealzflow</span>
           </Link>
           <Link 
             to="/" 
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
           <section>
             <p className="text-muted-foreground leading-relaxed">
-              CommissionIQ ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains 
+              Dealzflow ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains 
               how we collect, use, disclose, and safeguard your information when you use our service.
             </p>
           </section>
@@ -171,8 +171,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-3">12. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have any questions about this Privacy Policy or our data practices, please contact us at:<br />
-              <strong>Email:</strong> privacy@commissioniq.app<br />
-              <strong>Support:</strong> support@commissioniq.app<br /><br />
+              <strong>Email:</strong> privacy@dealzflow.ca<br />
+              <strong>Support:</strong> support@dealzflow.ca<br /><br />
               For data protection inquiries, we aim to respond within 48 hours.
             </p>
           </section>

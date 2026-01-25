@@ -193,7 +193,7 @@ function HeroSection() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="bg-white rounded-lg px-4 py-1.5 text-xs text-slate-400 border border-slate-200 flex items-center gap-2">
                     <Lock className="h-3 w-3 text-emerald-500" />
-                    app.commissioniq.ca
+                    app.dealzflow.ca
                   </div>
                 </div>
               </div>
@@ -412,7 +412,7 @@ function SafeToSpendSection() {
               <p>Or buy that $60K truck.</p>
               <p>Or hire an assistant for $4K/month.</p>
               <p className="font-semibold text-slate-800">Can you afford it?</p>
-              <p className="text-emerald-600 font-bold text-lg">With CommissionIQ, you know. Instantly.</p>
+              <p className="text-emerald-600 font-bold text-lg">With Dealzflow, you know. Instantly.</p>
             </div>
 
             <Link to="/auth">
@@ -1235,11 +1235,11 @@ export default function LandingPage() {
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <img 
                 src="/favicon.png" 
-                alt="CommissionIQ" 
+                alt="Dealzflow" 
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-emerald-500/25"
               />
               <span className="font-bold text-lg sm:text-xl text-slate-800">
-                Commission<span className="text-emerald-600">IQ</span>
+                Dealz<span className="text-emerald-600">flow</span>
               </span>
             </Link>
             
@@ -1346,20 +1346,20 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <img 
                 src="/favicon.png" 
-                alt="CommissionIQ" 
+                alt="Dealzflow" 
                 className="w-8 h-8 rounded-xl"
               />
               <span className="font-semibold text-lg">
-                Commission<span className="text-emerald-400">IQ</span>
+                Dealz<span className="text-emerald-400">flow</span>
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <a href="mailto:hello@commissioniq.ca" className="hover:text-white transition-colors">Contact</a>
+              <a href="mailto:hello@dealzflow.ca" className="hover:text-white transition-colors">Contact</a>
             </div>
             <p className="text-slate-500 text-sm">
-              © 2025 CommissionIQ. Made for realtors, by people who get it.
+              © 2025 Dealzflow. Made for realtors, by people who get it.
             </p>
           </div>
         </div>
