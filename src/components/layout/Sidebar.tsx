@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Building2, 
+  Building2,
   Wallet, 
   Receipt, 
   TrendingUp, 
@@ -76,19 +76,11 @@ export function Sidebar() {
       {/* Logo */}
       <div className="relative p-4 border-b border-sidebar-border/30">
         <Link to="/dashboard" className="flex items-center gap-3 group">
-          <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, hsl(158 64% 52%) 0%, hsl(168 64% 42%) 100%)',
-              boxShadow: `
-                inset 0 1px 0 0 rgba(255,255,255,0.2),
-                0 2px 8px -2px hsl(158 64% 32% / 0.4),
-                0 4px 16px -4px hsl(158 64% 32% / 0.3)
-              `,
-            }}
-          >
-            <Building2 className="w-5 h-5 text-white drop-shadow-sm" />
-          </div>
+          <img 
+            src="/favicon.png" 
+            alt="CommissionIQ" 
+            className="w-10 h-10 rounded-xl transition-all duration-300 group-hover:scale-105 flex-shrink-0 shadow-lg shadow-emerald-500/25"
+          />
           <div className={cn(
             "overflow-hidden transition-all duration-300",
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"

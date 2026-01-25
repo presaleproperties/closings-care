@@ -430,9 +430,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-              </div>
+              <img 
+                src="/favicon.png" 
+                alt="CommissionIQ" 
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-lg shadow-emerald-500/25"
+              />
               <span className="font-semibold text-base sm:text-lg text-slate-800">CommissionIQ</span>
             </div>
             
@@ -892,9 +894,11 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
             <div className="col-span-2">
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
+                <img 
+                  src="/favicon.png" 
+                  alt="CommissionIQ" 
+                  className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl shadow-lg shadow-emerald-500/25"
+                />
                 <span className="font-semibold text-base sm:text-lg text-slate-800">CommissionIQ</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 max-w-xs leading-relaxed">

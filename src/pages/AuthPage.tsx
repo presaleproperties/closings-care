@@ -94,9 +94,11 @@ export default function AuthPage() {
       {/* Left side - branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-500 to-teal-600 p-12 flex-col justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-white/20 shadow-lg shadow-black/10 flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-white" />
-          </div>
+          <img 
+            src="/favicon.png" 
+            alt="CommissionIQ" 
+            className="w-11 h-11 rounded-xl shadow-lg shadow-black/10"
+          />
           <span className="text-xl font-semibold text-white">
             CommissionIQ
           </span>
@@ -122,9 +124,11 @@ export default function AuthPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo - iOS style centered */}
           <div className="lg:hidden flex flex-col items-center gap-3 mb-10">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex items-center justify-center">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
+            <img 
+              src="/favicon.png" 
+              alt="CommissionIQ" 
+              className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-500/20"
+            />
             <span className="text-xl font-semibold tracking-tight">CommissionIQ</span>
           </div>
 
