@@ -83,7 +83,7 @@ export default function AuthPage() {
   const getSubtitle = () => {
     switch (mode) {
       case 'login': return 'Enter your credentials to access your dashboard';
-      case 'signup': return 'Get started with Commission Tracker today';
+      case 'signup': return 'Get started with CommissionIQ today';
       case 'forgot': return "Enter your email and we'll send you a reset link";
       case 'reset': return 'Choose a strong password for your account';
     }
@@ -98,7 +98,7 @@ export default function AuthPage() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <span className="text-xl font-semibold text-white">
-            Commission Tracker
+            CommissionIQ
           </span>
         </div>
 
@@ -125,7 +125,7 @@ export default function AuthPage() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 flex items-center justify-center">
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            <span className="text-xl font-semibold tracking-tight">Commission Tracker</span>
+            <span className="text-xl font-semibold tracking-tight">CommissionIQ</span>
           </div>
 
           {/* Back button for forgot/reset modes */}

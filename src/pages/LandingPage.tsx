@@ -203,7 +203,7 @@ function DesktopDashboardMockup() {
           <div className="flex-1 flex items-center justify-center">
             <div className="bg-white rounded-lg px-4 py-1.5 text-xs text-slate-400 border border-slate-200 flex items-center gap-2">
               <Shield className="h-3 w-3 text-emerald-500" />
-              app.commissiontracker.ca/dashboard
+              app.commissioniq.ca/dashboard
             </div>
           </div>
         </div>
@@ -433,7 +433,7 @@ export default function LandingPage() {
               <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
                 <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <span className="font-semibold text-base sm:text-lg text-slate-800">Commission Tracker</span>
+              <span className="font-semibold text-base sm:text-lg text-slate-800">CommissionIQ</span>
             </div>
             
             {/* Desktop nav */}
@@ -895,7 +895,7 @@ export default function LandingPage() {
                 <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
                   <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
-                <span className="font-semibold text-base sm:text-lg text-slate-800">Commission Tracker</span>
+                <span className="font-semibold text-base sm:text-lg text-slate-800">CommissionIQ</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 max-w-xs leading-relaxed">
                 Financial clarity for commission-based real estate agents. 
@@ -919,7 +919,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-slate-100 mt-8 sm:mt-10 pt-6 sm:pt-8 text-center text-xs sm:text-sm text-slate-400">
-            <p>© {new Date().getFullYear()} Commission Tracker. Built for Canadian agents.</p>
+            <p>© {new Date().getFullYear()} CommissionIQ. Built for Canadian agents.</p>
           </div>
         </div>
       </footer>

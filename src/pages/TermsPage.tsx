@@ -11,7 +11,7 @@ export default function TermsPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
               <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold">Commission Tracker</span>
+            <span className="font-semibold">CommissionIQ</span>
           </Link>
           <Link 
             to="/" 
@@ -32,16 +32,16 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing and using Commission Tracker ("the Service"), you agree to be bound by these Terms of Service ("Terms"). 
+              By accessing and using CommissionIQ ("the Service"), you agree to be bound by these Terms of Service ("Terms"). 
               If you do not agree to these Terms, please do not use the Service. These Terms constitute a legally binding agreement 
-              between you and Commission Tracker.
+              between you and CommissionIQ.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold mb-3">2. Description of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Commission Tracker is a financial tracking and forecasting tool designed for real estate professionals. 
+              CommissionIQ is a financial tracking and forecasting tool designed for real estate professionals. 
               The Service allows users to track deals, commissions, expenses, and generate financial projections. The Service 
               includes both free ("Starter") and paid ("Pro") subscription tiers with different feature sets.
             </p>
@@ -115,7 +115,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">9. Limitation of Liability</h2>
             <p className="text-muted-foreground leading-relaxed">
-              To the maximum extent permitted by applicable law, Commission Tracker and its officers, directors, employees, and agents 
+              To the maximum extent permitted by applicable law, CommissionIQ and its officers, directors, employees, and agents 
               shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, 
               loss of profits, data, use, goodwill, or other intangible losses, resulting from your use of the Service.
             </p>
@@ -152,8 +152,8 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold mb-3">13. Contact Information</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have any questions about these Terms, please contact us at:<br />
-              <strong>Email:</strong> legal@commissiontracker.app<br />
-              <strong>Support:</strong> support@commissiontracker.app
+              <strong>Email:</strong> legal@commissioniq.app<br />
+              <strong>Support:</strong> support@commissioniq.app
             </p>
           </section>
         </div>

@@ -57,7 +57,7 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
               <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20">
                 <Building2 className="w-10 h-10 text-primary-foreground" />
               </div>
-              <h2 className="text-2xl font-bold mb-3">Welcome to Commission Tracker!</h2>
+              <h2 className="text-2xl font-bold mb-3">Welcome to CommissionIQ!</h2>
               <p className="text-muted-foreground mb-8">
                 Let's get you set up in just a few steps. Track your deals, forecast income, and stay on top of your commissions.
               </p>

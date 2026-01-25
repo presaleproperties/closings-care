@@ -1,4 +1,4 @@
-// Database types for Commission Tracker
+// Database types for CommissionIQ
 
 export type DealStatus = 'PENDING' | 'CLOSED';
 export type DealType = 'BUY' | 'SELL';
