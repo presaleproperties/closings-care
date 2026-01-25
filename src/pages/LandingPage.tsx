@@ -146,10 +146,12 @@ function HeroSection() {
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 h-16 border-slate-300 text-slate-700 gap-2">
-                <Play className="h-4 w-4" />
-                Watch 90-Second Demo
-              </Button>
+              <Link to="/demo" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto text-lg px-8 h-16 border-slate-300 text-slate-700 gap-2">
+                  <Play className="h-4 w-4" />
+                  Interactive Demo
+                </Button>
+              </Link>
             </div>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-sm text-slate-500">
