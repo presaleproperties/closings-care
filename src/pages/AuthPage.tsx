@@ -96,11 +96,11 @@ export default function AuthPage() {
         <div className="flex items-center gap-3">
           <img 
             src="/favicon.png" 
-            alt="Dealzflow" 
+            alt="dealzflow" 
             className="w-11 h-11 rounded-xl shadow-lg shadow-black/10"
           />
           <span className="text-xl font-semibold text-white">
-            Dealzflow
+            dealzflow
           </span>
         </div>
 
@@ -126,10 +126,10 @@ export default function AuthPage() {
           <div className="lg:hidden flex flex-col items-center gap-3 mb-10">
             <img 
               src="/favicon.png" 
-              alt="Dealzflow" 
+              alt="dealzflow" 
               className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-500/20"
             />
-            <span className="text-xl font-semibold tracking-tight">Dealzflow</span>
+            <span className="text-xl font-semibold tracking-tight">dealzflow</span>
           </div>
 
           {/* Back button for forgot/reset modes */}
