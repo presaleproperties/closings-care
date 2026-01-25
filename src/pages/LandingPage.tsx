@@ -114,7 +114,6 @@ function HeroSection() {
             transition={{ duration: 0.5 }}
             className="text-center lg:text-left lg:col-span-3"
           >
-
             <motion.div 
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs sm:text-sm font-medium mb-5"
               initial={{ opacity: 0, scale: 0.9 }}
@@ -1233,12 +1232,15 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18">
-            <Link to="/" className="flex items-center active:scale-95 transition-transform">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <img 
                 src="/favicon.png" 
                 alt="Dealzflow" 
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl shadow-lg shadow-emerald-500/25"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-emerald-500/25"
               />
+              <span className="font-bold text-lg sm:text-xl text-slate-800">
+                Dealz<span className="text-emerald-600">flow</span>
+              </span>
             </Link>
             
             <div className="hidden sm:flex items-center gap-6">
@@ -1341,13 +1343,16 @@ export default function LandingPage() {
       <footer className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-slate-950 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <Link to="/" className="flex items-center">
+            <div className="flex items-center gap-3">
               <img 
                 src="/favicon.png" 
                 alt="Dealzflow" 
-                className="w-10 h-10 rounded-xl"
+                className="w-8 h-8 rounded-xl"
               />
-            </Link>
+              <span className="font-semibold text-lg">
+                Dealz<span className="text-emerald-400">flow</span>
+              </span>
+            </div>
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
