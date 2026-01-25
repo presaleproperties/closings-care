@@ -412,7 +412,7 @@ function SafeToSpendSection() {
               <p>Or buy that $60K truck.</p>
               <p>Or hire an assistant for $4K/month.</p>
               <p className="font-semibold text-slate-800">Can you afford it?</p>
-              <p className="text-emerald-600 font-bold text-lg">With Dealzflow, you know. Instantly.</p>
+              <p className="text-emerald-600 font-bold text-lg">With dealzflow, you know. Instantly.</p>
             </div>
 
             <Link to="/auth">
@@ -1235,11 +1235,11 @@ export default function LandingPage() {
             <Link to="/" className="flex items-center gap-2 sm:gap-3">
               <img 
                 src="/favicon.png" 
-                alt="Dealzflow" 
+                alt="dealzflow" 
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-lg shadow-emerald-500/25"
               />
               <span className="font-bold text-lg sm:text-xl text-slate-800">
-                Dealz<span className="text-emerald-600">flow</span>
+                dealz<span className="text-emerald-600">flow</span>
               </span>
             </Link>
             
@@ -1346,11 +1346,11 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <img 
                 src="/favicon.png" 
-                alt="Dealzflow" 
+                alt="dealzflow" 
                 className="w-8 h-8 rounded-xl"
               />
               <span className="font-semibold text-lg">
-                Dealz<span className="text-emerald-400">flow</span>
+                dealz<span className="text-emerald-400">flow</span>
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-slate-400">
@@ -1359,7 +1359,7 @@ export default function LandingPage() {
               <a href="mailto:hello@dealzflow.ca" className="hover:text-white transition-colors">Contact</a>
             </div>
             <p className="text-slate-500 text-sm">
-              © 2025 Dealzflow. Made for realtors, by people who get it.
+              © 2025 dealzflow. Made for realtors, by people who get it.
             </p>
           </div>
         </div>

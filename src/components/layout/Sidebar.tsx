@@ -86,7 +86,7 @@ export function Sidebar() {
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
             <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-[-0.01em] whitespace-nowrap">
-              Dealzflow
+              dealzflow
             </h1>
           </div>
         </Link>
