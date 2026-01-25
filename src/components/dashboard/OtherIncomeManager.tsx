@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Plus, Pencil, Trash2, Wallet, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Pencil, Trash2, Wallet, DollarSign, Calendar, Repeat, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { springConfigs, triggerHaptic } from '@/lib/haptics';
 import {
   useOtherIncome,
   useCreateOtherIncome,
@@ -23,9 +25,9 @@ import {
 } from '@/hooks/useOtherIncome';
 
 const RECURRENCE_OPTIONS = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'one-time', label: 'One-time' },
+  { value: 'monthly', label: 'Monthly', icon: Repeat },
+  { value: 'weekly', label: 'Weekly', icon: Calendar },
+  { value: 'one-time', label: 'One-time', icon: DollarSign },
 ] as const;
 
 export function OtherIncomeManager() {
@@ -73,6 +75,7 @@ export function OtherIncomeManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHaptic('success');
 
     if (editingIncome) {
       await updateIncome.mutateAsync({ id: editingIncome.id, data: formData });
@@ -85,6 +88,7 @@ export function OtherIncomeManager() {
   };
 
   const handleDelete = async (id: string) => {
+    triggerHaptic('warning');
     await deleteIncome.mutateAsync(id);
   };
 
@@ -102,16 +106,28 @@ export function OtherIncomeManager() {
     .reduce((sum, i) => sum + Number(i.amount), 0);
 
   const totalMonthly = monthlyTotal + weeklyTotal;
+  const annualTotal = totalMonthly * 12 + oneTimeTotal;
 
   return (
-    <div className="landing-card">
-      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+    <motion.div 
+      className="landing-card overflow-hidden"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springConfigs.gentle}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50 bg-gradient-to-r from-sky-50/50 to-cyan-50/30 dark:from-sky-500/5 dark:to-cyan-500/10">
         <div className="flex items-center gap-3">
-          <div className="icon-gradient-blue icon-gradient-sm">
-            <Wallet className="h-4 w-4 text-white" />
-          </div>
+          <motion.div
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={springConfigs.bouncy}
+          >
+            <Wallet className="h-5 w-5 text-white" />
+          </motion.div>
           <div>
-            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+            <h3 className="font-bold text-base text-slate-800 dark:text-foreground">
               Other Income
             </h3>
             <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Revenue share, side income, etc.</p>
@@ -120,10 +136,12 @@ export function OtherIncomeManager() {
 
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5 bg-sky-500 hover:bg-sky-600">
-              <Plus className="h-4 w-4" />
-              Add
-            </Button>
+            <motion.div whileTap={{ scale: 0.95 }}>
+              <Button size="sm" className="gap-1.5 bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 shadow-lg shadow-sky-500/20">
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+            </motion.div>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -167,12 +185,13 @@ export function OtherIncomeManager() {
                       type="button"
                       onClick={() => setFormData((p) => ({ ...p, recurrence: opt.value }))}
                       className={cn(
-                        'px-3 py-2 rounded-lg border text-sm font-medium transition-all',
+                        'flex flex-col items-center gap-1 px-3 py-3 rounded-xl border text-sm font-medium transition-all',
                         formData.recurrence === opt.value
-                          ? 'border-sky-500 bg-sky-500/10 text-sky-400'
-                          : 'border-border hover:border-muted-foreground'
+                          ? 'border-sky-500 bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                          : 'border-border hover:border-sky-300'
                       )}
                     >
+                      <opt.icon className="h-4 w-4" />
                       {opt.label}
                     </button>
                   ))}
@@ -223,7 +242,7 @@ export function OtherIncomeManager() {
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-sky-500 hover:bg-sky-600"
+                  className="flex-1 bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600"
                   disabled={createIncome.isPending || updateIncome.isPending}
                 >
                   {editingIncome ? 'Update' : 'Add Income'}
@@ -235,96 +254,154 @@ export function OtherIncomeManager() {
       </div>
 
       <div className="p-5">
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="text-center p-3 rounded-xl bg-sky-500/10">
-          <p className="text-xs text-muted-foreground mb-0.5">Monthly</p>
-          <p className="font-bold text-sky-400">{formatCurrency(totalMonthly)}</p>
-        </div>
-        <div className="text-center p-3 rounded-xl bg-sky-500/5">
-          <p className="text-xs text-muted-foreground mb-0.5">One-Time</p>
-          <p className="font-semibold text-sky-300">{formatCurrency(oneTimeTotal)}</p>
-        </div>
-        <div className="text-center p-3 rounded-xl bg-sky-500/10">
-          <p className="text-xs text-muted-foreground mb-0.5">Annual</p>
-          <p className="font-bold text-sky-400">{formatCurrency(totalMonthly * 12 + oneTimeTotal)}</p>
-        </div>
-      </div>
-
-      {/* Income List */}
-      {otherIncome.length > 0 ? (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {otherIncome.map((income) => (
-            <div
-              key={income.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm truncate">{income.name}</span>
-                  <span
-                    className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded font-medium',
-                      income.recurrence === 'one-time'
-                        ? 'bg-sky-500/20 text-sky-300'
-                        : 'bg-sky-500/10 text-sky-400'
-                    )}
-                  >
-                    {income.recurrence}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {income.recurrence === 'one-time'
-                    ? format(parseISO(`${income.start_month}-01`), 'MMM yyyy')
-                    : `From ${format(parseISO(`${income.start_month}-01`), 'MMM yyyy')}${
-                        income.end_month
-                          ? ` to ${format(parseISO(`${income.end_month}-01`), 'MMM yyyy')}`
-                          : ' onwards'
-                      }`}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sky-400">
-                  {formatCurrency(income.amount)}
-                  {income.recurrence === 'weekly' && (
-                    <span className="text-xs text-muted-foreground">/wk</span>
-                  )}
-                  {income.recurrence === 'monthly' && (
-                    <span className="text-xs text-muted-foreground">/mo</span>
-                  )}
-                </span>
-
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => handleEdit(income)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(income.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
+        {/* Summary Stats */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <motion.div 
+            className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-sky-500/10 to-cyan-500/5 border border-sky-200/50 dark:border-sky-500/20"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springConfigs.gentle, delay: 0.1 }}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-sky-400/10 to-transparent rounded-bl-full" />
+            <div className="flex items-center gap-1.5 mb-2">
+              <Repeat className="h-3.5 w-3.5 text-sky-500" />
+              <p className="text-[11px] font-medium text-slate-500 dark:text-muted-foreground uppercase tracking-wide">Monthly</p>
             </div>
-          ))}
+            <p className="text-xl font-bold text-sky-600 dark:text-sky-400">{formatCurrency(totalMonthly)}</p>
+          </motion.div>
+          
+          <motion.div 
+            className="relative overflow-hidden p-4 rounded-2xl bg-slate-50 dark:bg-muted/30 border border-slate-200/50 dark:border-border/30"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springConfigs.gentle, delay: 0.15 }}
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <DollarSign className="h-3.5 w-3.5 text-slate-400" />
+              <p className="text-[11px] font-medium text-slate-500 dark:text-muted-foreground uppercase tracking-wide">One-Time</p>
+            </div>
+            <p className="text-xl font-bold text-slate-600 dark:text-slate-300">{formatCurrency(oneTimeTotal)}</p>
+          </motion.div>
+          
+          <motion.div 
+            className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-200/50 dark:border-emerald-500/20"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springConfigs.gentle, delay: 0.2 }}
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-transparent rounded-bl-full" />
+            <div className="flex items-center gap-1.5 mb-2">
+              <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
+              <p className="text-[11px] font-medium text-slate-500 dark:text-muted-foreground uppercase tracking-wide">Annual</p>
+            </div>
+            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(annualTotal)}</p>
+          </motion.div>
         </div>
-      ) : (
-        <div className="text-center py-6 text-muted-foreground">
-          <Wallet className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No other income added yet</p>
-        <p className="text-xs">Add revenue share, rental income, or side income</p>
-        </div>
-      )}
+
+        {/* Income List */}
+        {otherIncome.length > 0 ? (
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <AnimatePresence mode="popLayout">
+              {otherIncome.map((income, index) => (
+                <motion.div
+                  key={income.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ ...springConfigs.gentle, delay: index * 0.05 }}
+                  className="group"
+                >
+                  <div className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-card/50 border border-slate-100 dark:border-border/30 hover:border-sky-200 dark:hover:border-sky-500/30 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={cn(
+                        "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                        income.recurrence === 'one-time' 
+                          ? "bg-slate-100 dark:bg-muted" 
+                          : "bg-sky-100 dark:bg-sky-500/20"
+                      )}>
+                        {income.recurrence === 'monthly' && <Repeat className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
+                        {income.recurrence === 'weekly' && <Calendar className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
+                        {income.recurrence === 'one-time' && <DollarSign className="h-4 w-4 text-slate-500" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-slate-800 dark:text-foreground truncate">{income.name}</span>
+                          <span className={cn(
+                            'text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0',
+                            income.recurrence === 'one-time'
+                              ? 'bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground'
+                              : 'bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400'
+                          )}>
+                            {income.recurrence}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 dark:text-muted-foreground">
+                          {income.recurrence === 'one-time'
+                            ? format(parseISO(`${income.start_month}-01`), 'MMM yyyy')
+                            : `From ${format(parseISO(`${income.start_month}-01`), 'MMM yyyy')}${
+                                income.end_month
+                                  ? ` to ${format(parseISO(`${income.end_month}-01`), 'MMM yyyy')}`
+                                  : ' onwards'
+                              }`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <span className="font-bold text-lg text-sky-600 dark:text-sky-400">
+                          {formatCurrency(income.amount)}
+                        </span>
+                        {income.recurrence !== 'one-time' && (
+                          <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
+                            /{income.recurrence === 'weekly' ? 'wk' : 'mo'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-500/20"
+                          onClick={() => handleEdit(income)}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg hover:bg-destructive/10"
+                          onClick={() => handleDelete(income.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <motion.div 
+            className="text-center py-8"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={springConfigs.gentle}
+          >
+            <motion.div 
+              className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-sky-100 to-cyan-50 dark:from-sky-500/20 dark:to-cyan-500/10 flex items-center justify-center"
+              animate={{ y: [0, -3, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Wallet className="h-7 w-7 text-sky-400" />
+            </motion.div>
+            <p className="text-sm font-medium text-slate-600 dark:text-muted-foreground mb-1">No other income added yet</p>
+            <p className="text-xs text-slate-400 dark:text-muted-foreground">Add revenue share, rental income, or side income</p>
+          </motion.div>
+        )}
       </div>
-    </div>
+    </motion.div>
   );
 }
