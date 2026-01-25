@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles } from 'lucide-react';
+import { Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles, Target } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -46,6 +46,11 @@ export default function SettingsPage() {
   const [taxBuffer, setTaxBuffer] = useState(5);
   const [taxCalculationMethod, setTaxCalculationMethod] = useState<'progressive' | 'flat'>('progressive');
   const [taxSavedAmount, setTaxSavedAmount] = useState(0);
+  
+  // Brokerage cap settings
+  const [brokerageCapEnabled, setBrokerageCapEnabled] = useState(false);
+  const [brokerageCapAmount, setBrokerageCapAmount] = useState(0);
+  const [brokerageCapStartDate, setBrokerageCapStartDate] = useState('');
 
   useEffect(() => {
     if (settings) {
@@ -63,6 +68,10 @@ export default function SettingsPage() {
       setTaxBuffer((settings as any).tax_buffer_percent || 5);
       setTaxCalculationMethod((settings as any).tax_calculation_method || 'progressive');
       setTaxSavedAmount((settings as any).tax_saved_amount || 0);
+      // Brokerage cap settings
+      setBrokerageCapEnabled((settings as any).brokerage_cap_enabled || false);
+      setBrokerageCapAmount((settings as any).brokerage_cap_amount || 0);
+      setBrokerageCapStartDate((settings as any).brokerage_cap_start_date || '');
     }
   }, [settings]);
 
@@ -82,6 +91,10 @@ export default function SettingsPage() {
       tax_buffer_percent: taxBuffer,
       tax_calculation_method: taxCalculationMethod,
       tax_saved_amount: taxSavedAmount,
+      // Brokerage cap settings
+      brokerage_cap_enabled: brokerageCapEnabled,
+      brokerage_cap_amount: brokerageCapAmount,
+      brokerage_cap_start_date: brokerageCapStartDate || null,
     } as any);
   };
 
@@ -456,13 +469,16 @@ export default function SettingsPage() {
 
         {/* Financial Settings */}
         <section className="bg-card border border-border rounded-lg p-6">
-          <h2 className="font-semibold mb-4">Brokerage Settings</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <Target className="w-5 h-5 text-primary" />
+            <h2 className="font-semibold">Brokerage Settings</h2>
+          </div>
           
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="brokerage">Brokerage Split (%)</Label>
               <p className="text-sm text-muted-foreground">
-                Percentage of commission that goes to brokerage
+                Percentage of commission that goes to brokerage before hitting cap
               </p>
               <Input
                 id="brokerage"
@@ -474,6 +490,64 @@ export default function SettingsPage() {
                 onChange={(e) => setBrokeragePercent(parseFloat(e.target.value) || 0)}
                 className="w-32"
               />
+            </div>
+
+            {/* Brokerage Cap Toggle */}
+            <div className="pt-4 border-t border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="capEnabled">Enable Brokerage Cap</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Track progress toward your annual cap and switch to 100% split after reaching it
+                  </p>
+                </div>
+                <Switch
+                  id="capEnabled"
+                  checked={brokerageCapEnabled}
+                  onCheckedChange={setBrokerageCapEnabled}
+                />
+              </div>
+
+              {brokerageCapEnabled && (
+                <div className="space-y-4 pl-4 border-l-2 border-primary/30">
+                  <div className="space-y-2">
+                    <Label htmlFor="capAmount">Annual Cap Amount ($)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Total brokerage fees until you hit 100% split
+                    </p>
+                    <Input
+                      id="capAmount"
+                      type="number"
+                      min="0"
+                      step="100"
+                      value={brokerageCapAmount}
+                      onChange={(e) => setBrokerageCapAmount(parseFloat(e.target.value) || 0)}
+                      className="w-40"
+                      placeholder="e.g., 25000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="capStartDate">Cap Anniversary Date</Label>
+                    <p className="text-sm text-muted-foreground">
+                      When your cap year starts (resets annually on this date)
+                    </p>
+                    <Input
+                      id="capStartDate"
+                      type="date"
+                      value={brokerageCapStartDate}
+                      onChange={(e) => setBrokerageCapStartDate(e.target.value)}
+                      className="w-48"
+                    />
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+                    <p className="text-xs text-primary">
+                      <strong>How it works:</strong> Once you've paid {brokeragePercent}% on enough deals to total ${brokerageCapAmount.toLocaleString()}, you'll automatically switch to keeping 100% of your commission until your anniversary date.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>

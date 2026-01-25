@@ -22,6 +22,7 @@ import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { ExpenseIntelligence } from '@/components/dashboard/ExpenseIntelligence';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
+import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -192,6 +193,7 @@ export default function DashboardPage() {
 
             {/* Overview Tab - Mobile */}
             <TabsContent value="overview" className="px-5 space-y-4 mt-0">
+              <BrokerageCapCard />
               <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
               <UpcomingPayouts 
                 payouts={payouts} 
@@ -326,11 +328,14 @@ export default function DashboardPage() {
                 <div className="lg:col-span-2">
                   <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 </div>
-                <UpcomingPayouts 
-                  payouts={payouts} 
-                  onMarkPaid={(id) => markPaid.mutate(id)}
-                  isPending={markPaid.isPending}
-                />
+                <div className="space-y-6">
+                  <BrokerageCapCard />
+                  <UpcomingPayouts 
+                    payouts={payouts} 
+                    onMarkPaid={(id) => markPaid.mutate(id)}
+                    isPending={markPaid.isPending}
+                  />
+                </div>
               </div>
               <OtherIncomeManager />
               <FinancialHealth 
