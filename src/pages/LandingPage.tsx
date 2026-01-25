@@ -160,15 +160,15 @@ function AnimatedBarChart({ className = "" }: { className?: string }) {
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-semibold text-slate-800">12-Month Income vs Expenses</h4>
+        <h4 className="text-sm font-semibold text-slate-800">Your Next 12 Months</h4>
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500" />
-            Income
+            Coming In
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-slate-300" />
-            Expenses
+            Going Out
           </span>
         </div>
       </div>
@@ -210,9 +210,9 @@ function DealPipelinePreview() {
 
   const statusConfig = {
     new: { color: "bg-blue-500", label: "New Deal", bg: "bg-blue-50" },
-    pending: { color: "bg-amber-500", label: "Pending", bg: "bg-amber-50" },
-    closing: { color: "bg-emerald-500", label: "Closing", bg: "bg-emerald-50" },
-    paid: { color: "bg-teal-500", label: "Paid", bg: "bg-teal-50" },
+    pending: { color: "bg-amber-500", label: "Waiting", bg: "bg-amber-50" },
+    closing: { color: "bg-emerald-500", label: "Almost There", bg: "bg-emerald-50" },
+    paid: { color: "bg-teal-500", label: "Money In", bg: "bg-teal-50" },
   };
 
   return (
@@ -227,9 +227,9 @@ function DealPipelinePreview() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
             <Briefcase className="h-4 w-4 text-white" />
           </div>
-          <h4 className="font-semibold text-slate-800">Deal Pipeline</h4>
+          <h4 className="font-semibold text-slate-800">Your Pipeline</h4>
         </div>
-        <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">4 active deals</span>
+        <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">$87K coming</span>
       </div>
       <div className="divide-y divide-slate-50">
         {deals.map((deal, i) => {
@@ -304,7 +304,7 @@ function ExpenseCategoriesPreview() {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
             <Receipt className="h-4 w-4 text-white" />
           </div>
-          <h4 className="font-semibold text-slate-800">Expense Tracking</h4>
+          <h4 className="font-semibold text-slate-800">Where It's Going</h4>
         </div>
         <span className="text-sm font-bold text-slate-800">$3,600<span className="text-slate-400 font-normal">/mo</span></span>
       </div>
@@ -371,7 +371,7 @@ function TaxSafetyGauge() {
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
           <Landmark className="h-4 w-4 text-white" />
         </div>
-        <h4 className="font-semibold text-slate-800">Tax Safety</h4>
+        <h4 className="font-semibold text-slate-800">CRA Ready</h4>
       </div>
       
       <div className="flex items-center justify-center mb-4">
@@ -409,22 +409,22 @@ function TaxSafetyGauge() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-slate-800">{percentage}%</span>
-            <span className="text-xs text-amber-600 font-medium">On Track</span>
+            <span className="text-xs text-amber-600 font-medium">You're Good</span>
           </div>
         </div>
       </div>
       
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Tax Set Aside</span>
+          <span className="text-slate-600">Set Aside</span>
           <span className="font-bold text-slate-800">$16,426</span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Recommended</span>
+          <span className="text-slate-600">Target</span>
           <span className="font-medium text-slate-600">$21,000</span>
         </div>
         <div className="flex items-center justify-between text-sm pt-2 border-t border-amber-200/50">
-          <span className="text-slate-600">Gap to fill</span>
+          <span className="text-slate-600">Still need</span>
           <span className="font-semibold text-amber-600">$4,574</span>
         </div>
       </div>
@@ -464,9 +464,9 @@ function DashboardPreview() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-5">
             {[
               { label: "Safe to Spend", value: "$7,750", gradient: true, icon: Wallet },
-              { label: "Pipeline", value: "$76,500", trend: "+5 deals", icon: TrendingUp },
-              { label: "YTD Income", value: "$142,800", trend: "+18%", icon: BarChart3 },
-              { label: "Tax Set Aside", value: "$16,426", trend: "Ready", icon: Shield },
+              { label: "Coming In", value: "$76,500", trend: "+5 deals", icon: TrendingUp },
+              { label: "Made This Year", value: "$142,800", trend: "+18%", icon: BarChart3 },
+              { label: "Tax Ready", value: "$16,426", trend: "You're good", icon: Shield },
             ].map((kpi, i) => (
               <motion.div
                 key={kpi.label}
@@ -493,15 +493,15 @@ function DashboardPreview() {
             transition={{ delay: 0.9 }}
           >
             <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <h4 className="text-xs sm:text-sm font-semibold text-slate-800">12-Month Projection</h4>
+              <h4 className="text-xs sm:text-sm font-semibold text-slate-800">The Next 12 Months</h4>
               <div className="flex items-center gap-2 sm:gap-3 text-[9px] sm:text-xs">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  Income
+                  In
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-slate-300" />
-                  Expenses
+                  Out
                 </span>
               </div>
             </div>
@@ -536,7 +536,7 @@ function DashboardPreview() {
             <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-emerald-600" />
           </div>
           <div>
-            <p className="text-[8px] sm:text-[10px] text-slate-500">Commission received</p>
+            <p className="text-[8px] sm:text-[10px] text-slate-500">Money hit your account</p>
             <p className="text-[10px] sm:text-xs font-bold text-slate-800">+$8,200</p>
           </div>
         </div>
@@ -553,8 +553,8 @@ function DashboardPreview() {
             <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-teal-600" />
           </div>
           <div>
-            <p className="text-[8px] sm:text-[10px] text-slate-500">Tax set aside</p>
-            <p className="text-[10px] sm:text-xs font-bold text-slate-800">$16,426 ready</p>
+            <p className="text-[8px] sm:text-[10px] text-slate-500">CRA? Handled.</p>
+            <p className="text-[10px] sm:text-xs font-bold text-slate-800">$16,426 set aside</p>
           </div>
         </div>
       </motion.div>
@@ -577,13 +577,13 @@ function AppPreviewSection() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4">
             <Eye className="h-4 w-4" />
-            See It In Action
+            See It
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-4">
-            Experience the full dashboard
+            This is what clarity looks like.
           </h2>
           <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
-            Track every deal, expense, and tax obligation in one beautiful interface
+            Every deal. Every dollar. Every tax you owe. One screen.
           </p>
         </motion.div>
 
@@ -591,9 +591,9 @@ function AppPreviewSection() {
         <div className="flex justify-center mb-8">
           <div className="inline-flex bg-slate-100 p-1 rounded-xl">
             {[
-              { id: 'deals', label: 'Deal Pipeline', icon: Briefcase },
-              { id: 'expenses', label: 'Expenses', icon: Receipt },
-              { id: 'taxes', label: 'Tax Safety', icon: Calculator },
+              { id: 'deals', label: 'Your Pipeline', icon: Briefcase },
+              { id: 'expenses', label: 'Your Spending', icon: Receipt },
+              { id: 'taxes', label: 'Your Taxes', icon: Calculator },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -633,18 +633,18 @@ function AppPreviewSection() {
                   viewport={{ once: true }}
                   transition={{ delay: 0.2 }}
                 >
-                  <h4 className="text-sm font-semibold text-slate-800 mb-4">Pipeline Summary</h4>
+                  <h4 className="text-sm font-semibold text-slate-800 mb-4">The Numbers</h4>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Total Pipeline</span>
+                      <span className="text-sm text-slate-600">Total Coming</span>
                       <span className="text-lg font-bold text-emerald-600">$87,000</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Closing This Month</span>
+                      <span className="text-sm text-slate-600">This Month</span>
                       <span className="font-semibold text-slate-800">$42,700</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Average Commission</span>
+                      <span className="text-sm text-slate-600">Average Deal</span>
                       <span className="font-semibold text-slate-800">$21,750</span>
                     </div>
                   </div>
@@ -658,14 +658,14 @@ function AppPreviewSection() {
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Zap className="h-5 w-5" />
-                    <span className="font-medium">Quick Actions</span>
+                    <span className="font-medium">Do It Now</span>
                   </div>
                   <div className="space-y-2">
                     <button className="w-full bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-3 text-left text-sm">
-                      + Add New Deal
+                      + Add a Deal
                     </button>
                     <button className="w-full bg-white/20 hover:bg-white/30 transition-colors rounded-lg p-3 text-left text-sm">
-                      📊 View Income Forecast
+                      📊 See What's Coming
                     </button>
                   </div>
                 </motion.div>
@@ -716,16 +716,16 @@ function AppPreviewSection() {
                       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                         <Calculator className="h-4 w-4 text-white" />
                       </div>
-                      <h4 className="font-semibold text-slate-800">Tax Breakdown</h4>
+                      <h4 className="font-semibold text-slate-800">Where Your Taxes Go</h4>
                     </div>
-                    <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full font-medium">BC Taxes</span>
+                    <span className="text-xs bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full font-medium">BC Rates</span>
                   </div>
                   <div className="space-y-4">
                     {[
                       { label: "Federal Tax", amount: 9856, percentage: 15.3 },
-                      { label: "Provincial Tax (BC)", amount: 4712, percentage: 7.3 },
-                      { label: "CPP Contributions", amount: 3867, percentage: 6.0 },
-                      { label: "GST/HST Collected", amount: 1858, percentage: 2.9 },
+                      { label: "Provincial (BC)", amount: 4712, percentage: 7.3 },
+                      { label: "CPP", amount: 3867, percentage: 6.0 },
+                      { label: "GST Collected", amount: 1858, percentage: 2.9 },
                     ].map((item, i) => (
                       <motion.div
                         key={item.label}
@@ -737,14 +737,14 @@ function AppPreviewSection() {
                       >
                         <div>
                           <p className="font-medium text-slate-800">{item.label}</p>
-                          <p className="text-xs text-slate-500">{item.percentage}% rate</p>
+                          <p className="text-xs text-slate-500">{item.percentage}%</p>
                         </div>
                         <p className="text-lg font-bold text-slate-800">${item.amount.toLocaleString()}</p>
                       </motion.div>
                     ))}
                     <div className="pt-4 border-t border-slate-100">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-800">Total Estimated Taxes</span>
+                        <span className="font-semibold text-slate-800">Total You'll Owe</span>
                         <span className="text-2xl font-bold text-emerald-600">$20,293</span>
                       </div>
                     </div>
@@ -759,14 +759,14 @@ function AppPreviewSection() {
   );
 }
 
-// Section 2: The Problem - Enhanced with narrative
+// Section 2: The Problem - The Reality Check
 function ProblemSection() {
   const problems = [
-    { icon: FileSpreadsheet, text: "Commissions spread across emails, spreadsheets, and portals", delay: 0 },
-    { icon: Eye, text: "No clear view of pending vs paid income", delay: 0.1 },
-    { icon: AlertTriangle, text: "Surprise tax bills every year", delay: 0.2 },
-    { icon: Clock, text: "Pre-sales and trails feel invisible", delay: 0.3 },
-    { icon: TrendingDown, text: "Broker statements don't match reality", delay: 0.4 },
+    { icon: FileSpreadsheet, text: "You closed $180K this year. Your bank account says $4K. What happened?", delay: 0 },
+    { icon: Eye, text: "Three spreadsheets, two brokerage portals, and you still don't know what's coming when.", delay: 0.1 },
+    { icon: AlertTriangle, text: "April hits. You owe $18K. Where the hell did that come from?", delay: 0.2 },
+    { icon: Clock, text: "That pre-sale from 2 years ago? Is that still happening? When?", delay: 0.3 },
+    { icon: TrendingDown, text: "Your broker's statement arrives. It doesn't match anything.", delay: 0.4 },
   ];
 
   return (
@@ -792,10 +792,11 @@ function ProblemSection() {
             viewport={{ once: true }}
           >
             <AlertTriangle className="h-4 w-4" />
-            Sound familiar?
+            This is your life right now
           </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
-            You're closing deals — but your money feels <span className="text-red-500">unclear.</span>
+            You make good money. <br className="hidden sm:block" />
+            <span className="text-red-500">You just don't know where it is.</span>
           </h2>
         </motion.div>
         
@@ -810,105 +811,24 @@ function ProblemSection() {
               transition={{ delay: problem.delay, type: "spring", stiffness: 100 }}
             >
               <motion.div 
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"
-                whileHover={{ scale: 1.1, rotate: -5 }}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0"
+                whileHover={{ scale: 1.1, rotate: 5 }}
               >
                 <problem.icon className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </motion.div>
-              <p className="text-slate-700 text-sm sm:text-base font-medium pt-2">{problem.text}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div 
-          className="text-center p-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl border border-red-100"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <p className="text-lg sm:text-xl text-slate-700 font-medium">
-            If your income feels <span className="text-red-600 font-bold">stressful</span> despite earning well — <span className="italic">this is why.</span>
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// Section 3: Cost of Doing Nothing - Enhanced emotional impact
-function CostSection() {
-  const costs = [
-    { icon: CreditCard, text: "Overspending money that isn't yours", color: "from-red-500 to-red-600" },
-    { icon: Receipt, text: "Missed write-offs and incentives", color: "from-orange-500 to-orange-600" },
-    { icon: Briefcase, text: "Poor hiring and investing decisions", color: "from-amber-500 to-amber-600" },
-    { icon: Heart, text: "Constant money anxiety", color: "from-rose-500 to-rose-600" },
-    { icon: FileText, text: "Dependence on accountants after the damage is done", color: "from-red-600 to-red-700" },
-  ];
-
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
-  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.5, 1, 1, 0.5]);
-
-  return (
-    <section ref={containerRef} className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white overflow-hidden">
-      {/* Animated background gradient */}
-      <motion.div 
-        className="absolute inset-0"
-        style={{ opacity }}
-      >
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl" />
-      </motion.div>
-
-      <div className="max-w-4xl mx-auto relative">
-        <motion.div 
-          className="text-center mb-10 sm:mb-14"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <motion.div 
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 text-red-300 text-xs sm:text-sm font-medium mb-4"
-            initial={{ scale: 0.9, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            <AlertTriangle className="h-4 w-4" />
-            The Hidden Cost
-          </motion.div>
-          <h2 className="text-2xl sm:text-4xl font-bold mb-3 sm:mb-4">
-            What unclear income <span className="text-red-400">really</span> costs you
-          </h2>
-        </motion.div>
-        
-        <div className="grid sm:grid-cols-2 gap-4 mb-10">
-          {costs.map((cost, i) => (
-            <motion.div
-              key={cost.text}
-              className="flex items-center gap-4 p-5 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:bg-white/10 transition-all group"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <motion.div 
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${cost.color} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform`}
-              >
-                <cost.icon className="h-6 w-6 text-white" />
-              </motion.div>
-              <p className="text-white/90 text-sm sm:text-base font-medium">{cost.text}</p>
+              <p className="text-slate-700 text-sm sm:text-base pt-2">{problem.text}</p>
             </motion.div>
           ))}
         </div>
 
         <motion.div 
           className="text-center"
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <p className="text-xl sm:text-2xl text-white/70 font-medium mb-2">
-            Every month without clarity is money <span className="text-red-400 font-bold">lost.</span>
+          <p className="text-slate-500 text-lg italic">
+            Sound familiar? Yeah. We've been there too.
           </p>
         </motion.div>
       </div>
@@ -916,19 +836,98 @@ function CostSection() {
   );
 }
 
-// Section 4: The Solution - Enhanced with transformation visual
+// Section 3: Cost of Doing Nothing - The Real Cost
+function CostSection() {
+  const costs = [
+    { icon: AlertTriangle, value: "$18K", label: "Surprise tax bill that wrecked your summer", color: "text-red-400" },
+    { icon: CreditCard, value: "Maxed", label: "Credit card because you didn't see March coming", color: "text-amber-400" },
+    { icon: Clock, value: "4hrs", label: "Every month reconciling your own money", color: "text-blue-400" },
+    { icon: TrendingDown, value: "Lost", label: "Deals you said no to because you weren't sure you could afford them", color: "text-purple-400" },
+  ];
+
+  return (
+    <section className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-800 to-slate-900 overflow-hidden">
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 20% 30%, rgba(239,68,68,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(239,68,68,0.2) 0%, transparent 50%)'
+        }} />
+      </div>
+
+      <div className="max-w-4xl mx-auto relative">
+        <motion.div 
+          className="text-center mb-12 sm:mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <motion.div 
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/20 text-red-400 text-xs sm:text-sm font-medium mb-4"
+            initial={{ scale: 0.9, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            The Real Cost
+          </motion.div>
+          <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4">
+            Every month without clarity is money gone.
+          </h2>
+          <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
+            Not knowing your numbers isn't just stressful. It's expensive.
+          </p>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+          {costs.map((cost, i) => (
+            <motion.div
+              key={cost.label}
+              className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 hover:border-slate-600 transition-all group"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, type: "spring" }}
+              whileHover={{ y: -5 }}
+            >
+              <motion.div 
+                className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center mb-4 group-hover:bg-slate-600 transition-colors"
+                whileHover={{ rotate: 10, scale: 1.1 }}
+              >
+                <cost.icon className={`h-6 w-6 ${cost.color}`} />
+              </motion.div>
+              <p className={`text-3xl font-bold mb-2 ${cost.color}`}>{cost.value}</p>
+              <p className="text-slate-300 text-sm">{cost.label}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div 
+          className="text-center mt-12"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+        >
+          <p className="text-xl sm:text-2xl text-white/70 font-medium">
+            You don't have an income problem. <span className="text-red-400 font-bold">You have a visibility problem.</span>
+          </p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// Section 4: The Solution - One Screen. Everything You Need.
 function SolutionSection() {
   const features = [
-    { icon: Banknote, text: "Deal-level commission tracking" },
-    { icon: TrendingUp, text: "Real-time income forecast" },
-    { icon: Calculator, text: "Automatic tax set-aside" },
-    { icon: Receipt, text: "Expense tracking tied to income" },
-    { icon: Calendar, text: "Pre-sale, assignment & trail support" },
+    { icon: Banknote, text: "Every deal, every split, every dollar — in one place" },
+    { icon: TrendingUp, text: "See your next 12 months before they happen" },
+    { icon: Calculator, text: "Taxes set aside automatically. No more April panic." },
+    { icon: Receipt, text: "Your real expenses vs what's actually coming in" },
+    { icon: Calendar, text: "Pre-sales, assignments, trails — finally visible" },
   ];
 
   return (
     <section id="features" className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-emerald-50/30 overflow-hidden">
-      {/* Transformation visual - from chaos to clarity */}
+      {/* Transformation visual */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div 
           className="absolute top-1/4 left-0 w-32 h-32 bg-gradient-to-br from-emerald-400/20 to-teal-400/20 rounded-full blur-3xl"
@@ -960,13 +959,13 @@ function SolutionSection() {
             viewport={{ once: true }}
           >
             <Sparkles className="h-4 w-4" />
-            The Solution
+            Finally
           </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3 sm:mb-4">
-            One dashboard for your <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">entire deal pipeline.</span>
+            See your real take-home. <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">In 30 seconds.</span>
           </h2>
           <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto">
-            This app gives you a live view of every deal, every commission, every expense, and every dollar you owe — <span className="font-semibold text-slate-800">before it hits your bank account.</span>
+            After splits. After cap. After taxes. After everything. <span className="font-semibold text-slate-800">This is what you actually make.</span>
           </p>
         </motion.div>
 
@@ -1013,7 +1012,7 @@ function SolutionSection() {
                 </motion.div>
                 <div>
                   <h3 className="font-bold text-slate-800">Safe to Spend</h3>
-                  <p className="text-xs text-emerald-600">Updated in real-time</p>
+                  <p className="text-xs text-emerald-600">Right now</p>
                 </div>
               </div>
               
@@ -1027,15 +1026,15 @@ function SolutionSection() {
                 >
                   $7,750
                 </motion.p>
-                <p className="text-sm text-slate-500 mt-2">What you can safely spend this month</p>
+                <p className="text-sm text-slate-500 mt-2">That's what you can actually spend this month. For real.</p>
               </div>
               
               <div className="space-y-3 bg-white/60 rounded-xl p-4">
                 {[
-                  { label: "Projected Cash In", value: "+$24,200", positive: true },
-                  { label: "Tax Set-Aside (30%)", value: "-$7,260", positive: false },
-                  { label: "Fixed Expenses", value: "-$5,890", positive: false },
-                  { label: "Upcoming Bills", value: "-$3,300", positive: false },
+                  { label: "Coming in", value: "+$24,200", positive: true },
+                  { label: "Tax set aside (30%)", value: "-$7,260", positive: false },
+                  { label: "Fixed costs", value: "-$5,890", positive: false },
+                  { label: "Bills due", value: "-$3,300", positive: false },
                 ].map((item, i) => (
                   <motion.div 
                     key={item.label}
@@ -1057,7 +1056,7 @@ function SolutionSection() {
                     viewport={{ once: true }}
                     transition={{ delay: 0.9 }}
                   >
-                    <span className="font-semibold text-slate-800">Safe to Spend</span>
+                    <span className="font-semibold text-slate-800">Yours to spend</span>
                     <span className="font-bold text-emerald-600">$7,750</span>
                   </motion.div>
                 </div>
@@ -1070,27 +1069,27 @@ function SolutionSection() {
   );
 }
 
-// Section 5: How It Works - Enhanced with flow visualization
+// Section 5: How It Works - Dead Simple
 function HowItWorks() {
   const steps = [
     { 
       step: "1", 
-      title: "Add your deal", 
-      description: "Accepted, conditional, or completed — log it once.",
+      title: "Log it once", 
+      description: "Accepted, conditional, or closed — 30 seconds.",
       icon: Banknote,
       color: "from-blue-500 to-blue-600"
     },
     { 
       step: "2", 
-      title: "Watch it flow", 
-      description: "See commissions move from pending → earned → paid.",
+      title: "Watch it move", 
+      description: "Pending → Earned → Paid. You'll see it happen.",
       icon: TrendingUp,
       color: "from-emerald-500 to-teal-600"
     },
     { 
       step: "3", 
-      title: "Stay in control", 
-      description: "Know what you can spend, save, or reinvest — anytime.",
+      title: "Know what's yours", 
+      description: "Safe to spend. Taxes covered. No guessing.",
       icon: Shield,
       color: "from-amber-500 to-orange-600"
     },
@@ -1107,10 +1106,10 @@ function HowItWorks() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs sm:text-sm font-medium mb-4">
             <Sparkles className="h-4 w-4" />
-            Simple = Trust
+            Dead Simple
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800">
-            How it works
+            Three steps. That's it.
           </h2>
         </motion.div>
         
@@ -1166,20 +1165,20 @@ function HowItWorks() {
   );
 }
 
-// Section 6: For Agents & Brokers
+// Section 6: For Agents & Brokers - Built For Your Reality
 function ForAgentsBrokers() {
   const realtorFeatures = [
-    "Track splits, caps, referral fees",
-    "Handle long pre-sale timelines",
-    "See upcoming completions clearly",
-    "Never forget bonuses or holdbacks",
+    "Splits, caps, referral fees — all of it",
+    "Pre-sales that don't complete for 3 years? Tracked.",
+    "See every closing before it happens",
+    "Never forget a holdback again",
   ];
 
   const brokerFeatures = [
-    "Separate upfront vs backend",
-    "Track trail commissions",
-    "Get alerted to clawbacks",
-    "Manage multiple lenders easily",
+    "Upfront vs backend — separated",
+    "Trail commissions that actually show up",
+    "Clawback alerts before they hurt",
+    "Multiple lenders, one view",
   ];
 
   return (
@@ -1192,8 +1191,9 @@ function ForAgentsBrokers() {
           viewport={{ once: true }}
         >
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-3">
-            Built specifically for agents & brokers
+            Built for how you actually work.
           </h2>
+          <p className="text-slate-600 text-lg">Not some generic finance app. This is for commission income.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
@@ -1211,7 +1211,7 @@ function ForAgentsBrokers() {
               >
                 <Home className="h-6 w-6 text-white" />
               </motion.div>
-              <h3 className="text-xl font-bold text-slate-800">For Realtors</h3>
+              <h3 className="text-xl font-bold text-slate-800">Realtors</h3>
             </div>
             <ul className="space-y-3">
               {realtorFeatures.map((feature, i) => (
@@ -1244,7 +1244,7 @@ function ForAgentsBrokers() {
               >
                 <Briefcase className="h-6 w-6 text-white" />
               </motion.div>
-              <h3 className="text-xl font-bold text-slate-800">For Mortgage Brokers</h3>
+              <h3 className="text-xl font-bold text-slate-800">Mortgage Brokers</h3>
             </div>
             <ul className="space-y-3">
               {brokerFeatures.map((feature, i) => (
@@ -1268,13 +1268,13 @@ function ForAgentsBrokers() {
   );
 }
 
-// Section 7: Tax Section with Visual
+// Section 7: Tax Section - No More April Panic
 function TaxSection() {
   const taxFeatures = [
-    "Live tax reserve tracking",
-    "GST/HST visibility",
-    "Year-round readiness for your accountant",
-    "Clear net-income view",
+    "Your tax bill, calculated in real-time",
+    "GST collected? Visible. Always.",
+    "Your accountant will love you",
+    "See what you actually keep",
   ];
 
   return (
@@ -1288,10 +1288,10 @@ function TaxSection() {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs sm:text-sm font-medium mb-4">
               <Calculator className="h-4 w-4" />
-              Tax Ready
+              No More Panic
             </div>
             <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-4 sm:mb-6">
-              No more tax surprises.
+              April used to suck. <br />Not anymore.
             </h2>
             
             <div className="space-y-4 mb-8">
@@ -1317,7 +1317,7 @@ function TaxSection() {
               viewport={{ once: true }}
               transition={{ delay: 0.5 }}
             >
-              Stop guessing what's yours. <span className="font-bold">Know it.</span>
+              Know exactly what CRA gets. And what you keep.
             </motion.p>
           </motion.div>
 
@@ -1328,13 +1328,13 @@ function TaxSection() {
   );
 }
 
-// Section 8: Emotional Payoff - Enhanced with transformation narrative
+// Section 8: Emotional Payoff - What Changes
 function EmotionalPayoff() {
   const benefits = [
-    { icon: Users, text: "Hire with clarity" },
+    { icon: Users, text: "Hire without panic" },
     { icon: TrendingUp, text: "Invest with confidence" },
     { icon: Calendar, text: "Plan your life, not just your deals" },
-    { icon: Coffee, text: "Sleep better at night" },
+    { icon: Coffee, text: "Actually sleep at night" },
   ];
 
   return (
@@ -1375,10 +1375,10 @@ function EmotionalPayoff() {
             viewport={{ once: true }}
           >
             <Heart className="h-4 w-4" />
-            The Real Payoff
+            What Actually Changes
           </motion.div>
           <h2 className="text-2xl sm:text-4xl font-bold mb-8 sm:mb-12">
-            Confidence changes <span className="underline decoration-white/50 underline-offset-4">everything.</span>
+            When you know your numbers, <span className="underline decoration-white/50 underline-offset-4">everything changes.</span>
           </h2>
         </motion.div>
 
@@ -1408,7 +1408,7 @@ function EmotionalPayoff() {
   );
 }
 
-// Section 9: Authority/Built By
+// Section 9: Authority/Social Proof
 function AuthoritySection() {
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-white">
@@ -1420,23 +1420,23 @@ function AuthoritySection() {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs sm:text-sm font-medium mb-4">
             <Shield className="h-4 w-4" />
-            Built for you
+            We Get It
           </div>
           <h2 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-4 sm:mb-6">
-            Built by people who understand commission income.
+            Built by people who've been in your shoes.
           </h2>
           <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto mb-10">
-            Designed with real estate agents and mortgage brokers who close deals every month and need real-time financial clarity — not generic accounting software.
+            We built this because we were tired of the 11pm spreadsheet math. Tired of tax surprises. Tired of not knowing what we actually made.
           </p>
         </motion.div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
           {[
-            { value: 847, label: "Active Users", suffix: "+" },
-            { value: 12.4, label: "Million Tracked", prefix: "$", suffix: "M", decimals: 1 },
-            { value: 98, label: "Satisfaction", suffix: "%" },
-            { value: 4.9, label: "App Rating", suffix: "/5", decimals: 1 },
+            { value: 847, label: "Realtors", suffix: "+" },
+            { value: 12.4, label: "Commissions Tracked", prefix: "$", suffix: "M", decimals: 1 },
+            { value: 98, label: "Would Recommend", suffix: "%" },
+            { value: 4.9, label: "Rating", suffix: "/5", decimals: 1 },
           ].map((stat, i) => (
             <motion.div 
               key={stat.label}
@@ -1464,7 +1464,7 @@ function AuthoritySection() {
   );
 }
 
-// Section 10: Final CTA - Enhanced with urgency
+// Section 10: Final CTA - Stop Guessing
 function FinalCTA() {
   return (
     <section className="relative py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-slate-900 text-white overflow-hidden">
@@ -1489,28 +1489,28 @@ function FinalCTA() {
           viewport={{ once: true }}
         >
           <h2 className="text-3xl sm:text-5xl font-bold mb-3 sm:mb-4">
-            You track your deals.
+            Stop guessing.
           </h2>
           <h2 className="text-3xl sm:text-5xl font-bold mb-8 sm:mb-10 bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-            Now track your money.
+            Start knowing.
           </h2>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Link to="/auth">
               <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base sm:text-lg px-8 sm:px-10 h-14 sm:h-16 gap-2 shadow-xl shadow-emerald-500/30 group">
-                Start Tracking My Income
+                See My Real Numbers
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
             <Link to="/auth">
               <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 h-14 sm:h-16 border-slate-600 text-white hover:bg-slate-800">
-                Book a Demo
+                Talk to Us First
               </Button>
             </Link>
           </div>
 
           <p className="text-slate-400 text-sm sm:text-base">
-            Free to start • No credit card required • Cancel anytime
+            Free to start • No credit card • 5 minutes to set up
           </p>
         </motion.div>
       </div>
@@ -1546,7 +1546,7 @@ export default function LandingPage() {
               </Link>
               <Link to="/auth">
                 <Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/25">
-                  Get Control of Your Income
+                  See My Numbers
                 </Button>
               </Link>
             </div>
@@ -1581,7 +1581,7 @@ export default function LandingPage() {
                 </Link>
                 <Link to="/auth" className="block">
                   <Button className="w-full h-12 text-base bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white">
-                    Get Control of Your Income
+                    See My Numbers
                   </Button>
                 </Link>
               </div>
@@ -1609,31 +1609,31 @@ export default function LandingPage() {
                 transition={{ delay: 0.2 }}
               >
                 <Sparkles className="h-4 w-4" />
-                Built for Realtors & Mortgage Brokers
+                For Realtors & Mortgage Brokers
               </motion.div>
               
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-800 tracking-tight leading-tight mb-6">
-                Know exactly what you're earning — 
+                Finally know what you're 
                 <span className="block bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  before, during, and after every deal.
+                  actually making.
                 </span>
               </h1>
               
               <p className="text-lg sm:text-xl text-slate-600 mb-8 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Track commissions, splits, taxes, expenses, and future income in one real-time dashboard built for realtors and mortgage brokers.
+                See your real take-home. After splits. After cap. After taxes. In 30 seconds. No more spreadsheets. No more guessing. No more April surprises.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link to="/auth" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-base px-8 h-14 gap-2 shadow-xl shadow-emerald-500/30 group">
-                    Get Control of Your Income
+                    See My Real Numbers
                     <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <a href="#how-it-works" className="w-full sm:w-auto">
                   <Button variant="outline" size="lg" className="w-full sm:w-auto text-base px-8 h-14 border-slate-300 text-slate-700 gap-2">
                     <Play className="h-4 w-4" />
-                    See How It Works
+                    How It Works
                   </Button>
                 </a>
               </div>
@@ -1641,15 +1641,15 @@ export default function LandingPage() {
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-sm text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  Free plan available
+                  Free forever plan
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  BC/AB tax built-in
+                  BC & AB tax built-in
                 </span>
                 <span className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                  Setup in 5 minutes
+                  5 min setup
                 </span>
               </div>
             </motion.div>
@@ -1660,20 +1660,20 @@ export default function LandingPage() {
       </section>
 
       {/* Story transition: Hero to Problem */}
-      <StoryTransition label="But here's the reality" />
+      <StoryTransition label="But here's the thing" />
 
       {/* Section 2: The Problem */}
       <ProblemSection />
 
       {/* Story transition: Problem to Cost */}
-      <StoryTransition label="And it's costing you" />
+      <StoryTransition label="And it costs you" />
 
       {/* Section 3: Cost of Doing Nothing */}
       <CostSection />
 
       {/* Story transition: Cost to Solution */}
       <div className="bg-white">
-        <StoryTransition label="There's a better way" />
+        <StoryTransition label="There's a fix" />
       </div>
 
       {/* Section 4: The Solution */}
@@ -1721,10 +1721,10 @@ export default function LandingPage() {
             <div className="flex items-center gap-6 text-sm text-slate-400">
               <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <a href="mailto:support@commissioniq.ca" className="hover:text-white transition-colors">Contact</a>
+              <a href="mailto:hello@commissioniq.ca" className="hover:text-white transition-colors">Contact</a>
             </div>
             <p className="text-slate-500 text-sm">
-              © {new Date().getFullYear()} CommissionIQ. All rights reserved.
+              © 2025 CommissionIQ. Made for realtors, by people who get it.
             </p>
           </div>
         </div>
