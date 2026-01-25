@@ -73,7 +73,8 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
-    // Get the price for Dealzflow Pro
+    // Get the price for Pro subscription
+    // First try lookup key, then search by product name patterns
     const prices = await stripe.prices.list({
       lookup_keys: ['dealzflow_pro'],
       limit: 1,
@@ -82,28 +83,41 @@ serve(async (req) => {
     let priceId: string;
     if (prices.data.length > 0) {
       priceId = prices.data[0].id;
+      console.log("Found price via lookup key:", priceId);
     } else {
-      // Search by product name as fallback
+      // Search by product name (multiple patterns)
       const products = await stripe.products.list({
-        limit: 20,
+        limit: 50,
+        active: true,
       });
-      const proProduct = products.data.find((p: { name: string }) => p.name === 'Dealzflow Pro');
+      
+      // Search for various product name patterns
+      const proProduct = products.data.find((p: { name: string }) => 
+        p.name === 'Dealzflow Pro' || 
+        p.name === 'Commission Tracker Pro' ||
+        p.name.toLowerCase().includes('pro') && p.name.toLowerCase().includes('deal')
+      );
       
       if (!proProduct) {
-        throw new Error("Pro subscription product not found");
+        console.error("Available products:", products.data.map((p: { name: string }) => p.name));
+        throw new Error("Pro subscription product not found. Please contact support.");
       }
+      
+      console.log("Found product:", proProduct.name, proProduct.id);
       
       const productPrices = await stripe.prices.list({
         product: proProduct.id,
         active: true,
+        type: 'recurring',
         limit: 1,
       });
       
       if (productPrices.data.length === 0) {
-        throw new Error("Pro subscription price not found");
+        throw new Error("Pro subscription price not found. Please contact support.");
       }
       
       priceId = productPrices.data[0].id;
+      console.log("Using price:", priceId);
     }
 
     // Parse the request body for return URL
