@@ -363,6 +363,9 @@ export type Database = {
       settings: {
         Row: {
           apply_tax_to_forecasts: boolean
+          brokerage_cap_amount: number | null
+          brokerage_cap_enabled: boolean | null
+          brokerage_cap_start_date: string | null
           brokerage_split_percent: number | null
           country: string | null
           created_at: string
@@ -387,6 +390,9 @@ export type Database = {
         }
         Insert: {
           apply_tax_to_forecasts?: boolean
+          brokerage_cap_amount?: number | null
+          brokerage_cap_enabled?: boolean | null
+          brokerage_cap_start_date?: string | null
           brokerage_split_percent?: number | null
           country?: string | null
           created_at?: string
@@ -411,6 +417,9 @@ export type Database = {
         }
         Update: {
           apply_tax_to_forecasts?: boolean
+          brokerage_cap_amount?: number | null
+          brokerage_cap_enabled?: boolean | null
+          brokerage_cap_start_date?: string | null
           brokerage_split_percent?: number | null
           country?: string | null
           created_at?: string
