@@ -71,6 +71,7 @@ export interface Settings {
   apply_tax_to_forecasts: boolean;
   presale_template: string[];
   resale_template: string[];
+  onboarding_completed?: boolean;
   created_at: string;
   updated_at: string;
 }
