@@ -77,7 +77,7 @@ export function UpgradePrompt({ open, onOpenChange, feature, reason }: UpgradePr
             <div>
               <DialogTitle className="text-xl">Upgrade to Pro</DialogTitle>
               <DialogDescription className="text-sm">
-                Unlock the full potential of CommissionIQ
+                Unlock the full potential of Dealzflow
               </DialogDescription>
             </div>
           </div>

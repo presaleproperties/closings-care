@@ -78,7 +78,7 @@ export function Sidebar() {
         <Link to="/dashboard" className="flex items-center gap-3 group">
           <img 
             src="/favicon.png" 
-            alt="CommissionIQ" 
+            alt="Dealzflow" 
             className="w-10 h-10 rounded-xl transition-all duration-300 group-hover:scale-105 flex-shrink-0 shadow-lg shadow-emerald-500/25"
           />
           <div className={cn(
@@ -86,7 +86,7 @@ export function Sidebar() {
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
             <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-[-0.01em] whitespace-nowrap">
-              CommissionIQ
+              Dealzflow
             </h1>
           </div>
         </Link>

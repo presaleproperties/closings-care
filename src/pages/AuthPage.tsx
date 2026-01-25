@@ -83,7 +83,7 @@ export default function AuthPage() {
   const getSubtitle = () => {
     switch (mode) {
       case 'login': return 'Enter your credentials to access your dashboard';
-      case 'signup': return 'Get started with CommissionIQ today';
+      case 'signup': return 'Get started with Dealzflow today';
       case 'forgot': return "Enter your email and we'll send you a reset link";
       case 'reset': return 'Choose a strong password for your account';
     }
@@ -96,11 +96,11 @@ export default function AuthPage() {
         <div className="flex items-center gap-3">
           <img 
             src="/favicon.png" 
-            alt="CommissionIQ" 
+            alt="Dealzflow" 
             className="w-11 h-11 rounded-xl shadow-lg shadow-black/10"
           />
           <span className="text-xl font-semibold text-white">
-            CommissionIQ
+            Dealzflow
           </span>
         </div>
 
@@ -126,10 +126,10 @@ export default function AuthPage() {
           <div className="lg:hidden flex flex-col items-center gap-3 mb-10">
             <img 
               src="/favicon.png" 
-              alt="CommissionIQ" 
+              alt="Dealzflow" 
               className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-500/20"
             />
-            <span className="text-xl font-semibold tracking-tight">CommissionIQ</span>
+            <span className="text-xl font-semibold tracking-tight">Dealzflow</span>
           </div>
 
           {/* Back button for forgot/reset modes */}
