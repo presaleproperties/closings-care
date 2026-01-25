@@ -85,9 +85,11 @@ export default {
         sm: "0.375rem",
       },
       boxShadow: {
-        'ios': '0 0 0 1px hsl(var(--border) / 0.3), 0 1px 2px 0 hsl(0 0% 0% / 0.03), 0 2px 4px -1px hsl(0 0% 0% / 0.04)',
-        'ios-lg': '0 0 0 1px hsl(var(--border) / 0.3), 0 4px 8px -2px hsl(0 0% 0% / 0.08), 0 8px 16px -4px hsl(0 0% 0% / 0.08)',
-        'ios-xl': '0 0 0 1px hsl(var(--border) / 0.2), 0 8px 16px -4px hsl(0 0% 0% / 0.1), 0 16px 32px -8px hsl(0 0% 0% / 0.12)',
+        'ios': '0 0 0 1px hsl(var(--border) / 0.25), 0 2px 4px 0 hsl(220 25% 10% / 0.04), 0 4px 8px -2px hsl(220 25% 10% / 0.06), 0 8px 16px -4px hsl(220 25% 10% / 0.06)',
+        'ios-lg': '0 0 0 1px hsl(var(--border) / 0.2), 0 4px 8px -2px hsl(220 25% 10% / 0.08), 0 12px 24px -6px hsl(220 25% 10% / 0.12), 0 20px 40px -8px hsl(220 25% 10% / 0.1)',
+        'ios-xl': '0 0 0 1px hsl(var(--border) / 0.15), 0 8px 16px -4px hsl(220 25% 10% / 0.1), 0 20px 40px -10px hsl(220 25% 10% / 0.15), 0 32px 64px -12px hsl(220 25% 10% / 0.12)',
+        'premium': 'inset 0 1px 0 0 rgba(255,255,255,0.15), 0 4px 12px -2px hsl(158 64% 32% / 0.3), 0 12px 28px -6px hsl(158 64% 32% / 0.2)',
+        'premium-lg': 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 8px 20px -4px hsl(158 64% 32% / 0.35), 0 20px 40px -8px hsl(158 64% 32% / 0.25)',
       },
       keyframes: {
         "accordion-down": {

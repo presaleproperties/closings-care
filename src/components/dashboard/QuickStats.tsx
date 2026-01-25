@@ -118,7 +118,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="col-span-2 rounded-[20px] bg-gradient-to-br from-primary to-primary/80 p-5 shadow-lg cursor-pointer"
+            className="col-span-2 rounded-[20px] p-5 cursor-pointer"
+            style={{
+              background: 'linear-gradient(145deg, hsl(158 64% 36%) 0%, hsl(158 64% 28%) 50%, hsl(175 60% 30%) 100%)',
+              boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(158 64% 32% / 0.35), 0 12px 28px -6px hsl(158 64% 32% / 0.25)'
+            }}
           >
             <div className="flex items-center gap-2 mb-1">
               <motion.div 
@@ -147,7 +151,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-[20px] bg-gradient-to-br from-amber-500 to-orange-500 p-4 shadow-lg cursor-pointer"
+            className="rounded-[20px] p-4 cursor-pointer"
+            style={{
+              background: 'linear-gradient(145deg, hsl(38 75% 55%) 0%, hsl(32 85% 48%) 50%, hsl(25 80% 42%) 100%)',
+              boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(38 75% 50% / 0.35), 0 12px 28px -6px hsl(38 75% 50% / 0.25)'
+            }}
           >
             <div className="flex items-center gap-1.5 mb-1">
               <Calendar className="h-3.5 w-3.5 text-white/80" />
@@ -170,7 +178,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios cursor-pointer"
+            className="rounded-[20px] bg-card/98 backdrop-blur-2xl border border-border/40 p-4 shadow-ios cursor-pointer"
           >
             <div className="flex items-center gap-1.5 mb-1">
               <Receipt className="h-3.5 w-3.5 text-destructive" />
@@ -193,7 +201,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="col-span-2 rounded-[20px] bg-card/95 backdrop-blur-xl border border-border/50 p-4 shadow-ios cursor-pointer"
+            className="col-span-2 rounded-[20px] bg-card/98 backdrop-blur-2xl border border-border/40 p-4 shadow-ios cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -226,11 +234,19 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
           <div
             key={stat.label}
             className={cn(
-              "relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]",
+              "relative overflow-hidden rounded-2xl p-5 transition-all duration-400 hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]",
               stat.gradient 
-                ? `bg-gradient-to-br ${stat.gradient} ${stat.textColor} shadow-xl`
-                : "bg-card/95 backdrop-blur-xl border border-border/50 shadow-ios hover:shadow-ios-lg"
+                ? `${stat.textColor}`
+                : "bg-card/98 backdrop-blur-2xl border border-border/40 shadow-ios hover:shadow-ios-lg hover:border-primary/20"
             )}
+            style={stat.gradient ? {
+              background: stat.label.includes('Projected Income') 
+                ? 'linear-gradient(145deg, hsl(158 64% 36%) 0%, hsl(158 64% 28%) 50%, hsl(175 60% 30%) 100%)'
+                : 'linear-gradient(145deg, hsl(38 75% 55%) 0%, hsl(32 85% 48%) 50%, hsl(25 80% 42%) 100%)',
+              boxShadow: stat.label.includes('Projected Income')
+                ? 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(158 64% 32% / 0.35), 0 12px 28px -6px hsl(158 64% 32% / 0.25)'
+                : 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(38 75% 50% / 0.35), 0 12px 28px -6px hsl(38 75% 50% / 0.25)'
+            } : undefined}
           >
             {stat.gradient && (
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
