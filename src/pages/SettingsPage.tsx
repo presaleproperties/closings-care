@@ -754,6 +754,16 @@ function SubscriptionSection() {
         throw new Error(response.error.message);
       }
 
+      // Handle case where user was manually upgraded (no Stripe customer)
+      if (response.data?.noStripeCustomer || response.data?.noActiveSubscription) {
+        const { toast } = await import('@/hooks/use-toast');
+        toast({
+          title: 'Admin-Managed Subscription',
+          description: response.data.message || 'Your subscription is managed by an administrator.',
+        });
+        return;
+      }
+
       if (response.data?.url) {
         window.location.href = response.data.url;
       }
