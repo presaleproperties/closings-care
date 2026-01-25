@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Info } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,11 @@ import {
 } from '@/components/ui/select';
 import { useCreateDeal } from '@/hooks/useDeals';
 import { useSettings } from '@/hooks/useSettings';
-import { useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
+import { usePayouts, useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt, UsageLimitIndicator } from '@/components/UpgradePrompt';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
+import { calculateNetCommission, formatCommissionBreakdown } from '@/lib/commissionCalculations';
 
 // Format number with commas
 const formatCurrency = (value: number | undefined | null): string => {
@@ -40,6 +41,7 @@ export default function NewDealPage() {
   const navigate = useNavigate();
   const createDeal = useCreateDeal();
   const { data: settings } = useSettings();
+  const { data: paidPayouts = [] } = usePayouts();
   const createPayoutsFromTemplate = useCreatePayoutsFromTemplate();
   const { canAddDeal, usage, isFree } = useSubscription();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -55,6 +57,23 @@ export default function NewDealPage() {
 
   const isPresale = formData.property_type === 'PRESALE';
   const isResale = formData.property_type === 'RESALE';
+
+  // Auto-calculate net commission when gross changes
+  const netCommissionResult = useMemo(() => {
+    return calculateNetCommission(
+      formData.gross_commission_est || 0,
+      settings as any,
+      paidPayouts,
+      isTeamDeal ? formData.team_member_portion : undefined
+    );
+  }, [formData.gross_commission_est, formData.team_member_portion, settings, paidPayouts, isTeamDeal]);
+
+  // Update net commission in form when calculation changes
+  useEffect(() => {
+    if (formData.gross_commission_est && formData.gross_commission_est > 0) {
+      setFormData(prev => ({ ...prev, net_commission_est: netCommissionResult.netAmount }));
+    }
+  }, [netCommissionResult.netAmount, formData.gross_commission_est]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -376,7 +395,45 @@ export default function NewDealPage() {
                       />
                     </div>
                   </div>
+
+                  {/* Net Commission - auto-calculated */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">
+                      Net Commission <span className="text-muted-foreground">(auto)</span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        className="pl-6 h-9 bg-muted/50"
+                        value={formatCurrency(formData.net_commission_est)}
+                        readOnly
+                        placeholder="Auto-calculated"
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Commission breakdown */}
+                {formData.gross_commission_est && formData.gross_commission_est > 0 && (
+                  <div className="flex items-start gap-2 p-3 bg-muted/40 rounded-lg">
+                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>
+                        <span className="font-medium text-foreground">Gross:</span> ${formatCurrency(formData.gross_commission_est)}
+                        {netCommissionResult.brokeragePortion > 0 && (
+                          <> → <span className="text-destructive">-${formatCurrency(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
+                        )}
+                        {netCommissionResult.teamPortion > 0 && (
+                          <> → <span className="text-destructive">-${formatCurrency(netCommissionResult.teamPortion)}</span> team</>
+                        )}
+                        {' '}= <span className="font-semibold text-success">${formatCurrency(netCommissionResult.netAmount)}</span> net
+                      </p>
+                      {netCommissionResult.capReached && (
+                        <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Payout preview */}
                 <p className="text-xs text-muted-foreground bg-muted/30 rounded px-3 py-2">
