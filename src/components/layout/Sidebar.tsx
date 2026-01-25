@@ -75,20 +75,18 @@ export function Sidebar() {
 
       {/* Logo */}
       <div className="relative p-4 border-b border-sidebar-border/30">
-        <Link to="/dashboard" className="flex items-center gap-3 group">
+        <Link to="/dashboard" className={cn(
+          "flex items-center group",
+          isCollapsed ? "justify-center" : "justify-start"
+        )}>
           <img 
             src="/favicon.png" 
             alt="Dealzflow" 
-            className="w-10 h-10 rounded-xl transition-all duration-300 group-hover:scale-105 flex-shrink-0 shadow-lg shadow-emerald-500/25"
+            className={cn(
+              "rounded-xl transition-all duration-300 group-hover:scale-105 flex-shrink-0 shadow-lg shadow-emerald-500/25",
+              isCollapsed ? "w-10 h-10" : "w-12 h-12"
+            )}
           />
-          <div className={cn(
-            "overflow-hidden transition-all duration-300",
-            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-          )}>
-            <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-[-0.01em] whitespace-nowrap">
-              Dealzflow
-            </h1>
-          </div>
         </Link>
       </div>
 
