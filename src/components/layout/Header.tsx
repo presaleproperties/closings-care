@@ -54,12 +54,13 @@ export function Header({
           
           {/* Mobile logo - only show on mobile when not showing back button */}
           {!showBackButton && (
-            <Link to="/dashboard" className="lg:hidden flex items-center -ml-1 active:scale-95 transition-transform">
+            <Link to="/dashboard" className="lg:hidden flex items-center gap-2 -ml-1 active:scale-95 transition-transform">
               <img 
                 src="/favicon.png" 
                 alt="Dealzflow" 
                 className="w-8 h-8 rounded-lg shadow-md shadow-emerald-500/20"
               />
+              <span className="text-[17px] font-bold tracking-tight text-foreground">Dealzflow</span>
             </Link>
           )}
 
