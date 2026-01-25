@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -210,10 +211,37 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Sign out */}
-      <div className="relative p-3 border-t border-sidebar-border/30">
+      {/* Install App & Sign out */}
+      <div className="relative p-3 border-t border-sidebar-border/30 space-y-1">
         {/* Top edge highlight */}
         <div className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+        
+        {/* Install App */}
+        {isCollapsed ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Link
+                to="/install"
+                className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-medium text-emerald-500/70 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-200"
+              >
+                <Download className="w-[18px] h-[18px]" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="font-medium">
+              Install App
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Link
+            to="/install"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-emerald-500/70 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-200"
+          >
+            <Download className="w-[18px] h-[18px]" />
+            <span>Install App</span>
+          </Link>
+        )}
+
+        {/* Sign out */}
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
