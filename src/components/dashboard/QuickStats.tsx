@@ -1,11 +1,11 @@
 import { useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Receipt, Target, Calendar } from 'lucide-react';
-import { formatCurrency } from '@/lib/format';
 import { Deal, Payout } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
+import { AnimatedCurrency } from '@/components/ui/animated-number';
 
 interface QuickStatsProps {
   deals: Deal[];
@@ -72,7 +72,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
     {
       icon: Wallet,
       label: 'Projected Income',
-      value: formatCurrency(stats.totalProjected),
+      numericValue: stats.totalProjected,
       subtitle: `${stats.activeDeals} active deals`,
       gradient: 'from-primary to-primary/70',
       textColor: 'text-primary-foreground',
@@ -80,7 +80,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
     {
       icon: Calendar,
       label: `${thisYear} Projected`,
-      value: formatCurrency(stats.thisYearProjected),
+      numericValue: stats.thisYearProjected,
       subtitle: 'Expected this year',
       gradient: 'from-amber-500 to-orange-500',
       textColor: 'text-white',
@@ -88,7 +88,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
     {
       icon: Receipt,
       label: 'Monthly Expenses',
-      value: formatCurrency(stats.monthlyExpenses),
+      numericValue: stats.monthlyExpenses,
       subtitle: 'Recurring costs',
       accent: true,
       accentColor: 'text-destructive',
@@ -96,7 +96,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
     {
       icon: Target,
       label: 'Avg Per Deal',
-      value: formatCurrency(stats.avgDealValue),
+      numericValue: stats.avgDealValue,
       subtitle: 'Gross commission',
       accent: true,
       accentColor: 'text-accent',
@@ -132,14 +132,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                 Projected Income
               </span>
             </div>
-            <motion.p 
-              className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ ...springConfigs.bouncy, delay: 0.2 }}
-            >
-              {formatCurrency(stats.totalProjected)}
-            </motion.p>
+            <AnimatedCurrency 
+              value={stats.totalProjected}
+              className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight block"
+              duration={1.5}
+            />
             <p className="text-[13px] text-primary-foreground/70 mt-1">
               {stats.activeDeals} active deal{stats.activeDeals !== 1 ? 's' : ''}
             </p>
@@ -158,9 +155,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                 {thisYear}
               </span>
             </div>
-            <p className="text-[22px] font-bold text-white tracking-tight leading-tight">
-              {formatCurrency(stats.thisYearProjected)}
-            </p>
+            <AnimatedCurrency 
+              value={stats.thisYearProjected}
+              className="text-[22px] font-bold text-white tracking-tight leading-tight block"
+              duration={1.3}
+            />
             <p className="text-[11px] text-white/70 mt-0.5">
               Expected
             </p>
@@ -179,9 +178,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                 Expenses
               </span>
             </div>
-            <p className="text-[22px] font-bold text-destructive tracking-tight leading-tight">
-              {formatCurrency(stats.monthlyExpenses)}
-            </p>
+            <AnimatedCurrency 
+              value={stats.monthlyExpenses}
+              className="text-[22px] font-bold text-destructive tracking-tight leading-tight block"
+              duration={1.1}
+            />
             <p className="text-[11px] text-muted-foreground mt-0.5">
               Monthly
             </p>
@@ -202,9 +203,11 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                     Avg Per Deal
                   </span>
                 </div>
-                <p className="text-[22px] font-bold text-accent tracking-tight">
-                  {formatCurrency(stats.avgDealValue)}
-                </p>
+                <AnimatedCurrency 
+                  value={stats.avgDealValue}
+                  className="text-[22px] font-bold text-accent tracking-tight block"
+                  duration={1.4}
+                />
               </div>
               <div className="text-right">
                 <p className="text-[11px] text-muted-foreground">Gross commission</p>
@@ -243,12 +246,14 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
                   stat.gradient ? "opacity-80" : "text-muted-foreground"
                 )}>{stat.label}</span>
               </div>
-              <p className={cn(
-                "text-2xl lg:text-3xl font-bold tracking-tight",
-                stat.accent && stat.accentColor
-              )}>
-                {stat.value}
-              </p>
+              <AnimatedCurrency 
+                value={stat.numericValue}
+                className={cn(
+                  "text-2xl lg:text-3xl font-bold tracking-tight block",
+                  stat.accent && stat.accentColor
+                )}
+                duration={1.2}
+              />
               <p className={cn(
                 "text-xs mt-1",
                 stat.gradient ? "opacity-70" : "text-muted-foreground"
