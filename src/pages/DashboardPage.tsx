@@ -331,7 +331,15 @@ export default function DashboardPage() {
               <div className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                   <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
-                  <OtherIncomeManager />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <OtherIncomeManager />
+                    <FinancialHealth 
+                      deals={deals}
+                      payouts={payouts}
+                      monthlyExpenses={expenseTotals.monthly}
+                      annualExpenses={expenseTotals.annual}
+                    />
+                  </div>
                 </div>
                 <div className="space-y-6">
                   <BrokerageCapCard />
@@ -342,12 +350,6 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
-              <FinancialHealth 
-                deals={deals}
-                payouts={payouts}
-                monthlyExpenses={expenseTotals.monthly}
-                annualExpenses={expenseTotals.annual}
-              />
             </TabsContent>
 
             <TabsContent value="taxes" className="space-y-6">
