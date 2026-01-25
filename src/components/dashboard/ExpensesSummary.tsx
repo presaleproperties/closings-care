@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Receipt, RefreshCw, Calendar, Briefcase, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,10 @@ interface Expense {
 interface ExpensesSummaryProps {
   expenses: Expense[];
 }
+
+const springConfigs = {
+  gentle: { type: "spring" as const, stiffness: 120, damping: 20 },
+};
 
 // Helper to determine if category is personal or business
 const isPersonalCategory = (category: string): boolean => {
@@ -82,119 +87,128 @@ export function ExpensesSummary({ expenses }: ExpensesSummaryProps) {
   const totalMonthlyBusiness = summary.businessRecurring;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-accent" />
-            Expense Breakdown
-          </h3>
-          <p className="text-sm text-muted-foreground">Personal vs Business</p>
-        </div>
-        <Link to="/expenses">
-          <Button variant="ghost" size="sm" className="text-accent">
-            Manage <ArrowRight className="w-3 h-3 ml-1" />
-          </Button>
-        </Link>
-      </div>
-
-      {/* Personal vs Business Split */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Home className="h-4 w-4 text-blue-500" />
-            <span className="text-xs font-medium text-blue-500">Personal</span>
-          </div>
-          <p className="text-xl font-bold">{formatCurrency(totalMonthlyPersonal)}</p>
-          <p className="text-xs text-muted-foreground">/month recurring</p>
-          {summary.personalOneTime > 0 && (
-            <p className="text-xs text-blue-400 mt-1">+{formatCurrency(summary.personalOneTime)} one-time</p>
-          )}
-        </div>
-        <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-          <div className="flex items-center gap-2 mb-2">
-            <Briefcase className="h-4 w-4 text-purple-500" />
-            <span className="text-xs font-medium text-purple-500">Business</span>
-          </div>
-          <p className="text-xl font-bold">{formatCurrency(totalMonthlyBusiness)}</p>
-          <p className="text-xs text-muted-foreground">/month recurring</p>
-          {summary.businessOneTime > 0 && (
-            <p className="text-xs text-purple-400 mt-1">+{formatCurrency(summary.businessOneTime)} one-time</p>
-          )}
-        </div>
-      </div>
-
-      {/* Recurring vs One-Time */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-1">
-            <RefreshCw className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Total Recurring</span>
-          </div>
-          <p className="text-lg font-bold">{formatCurrency(summary.totalRecurring)}</p>
-          <p className="text-xs text-muted-foreground">/month</p>
-        </div>
-        <div className="p-3 rounded-lg bg-muted/50">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar className="h-3 w-3 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">One-Time</span>
-          </div>
-          <p className="text-lg font-bold">{formatCurrency(summary.totalOneTime)}</p>
-          <p className="text-xs text-muted-foreground">this period</p>
-        </div>
-      </div>
-
-      {/* Visual Split Bar */}
-      {(summary.totalRecurring > 0 || summary.totalOneTime > 0) && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Expense Split</span>
-            <span>Personal vs Business</span>
-          </div>
-          <div className="h-2 rounded-full bg-muted overflow-hidden flex">
-            {totalMonthlyPersonal > 0 && (
-              <div 
-                className="h-full bg-blue-500"
-                style={{ width: `${(totalMonthlyPersonal / (summary.totalRecurring || 1)) * 100}%` }}
-              />
-            )}
-            {totalMonthlyBusiness > 0 && (
-              <div 
-                className="h-full bg-purple-500"
-                style={{ width: `${(totalMonthlyBusiness / (summary.totalRecurring || 1)) * 100}%` }}
-              />
-            )}
-            {summary.otherRecurring > 0 && (
-              <div 
-                className="h-full bg-muted-foreground/30"
-                style={{ width: `${(summary.otherRecurring / (summary.totalRecurring || 1)) * 100}%` }}
-              />
-            )}
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-muted-foreground">Personal</span>
+    <motion.div 
+      className="landing-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springConfigs.gentle}
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="icon-gradient-accent icon-gradient-sm">
+              <Receipt className="h-5 w-5 text-white" />
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-purple-500" />
-              <span className="text-muted-foreground">Business</span>
+            <div>
+              <h3 className="font-semibold text-lg text-foreground">Expense Breakdown</h3>
+              <p className="text-sm text-muted-foreground">Personal vs Business</p>
             </div>
           </div>
-        </div>
-      )}
-
-      {expenses.length === 0 && (
-        <div className="text-center py-6 text-sm text-muted-foreground">
-          <Receipt className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p>No expenses tracked yet</p>
           <Link to="/expenses">
-            <Button variant="link" size="sm" className="text-accent mt-2">
-              Add your first expense
+            <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+              Manage <ArrowRight className="w-3 h-3 ml-1" />
             </Button>
           </Link>
         </div>
-      )}
-    </div>
+
+        {/* Personal vs Business Split */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Home className="h-4 w-4 text-blue-500" />
+              <span className="text-xs font-medium text-blue-500">Personal</span>
+            </div>
+            <p className="text-xl font-bold text-foreground">{formatCurrency(totalMonthlyPersonal)}</p>
+            <p className="text-xs text-muted-foreground">/month recurring</p>
+            {summary.personalOneTime > 0 && (
+              <p className="text-xs text-blue-400 mt-1">+{formatCurrency(summary.personalOneTime)} one-time</p>
+            )}
+          </div>
+          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Briefcase className="h-4 w-4 text-purple-500" />
+              <span className="text-xs font-medium text-purple-500">Business</span>
+            </div>
+            <p className="text-xl font-bold text-foreground">{formatCurrency(totalMonthlyBusiness)}</p>
+            <p className="text-xs text-muted-foreground">/month recurring</p>
+            {summary.businessOneTime > 0 && (
+              <p className="text-xs text-purple-400 mt-1">+{formatCurrency(summary.businessOneTime)} one-time</p>
+            )}
+          </div>
+        </div>
+
+        {/* Recurring vs One-Time */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50">
+            <div className="flex items-center gap-2 mb-1">
+              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Total Recurring</span>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(summary.totalRecurring)}</p>
+            <p className="text-xs text-muted-foreground">/month</p>
+          </div>
+          <div className="p-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">One-Time</span>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(summary.totalOneTime)}</p>
+            <p className="text-xs text-muted-foreground">this period</p>
+          </div>
+        </div>
+
+        {/* Visual Split Bar */}
+        {(summary.totalRecurring > 0 || summary.totalOneTime > 0) && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Expense Split</span>
+              <span>Personal vs Business</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+              {totalMonthlyPersonal > 0 && (
+                <div 
+                  className="h-full bg-blue-500"
+                  style={{ width: `${(totalMonthlyPersonal / (summary.totalRecurring || 1)) * 100}%` }}
+                />
+              )}
+              {totalMonthlyBusiness > 0 && (
+                <div 
+                  className="h-full bg-purple-500"
+                  style={{ width: `${(totalMonthlyBusiness / (summary.totalRecurring || 1)) * 100}%` }}
+                />
+              )}
+              {summary.otherRecurring > 0 && (
+                <div 
+                  className="h-full bg-muted-foreground/30"
+                  style={{ width: `${(summary.otherRecurring / (summary.totalRecurring || 1)) * 100}%` }}
+                />
+              )}
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <span className="text-muted-foreground">Personal</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-purple-500" />
+                <span className="text-muted-foreground">Business</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {expenses.length === 0 && (
+          <div className="text-center py-6 text-sm text-muted-foreground">
+            <Receipt className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p>No expenses tracked yet</p>
+            <Link to="/expenses">
+              <Button variant="link" size="sm" className="text-primary mt-2">
+                Add your first expense
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 }

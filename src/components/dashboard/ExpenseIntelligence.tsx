@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { TrendingDown, Clock, AlertTriangle, CheckCircle, Flame, Snowflake } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '@/lib/format';
@@ -12,6 +13,10 @@ interface ExpenseIntelligenceProps {
   monthlyFixedExpenses: number;
   pipelineValue: number; // Total value of pending payouts
 }
+
+const springConfigs = {
+  gentle: { type: "spring" as const, stiffness: 120, damping: 20 },
+};
 
 export function ExpenseIntelligence({
   expenses,
@@ -80,98 +85,105 @@ export function ExpenseIntelligence({
   }, [expenses, monthlyFixedExpenses, pipelineValue]);
 
   const statusConfig = {
-    excellent: { color: 'text-success', bg: 'bg-success/10', icon: CheckCircle, label: 'Excellent' },
-    good: { color: 'text-success', bg: 'bg-success/10', icon: CheckCircle, label: 'Good' },
-    warning: { color: 'text-warning', bg: 'bg-warning/10', icon: AlertTriangle, label: 'Needs Attention' },
-    critical: { color: 'text-destructive', bg: 'bg-destructive/10', icon: AlertTriangle, label: 'Critical' },
+    excellent: { color: 'text-success', bg: 'bg-success/10', border: 'border-success/30', icon: CheckCircle, label: 'Excellent', gradient: 'icon-gradient-primary' },
+    good: { color: 'text-success', bg: 'bg-success/10', border: 'border-success/30', icon: CheckCircle, label: 'Good', gradient: 'icon-gradient-primary' },
+    warning: { color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/30', icon: AlertTriangle, label: 'Needs Attention', gradient: 'icon-gradient-accent' },
+    critical: { color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30', icon: AlertTriangle, label: 'Critical', gradient: 'icon-gradient-accent' },
   };
 
   const config = statusConfig[analysis.healthStatus];
   const StatusIcon = config.icon;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-500/10">
-            <TrendingDown className="h-5 w-5 text-purple-400" />
+    <motion.div 
+      className="landing-card"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springConfigs.gentle}
+    >
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="icon-gradient-purple icon-gradient-sm">
+              <TrendingDown className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg text-foreground">Expense Intelligence</h3>
+              <p className="text-sm text-muted-foreground">Your spending breakdown</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-lg">Expense Intelligence</h3>
-            <p className="text-sm text-muted-foreground">Your spending breakdown</p>
-          </div>
+          <Link to="/expenses">
+            <Button variant="outline" size="sm">Manage</Button>
+          </Link>
         </div>
-        <Link to="/expenses">
-          <Button variant="outline" size="sm">Manage</Button>
-        </Link>
-      </div>
 
-      {/* Monthly Burn Rate */}
-      <div className="p-4 rounded-xl bg-muted/50 mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-orange-400" />
-            <span className="text-sm font-medium">Monthly Burn Rate</span>
+        {/* Monthly Burn Rate */}
+        <div className="p-4 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4 text-orange-400" />
+              <span className="text-sm font-medium text-foreground">Monthly Burn Rate</span>
+            </div>
+            <span className="text-xl font-bold text-destructive">{formatCurrency(analysis.totalMonthlyBurn)}</span>
           </div>
-          <span className="text-xl font-bold text-destructive">{formatCurrency(analysis.totalMonthlyBurn)}</span>
+          <p className="text-xs text-muted-foreground">
+            Fixed expenses determine how many months you can survive without income.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Fixed expenses determine how many months you can survive without income.
-        </p>
-      </div>
 
-      {/* Pipeline Runway */}
-      <div className={cn("p-4 rounded-xl border-2 mb-5", config.bg, `border-${analysis.healthStatus === 'critical' ? 'destructive' : analysis.healthStatus === 'warning' ? 'warning' : 'success'}/30`)}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Pipeline Runway</span>
+        {/* Pipeline Runway */}
+        <div className={cn("p-4 rounded-xl border-2 mb-5", config.bg, config.border)}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Pipeline Runway</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <StatusIcon className={cn("h-4 w-4", config.color)} />
+              <span className={cn("text-sm font-medium", config.color)}>{config.label}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <StatusIcon className={cn("h-4 w-4", config.color)} />
-            <span className={cn("text-sm font-medium", config.color)}>{config.label}</span>
-          </div>
+          <p className="text-3xl font-bold text-foreground mb-1">
+            {analysis.runwayMonths} <span className="text-lg font-normal text-muted-foreground">months</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Your current pipeline covers {analysis.runwayMonths} months of expenses.
+          </p>
         </div>
-        <p className="text-3xl font-bold mb-1">
-          {analysis.runwayMonths} <span className="text-lg font-normal text-muted-foreground">months</span>
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Your current pipeline covers {analysis.runwayMonths} months of expenses.
-        </p>
-      </div>
 
-      {/* Fixed vs Variable */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Fixed vs Variable</span>
-          <span className="text-xs text-muted-foreground">{analysis.fixedPercent.toFixed(0)}% fixed</span>
-        </div>
-        <Progress value={analysis.fixedPercent} className="h-2 mb-2" />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Snowflake className="h-3 w-3 text-sky-400" />
-            <span>Fixed: {formatCurrency(analysis.fixedTotal)}</span>
+        {/* Fixed vs Variable */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">Fixed vs Variable</span>
+            <span className="text-xs text-muted-foreground">{analysis.fixedPercent.toFixed(0)}% fixed</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Flame className="h-3 w-3 text-orange-400" />
-            <span>Variable: {formatCurrency(analysis.variableTotal)}</span>
+          <Progress value={analysis.fixedPercent} className="h-2 mb-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Snowflake className="h-3 w-3 text-sky-400" />
+              <span>Fixed: {formatCurrency(analysis.fixedTotal)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Flame className="h-3 w-3 text-orange-400" />
+              <span>Variable: {formatCurrency(analysis.variableTotal)}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tax Deductible Breakdown */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Tax Deductible</span>
-          <span className="text-xs text-muted-foreground">{analysis.deductiblePercent.toFixed(0)}% deductible</span>
-        </div>
-        <Progress value={analysis.deductiblePercent} className="h-2 mb-2" />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span className="text-success">Deductible: {formatCurrency(analysis.taxDeductibleTotal)}</span>
-          <span className="text-muted-foreground">Non-deductible: {formatCurrency(analysis.nonDeductibleTotal)}</span>
+        {/* Tax Deductible Breakdown */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-foreground">Tax Deductible</span>
+            <span className="text-xs text-muted-foreground">{analysis.deductiblePercent.toFixed(0)}% deductible</span>
+          </div>
+          <Progress value={analysis.deductiblePercent} className="h-2 mb-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span className="text-success">Deductible: {formatCurrency(analysis.taxDeductibleTotal)}</span>
+            <span>Non-deductible: {formatCurrency(analysis.nonDeductibleTotal)}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
