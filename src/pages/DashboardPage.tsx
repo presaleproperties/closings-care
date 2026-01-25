@@ -22,6 +22,7 @@ import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { ExpenseIntelligence } from '@/components/dashboard/ExpenseIntelligence';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
+import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
 import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
@@ -350,6 +351,11 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+              <ExpenseCommandCenter 
+                expenses={expenses}
+                monthlyExpenses={expenseTotals.monthly}
+                annualExpenses={expenseTotals.annual}
+              />
             </TabsContent>
 
             <TabsContent value="taxes" className="space-y-6">
