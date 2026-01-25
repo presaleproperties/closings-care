@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 
-const ONBOARDING_KEY = 'commission_tracker_onboarding_complete';
+const ONBOARDING_KEY = 'commissioniq_onboarding_complete';
 
 export function useOnboarding() {
   const { user, loading } = useAuth();

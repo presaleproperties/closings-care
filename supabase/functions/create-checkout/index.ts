@@ -73,9 +73,9 @@ serve(async (req) => {
       customerId = customer.id;
     }
 
-    // Get the price for Commission Tracker Pro
+    // Get the price for CommissionIQ Pro
     const prices = await stripe.prices.list({
-      lookup_keys: ['commission_tracker_pro'],
+      lookup_keys: ['commissioniq_pro'],
       limit: 1,
     });
 
@@ -87,7 +87,7 @@ serve(async (req) => {
       const products = await stripe.products.list({
         limit: 20,
       });
-      const proProduct = products.data.find((p: { name: string }) => p.name === 'Commission Tracker Pro');
+      const proProduct = products.data.find((p: { name: string }) => p.name === 'CommissionIQ Pro');
       
       if (!proProduct) {
         throw new Error("Pro subscription product not found");

@@ -53,7 +53,7 @@ export function EmptyDashboard() {
           <Sparkles className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-3">
-          Welcome to Commission Tracker!
+          Welcome to CommissionIQ!
         </h1>
         <p className="text-muted-foreground text-lg max-w-md mx-auto">
           Add your first deal to start tracking your income and get financial clarity.

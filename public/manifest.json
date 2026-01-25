@@ -1,7 +1,7 @@
 {
-  "name": "Commission Tracker",
-  "short_name": "CommTracker",
-  "description": "Track real estate deals, commissions, and cashflow",
+  "name": "CommissionIQ",
+  "short_name": "CommissionIQ",
+  "description": "Financial clarity for real estate agents — track commissions, project cashflow, know your safe-to-spend",
   "theme_color": "#1e293b",
   "background_color": "#f8fafc",
   "display": "standalone",

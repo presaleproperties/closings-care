@@ -94,9 +94,8 @@ export function Sidebar() {
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
             <h1 className="font-semibold text-sidebar-foreground text-base leading-tight tracking-[-0.01em] whitespace-nowrap">
-              Commission
+              CommissionIQ
             </h1>
-            <p className="text-xs text-sidebar-foreground/50 font-medium whitespace-nowrap">Tracker</p>
           </div>
         </Link>
       </div>

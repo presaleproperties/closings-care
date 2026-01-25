@@ -11,7 +11,7 @@ export default function PrivacyPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/25">
               <Shield className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold">Commission Tracker</span>
+            <span className="font-semibold">CommissionIQ</span>
           </Link>
           <Link 
             to="/" 
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-6">
           <section>
             <p className="text-muted-foreground leading-relaxed">
-              Commission Tracker ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains 
+              CommissionIQ ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains 
               how we collect, use, disclose, and safeguard your information when you use our service.
             </p>
           </section>
@@ -169,8 +169,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-3">12. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               If you have any questions about this Privacy Policy or our data practices, please contact us at:<br />
-              <strong>Email:</strong> privacy@commissiontracker.app<br />
-              <strong>Support:</strong> support@commissiontracker.app<br /><br />
+              <strong>Email:</strong> privacy@commissioniq.app<br />
+              <strong>Support:</strong> support@commissioniq.app<br /><br />
               For data protection inquiries, we aim to respond within 48 hours.
             </p>
           </section>
