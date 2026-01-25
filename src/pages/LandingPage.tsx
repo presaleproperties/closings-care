@@ -35,7 +35,8 @@ import {
   UserPlus,
   PiggyBank,
   Receipt,
-  Gift
+  Gift,
+  Download
 } from "lucide-react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
@@ -1248,6 +1249,10 @@ export default function LandingPage() {
             <div className="hidden sm:flex items-center gap-6">
               <a href="#features" className="text-slate-600 hover:text-slate-800 font-medium transition-colors">Features</a>
               <a href="#pricing" className="text-slate-600 hover:text-slate-800 font-medium transition-colors">Pricing</a>
+              <Link to="/install" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-medium transition-colors">
+                <Download className="h-4 w-4" />
+                Get App
+              </Link>
               <Link to="/auth">
                 <Button variant="ghost" className="text-slate-600">Sign In</Button>
               </Link>
@@ -1282,6 +1287,10 @@ export default function LandingPage() {
               <div className="px-4 py-4 space-y-3">
                 <a href="#features" className="block py-2 text-slate-600 font-medium" onClick={() => setMobileMenuOpen(false)}>Features</a>
                 <a href="#pricing" className="block py-2 text-slate-600 font-medium" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+                <Link to="/install" className="flex items-center gap-2 py-2 text-emerald-600 font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  <Download className="h-4 w-4" />
+                  Get the App
+                </Link>
                 <Link to="/auth" className="block">
                   <Button variant="outline" className="w-full h-12 text-base">
                     Sign In
