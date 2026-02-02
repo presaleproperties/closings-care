@@ -1,6 +1,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
+import { VoiceAssistant } from '@/components/VoiceAssistant';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -42,6 +43,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       <MobileNav />
+      <VoiceAssistant />
     </div>
   );
 }

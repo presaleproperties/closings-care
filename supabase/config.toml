@@ -2,3 +2,12 @@ project_id = "svbilqvudkkdhslxebce"
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.elevenlabs-stt]
+verify_jwt = false
