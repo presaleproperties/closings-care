@@ -1,18 +1,22 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Loader2, Volume2, X } from 'lucide-react';
+import { Mic, MicOff, Loader2, Volume2, X, Send, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type AssistantState = 'idle' | 'listening' | 'processing' | 'speaking';
 
 interface Message {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
+  timestamp: Date;
 }
 
 // Audio Waveform Component
@@ -38,7 +42,7 @@ function AudioWaveform({ analyser }: { analyser: AnalyserNode | null }) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'hsl(0 84% 60%)'; // destructive color
+      ctx.strokeStyle = 'hsl(var(--primary))';
       ctx.beginPath();
 
       const sliceWidth = canvas.width / bufferLength;
@@ -79,35 +83,158 @@ function AudioWaveform({ analyser }: { analyser: AnalyserNode | null }) {
   );
 }
 
-// Quick Start Button Component
-function QuickStartButton({ label, example, onClick }: { label: string; example: string; onClick: () => void }) {
+// Suggestion Chip Component
+function SuggestionChip({ text, onClick }: { text: string; onClick: () => void }) {
   return (
-    <button 
+    <button
       onClick={onClick}
-      className="px-3 py-1.5 rounded-full bg-muted/50 border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer group relative"
+      className="px-3 py-2 rounded-xl bg-muted/50 border border-border text-sm text-foreground hover:bg-primary/10 hover:border-primary/30 transition-all cursor-pointer text-left"
     >
-      {label}
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-popover border border-border text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-        "{example}"
-      </span>
+      {text}
     </button>
   );
 }
+
+// Message Bubble Component
+function MessageBubble({ message }: { message: Message }) {
+  const isUser = message.role === 'user';
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "max-w-[85%] rounded-2xl px-4 py-2.5",
+        isUser 
+          ? "bg-primary text-primary-foreground ml-auto rounded-br-sm" 
+          : "bg-muted text-foreground mr-auto rounded-bl-sm"
+      )}
+    >
+      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+    </motion.div>
+  );
+}
+
+const QUICK_PROMPTS = [
+  "Add a new deal for $500k",
+  "What's my commission this month?",
+  "Add $150 marketing expense",
+  "Update my latest deal to closed",
+  "Show my pending payouts",
+  "What deals are closing soon?",
+];
 
 export function VoiceAssistant() {
   const { user, session } = useAuth();
   const queryClient = useQueryClient();
   const [state, setState] = useState<AssistantState>('idle');
   const [isExpanded, setIsExpanded] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [response, setResponse] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [inputText, setInputText] = useState('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const sendTextMessage = useCallback(async (text: string) => {
+    if (!text.trim() || state === 'processing') return;
+    
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: text.trim(),
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInputText('');
+    setState('processing');
+    
+    try {
+      const allMessages = [...messages, userMessage];
+      
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
+          userId: user?.id,
+        },
+      });
+      
+      if (aiError) throw aiError;
+      
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: aiData.message || "Sorry, I didn't understand that.",
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Invalidate queries if tools were called
+      if (aiData.tool_calls?.length > 0) {
+        queryClient.invalidateQueries({ queryKey: ['deals'] });
+        queryClient.invalidateQueries({ queryKey: ['payouts'] });
+        queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      }
+      
+      // Text-to-speech for the response
+      setState('speaking');
+      
+      const ttsResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text: assistantMessage.content }),
+        }
+      );
+      
+      if (ttsResponse.ok) {
+        const ttsBlob = await ttsResponse.blob();
+        const audioUrl = URL.createObjectURL(ttsBlob);
+        
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+        
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+        
+        audio.onended = () => {
+          setState('idle');
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        audio.onerror = () => {
+          setState('idle');
+          URL.revokeObjectURL(audioUrl);
+        };
+        
+        await audio.play();
+      } else {
+        setState('idle');
+      }
+      
+    } catch (error) {
+      console.error('AI assistant error:', error);
+      toast.error('Something went wrong');
+      setState('idle');
+    }
+  }, [messages, user?.id, session?.access_token, queryClient, state]);
 
   const startRecording = useCallback(async () => {
     try {
@@ -155,8 +282,6 @@ export function VoiceAssistant() {
       mediaRecorder.start(100);
       setState('listening');
       setIsExpanded(true);
-      setTranscript('');
-      setResponse('');
     } catch (error) {
       console.error('Error starting recording:', error);
       toast.error('Could not access microphone');
@@ -208,76 +333,8 @@ export function VoiceAssistant() {
         return;
       }
       
-      setTranscript(userText);
-      
-      // Add user message to history
-      const newMessages: Message[] = [...messages, { role: 'user', content: userText }];
-      setMessages(newMessages);
-      
-      // Step 2: Send to AI assistant
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-          userId: user?.id,
-        },
-      });
-      
-      if (aiError) throw aiError;
-      
-      const assistantMessage = aiData.message || "Sorry, I didn't catch that.";
-      setResponse(assistantMessage);
-      
-      // Add assistant message to history
-      setMessages([...newMessages, { role: 'assistant', content: assistantMessage }]);
-      
-      // Invalidate queries if tools were called
-      if (aiData.tool_calls?.length > 0) {
-        queryClient.invalidateQueries({ queryKey: ['deals'] });
-        queryClient.invalidateQueries({ queryKey: ['payouts'] });
-        queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      }
-      
-      // Step 3: Text to speech
-      setState('speaking');
-      
-      const ttsResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ text: assistantMessage }),
-        }
-      );
-      
-      if (!ttsResponse.ok) {
-        throw new Error('TTS failed');
-      }
-      
-      const ttsBlob = await ttsResponse.blob();
-      const audioUrl = URL.createObjectURL(ttsBlob);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      
-      audio.onended = () => {
-        setState('idle');
-        URL.revokeObjectURL(audioUrl);
-      };
-      
-      audio.onerror = () => {
-        setState('idle');
-        URL.revokeObjectURL(audioUrl);
-      };
-      
-      await audio.play();
+      // Send the transcribed text as a message
+      await sendTextMessage(userText);
       
     } catch (error) {
       console.error('Voice assistant error:', error);
@@ -304,62 +361,77 @@ export function VoiceAssistant() {
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendTextMessage(inputText);
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    sendTextMessage(prompt);
+  };
+
   const close = () => {
     stopSpeaking();
     setIsExpanded(false);
-    setTranscript('');
-    setResponse('');
+  };
+
+  const toggleExpand = () => {
+    if (isExpanded) {
+      close();
+    } else {
+      setIsExpanded(true);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
   };
 
   if (!user) return null;
 
   return (
     <>
-      {/* Floating Mic Button */}
+      {/* Floating Chat Button */}
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         className="fixed bottom-6 right-6 z-50"
       >
         <Button
-          onClick={handleMicClick}
+          onClick={toggleExpand}
           size="lg"
           className={cn(
             "h-14 w-14 rounded-full shadow-lg transition-all duration-300",
-            state === 'idle' && "bg-primary hover:bg-primary/90",
-            state === 'listening' && "bg-destructive animate-pulse",
-            state === 'processing' && "bg-warning",
-            state === 'speaking' && "bg-accent"
+            isExpanded ? "bg-muted hover:bg-muted/80" : "bg-primary hover:bg-primary/90"
           )}
         >
-          {state === 'idle' && <Mic className="h-6 w-6" />}
-          {state === 'listening' && <MicOff className="h-6 w-6" />}
-          {state === 'processing' && <Loader2 className="h-6 w-6 animate-spin" />}
-          {state === 'speaking' && <Volume2 className="h-6 w-6" />}
+          {isExpanded ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <MessageCircle className="h-6 w-6" />
+          )}
         </Button>
       </motion.div>
 
-      {/* Expanded Panel */}
+      {/* Chat Panel */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 z-50 w-80 max-h-96 rounded-2xl bg-card border border-border shadow-2xl overflow-hidden"
+            className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] rounded-2xl bg-card border border-border shadow-2xl overflow-hidden flex flex-col"
+            style={{ maxHeight: 'min(600px, calc(100vh - 8rem))' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/50 shrink-0">
+              <div className="flex items-center gap-2">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  state === 'idle' && "bg-muted-foreground",
+                  state === 'idle' && "bg-emerald-500",
                   state === 'listening' && "bg-destructive animate-pulse",
-                  state === 'processing' && "bg-warning animate-pulse",
-                  state === 'speaking' && "bg-accent animate-pulse"
+                  state === 'processing' && "bg-amber-500 animate-pulse",
+                  state === 'speaking' && "bg-primary animate-pulse"
                 )} />
                 <span className="text-sm font-medium text-foreground">
-                  {state === 'idle' && 'Voice Assistant'}
+                  {state === 'idle' && 'AI Assistant'}
                   {state === 'listening' && 'Listening...'}
                   {state === 'processing' && 'Thinking...'}
                   {state === 'speaking' && 'Speaking...'}
@@ -370,71 +442,127 @@ export function VoiceAssistant() {
               </Button>
             </div>
 
-            {/* Content */}
-            <div className="p-4 space-y-3 max-h-72 overflow-y-auto">
-              {transcript && (
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground mb-1">You said:</p>
-                  <p className="text-sm text-foreground">{transcript}</p>
-                </div>
-              )}
-              
-              {response && (
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
-                  <p className="text-xs text-primary mb-1">Assistant:</p>
-                  <p className="text-sm text-foreground">{response}</p>
-                </div>
-              )}
-
-              {state === 'idle' && !transcript && !response && (
-                <div className="text-center py-4">
-                  <Mic className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Tap the mic to start talking
-                  </p>
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">Quick starts:</p>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      <QuickStartButton 
-                        label="Add a deal" 
-                        example="Add a new deal for John Smith, $500k sale"
-                        onClick={startRecording}
-                      />
-                      <QuickStartButton 
-                        label="Update a deal" 
-                        example="Update the Smith deal to closed"
-                        onClick={startRecording}
-                      />
-                      <QuickStartButton 
-                        label="Add an expense" 
-                        example="Add $200 marketing expense"
-                        onClick={startRecording}
-                      />
+            {/* Messages Area */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
+                {messages.length === 0 ? (
+                  <div className="text-center py-4">
+                    <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      How can I help you today?
+                    </p>
+                    <div className="grid gap-2">
+                      {QUICK_PROMPTS.slice(0, 4).map((prompt) => (
+                        <SuggestionChip
+                          key={prompt}
+                          text={prompt}
+                          onClick={() => handlePromptClick(prompt)}
+                        />
+                      ))}
                     </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))}
+                    
+                    {state === 'processing' && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center gap-2 text-muted-foreground"
+                      >
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Thinking...</span>
+                      </motion.div>
+                    )}
+                    
+                    {/* Show suggestions after assistant response */}
+                    {messages.length > 0 && state === 'idle' && messages[messages.length - 1]?.role === 'assistant' && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="pt-2 space-y-2"
+                      >
+                        <p className="text-xs text-muted-foreground">Suggestions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {QUICK_PROMPTS.slice(0, 3).map((prompt) => (
+                            <button
+                              key={prompt}
+                              onClick={() => handlePromptClick(prompt)}
+                              className="px-2 py-1 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                            >
+                              {prompt}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
 
-              {state === 'listening' && (
-                <div className="text-center py-6">
-                  <div className="mb-3 h-10 flex items-center justify-center">
-                    <AudioWaveform analyser={analyser} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Tap again when done
-                  </p>
+            {/* Listening State */}
+            {state === 'listening' && (
+              <div className="px-4 py-3 border-t border-border bg-muted/30">
+                <div className="flex items-center justify-center gap-3">
+                  <AudioWaveform analyser={analyser} />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={stopRecording}
+                  >
+                    Stop
+                  </Button>
                 </div>
-              )}
+              </div>
+            )}
 
-              {state === 'processing' && !transcript && (
-                <div className="text-center py-6">
-                  <Loader2 className="h-8 w-8 mx-auto text-warning animate-spin mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Processing your request...
-                  </p>
+            {/* Input Area */}
+            {state !== 'listening' && (
+              <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-muted/30 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "shrink-0 h-10 w-10 rounded-full",
+                      state === 'speaking' && "text-primary"
+                    )}
+                    onClick={handleMicClick}
+                    disabled={state === 'processing'}
+                  >
+                    {state === 'processing' ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : state === 'speaking' ? (
+                      <Volume2 className="h-5 w-5" />
+                    ) : (
+                      <Mic className="h-5 w-5" />
+                    )}
+                  </Button>
+                  <Input
+                    ref={inputRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-background"
+                    disabled={state === 'processing' || state === 'speaking'}
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="shrink-0 h-10 w-10 rounded-full"
+                    disabled={!inputText.trim() || state === 'processing' || state === 'speaking'}
+                  >
+                    <Send className="h-5 w-5" />
+                  </Button>
                 </div>
-              )}
-            </div>
+              </form>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
