@@ -17,7 +17,7 @@ const tools = [
         type: "object",
         properties: {
           client_name: { type: "string", description: "Name of the client" },
-          deal_type: { type: "string", enum: ["BUYING", "SELLING", "BOTH"], description: "Type of deal" },
+          deal_type: { type: "string", enum: ["BUY", "SELL"], description: "Type of deal - BUY for buying side, SELL for selling side" },
           property_type: { type: "string", enum: ["PRESALE", "RESALE"], description: "Whether this is a presale or resale property" },
           city: { type: "string", description: "City where the property is located, default Vancouver" },
           address: { type: "string", description: "Property address if known" },
@@ -34,6 +34,49 @@ const tools = [
           buyer_type: { type: "string", description: "Type of buyer (e.g., First-time, Investor)" },
         },
         required: ["client_name", "deal_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_deal",
+      description: "Update an existing deal. Use this when the user wants to modify, change, or update details of an existing deal. You must first search for the deal to get its ID.",
+      parameters: {
+        type: "object",
+        properties: {
+          deal_id: { type: "string", description: "The UUID of the deal to update (get this from search_deals first)" },
+          client_name: { type: "string", description: "Updated client name" },
+          deal_type: { type: "string", enum: ["BUY", "SELL"], description: "Updated deal type" },
+          property_type: { type: "string", enum: ["PRESALE", "RESALE"], description: "Updated property type" },
+          status: { type: "string", enum: ["PENDING", "CLOSED"], description: "Deal status" },
+          city: { type: "string", description: "Updated city" },
+          address: { type: "string", description: "Updated address" },
+          project_name: { type: "string", description: "Updated project name" },
+          sale_price: { type: "number", description: "Updated sale price" },
+          gross_commission_est: { type: "number", description: "Updated estimated commission" },
+          close_date_est: { type: "string", description: "Updated closing date (YYYY-MM-DD)" },
+          advance_date: { type: "string", description: "Updated advance date (YYYY-MM-DD)" },
+          advance_commission: { type: "number", description: "Updated advance commission" },
+          completion_date: { type: "string", description: "Updated completion date (YYYY-MM-DD)" },
+          completion_commission: { type: "number", description: "Updated completion commission" },
+          notes: { type: "string", description: "Updated notes" },
+        },
+        required: ["deal_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "search_deals",
+      description: "Search for deals by client name or address. Use this to find deals before updating them.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search term (client name, address, or project name)" },
+        },
+        required: ["query"],
       },
     },
   },
@@ -114,27 +157,38 @@ const tools = [
   },
 ];
 
-const systemPrompt = `You are a helpful AI assistant for Dealzflow, a real estate commission tracking app used by Vancouver real estate agents. You help users:
+const systemPrompt = `You are a helpful voice AI assistant for Dealzflow, a real estate commission tracking app. You help Vancouver real estate agents manage their business by voice.
+
+You can:
 - Add new deals and transactions
+- Update existing deals (search first, then update)
 - Track expenses and income
-- Understand their financial situation
-- Manage their commission payouts
+- Provide summaries of deals, payouts, and expenses
 
-Be conversational, friendly, and concise. When users want to add data, use the appropriate tools. Always confirm what was created.
+IMPORTANT VOICE INTERACTION RULES:
+- Keep responses SHORT and conversational - this is voice, not text chat
+- Speak naturally as if talking to a colleague
+- Confirm actions with brief acknowledgments like "Done!" or "Got it!"
+- When searching/updating deals, always search first to get the deal ID
 
-Important context:
+Key context:
 - All amounts are in CAD (Canadian dollars)
-- Property types are either PRESALE (new construction) or RESALE (existing homes)
-- Deal types are BUYING, SELLING, or BOTH
-- Presale deals can have advance commission (paid at contract signing) and completion commission (paid at closing)
-- Resale deals typically have a single commission paid at closing
+- Property types: PRESALE (new construction) or RESALE (existing homes)
+- Deal types: BUY (buyer side) or SELL (seller side)
+- Presale deals have advance commission and completion commission
+- Resale deals have a single commission at closing
 
 When adding deals:
-- Always ask for essential info if not provided: client name, deal type, and at least an estimated commission or sale price
-- For presale, ask about advance and completion dates/amounts
-- For resale, ask about closing date and commission
+- Ask for: client name, deal type (buy/sell), and commission amount
+- For presale, ask about advance and completion amounts/dates
+- For resale, ask about closing date
 
-Be proactive in asking clarifying questions but don't ask too many at once. Keep it conversational.`;
+When updating deals:
+- ALWAYS use search_deals first to find the deal ID
+- Then use update_deal with the ID and the fields to change
+- Confirm what was updated
+
+Keep it brief and friendly!`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -279,6 +333,84 @@ serve(async (req) => {
               }
 
               result = { success: true, deal_id: deal.id, client_name: deal.client_name, message: "Deal created successfully" };
+              break;
+            }
+
+            case "update_deal": {
+              const { deal_id, ...updateFields } = args;
+              
+              // Remove undefined/null values
+              const cleanedData = Object.entries(updateFields).reduce((acc, [key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                  acc[key] = value;
+                }
+                return acc;
+              }, {} as Record<string, unknown>);
+
+              const { data: deal, error } = await supabase
+                .from("deals")
+                .update(cleanedData)
+                .eq("id", deal_id)
+                .select()
+                .single();
+
+              if (error) throw error;
+
+              // Auto-sync payout dates if deal dates changed
+              if (deal.property_type === "RESALE" && cleanedData.close_date_est) {
+                await supabase
+                  .from("payouts")
+                  .update({ due_date: cleanedData.close_date_est as string })
+                  .eq("deal_id", deal_id)
+                  .eq("payout_type", "Completion");
+              }
+
+              if (deal.property_type === "PRESALE") {
+                if (cleanedData.advance_date) {
+                  await supabase
+                    .from("payouts")
+                    .update({ due_date: cleanedData.advance_date as string })
+                    .eq("deal_id", deal_id)
+                    .eq("payout_type", "Advance");
+                }
+                if (cleanedData.completion_date) {
+                  await supabase
+                    .from("payouts")
+                    .update({ due_date: cleanedData.completion_date as string })
+                    .eq("deal_id", deal_id)
+                    .eq("payout_type", "Completion");
+                }
+              }
+
+              result = { success: true, deal_id: deal.id, client_name: deal.client_name, message: "Deal updated successfully", updated_fields: Object.keys(cleanedData) };
+              break;
+            }
+
+            case "search_deals": {
+              const searchTerm = `%${args.query}%`;
+              const { data: deals, error } = await supabase
+                .from("deals")
+                .select("id, client_name, address, project_name, deal_type, property_type, status, gross_commission_est, close_date_est")
+                .or(`client_name.ilike.${searchTerm},address.ilike.${searchTerm},project_name.ilike.${searchTerm}`)
+                .order("created_at", { ascending: false })
+                .limit(5);
+
+              if (error) throw error;
+              
+              result = {
+                found: deals?.length || 0,
+                deals: deals?.map(d => ({
+                  id: d.id,
+                  client_name: d.client_name,
+                  address: d.address,
+                  project_name: d.project_name,
+                  deal_type: d.deal_type,
+                  property_type: d.property_type,
+                  status: d.status,
+                  commission: d.gross_commission_est,
+                  closing_date: d.close_date_est,
+                })) || [],
+              };
               break;
             }
 
