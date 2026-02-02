@@ -80,16 +80,17 @@ function AudioWaveform({ analyser }: { analyser: AnalyserNode | null }) {
 }
 
 // Quick Start Button Component
-function QuickStartButton({ label, example }: { label: string; example: string }) {
+function QuickStartButton({ label, example, onClick }: { label: string; example: string; onClick: () => void }) {
   return (
-    <div 
-      className="px-3 py-1.5 rounded-full bg-muted/50 border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-default group relative"
+    <button 
+      onClick={onClick}
+      className="px-3 py-1.5 rounded-full bg-muted/50 border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer group relative"
     >
       {label}
       <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-popover border border-border text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
         "{example}"
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -397,14 +398,17 @@ export function VoiceAssistant() {
                       <QuickStartButton 
                         label="Add a deal" 
                         example="Add a new deal for John Smith, $500k sale"
+                        onClick={startRecording}
                       />
                       <QuickStartButton 
                         label="Update a deal" 
                         example="Update the Smith deal to closed"
+                        onClick={startRecording}
                       />
                       <QuickStartButton 
                         label="Add an expense" 
                         example="Add $200 marketing expense"
+                        onClick={startRecording}
                       />
                     </div>
                   </div>
