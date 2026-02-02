@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, MicOff, Loader2, Volume2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,70 @@ interface Message {
   content: string;
 }
 
+// Audio Waveform Component
+function AudioWaveform({ analyser }: { analyser: AnalyserNode | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    if (!analyser || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      animationRef.current = requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(dataArray);
+
+      ctx.fillStyle = 'transparent';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'hsl(0 84% 60%)'; // destructive color
+      ctx.beginPath();
+
+      const sliceWidth = canvas.width / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = (v * canvas.height) / 2;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+    };
+
+    draw();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [analyser]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={200}
+      height={40}
+      className="mx-auto"
+    />
+  );
+}
+
 export function VoiceAssistant() {
   const { user, session } = useAuth();
   const queryClient = useQueryClient();
@@ -23,10 +87,12 @@ export function VoiceAssistant() {
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
+  const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -38,6 +104,15 @@ export function VoiceAssistant() {
           noiseSuppression: true,
         } 
       });
+
+      // Set up audio analyser for waveform
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyserNode = audioContext.createAnalyser();
+      analyserNode.fftSize = 256;
+      source.connect(analyserNode);
+      audioContextRef.current = audioContext;
+      setAnalyser(analyserNode);
       
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
@@ -53,6 +128,11 @@ export function VoiceAssistant() {
       
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        setAnalyser(null);
         await processAudio();
       };
       
@@ -305,21 +385,8 @@ export function VoiceAssistant() {
 
               {state === 'listening' && (
                 <div className="text-center py-6">
-                  <div className="flex justify-center gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="w-1 bg-destructive rounded-full"
-                        animate={{
-                          height: [12, 24, 12],
-                        }}
-                        transition={{
-                          duration: 0.5,
-                          repeat: Infinity,
-                          delay: i * 0.1,
-                        }}
-                      />
-                    ))}
+                  <div className="mb-3 h-10 flex items-center justify-center">
+                    <AudioWaveform analyser={analyser} />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Tap again when done
