@@ -79,6 +79,20 @@ function AudioWaveform({ analyser }: { analyser: AnalyserNode | null }) {
   );
 }
 
+// Quick Start Button Component
+function QuickStartButton({ label, example }: { label: string; example: string }) {
+  return (
+    <div 
+      className="px-3 py-1.5 rounded-full bg-muted/50 border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-default group relative"
+    >
+      {label}
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 rounded bg-popover border border-border text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+        "{example}"
+      </span>
+    </div>
+  );
+}
+
 export function VoiceAssistant() {
   const { user, session } = useAuth();
   const queryClient = useQueryClient();
@@ -372,14 +386,28 @@ export function VoiceAssistant() {
               )}
 
               {state === 'idle' && !transcript && !response && (
-                <div className="text-center py-6">
+                <div className="text-center py-4">
                   <Mic className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Tap the mic to start talking
                   </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Try: "Add a new deal for John Smith"
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Quick starts:</p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <QuickStartButton 
+                        label="Add a deal" 
+                        example="Add a new deal for John Smith, $500k sale"
+                      />
+                      <QuickStartButton 
+                        label="Update a deal" 
+                        example="Update the Smith deal to closed"
+                      />
+                      <QuickStartButton 
+                        label="Add an expense" 
+                        example="Add $200 marketing expense"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
