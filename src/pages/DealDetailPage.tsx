@@ -121,6 +121,7 @@ export default function DealDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPayoutDialog, setShowPayoutDialog] = useState(false);
   const [editingPayout, setEditingPayout] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [payoutForm, setPayoutForm] = useState<Partial<PayoutFormData>>({
     payout_type: 'Completion',
     amount: 0,
@@ -207,6 +208,23 @@ export default function DealDetailPage() {
     navigate('/deals');
   };
 
+  const handleNavigateToDeal = (dealId: string | null) => {
+    if (!dealId) return;
+    if (hasChanges) {
+      setPendingNavigation(dealId);
+    } else {
+      navigate(`/deals/${dealId}`);
+    }
+  };
+
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      navigate(`/deals/${pendingNavigation}`);
+      setPendingNavigation(null);
+      setHasChanges(false);
+    }
+  };
+
   const handleAddPayout = () => {
     setEditingPayout(null);
     setPayoutForm({
@@ -287,7 +305,7 @@ export default function DealDetailPage() {
                 size="icon"
                 className="h-9 w-9"
                 disabled={!dealNavigation.prev}
-                onClick={() => dealNavigation.prev && navigate(`/deals/${dealNavigation.prev}`)}
+                onClick={() => handleNavigateToDeal(dealNavigation.prev)}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -299,7 +317,7 @@ export default function DealDetailPage() {
                 size="icon"
                 className="h-9 w-9"
                 disabled={!dealNavigation.next}
-                onClick={() => dealNavigation.next && navigate(`/deals/${dealNavigation.next}`)}
+                onClick={() => handleNavigateToDeal(dealNavigation.next)}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -839,6 +857,24 @@ export default function DealDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Unsaved Changes Dialog */}
+      <AlertDialog open={!!pendingNavigation} onOpenChange={(open) => !open && setPendingNavigation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmNavigation}>
+              Leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
