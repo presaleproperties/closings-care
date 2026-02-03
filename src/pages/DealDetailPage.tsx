@@ -148,18 +148,27 @@ export default function DealDetailPage() {
   const isResale = formData.property_type === 'RESALE';
 
   // Auto-calculate net commission when gross changes
+  // For presale deals, use advance + completion as the gross base
   const netCommissionResult = useMemo(() => {
+    const effectiveGross = (isPresale && formData.advance_commission && formData.completion_commission)
+      ? formData.advance_commission + formData.completion_commission
+      : formData.gross_commission_est || 0;
+    
     return calculateNetCommission(
-      formData.gross_commission_est || 0,
+      effectiveGross,
       settings as any,
       allPayouts,
       isTeamDeal ? formData.team_member_portion : undefined
     );
-  }, [formData.gross_commission_est, formData.team_member_portion, settings, allPayouts, isTeamDeal]);
+  }, [formData.gross_commission_est, formData.advance_commission, formData.completion_commission, formData.team_member_portion, settings, allPayouts, isTeamDeal, isPresale]);
 
   // Update net commission when calculation changes
   useEffect(() => {
-    if (formData.gross_commission_est && formData.gross_commission_est > 0) {
+    const hasGross = isPresale 
+      ? (formData.advance_commission && formData.completion_commission)
+      : (formData.gross_commission_est && formData.gross_commission_est > 0);
+    
+    if (hasGross) {
       const newNet = netCommissionResult.netAmount;
       if (newNet !== formData.net_commission_est) {
         setFormData(prev => ({ ...prev, net_commission_est: newNet }));
@@ -167,7 +176,7 @@ export default function DealDetailPage() {
         setOriginalFormData(prev => ({ ...prev, net_commission_est: newNet }));
       }
     }
-  }, [netCommissionResult.netAmount]);
+  }, [netCommissionResult.netAmount, isPresale]);
 
   useEffect(() => {
     if (deal) {
