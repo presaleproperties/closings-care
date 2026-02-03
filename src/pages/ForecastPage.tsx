@@ -42,9 +42,9 @@ export default function ForecastPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
-  // Generate forecast data from Jan 2025 through next 24 months
+  // Generate forecast data from Jan 2025 through end of 2028
   const forecastData = useMemo(() => {
-    const months = getExtendedMonthRange(24);
+    const months = getExtendedMonthRange(48);
     
     return months.map((monthStr) => {
       const monthPayouts = payouts.filter((p) => {
@@ -352,14 +352,11 @@ export default function ForecastPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => {
-                      const year = new Date().getFullYear() - 2 + i;
-                      return (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      );
-                    })}
+                    {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
