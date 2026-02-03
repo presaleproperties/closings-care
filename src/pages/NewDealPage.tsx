@@ -561,7 +561,10 @@ export default function NewDealPage() {
                     checked={isTeamDeal}
                     onCheckedChange={(checked) => {
                       setIsTeamDeal(checked);
-                      if (!checked) {
+                      if (checked) {
+                        // Default team member gets 70%, user gets 30%
+                        updateField('team_member_portion', 70);
+                      } else {
                         updateField('team_member', undefined);
                         updateField('team_member_portion', undefined);
                       }
@@ -599,10 +602,11 @@ export default function NewDealPage() {
                     min="0"
                     max="100"
                     className="h-9"
-                    value={formData.team_member_portion || ''}
+                    value={formData.team_member_portion ?? ''}
                     onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
-                    placeholder="50"
+                    placeholder="70"
                   />
+                  <p className="text-[10px] text-muted-foreground">Your portion: {100 - (formData.team_member_portion || 70)}%</p>
                 </div>
               </div>
             )}
