@@ -468,8 +468,12 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                   <Input
-                    value={formatNumber(extractedData.gross_commission_est || 
-                      ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0)) || undefined
+                    value={formatNumber(
+                      // Always calculate from advance + completion if both exist
+                      (extractedData.advance_commission && extractedData.completion_commission)
+                        ? (extractedData.advance_commission + extractedData.completion_commission)
+                        : (extractedData.gross_commission_est || 
+                          ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0)) || undefined)
                     )}
                     onChange={(e) => updateField('gross_commission_est', parseNumber(e.target.value))}
                     className="h-9 pl-6"
@@ -480,8 +484,11 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
               ) : (
                 <p className="h-9 flex items-center text-sm font-medium text-success">
                   {(() => {
-                    const gross = extractedData.gross_commission_est || 
-                      ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0));
+                    // Always calculate from advance + completion if both exist
+                    const gross = (extractedData.advance_commission && extractedData.completion_commission)
+                      ? (extractedData.advance_commission + extractedData.completion_commission)
+                      : (extractedData.gross_commission_est || 
+                        ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0)));
                     return gross ? `$${formatNumber(gross)}` : '—';
                   })()}
                 </p>
