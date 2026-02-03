@@ -26,7 +26,7 @@ const TIER_LIMITS: Record<SubscriptionTier, SubscriptionLimits> = {
   },
   pro: {
     maxDeals: Infinity,
-    projectionMonths: 12,
+    projectionMonths: 24,
     taxCalculator: true,
     safeToSpend: true,
     dataExport: true,
