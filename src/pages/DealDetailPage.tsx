@@ -360,19 +360,33 @@ export default function DealDetailPage() {
             </div>
           </div>
           <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gross Commission</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              {isTeamDeal ? 'Your Gross' : 'Gross Commission'}
+            </div>
             <div className="text-lg font-bold text-primary">
               {(() => {
                 // Calculate from advance + completion if both exist
                 const calculatedGross = (formData.advance_commission && formData.completion_commission)
                   ? formData.advance_commission + formData.completion_commission
                   : formData.gross_commission_est;
-                return calculatedGross ? formatCurrencyDisplay(calculatedGross) : '—';
+                // Apply user's portion for team deals
+                const userPortion = isTeamDeal && formData.team_member_portion 
+                  ? (100 - formData.team_member_portion) / 100 
+                  : 1;
+                const userGross = calculatedGross ? calculatedGross * userPortion : null;
+                return userGross ? formatCurrencyDisplay(userGross) : '—';
               })()}
             </div>
+            {isTeamDeal && formData.team_member_portion && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {100 - formData.team_member_portion}% of deal
+              </div>
+            )}
           </div>
           <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Net Commission</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              {isTeamDeal ? 'Your Net' : 'Net Commission'}
+            </div>
             <div className="text-lg font-bold text-accent">
               {formData.net_commission_est ? formatCurrencyDisplay(formData.net_commission_est) : '—'}
             </div>

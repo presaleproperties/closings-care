@@ -97,6 +97,10 @@ export function useUpdateDeal() {
       
       if (error) throw error;
 
+      // Calculate user's portion for team deals (user gets 100% - team_member_portion)
+      const teamMemberPortion = deal.team_member_portion || 0;
+      const userPortion = teamMemberPortion > 0 ? (100 - teamMemberPortion) / 100 : 1;
+
       // Auto-sync: For RESALE deals, update Completion payout when closing date or commission changes
       if (deal.property_type === 'RESALE') {
         const updates: Record<string, any> = {};
@@ -105,9 +109,10 @@ export function useUpdateDeal() {
           updates.due_date = cleanedData.close_date_est;
         }
         
-        // Sync gross commission to Completion payout amount for resale
-        if (cleanedData.gross_commission_est !== undefined) {
-          updates.amount = cleanedData.gross_commission_est || 0;
+        // Sync gross commission to Completion payout amount for resale (applying user's portion)
+        if (cleanedData.gross_commission_est !== undefined || cleanedData.team_member_portion !== undefined) {
+          const grossAmount = deal.gross_commission_est || 0;
+          updates.amount = Math.round(grossAmount * userPortion * 100) / 100;
         }
         
         if (Object.keys(updates).length > 0) {
@@ -121,13 +126,14 @@ export function useUpdateDeal() {
 
       // Auto-sync: For PRESALE deals, update payout dates and amounts when deal values change
       if (deal.property_type === 'PRESALE') {
-        // Sync advance_date and advance_commission with Advance payout
+        // Sync advance_date and advance_commission with Advance payout (applying user's portion)
         const advanceUpdates: Record<string, any> = {};
         if (cleanedData.advance_date !== undefined) {
           advanceUpdates.due_date = cleanedData.advance_date;
         }
-        if (cleanedData.advance_commission !== undefined) {
-          advanceUpdates.amount = cleanedData.advance_commission || 0;
+        if (cleanedData.advance_commission !== undefined || cleanedData.team_member_portion !== undefined) {
+          const advanceAmount = deal.advance_commission || 0;
+          advanceUpdates.amount = Math.round(advanceAmount * userPortion * 100) / 100;
         }
         if (Object.keys(advanceUpdates).length > 0) {
           await supabase
@@ -137,13 +143,14 @@ export function useUpdateDeal() {
             .eq('payout_type', 'Advance');
         }
         
-        // Sync completion_date and completion_commission with Completion payout
+        // Sync completion_date and completion_commission with Completion payout (applying user's portion)
         const completionUpdates: Record<string, any> = {};
         if (cleanedData.completion_date !== undefined) {
           completionUpdates.due_date = cleanedData.completion_date;
         }
-        if (cleanedData.completion_commission !== undefined) {
-          completionUpdates.amount = cleanedData.completion_commission || 0;
+        if (cleanedData.completion_commission !== undefined || cleanedData.team_member_portion !== undefined) {
+          const completionAmount = deal.completion_commission || 0;
+          completionUpdates.amount = Math.round(completionAmount * userPortion * 100) / 100;
         }
         if (Object.keys(completionUpdates).length > 0) {
           await supabase
