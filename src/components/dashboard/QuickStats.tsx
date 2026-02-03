@@ -163,10 +163,15 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
     // Total projected for this year = commissions + other income
     const thisYearProjected = thisYearCommissions + thisYearOtherIncome;
 
-    // Average deal value
-    const allDeals = deals.length;
-    const avgDealValue = allDeals > 0
-      ? deals.reduce((sum, d) => sum + Number(d.gross_commission_est || 0), 0) / allDeals
+    // Average deal value - use total gross commission from all payouts per deal
+    // For team deals, this is the FULL deal commission (not just user's portion)
+    const dealTotals = new Map<string, number>();
+    payouts.forEach(p => {
+      const current = dealTotals.get(p.deal_id) || 0;
+      dealTotals.set(p.deal_id, current + Number(p.amount));
+    });
+    const avgDealValue = dealTotals.size > 0
+      ? Array.from(dealTotals.values()).reduce((sum, val) => sum + val, 0) / dealTotals.size
       : 0;
 
     // Active deals count
