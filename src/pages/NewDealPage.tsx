@@ -23,6 +23,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt, UsageLimitIndicator } from '@/components/UpgradePrompt';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
 import { calculateNetCommission, formatCommissionBreakdown } from '@/lib/commissionCalculations';
+import { useDealDraft } from '@/contexts/DealDraftContext';
+import { toast } from 'sonner';
 
 // Format number with commas
 const formatCurrency = (value: number | undefined | null): string => {
@@ -44,6 +46,7 @@ export default function NewDealPage() {
   const { data: paidPayouts = [] } = usePayouts();
   const createPayoutsFromTemplate = useCreatePayoutsFromTemplate();
   const { canAddDeal, usage, isFree } = useSubscription();
+  const { dealDraft, clearDraft } = useDealDraft();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({
@@ -54,6 +57,27 @@ export default function NewDealPage() {
   });
   const [isTeamDeal, setIsTeamDeal] = useState(false);
   const [hasAdvanceCommission, setHasAdvanceCommission] = useState(true);
+  const [draftApplied, setDraftApplied] = useState(false);
+
+  // Pre-fill form from AI-extracted deal draft
+  useEffect(() => {
+    if (dealDraft && !draftApplied) {
+      setFormData(prev => ({
+        ...prev,
+        ...dealDraft,
+        city: dealDraft.city || prev.city,
+      }));
+      
+      // Set advance commission toggle based on whether advance values exist
+      if (dealDraft.property_type === 'PRESALE') {
+        setHasAdvanceCommission(!!(dealDraft.advance_commission || dealDraft.advance_date));
+      }
+      
+      setDraftApplied(true);
+      clearDraft();
+      toast.success('Form pre-filled with extracted deal details');
+    }
+  }, [dealDraft, clearDraft, draftApplied]);
 
   const isPresale = formData.property_type === 'PRESALE';
   const isResale = formData.property_type === 'RESALE';
