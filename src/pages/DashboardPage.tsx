@@ -180,6 +180,7 @@ export default function DashboardPage() {
             <QuickStats 
               deals={deals} 
               payouts={payouts} 
+              otherIncome={otherIncome}
               monthlyExpenses={expenseTotals.monthly}
               onAutoMarkPaid={handleAutoMarkPaid}
             />
@@ -335,6 +336,7 @@ export default function DashboardPage() {
           <QuickStats 
             deals={deals} 
             payouts={payouts} 
+            otherIncome={otherIncome}
             monthlyExpenses={expenseTotals.monthly}
             onAutoMarkPaid={handleAutoMarkPaid}
           />
