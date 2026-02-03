@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, TrendingUp, Wallet, Home, Lock, Plus, BarChart3, Sparkles } from 'lucide-react';
+import { ArrowRight, TrendingUp, Wallet, Home, Plus, BarChart3, Sparkles } from 'lucide-react';
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
@@ -108,13 +108,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
+  const [projectionMonths, setProjectionMonths] = useState<12 | 24>(12);
   const { limits, isFree } = useSubscription();
 
   // Calculate property costs once (they're the same every month)
   const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
-
-  // Respect subscription projection limits
-  const projectionMonths = limits.projectionMonths;
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];
@@ -255,23 +253,42 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
             <TrendingUp className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground flex items-center gap-2">
+            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
               {projectionMonths}-Month Projection
-              {isFree && projectionMonths < 12 && (
-                <span className="text-[10px] text-slate-500 dark:text-muted-foreground flex items-center gap-1 bg-slate-100 dark:bg-muted px-1.5 py-0.5 rounded-full">
-                  <Lock className="h-2.5 w-2.5" />
-                  Pro
-                </span>
-              )}
             </h3>
             <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Click a bar for details</p>
           </div>
         </div>
-        <Link to="/forecast">
-          <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-accent hover:bg-emerald-50 dark:hover:bg-accent/10">
-            Full Forecast <ArrowRight className="w-3 h-3 ml-1" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Toggle for 12/24 months */}
+          <div className="flex bg-muted rounded-lg p-0.5">
+            <button
+              onClick={() => setProjectionMonths(12)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                projectionMonths === 12
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              12mo
+            </button>
+            <button
+              onClick={() => setProjectionMonths(24)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                projectionMonths === 24
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              24mo
+            </button>
+          </div>
+          <Link to="/forecast">
+            <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-accent hover:bg-emerald-50 dark:hover:bg-accent/10">
+              Full Forecast <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="p-5">
