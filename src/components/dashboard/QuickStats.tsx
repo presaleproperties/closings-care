@@ -1,7 +1,7 @@
 import { useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Receipt, Target, Calendar } from 'lucide-react';
-import { Deal, Payout } from '@/lib/types';
+import { Deal, Payout, OtherIncome } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
@@ -10,11 +10,12 @@ import { AnimatedCurrency } from '@/components/ui/animated-number';
 interface QuickStatsProps {
   deals: Deal[];
   payouts: Payout[];
+  otherIncome?: OtherIncome[];
   monthlyExpenses: number;
   onAutoMarkPaid?: (payoutIds: string[]) => void;
 }
 
-export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: QuickStatsProps) {
+export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid }: QuickStatsProps) {
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
 
@@ -44,10 +45,38 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
       .filter(p => p.status === 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // This year's projected income (unpaid payouts due this year)
-    const thisYearProjected = payouts
+    // This year's projected commission income (unpaid payouts due this year)
+    const thisYearCommissions = payouts
       .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Calculate Other Income for this year (Jan to Dec)
+    let thisYearOtherIncome = 0;
+    for (let month = 1; month <= 12; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      
+      otherIncome.forEach(income => {
+        const startMonth = income.start_month;
+        const endMonth = income.end_month;
+        
+        const hasStarted = monthStr >= startMonth;
+        const hasNotEnded = !endMonth || monthStr <= endMonth;
+        
+        if (hasStarted && hasNotEnded) {
+          if (income.recurrence === 'monthly') {
+            thisYearOtherIncome += Number(income.amount);
+          } else if (income.recurrence === 'weekly') {
+            // Weekly income: ~4.33 weeks per month
+            thisYearOtherIncome += Number(income.amount) * 4.33;
+          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
+            thisYearOtherIncome += Number(income.amount);
+          }
+        }
+      });
+    }
+
+    // Total projected for this year = commissions + other income
+    const thisYearProjected = thisYearCommissions + thisYearOtherIncome;
 
     // Average deal value
     const allDeals = deals.length;
@@ -66,7 +95,7 @@ export function QuickStats({ deals, payouts, monthlyExpenses, onAutoMarkPaid }: 
       activeDeals,
       monthlyExpenses,
     };
-  }, [deals, payouts, monthlyExpenses, thisYear]);
+  }, [deals, payouts, otherIncome, monthlyExpenses, thisYear]);
 
   const statCards = [
     {
