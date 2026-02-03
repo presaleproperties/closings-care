@@ -30,7 +30,8 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-export function DatePicker({ value, onChange, placeholder = "Pick a date", className, disabled }: DatePickerProps) {
+export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
+  function DatePicker({ value, onChange, placeholder = "Pick a date", className, disabled }, ref) {
   const [open, setOpen] = React.useState(false);
   const currentYear = new Date().getFullYear();
   
@@ -102,6 +103,7 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={ref}
           variant="outline"
           disabled={disabled}
           className={cn(
@@ -192,4 +194,4 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
       </PopoverContent>
     </Popover>
   );
-}
+});

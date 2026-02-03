@@ -408,11 +408,11 @@ export default function DealDetailPage() {
                 <div className="space-y-2">
                   <Label htmlFor="deal_type">Deal Type</Label>
                   <Select
-                    value={formData.deal_type}
+                    value={formData.deal_type || ''}
                     onValueChange={(v) => updateField('deal_type', v as DealType)}
                   >
                     <SelectTrigger id="deal_type">
-                      <SelectValue />
+                      <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="BUY">Buy</SelectItem>
@@ -440,11 +440,11 @@ export default function DealDetailPage() {
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={formData.status}
+                    value={formData.status || ''}
                     onValueChange={(v) => updateField('status', v as DealStatus)}
                   >
                     <SelectTrigger id="status">
-                      <SelectValue />
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="PENDING">Pending</SelectItem>
