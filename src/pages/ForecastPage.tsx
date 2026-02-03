@@ -17,7 +17,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
-import { formatCurrency, getMonthRange } from '@/lib/format';
+import { formatCurrency, getExtendedMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
 import {
@@ -40,10 +40,11 @@ export default function ForecastPage() {
 
   const [view, setView] = useState<'table' | 'calendar'>('table');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [selectedYear, setSelectedYear] = useState<string>('all');
 
-  // Generate forecast data for next 24 months
+  // Generate forecast data from Jan 2025 through next 24 months
   const forecastData = useMemo(() => {
-    const months = getMonthRange(0, 24);
+    const months = getExtendedMonthRange(24);
     
     return months.map((monthStr) => {
       const monthPayouts = payouts.filter((p) => {
@@ -91,12 +92,24 @@ export default function ForecastPage() {
     });
   }, [forecastData]);
 
-  // Summary stats
+  // Filter by year if selected
+  const filteredData = useMemo(() => {
+    if (selectedYear === 'all') return runningTotals;
+    return runningTotals.filter(m => m.month.startsWith(selectedYear));
+  }, [runningTotals, selectedYear]);
+
+  // Summary stats for filtered data
   const totals = useMemo(() => ({
-    income: runningTotals.reduce((s, m) => s + m.income, 0),
-    expenses: runningTotals.reduce((s, m) => s + m.expenses, 0),
-    net: runningTotals.reduce((s, m) => s + m.net, 0),
-  }), [runningTotals]);
+    income: filteredData.reduce((s, m) => s + m.income, 0),
+    expenses: filteredData.reduce((s, m) => s + m.expenses, 0),
+    net: filteredData.reduce((s, m) => s + m.net, 0),
+  }), [filteredData]);
+
+  // Get unique years from forecast data
+  const availableYears = useMemo(() => {
+    const years = new Set(forecastData.map(m => m.month.substring(0, 4)));
+    return Array.from(years).sort();
+  }, [forecastData]);
 
   // Calendar data
   const calendarDays = useMemo(() => {
@@ -119,24 +132,52 @@ export default function ForecastPage() {
     <AppLayout>
       <Header 
         title="Forecast" 
-        subtitle="12-month projection"
+        subtitle={selectedYear === 'all' ? 'Jan 2025 - Full Projection' : `${selectedYear} Overview`}
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <div className="p-4 lg:p-6 space-y-6 animate-fade-in">
+        
+        {/* Year Filter */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">View:</span>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[120px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="all">All Years</SelectItem>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Showing {filteredData.length} months
+          </div>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
-            <p className="text-xs text-muted-foreground mb-1 font-medium">12-Month Income</p>
+            <p className="text-xs text-muted-foreground mb-1 font-medium">
+              {selectedYear === 'all' ? 'Total' : selectedYear} Income
+            </p>
             <p className="text-2xl font-bold text-success">{formatCurrency(totals.income)}</p>
           </div>
           <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
-            <p className="text-xs text-muted-foreground mb-1 font-medium">12-Month Expenses</p>
+            <p className="text-xs text-muted-foreground mb-1 font-medium">
+              {selectedYear === 'all' ? 'Total' : selectedYear} Expenses
+            </p>
             <p className="text-2xl font-bold text-destructive">{formatCurrency(totals.expenses)}</p>
           </div>
           <div className="rounded-2xl bg-card border border-border p-5 hover:shadow-md transition-shadow">
-            <p className="text-xs text-muted-foreground mb-1 font-medium">Net Projection</p>
-            <p className={cn("text-2xl font-bold", totals.net >= 0 ? "text-primary" : "text-destructive")}>
+            <p className="text-xs text-muted-foreground mb-1 font-medium">
+              {selectedYear === 'all' ? 'Total' : selectedYear} Net
+            </p>
+            <p className={cn("text-2xl font-bold", totals.net >= 0 ? "text-success" : "text-destructive")}>
               {formatCurrency(totals.net)}
             </p>
           </div>
@@ -147,7 +188,7 @@ export default function ForecastPage() {
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">Monthly Income vs Expenses</h3>
           <div className="h-64 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={runningTotals} barGap={2}>
+              <BarChart data={filteredData} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis 
                   dataKey="label" 
@@ -176,7 +217,7 @@ export default function ForecastPage() {
                     formatCurrency(value),
                     name === 'income' ? 'Income' : 'Expenses',
                   ]}
-                  labelFormatter={(label) => runningTotals.find(m => m.label === label)?.fullLabel}
+                  labelFormatter={(label) => filteredData.find(m => m.label === label)?.fullLabel}
                 />
                 <Legend 
                   formatter={(value) => value === 'income' ? 'Income' : 'Expenses'}
@@ -232,10 +273,10 @@ export default function ForecastPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {runningTotals.map((month, i) => (
+                  {filteredData.map((month, i) => (
                     <tr key={month.month} className={cn(
                       "border-b border-border/50 hover:bg-muted/30 transition-colors",
-                      i === 0 && "bg-accent/5"
+                      month.month === format(new Date(), 'yyyy-MM') && "bg-accent/5"
                     )}>
                       <td className="p-4">
                         <span className="font-medium">{month.fullLabel}</span>

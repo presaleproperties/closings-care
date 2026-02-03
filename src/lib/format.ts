@@ -65,3 +65,32 @@ export function getMonthRange(startOffset: number, count: number): string[] {
   }
   return months;
 }
+
+// Get months from a specific year start to end
+export function getYearMonths(year: number): string[] {
+  const months: string[] = [];
+  for (let month = 0; month < 12; month++) {
+    const date = new Date(year, month, 1);
+    months.push(format(date, 'yyyy-MM'));
+  }
+  return months;
+}
+
+// Get months from Jan 2025 through end of projection period
+export function getExtendedMonthRange(projectionMonths: number = 24): string[] {
+  const months: string[] = [];
+  const now = new Date();
+  
+  // Start from Jan 2025
+  const startDate = new Date(2025, 0, 1);
+  // End at current month + projection months
+  const endDate = new Date(now.getFullYear(), now.getMonth() + projectionMonths, 1);
+  
+  let current = startDate;
+  while (current <= endDate) {
+    months.push(format(current, 'yyyy-MM'));
+    current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+  }
+  
+  return months;
+}
