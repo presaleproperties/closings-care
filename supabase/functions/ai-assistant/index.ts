@@ -11,8 +11,37 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "preview_deal",
+      description: "Preview/extract deal details for user approval BEFORE creating. Use this when extracting deal information from screenshots or when user wants to review details first. The user will need to approve before the deal is actually created.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_name: { type: "string", description: "Name of the client" },
+          deal_type: { type: "string", enum: ["BUY", "SELL"], description: "Type of deal - BUY for buying side, SELL for selling side" },
+          property_type: { type: "string", enum: ["PRESALE", "RESALE"], description: "Whether this is a presale or resale property" },
+          city: { type: "string", description: "City where the property is located, default Vancouver" },
+          address: { type: "string", description: "Property address if known" },
+          project_name: { type: "string", description: "Project name for presale properties" },
+          sale_price: { type: "number", description: "Sale price of the property" },
+          gross_commission_est: { type: "number", description: "Estimated gross commission amount" },
+          close_date_est: { type: "string", description: "Estimated closing date in YYYY-MM-DD format" },
+          advance_date: { type: "string", description: "Advance commission date for presale (YYYY-MM-DD)" },
+          advance_commission: { type: "number", description: "Advance commission amount for presale" },
+          completion_date: { type: "string", description: "Completion date for presale (YYYY-MM-DD)" },
+          completion_commission: { type: "number", description: "Completion commission for presale" },
+          notes: { type: "string", description: "Any additional notes about the deal" },
+          lead_source: { type: "string", description: "Where the lead came from" },
+          buyer_type: { type: "string", description: "Type of buyer (e.g., First-time, Investor)" },
+        },
+        required: ["client_name", "deal_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_deal",
-      description: "Create a new real estate deal/transaction. Use this when the user wants to add a new deal, client, or transaction.",
+      description: "Create a new real estate deal/transaction. Use this ONLY when the user explicitly confirms/approves the deal creation, or when manually entering deal details (not from screenshots).",
       parameters: {
         type: "object",
         properties: {
@@ -172,14 +201,21 @@ IMPORTANT INTERACTION RULES:
 - Confirm actions with brief acknowledgments like "Done!" or "Got it!"
 - When searching/updating deals, always search first to get the deal ID
 
-IMAGE/SCREENSHOT PROCESSING:
+IMAGE/SCREENSHOT PROCESSING - CRITICAL:
 When the user uploads a screenshot or image of a deal document:
-- Extract ALL visible deal information: client name, property address, deal type, commission amounts, dates, etc.
-- Use create_deal to add the extracted information
-- Ask for clarification ONLY if critical information (client name, deal type) is completely missing
-- Default city to Vancouver if not specified
-- For commission, look for gross commission, agent commission, or total commission amounts
-- For dates, look for closing date, completion date, possession date, or similar
+1. Extract ALL visible deal information: client name, property address, deal type, commission amounts, dates, etc.
+2. Use preview_deal (NOT create_deal) to show the extracted details for user approval
+3. The user interface will show approve/reject buttons
+4. ONLY use create_deal when the user explicitly says "yes", "approve", "create it", "looks good", etc.
+5. Ask for clarification ONLY if critical information (client name, deal type) is completely missing
+6. Default city to Vancouver if not specified
+7. For commission, look for gross commission, agent commission, or total commission amounts
+8. For dates, look for closing date, completion date, possession date, or similar
+
+APPROVAL FLOW:
+- When user says "yes", "approve", "create", "looks good", "confirm" after seeing a preview → use create_deal with the same details
+- When user says "no", "cancel", "reject" → acknowledge and ask if they want to make changes
+- When user provides corrections → use preview_deal again with updated details
 
 Key context:
 - All amounts are in CAD (Canadian dollars)
@@ -292,6 +328,36 @@ serve(async (req) => {
 
         try {
           switch (functionName) {
+            case "preview_deal": {
+              // Return deal details for user approval - don't create yet
+              const previewData = {
+                client_name: args.client_name,
+                deal_type: args.deal_type,
+                property_type: args.property_type || "RESALE",
+                city: args.city || "Vancouver",
+                address: args.address || null,
+                project_name: args.project_name || null,
+                sale_price: args.sale_price || null,
+                gross_commission_est: args.gross_commission_est || null,
+                close_date_est: args.close_date_est || null,
+                advance_date: args.advance_date || null,
+                advance_commission: args.advance_commission || null,
+                completion_date: args.completion_date || null,
+                completion_commission: args.completion_commission || null,
+                notes: args.notes || null,
+                lead_source: args.lead_source || null,
+                buyer_type: args.buyer_type || null,
+              };
+
+              result = { 
+                type: "deal_preview",
+                success: true, 
+                preview: previewData,
+                message: "Please review the extracted deal details and approve to create."
+              };
+              break;
+            }
+
             case "create_deal": {
               const dealData = {
                 client_name: args.client_name,
@@ -577,6 +643,23 @@ serve(async (req) => {
         });
       }
 
+      // Check if any tool call was a deal preview
+      const previewToolCall = assistantMessage.tool_calls.find(
+        (tc: any) => tc.function.name === "preview_deal"
+      );
+      let dealPreview = null;
+      if (previewToolCall) {
+        const previewResult = toolResults.find(tr => tr.tool_call_id === previewToolCall.id);
+        if (previewResult) {
+          try {
+            const parsed = JSON.parse(previewResult.content);
+            if (parsed.type === "deal_preview" && parsed.preview) {
+              dealPreview = parsed.preview;
+            }
+          } catch {}
+        }
+      }
+
       // Second AI call with tool results
       const followUpResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -603,6 +686,7 @@ serve(async (req) => {
       
       return new Response(JSON.stringify({
         message: followUpData.choices[0].message.content,
+        dealPreview,
         tool_calls: assistantMessage.tool_calls.map((tc: any) => ({
           name: tc.function.name,
           result: toolResults.find(tr => tr.tool_call_id === tc.id)?.content,

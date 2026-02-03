@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2, ImagePlus } from 'lucide-react';
+import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2, ImagePlus, Check, XCircle, Building2, DollarSign, Calendar, MapPin, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -9,8 +9,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/format';
 
 type AssistantState = 'idle' | 'listening' | 'processing' | 'speaking';
+
+interface DealPreview {
+  client_name: string;
+  deal_type: 'BUY' | 'SELL';
+  property_type?: 'PRESALE' | 'RESALE';
+  city?: string;
+  address?: string;
+  project_name?: string;
+  sale_price?: number;
+  gross_commission_est?: number;
+  close_date_est?: string;
+  advance_date?: string;
+  advance_commission?: number;
+  completion_date?: string;
+  completion_commission?: number;
+  notes?: string;
+  lead_source?: string;
+  buyer_type?: string;
+}
 
 interface Message {
   id: string;
@@ -18,6 +40,7 @@ interface Message {
   content: string;
   imageUrl?: string;
   timestamp: Date;
+  dealPreview?: DealPreview;
 }
 
 // Save message to database
@@ -136,7 +159,11 @@ function SuggestionChip({ text, onClick }: { text: string; onClick: () => void }
 }
 
 // Message Bubble Component
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onApproveDeal, onRejectDeal }: { 
+  message: Message; 
+  onApproveDeal?: (preview: DealPreview) => void;
+  onRejectDeal?: () => void;
+}) {
   const isUser = message.role === 'user';
   
   return (
@@ -144,21 +171,188 @@ function MessageBubble({ message }: { message: Message }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "max-w-[85%] rounded-2xl px-4 py-2.5",
-        isUser 
-          ? "bg-primary text-primary-foreground ml-auto rounded-br-sm" 
-          : "bg-muted text-foreground mr-auto rounded-bl-sm"
+        "max-w-[85%]",
+        isUser ? "ml-auto" : "mr-auto"
       )}
     >
-      {message.imageUrl && (
-        <img 
-          src={message.imageUrl} 
-          alt="Uploaded" 
-          className="max-w-full rounded-lg mb-2 max-h-48 object-contain"
+      {/* Regular message bubble */}
+      <div className={cn(
+        "rounded-2xl px-4 py-2.5",
+        isUser 
+          ? "bg-primary text-primary-foreground rounded-br-sm" 
+          : "bg-muted text-foreground rounded-bl-sm",
+        message.dealPreview && "mb-3"
+      )}>
+        {message.imageUrl && (
+          <img 
+            src={message.imageUrl} 
+            alt="Uploaded" 
+            className="max-w-full rounded-lg mb-2 max-h-48 object-contain"
+          />
+        )}
+        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+      </div>
+      
+      {/* Deal Preview Card */}
+      {message.dealPreview && onApproveDeal && (
+        <DealPreviewCard 
+          preview={message.dealPreview}
+          onApprove={() => onApproveDeal(message.dealPreview!)}
+          onReject={onRejectDeal}
         />
       )}
-      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
     </motion.div>
+  );
+}
+
+// Deal Preview Card Component
+function DealPreviewCard({ 
+  preview, 
+  onApprove, 
+  onReject 
+}: { 
+  preview: DealPreview; 
+  onApprove: () => void; 
+  onReject?: () => void;
+}) {
+  return (
+    <Card className="bg-card/80 backdrop-blur border-primary/20 shadow-lg">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            {preview.client_name}
+          </CardTitle>
+          <div className="flex gap-1.5">
+            <Badge variant={preview.deal_type === 'BUY' ? 'default' : 'secondary'}>
+              {preview.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
+            </Badge>
+            <Badge variant="outline">
+              {preview.property_type || 'RESALE'}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Property Info */}
+        {(preview.address || preview.project_name) && (
+          <div className="flex items-start gap-2 text-sm">
+            <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <div>
+              {preview.project_name && <p className="font-medium">{preview.project_name}</p>}
+              {preview.address && <p className="text-muted-foreground">{preview.address}</p>}
+            </div>
+          </div>
+        )}
+        
+        {/* Location */}
+        {preview.city && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4" />
+            {preview.city}
+          </div>
+        )}
+        
+        {/* Financial Info */}
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+          {preview.sale_price && (
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-xs text-muted-foreground">Sale Price</p>
+                <p className="font-medium">{formatCurrency(preview.sale_price)}</p>
+              </div>
+            </div>
+          )}
+          
+          {preview.gross_commission_est && (
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-success" />
+              <div>
+                <p className="text-xs text-muted-foreground">Commission</p>
+                <p className="font-medium text-success">{formatCurrency(preview.gross_commission_est)}</p>
+              </div>
+            </div>
+          )}
+          
+          {preview.advance_commission && (
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-info" />
+              <div>
+                <p className="text-xs text-muted-foreground">Advance</p>
+                <p className="font-medium">{formatCurrency(preview.advance_commission)}</p>
+              </div>
+            </div>
+          )}
+          
+          {preview.completion_commission && (
+            <div className="flex items-center gap-2 text-sm">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-xs text-muted-foreground">Completion</p>
+                <p className="font-medium">{formatCurrency(preview.completion_commission)}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Dates */}
+        {(preview.close_date_est || preview.advance_date || preview.completion_date) && (
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+            {preview.close_date_est && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Closing</p>
+                  <p className="font-medium">{new Date(preview.close_date_est).toLocaleDateString()}</p>
+                </div>
+              </div>
+            )}
+            {preview.advance_date && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-info" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Advance</p>
+                  <p className="font-medium">{new Date(preview.advance_date).toLocaleDateString()}</p>
+                </div>
+              </div>
+            )}
+            {preview.completion_date && (
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Completion</p>
+                  <p className="font-medium">{new Date(preview.completion_date).toLocaleDateString()}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-3">
+          <Button 
+            onClick={onApprove} 
+            className="flex-1 gap-2"
+            size="sm"
+          >
+            <Check className="h-4 w-4" />
+            Approve & Create
+          </Button>
+          {onReject && (
+            <Button 
+              onClick={onReject} 
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Cancel
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -180,6 +374,7 @@ export function VoiceAssistant() {
   const [inputText, setInputText] = useState('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
   const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [pendingDealPreview, setPendingDealPreview] = useState<DealPreview | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -249,11 +444,19 @@ export function VoiceAssistant() {
       
       if (aiError) throw aiError;
       
+      // Check if response contains a deal preview
+      let dealPreview: DealPreview | undefined;
+      if (aiData.dealPreview) {
+        dealPreview = aiData.dealPreview;
+        setPendingDealPreview(dealPreview);
+      }
+      
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: aiData.message || "Sorry, I didn't understand that.",
         timestamp: new Date(),
+        dealPreview,
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -316,6 +519,42 @@ export function VoiceAssistant() {
       setState('idle');
     }
   }, [messages, user?.id, session?.access_token, queryClient, state]);
+
+  // Handle deal preview approval
+  const handleApproveDeal = useCallback(async (preview: DealPreview) => {
+    if (!user?.id || state === 'processing') return;
+    
+    setPendingDealPreview(null);
+    
+    // Remove the preview from the message that had it
+    setMessages(prev => prev.map(m => 
+      m.dealPreview ? { ...m, dealPreview: undefined } : m
+    ));
+    
+    // Send approval message to AI
+    await sendTextMessage('Yes, create this deal');
+  }, [user?.id, state, sendTextMessage]);
+
+  // Handle deal preview rejection
+  const handleRejectDeal = useCallback(() => {
+    setPendingDealPreview(null);
+    
+    // Remove the preview from the message that had it
+    setMessages(prev => prev.map(m => 
+      m.dealPreview ? { ...m, dealPreview: undefined } : m
+    ));
+    
+    // Add rejection message
+    const rejectMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: 'Cancel - I don\'t want to create this deal',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, rejectMessage]);
+    
+    toast.info('Deal creation cancelled');
+  }, []);
 
   const startRecording = useCallback(async () => {
     try {
@@ -613,7 +852,12 @@ export function VoiceAssistant() {
                 ) : (
                   <>
                     {messages.map((message) => (
-                      <MessageBubble key={message.id} message={message} />
+                      <MessageBubble 
+                        key={message.id} 
+                        message={message}
+                        onApproveDeal={handleApproveDeal}
+                        onRejectDeal={handleRejectDeal}
+                      />
                     ))}
                     
                     {state === 'processing' && (
