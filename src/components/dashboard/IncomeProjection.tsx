@@ -303,9 +303,9 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Expenses</p>
             <p className="text-lg font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
           </div>
-          <div className={`p-3 rounded-xl border ${netProjection >= 0 ? 'bg-accent/10 border-accent/20' : 'bg-destructive/10 border-destructive/20'}`}>
+          <div className={`p-3 rounded-xl border ${netProjection >= 0 ? 'bg-success/10 border-success/20' : 'bg-destructive/10 border-destructive/20'}`}>
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Net Projection</p>
-            <p className={`text-lg font-bold ${netProjection >= 0 ? 'text-accent' : 'text-destructive'}`}>
+            <p className={`text-lg font-bold ${netProjection >= 0 ? 'text-success' : 'text-destructive'}`}>
               {formatCurrency(netProjection)}
             </p>
           </div>
