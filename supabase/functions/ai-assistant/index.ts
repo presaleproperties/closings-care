@@ -157,19 +157,29 @@ const tools = [
   },
 ];
 
-const systemPrompt = `You are a helpful voice AI assistant for Dealzflow, a real estate commission tracking app. You help Vancouver real estate agents manage their business by voice.
+const systemPrompt = `You are a helpful AI assistant for Dealzflow, a real estate commission tracking app. You help Vancouver real estate agents manage their business by voice or text.
 
 You can:
 - Add new deals and transactions
 - Update existing deals (search first, then update)
 - Track expenses and income
 - Provide summaries of deals, payouts, and expenses
+- Extract deal details from screenshots/images of brokerage documents
 
-IMPORTANT VOICE INTERACTION RULES:
-- Keep responses SHORT and conversational - this is voice, not text chat
+IMPORTANT INTERACTION RULES:
+- Keep responses SHORT and conversational
 - Speak naturally as if talking to a colleague
 - Confirm actions with brief acknowledgments like "Done!" or "Got it!"
 - When searching/updating deals, always search first to get the deal ID
+
+IMAGE/SCREENSHOT PROCESSING:
+When the user uploads a screenshot or image of a deal document:
+- Extract ALL visible deal information: client name, property address, deal type, commission amounts, dates, etc.
+- Use create_deal to add the extracted information
+- Ask for clarification ONLY if critical information (client name, deal type) is completely missing
+- Default city to Vancouver if not specified
+- For commission, look for gross commission, agent commission, or total commission amounts
+- For dates, look for closing date, completion date, possession date, or similar
 
 Key context:
 - All amounts are in CAD (Canadian dollars)
@@ -177,16 +187,6 @@ Key context:
 - Deal types: BUY (buyer side) or SELL (seller side)
 - Presale deals have advance commission and completion commission
 - Resale deals have a single commission at closing
-
-When adding deals:
-- Ask for: client name, deal type (buy/sell), and commission amount
-- For presale, ask about advance and completion amounts/dates
-- For resale, ask about closing date
-
-When updating deals:
-- ALWAYS use search_deals first to find the deal ID
-- Then use update_deal with the ID and the fields to change
-- Confirm what was updated
 
 Keep it brief and friendly!`;
 
@@ -196,7 +196,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userId } = await req.json();
+    const { messages, userId, imageData } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -214,6 +214,34 @@ serve(async (req) => {
       },
     });
 
+    // Prepare messages for AI - handle multimodal content if image is provided
+    const preparedMessages = messages.map((msg: any, index: number) => {
+      // If this is the last user message and we have image data, make it multimodal
+      if (index === messages.length - 1 && msg.role === 'user' && imageData) {
+        return {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: msg.content || 'Please extract all deal information from this screenshot and create the deal.',
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: imageData, // base64 data URL
+              },
+            },
+          ],
+        };
+      }
+      return msg;
+    });
+
+    // Use vision-capable model when image is present
+    const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+    
+    console.log("Using model:", model, "Image attached:", !!imageData);
+
     // First AI call with tools
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -222,10 +250,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...preparedMessages,
         ],
         tools,
         tool_choice: "auto",
