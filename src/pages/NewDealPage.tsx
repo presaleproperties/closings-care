@@ -24,6 +24,8 @@ import { UpgradePrompt, UsageLimitIndicator } from '@/components/UpgradePrompt';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
 import { calculateNetCommission, formatCommissionBreakdown } from '@/lib/commissionCalculations';
 import { useDealDraft } from '@/contexts/DealDraftContext';
+import { useAuth } from '@/hooks/useAuth';
+import { ScreenshotExtractor } from '@/components/deals/ScreenshotExtractor';
 import { toast } from 'sonner';
 
 // Format number with commas
@@ -41,6 +43,7 @@ const parseCurrency = (value: string): number | null => {
 
 export default function NewDealPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const createDeal = useCreateDeal();
   const { data: settings } = useSettings();
   const { data: paidPayouts = [] } = usePayouts();
@@ -48,6 +51,20 @@ export default function NewDealPage() {
   const { canAddDeal, usage, isFree } = useSubscription();
   const { dealDraft, clearDraft } = useDealDraft();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  // Handle screenshot extraction
+  const handleScreenshotExtract = (extractedData: Partial<DealFormData>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...extractedData,
+      city: extractedData.city || prev.city,
+    }));
+    
+    // Set advance commission toggle based on extracted data
+    if (extractedData.property_type === 'PRESALE') {
+      setHasAdvanceCommission(!!(extractedData.advance_commission || extractedData.advance_date));
+    }
+  };
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({
     client_name: '',
@@ -184,6 +201,16 @@ export default function NewDealPage() {
           onOpenChange={setShowUpgradePrompt}
           reason={`You've reached the limit of ${usage.dealsUsed} deals on the free plan.`}
         />
+
+        {/* Screenshot Extractor */}
+        {user?.id && (
+          <div className="mb-4">
+            <ScreenshotExtractor 
+              onExtract={handleScreenshotExtract}
+              userId={user.id}
+            />
+          </div>
+        )}
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           {/* Step 1: Essential Info */}
