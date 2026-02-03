@@ -360,9 +360,18 @@ export default function DealDetailPage() {
           </div>
           <div className="landing-card p-4 text-center">
             <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Payouts</div>
-            <div className="text-lg font-bold">
+            <div className="text-lg font-bold mb-2">
               <span className="text-primary">{formatCurrencyDisplay(paidPayouts)}</span>
               <span className="text-muted-foreground text-sm font-normal"> / {formatCurrencyDisplay(totalPayouts)}</span>
+            </div>
+            <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+                style={{ width: `${totalPayouts > 0 ? Math.min((paidPayouts / totalPayouts) * 100, 100) : 0}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {totalPayouts > 0 ? Math.round((paidPayouts / totalPayouts) * 100) : 0}% collected
             </div>
           </div>
           <div className="landing-card p-4 text-center col-span-2 sm:col-span-1">
