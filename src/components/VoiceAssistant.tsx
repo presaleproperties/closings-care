@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2 } from 'lucide-react';
+import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  imageUrl?: string;
   timestamp: Date;
 }
 
@@ -149,6 +150,13 @@ function MessageBubble({ message }: { message: Message }) {
           : "bg-muted text-foreground mr-auto rounded-bl-sm"
       )}
     >
+      {message.imageUrl && (
+        <img 
+          src={message.imageUrl} 
+          alt="Uploaded" 
+          className="max-w-full rounded-lg mb-2 max-h-48 object-contain"
+        />
+      )}
       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
     </motion.div>
   );
@@ -158,7 +166,7 @@ const QUICK_PROMPTS = [
   "Add a new deal for $500k",
   "What's my commission this month?",
   "Add $150 marketing expense",
-  "Update my latest deal to closed",
+  "📷 Upload deal screenshot",
   "Show my pending payouts",
   "What deals are closing soon?",
 ];
@@ -171,6 +179,7 @@ export function VoiceAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -178,6 +187,7 @@ export function VoiceAssistant() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load messages from database
   const { data: savedMessages, refetch: refetchMessages } = useQuery({
@@ -207,21 +217,23 @@ export function VoiceAssistant() {
     toast.success('Chat history cleared');
   };
 
-  const sendTextMessage = useCallback(async (text: string) => {
-    if (!text.trim() || state === 'processing' || !user?.id) return;
+  const sendTextMessage = useCallback(async (text: string, imageData?: string | null) => {
+    if ((!text.trim() && !imageData) || state === 'processing' || !user?.id) return;
     
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: text.trim(),
+      content: text.trim() || (imageData ? '📷 Extract deal from screenshot' : ''),
+      imageUrl: imageData || undefined,
       timestamp: new Date(),
     };
     
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    setPendingImage(null);
     setState('processing');
     
-    // Save user message to database
+    // Save user message to database (without image for storage efficiency)
     await saveMessage(user.id, 'user', userMessage.content);
     
     try {
@@ -231,6 +243,7 @@ export function VoiceAssistant() {
         body: {
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           userId: user?.id,
+          imageData: imageData || undefined,
         },
       });
       
@@ -431,15 +444,70 @@ export function VoiceAssistant() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendTextMessage(inputText);
+    sendTextMessage(inputText, pendingImage);
   };
 
   const handlePromptClick = (prompt: string) => {
-    sendTextMessage(prompt);
+    if (prompt.includes('📷')) {
+      fileInputRef.current?.click();
+    } else {
+      sendTextMessage(prompt);
+    }
+  };
+
+  const handleImageUpload = useCallback((file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image too large. Please use an image under 10MB.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      setPendingImage(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      handleImageUpload(file);
+    }
+    e.target.value = '';
+  };
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          handleImageUpload(file);
+          return;
+        }
+      }
+    }
+  }, [handleImageUpload]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      handleImageUpload(file);
+    }
+  }, [handleImageUpload]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const close = () => {
     stopSpeaking();
+    setPendingImage(null);
     setIsExpanded(false);
   };
 
@@ -604,8 +672,54 @@ export function VoiceAssistant() {
 
             {/* Input Area */}
             {state !== 'listening' && (
-              <form onSubmit={handleSubmit} className="p-3 border-t border-border bg-muted/30 shrink-0">
+              <form 
+                onSubmit={handleSubmit} 
+                onPaste={handlePaste}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                className="p-3 border-t border-border bg-muted/30 shrink-0"
+              >
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                
+                {/* Pending image preview */}
+                {pendingImage && (
+                  <div className="mb-2 relative inline-block">
+                    <img 
+                      src={pendingImage} 
+                      alt="Pending upload" 
+                      className="max-h-24 rounded-lg border border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      onClick={() => setPendingImage(null)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                
                 <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 h-10 w-10 rounded-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={state === 'processing'}
+                    title="Upload deal screenshot"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -629,7 +743,7 @@ export function VoiceAssistant() {
                     ref={inputRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Type a message..."
+                    placeholder={pendingImage ? "Add note about the deal..." : "Type a message or paste image..."}
                     className="flex-1 bg-background"
                     disabled={state === 'processing' || state === 'speaking'}
                   />
@@ -637,7 +751,7 @@ export function VoiceAssistant() {
                     type="submit"
                     size="icon"
                     className="shrink-0 h-10 w-10 rounded-full"
-                    disabled={!inputText.trim() || state === 'processing' || state === 'speaking'}
+                    disabled={(!inputText.trim() && !pendingImage) || state === 'processing' || state === 'speaking'}
                   >
                     <Send className="h-5 w-5" />
                   </Button>
