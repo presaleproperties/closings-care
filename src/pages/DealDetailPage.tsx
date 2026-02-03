@@ -14,7 +14,8 @@ import {
   MoreHorizontal,
   Info,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -63,7 +64,8 @@ import {
   useCreatePayout, 
   useUpdatePayout, 
   useMarkPayoutPaid,
-  useDeletePayout 
+  useDeletePayout,
+  useRecalculatePayouts
 } from '@/hooks/usePayouts';
 import { formatCurrency as formatCurrencyDisplay, formatDate } from '@/lib/format';
 import { DealFormData, DealType, DealStatus, PropertyType, PayoutType, PayoutStatus, PayoutFormData } from '@/lib/types';
@@ -99,6 +101,7 @@ export default function DealDetailPage() {
   const updatePayout = useUpdatePayout();
   const markPaid = useMarkPayoutPaid();
   const deletePayout = useDeletePayout();
+  const recalculatePayouts = useRecalculatePayouts();
 
   // Calculate prev/next deal for navigation
   const dealNavigation = useMemo(() => {
@@ -873,6 +876,30 @@ export default function DealDetailPage() {
                   <p className="font-semibold text-success">{formatCurrencyDisplay(paidPayouts)}</p>
                 </div>
               </div>
+
+              {/* Recalculate button for team deals */}
+              {isTeamDeal && payouts.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mb-4 text-xs"
+                  onClick={() => {
+                    if (!id) return;
+                    recalculatePayouts.mutate({
+                      dealId: id,
+                      advanceCommission: formData.advance_commission || 0,
+                      completionCommission: formData.completion_commission || 0,
+                      grossCommission: formData.gross_commission_est || 0,
+                      teamMemberPortion: formData.team_member_portion || 0,
+                      propertyType: formData.property_type || null,
+                    });
+                  }}
+                  disabled={recalculatePayouts.isPending}
+                >
+                  <RefreshCw className={`w-3 h-3 mr-1.5 ${recalculatePayouts.isPending ? 'animate-spin' : ''}`} />
+                  Recalculate for {100 - (formData.team_member_portion || 0)}% split
+                </Button>
+              )}
 
               {/* Payouts List */}
               {payouts.length === 0 ? (
