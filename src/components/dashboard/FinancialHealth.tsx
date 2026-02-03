@@ -13,31 +13,61 @@ import {
   Shield
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { Deal, Payout, Expense } from '@/lib/types';
+import { Deal, Payout, Expense, OtherIncome } from '@/lib/types';
 import { springConfigs } from '@/lib/haptics';
 import { getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { Property } from '@/hooks/useProperties';
-import { format } from 'date-fns';
+import { format, parseISO, isBefore, isAfter } from 'date-fns';
 
 interface FinancialHealthProps {
   deals: Deal[];
   payouts: Payout[];
   expenses: Expense[];
   properties: Property[];
+  otherIncome: OtherIncome[];
   monthlyExpenses: number;
   annualExpenses: number;
 }
 
-export function FinancialHealth({ deals, payouts, expenses, properties, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
+export function FinancialHealth({ deals, payouts, expenses, properties, otherIncome, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
     // Money you've received this year (PAID payouts)
-    const moneyReceived = payouts
+    const paidPayouts = payouts
       .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Calculate YTD other income (Revenue Share, etc.)
+    let otherIncomeYTD = 0;
+    for (let month = 1; month <= currentMonth; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      const monthDate = parseISO(`${monthStr}-01`);
+      
+      for (const income of otherIncome) {
+        const startDate = parseISO(`${income.start_month}-01`);
+        const endDate = income.end_month ? parseISO(`${income.end_month}-01`) : null;
+        
+        // Check if this month is within the income's active period
+        const hasStarted = !isAfter(startDate, monthDate);
+        const hasNotEnded = !endDate || !isBefore(endDate, monthDate);
+        
+        if (hasStarted && hasNotEnded) {
+          if (income.recurrence === 'monthly') {
+            otherIncomeYTD += Number(income.amount);
+          } else if (income.recurrence === 'weekly') {
+            otherIncomeYTD += Number(income.amount) * 4.33;
+          } else if (income.recurrence === 'one-time' && income.start_month === monthStr) {
+            otherIncomeYTD += Number(income.amount);
+          }
+        }
+      }
+    }
+
+    // Total received = paid payouts + other income YTD
+    const moneyReceived = paidPayouts + otherIncomeYTD;
 
     // Money coming (pending payouts)
     const moneyComing = payouts
@@ -80,7 +110,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, monthlyE
       monthsCovered,
       healthStatus,
     };
-  }, [payouts, expenses, properties, monthlyExpenses]);
+  }, [payouts, expenses, properties, otherIncome, monthlyExpenses]);
 
   const getStatusConfig = () => {
     switch (metrics.healthStatus) {

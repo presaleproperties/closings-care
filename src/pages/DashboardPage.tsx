@@ -238,6 +238,7 @@ export default function DashboardPage() {
                 payouts={payouts}
                 expenses={expenses}
                 properties={properties}
+                otherIncome={otherIncome}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
@@ -276,6 +277,7 @@ export default function DashboardPage() {
                 payouts={payouts}
                 expenses={expenses}
                 properties={properties}
+                otherIncome={otherIncome}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
@@ -370,6 +372,7 @@ export default function DashboardPage() {
                       payouts={payouts}
                       expenses={expenses}
                       properties={properties}
+                      otherIncome={otherIncome}
                       monthlyExpenses={expenseTotals.monthly}
                       annualExpenses={expenseTotals.annual}
                     />
@@ -428,6 +431,7 @@ export default function DashboardPage() {
                 payouts={payouts}
                 expenses={expenses}
                 properties={properties}
+                otherIncome={otherIncome}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
