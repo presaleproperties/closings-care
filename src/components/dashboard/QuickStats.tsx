@@ -1,11 +1,18 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Receipt, Target, Calendar } from 'lucide-react';
+import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat, X } from 'lucide-react';
 import { Deal, Payout, OtherIncome } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
+import { formatCurrency } from '@/lib/format';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface QuickStatsProps {
   deals: Deal[];
@@ -18,6 +25,7 @@ interface QuickStatsProps {
 export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid }: QuickStatsProps) {
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   // Find payouts that should be auto-marked as paid (due date has passed)
   useEffect(() => {
@@ -33,6 +41,52 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       onAutoMarkPaid(overdueUnpaid.map(p => p.id));
     }
   }, [payouts, onAutoMarkPaid, today]);
+
+  // Calculate breakdown for display
+  const breakdown = useMemo(() => {
+    const totalCommissions = payouts
+      .filter(p => p.status !== 'PAID')
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    let totalOtherIncome = 0;
+    const currentMonth = new Date().getMonth() + 1;
+    let monthsIncluded = 0;
+    
+    for (let i = 0; i < 48; i++) {
+      const monthOffset = currentMonth + i;
+      const year = thisYear + Math.floor((monthOffset - 1) / 12);
+      const month = ((monthOffset - 1) % 12) + 1;
+      const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      otherIncome.forEach(income => {
+        const startMonth = income.start_month;
+        const endMonth = income.end_month;
+        
+        const hasStarted = monthStr >= startMonth;
+        const hasNotEnded = !endMonth || monthStr <= endMonth;
+        
+        if (hasStarted && hasNotEnded) {
+          if (income.recurrence === 'monthly') {
+            totalOtherIncome += Number(income.amount);
+            monthsIncluded++;
+          } else if (income.recurrence === 'weekly') {
+            totalOtherIncome += Number(income.amount) * 4.33;
+          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
+            totalOtherIncome += Number(income.amount);
+          }
+        }
+      });
+    }
+
+    return {
+      commissions: totalCommissions,
+      otherIncome: totalOtherIncome,
+      total: totalCommissions + totalOtherIncome,
+      unpaidPayoutsCount: payouts.filter(p => p.status !== 'PAID').length,
+      otherIncomeItems: otherIncome,
+      monthsProjected: 48,
+    };
+  }, [payouts, otherIncome, thisYear]);
 
   const stats = useMemo(() => {
     // Total projected commissions (all unpaid payouts)
@@ -178,6 +232,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
+            onClick={() => setShowBreakdown(true)}
             className="col-span-2 rounded-[20px] p-5 cursor-pointer"
             style={{
               background: 'linear-gradient(145deg, hsl(158 64% 36%) 0%, hsl(158 64% 28%) 50%, hsl(175 60% 30%) 100%)',
@@ -202,7 +257,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               duration={1.5}
             />
             <p className="text-[13px] text-primary-foreground/70 mt-1">
-              Commissions + RevShare
+              Tap for breakdown
             </p>
           </motion.div>
 
@@ -293,10 +348,11 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
         {statCards.map((stat, index) => (
           <div
             key={stat.label}
+            onClick={stat.label === 'Projected Income' ? () => setShowBreakdown(true) : undefined}
             className={cn(
               "relative overflow-hidden rounded-2xl p-5 transition-all duration-400 hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]",
               stat.gradient 
-                ? `${stat.textColor}`
+                ? `${stat.textColor} cursor-pointer`
                 : "bg-card/98 backdrop-blur-2xl border border-border/40 shadow-ios hover:shadow-ios-lg hover:border-primary/20"
             )}
             style={stat.gradient ? {
@@ -333,11 +389,63 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               <p className={cn(
                 "text-xs mt-1",
                 stat.gradient ? "opacity-70" : "text-muted-foreground"
-              )}>{stat.subtitle}</p>
+              )}>{stat.label === 'Projected Income' ? 'Click for breakdown' : stat.subtitle}</p>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Breakdown Dialog */}
+      <Dialog open={showBreakdown} onOpenChange={setShowBreakdown}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Projected Income Breakdown
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Total */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+              <p className="text-sm text-muted-foreground mb-1">Total Projected</p>
+              <p className="text-3xl font-bold text-primary">{formatCurrency(breakdown.total)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Next {breakdown.monthsProjected} months</p>
+            </div>
+
+            {/* Commissions */}
+            <div className="p-4 rounded-xl bg-success/10 border border-success/20">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-4 w-4 text-success" />
+                <p className="text-sm font-medium text-success">Deal Commissions</p>
+              </div>
+              <p className="text-2xl font-bold text-success">{formatCurrency(breakdown.commissions)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {breakdown.unpaidPayoutsCount} unpaid payout{breakdown.unpaidPayoutsCount !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* Other Income */}
+            <div className="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Repeat className="h-4 w-4 text-sky-500" />
+                <p className="text-sm font-medium text-sky-500">Other Income (RevShare)</p>
+              </div>
+              <p className="text-2xl font-bold text-sky-500">{formatCurrency(breakdown.otherIncome)}</p>
+              {breakdown.otherIncomeItems.map((item) => (
+                <p key={item.id} className="text-xs text-muted-foreground mt-1">
+                  {item.name}: {formatCurrency(item.amount)}/{item.recurrence}
+                </p>
+              ))}
+            </div>
+
+            {/* Calculation note */}
+            <p className="text-xs text-muted-foreground text-center">
+              Projection includes all unpaid commissions + recurring income through {thisYear + 3}
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
