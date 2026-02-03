@@ -269,3 +269,83 @@ export function useDeletePayout() {
     },
   });
 }
+
+interface RecalculatePayoutsData {
+  dealId: string;
+  advanceCommission?: number;
+  completionCommission?: number;
+  grossCommission?: number;
+  teamMemberPortion?: number;
+  propertyType: 'PRESALE' | 'RESALE' | null;
+}
+
+export function useRecalculatePayouts() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      dealId,
+      advanceCommission = 0,
+      completionCommission = 0,
+      grossCommission = 0,
+      teamMemberPortion = 0,
+      propertyType,
+    }: RecalculatePayoutsData) => {
+      // Calculate user's portion (user gets 100% - teamMemberPortion)
+      const userPortion = teamMemberPortion > 0 ? (100 - teamMemberPortion) / 100 : 1;
+
+      // Fetch existing payouts for this deal
+      const { data: existingPayouts, error: fetchError } = await supabase
+        .from('payouts')
+        .select('*')
+        .eq('deal_id', dealId);
+
+      if (fetchError) throw fetchError;
+
+      // Update each payout with the recalculated amount
+      const updates = existingPayouts?.map((payout) => {
+        let newAmount = 0;
+
+        if (payout.payout_type === 'Advance') {
+          newAmount = advanceCommission * userPortion;
+        } else if (payout.payout_type === 'Completion') {
+          // For resale with single payout, use gross; for presale, use completion commission
+          if (propertyType === 'RESALE' || !completionCommission) {
+            newAmount = grossCommission * userPortion;
+          } else {
+            newAmount = completionCommission * userPortion;
+          }
+        } else {
+          // Other payout types - apply user portion to existing amount
+          // (only if it was a team deal and amounts weren't recalculated)
+          newAmount = payout.amount;
+        }
+
+        return {
+          id: payout.id,
+          amount: Math.round(newAmount * 100) / 100,
+        };
+      }) || [];
+
+      // Batch update all payouts
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('payouts')
+          .update({ amount: update.amount })
+          .eq('id', update.id);
+        
+        if (error) throw error;
+      }
+
+      return dealId;
+    },
+    onSuccess: (dealId) => {
+      queryClient.invalidateQueries({ queryKey: ['payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', dealId] });
+      toast.success('Payouts recalculated with team split');
+    },
+    onError: (error) => {
+      toast.error(`Failed to recalculate payouts: ${error.message}`);
+    },
+  });
+}
