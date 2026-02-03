@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, MicOff, Loader2, Volume2, X, Send, MessageCircle } from 'lucide-react';
+import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 type AssistantState = 'idle' | 'listening' | 'processing' | 'speaking';
@@ -17,6 +17,45 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+}
+
+// Save message to database
+async function saveMessage(userId: string, role: 'user' | 'assistant', content: string) {
+  const { error } = await supabase
+    .from('chat_messages')
+    .insert({ user_id: userId, role, content });
+  if (error) console.error('Error saving message:', error);
+}
+
+// Fetch messages from database
+async function fetchMessages(userId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true })
+    .limit(50);
+  
+  if (error) {
+    console.error('Error fetching messages:', error);
+    return [];
+  }
+  
+  return (data || []).map(m => ({
+    id: m.id,
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+    timestamp: new Date(m.created_at),
+  }));
+}
+
+// Clear chat history from database
+async function clearMessages(userId: string) {
+  const { error } = await supabase
+    .from('chat_messages')
+    .delete()
+    .eq('user_id', userId);
+  if (error) console.error('Error clearing messages:', error);
 }
 
 // Audio Waveform Component
@@ -140,13 +179,36 @@ export function VoiceAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Load messages from database
+  const { data: savedMessages, refetch: refetchMessages } = useQuery({
+    queryKey: ['chat-messages', user?.id],
+    queryFn: () => fetchMessages(user!.id),
+    enabled: !!user?.id,
+  });
+
+  // Sync loaded messages to local state
+  useEffect(() => {
+    if (savedMessages && savedMessages.length > 0) {
+      setMessages(savedMessages);
+    }
+  }, [savedMessages]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clear chat history handler
+  const handleClearHistory = async () => {
+    if (!user?.id) return;
+    await clearMessages(user.id);
+    setMessages([]);
+    refetchMessages();
+    toast.success('Chat history cleared');
+  };
+
   const sendTextMessage = useCallback(async (text: string) => {
-    if (!text.trim() || state === 'processing') return;
+    if (!text.trim() || state === 'processing' || !user?.id) return;
     
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -158,6 +220,9 @@ export function VoiceAssistant() {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setState('processing');
+    
+    // Save user message to database
+    await saveMessage(user.id, 'user', userMessage.content);
     
     try {
       const allMessages = [...messages, userMessage];
@@ -179,6 +244,9 @@ export function VoiceAssistant() {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Save assistant message to database
+      await saveMessage(user.id, 'assistant', assistantMessage.content);
       
       // Invalidate queries if tools were called
       if (aiData.tool_calls?.length > 0) {
@@ -425,9 +493,9 @@ export function VoiceAssistant() {
               <div className="flex items-center gap-2">
                 <div className={cn(
                   "w-2 h-2 rounded-full",
-                  state === 'idle' && "bg-emerald-500",
+                  state === 'idle' && "bg-primary",
                   state === 'listening' && "bg-destructive animate-pulse",
-                  state === 'processing' && "bg-amber-500 animate-pulse",
+                  state === 'processing' && "bg-primary/70 animate-pulse",
                   state === 'speaking' && "bg-primary animate-pulse"
                 )} />
                 <span className="text-sm font-medium text-foreground">
@@ -437,9 +505,22 @@ export function VoiceAssistant() {
                   {state === 'speaking' && 'Speaking...'}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={close}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {messages.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive" 
+                    onClick={handleClearHistory}
+                    title="Clear chat history"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={close}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Messages Area */}
