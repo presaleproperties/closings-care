@@ -212,6 +212,23 @@ When the user uploads a screenshot or image of a deal document:
 7. For commission, look for gross commission, agent commission, or total commission amounts
 8. For dates, look for closing date, completion date, possession date, or similar
 
+DEAL NAMING PATTERN RECOGNITION - VERY IMPORTANT:
+The user's brokerage documents follow specific naming conventions:
+1. "Part 1/2" or "1/2" in the deal name = ADVANCE commission payment for a PRESALE deal
+   - Extract the commission amount as advance_commission
+   - Extract the date as advance_date
+2. "Part 2/2" or "2/2" in the deal name = COMPLETION commission payment for a PRESALE deal
+   - Extract the commission amount as completion_commission  
+   - Extract the date as completion_date
+3. Project names like "North Village", "Jericho", "Palisades", "Skyline", etc. indicate PRESALE deals
+   - Extract the project name from the deal title
+   - Set property_type to PRESALE
+4. ASSUME PRESALE by default - majority of deals are presales
+5. When you see multiple screenshots (Part 1/2 and Part 2/2), combine the info:
+   - Part 1/2 screenshot → advance_commission and advance_date
+   - Part 2/2 screenshot → completion_commission and completion_date
+   - gross_commission_est = advance_commission + completion_commission
+
 APPROVAL FLOW:
 - When user says "yes", "approve", "create", "looks good", "confirm" after seeing a preview → use create_deal with the same details
 - When user says "no", "cancel", "reject" → acknowledge and ask if they want to make changes
@@ -223,6 +240,7 @@ Key context:
 - Deal types: BUY (buyer side) or SELL (seller side)
 - Presale deals have advance commission and completion commission
 - Resale deals have a single commission at closing
+- Default to PRESALE and BUY unless clearly indicated otherwise
 
 Keep it brief and friendly!`;
 
