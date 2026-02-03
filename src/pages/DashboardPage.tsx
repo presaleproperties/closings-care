@@ -236,6 +236,8 @@ export default function DashboardPage() {
               <FinancialHealth 
                 deals={deals}
                 payouts={payouts}
+                expenses={expenses}
+                properties={properties}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
@@ -272,6 +274,8 @@ export default function DashboardPage() {
               <FinancialHealth 
                 deals={deals}
                 payouts={payouts}
+                expenses={expenses}
+                properties={properties}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
@@ -364,6 +368,8 @@ export default function DashboardPage() {
                     <FinancialHealth 
                       deals={deals}
                       payouts={payouts}
+                      expenses={expenses}
+                      properties={properties}
                       monthlyExpenses={expenseTotals.monthly}
                       annualExpenses={expenseTotals.annual}
                     />
@@ -420,6 +426,8 @@ export default function DashboardPage() {
               <FinancialHealth 
                 deals={deals}
                 payouts={payouts}
+                expenses={expenses}
+                properties={properties}
                 monthlyExpenses={expenseTotals.monthly}
                 annualExpenses={expenseTotals.annual}
               />
