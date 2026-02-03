@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2, ImagePlus, Check, XCircle, Building2, DollarSign, Calendar, MapPin, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Mic, Loader2, Volume2, X, Send, MessageCircle, Trash2, ImagePlus, Check, XCircle, Building2, DollarSign, Calendar, MapPin, User, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/format';
+import { useDealDraft } from '@/contexts/DealDraftContext';
 
 type AssistantState = 'idle' | 'listening' | 'processing' | 'speaking';
 
@@ -336,8 +338,8 @@ function DealPreviewCard({
             className="flex-1 gap-2"
             size="sm"
           >
-            <Check className="h-4 w-4" />
-            Approve & Create
+            <ExternalLink className="h-4 w-4" />
+            Continue to Form
           </Button>
           {onReject && (
             <Button 
@@ -367,6 +369,8 @@ const QUICK_PROMPTS = [
 
 export function VoiceAssistant() {
   const { user, session } = useAuth();
+  const navigate = useNavigate();
+  const { setDealDraft } = useDealDraft();
   const queryClient = useQueryClient();
   const [state, setState] = useState<AssistantState>('idle');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -520,9 +524,9 @@ export function VoiceAssistant() {
     }
   }, [messages, user?.id, session?.access_token, queryClient, state]);
 
-  // Handle deal preview approval
-  const handleApproveDeal = useCallback(async (preview: DealPreview) => {
-    if (!user?.id || state === 'processing') return;
+  // Handle deal preview approval - navigate to form with pre-filled data
+  const handleApproveDeal = useCallback((preview: DealPreview) => {
+    if (!user?.id) return;
     
     setPendingDealPreview(null);
     
@@ -531,9 +535,32 @@ export function VoiceAssistant() {
       m.dealPreview ? { ...m, dealPreview: undefined } : m
     ));
     
-    // Send approval message to AI
-    await sendTextMessage('Yes, create this deal');
-  }, [user?.id, state, sendTextMessage]);
+    // Convert preview to form data and set in context
+    setDealDraft({
+      client_name: preview.client_name,
+      deal_type: preview.deal_type || 'BUY',
+      property_type: preview.property_type,
+      city: preview.city,
+      address: preview.address,
+      project_name: preview.project_name,
+      sale_price: preview.sale_price,
+      gross_commission_est: preview.gross_commission_est,
+      close_date_est: preview.close_date_est,
+      advance_date: preview.advance_date,
+      advance_commission: preview.advance_commission,
+      completion_date: preview.completion_date,
+      completion_commission: preview.completion_commission,
+      notes: preview.notes,
+      lead_source: preview.lead_source,
+      buyer_type: preview.buyer_type,
+      status: 'PENDING',
+    });
+    
+    // Close the assistant and navigate to form
+    setIsExpanded(false);
+    toast.success('Opening deal form with extracted details');
+    navigate('/deals/new');
+  }, [user?.id, setDealDraft, navigate]);
 
   // Handle deal preview rejection
   const handleRejectDeal = useCallback(() => {

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { DealDraftProvider } from "@/contexts/DealDraftContext";
 
 import AuthPage from "./pages/AuthPage";
 import LandingPage from "./pages/LandingPage";
@@ -64,29 +65,31 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
-              <Route path="/demo" element={<DemoPage />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
-              <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
-              <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
-              <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
-              <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-              <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <DealDraftProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/demo" element={<DemoPage />} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
+                <Route path="/deals/new" element={<ProtectedRoute><NewDealPage /></ProtectedRoute>} />
+                <Route path="/deals/:id" element={<ProtectedRoute><DealDetailPage /></ProtectedRoute>} />
+                <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
+                <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+                <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DealDraftProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
