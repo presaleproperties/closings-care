@@ -116,7 +116,20 @@ export default function DealDetailPage() {
   }, [id, allDeals]);
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const [originalFormData, setOriginalFormData] = useState<Partial<DealFormData>>({});
+  
+  // Compute hasChanges by comparing current formData with original
+  const hasChanges = useMemo(() => {
+    if (Object.keys(originalFormData).length === 0) return false;
+    return Object.keys(formData).some(key => {
+      const current = formData[key as keyof DealFormData];
+      const original = originalFormData[key as keyof DealFormData];
+      // Handle undefined vs empty string vs null comparison
+      const normalizedCurrent = current === '' || current === null ? undefined : current;
+      const normalizedOriginal = original === '' || original === null ? undefined : original;
+      return normalizedCurrent !== normalizedOriginal;
+    });
+  }, [formData, originalFormData]);
   const [isTeamDeal, setIsTeamDeal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPayoutDialog, setShowPayoutDialog] = useState(false);
@@ -147,7 +160,8 @@ export default function DealDetailPage() {
       const newNet = netCommissionResult.netAmount;
       if (newNet !== formData.net_commission_est) {
         setFormData(prev => ({ ...prev, net_commission_est: newNet }));
-        setHasChanges(true);
+        // Also update original so auto-calculated net commission doesn't count as a change
+        setOriginalFormData(prev => ({ ...prev, net_commission_est: newNet }));
       }
     }
   }, [netCommissionResult.netAmount]);
@@ -155,7 +169,7 @@ export default function DealDetailPage() {
   useEffect(() => {
     if (deal) {
       const dealData = deal as any; // Handle extended fields from DB
-      setFormData({
+      const initialData = {
         client_name: deal.client_name,
         deal_type: deal.deal_type,
         property_type: deal.property_type || undefined,
@@ -182,14 +196,15 @@ export default function DealDetailPage() {
         completion_commission: dealData.completion_commission || undefined,
         advance_date: dealData.advance_date || '',
         completion_date: dealData.completion_date || '',
-      });
+      };
+      setFormData(initialData);
+      setOriginalFormData(initialData);
       setIsTeamDeal(!!deal.team_member);
     }
   }, [deal]);
 
   const updateField = (field: keyof DealFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setHasChanges(true);
   };
 
   const handlePropertyTypeChange = (value: PropertyType) => {
@@ -199,7 +214,7 @@ export default function DealDetailPage() {
   const handleSave = async () => {
     if (!id) return;
     await updateDeal.mutateAsync({ id, data: formData });
-    setHasChanges(false);
+    setOriginalFormData(formData); // Reset original to current after save
   };
 
   const handleDelete = async () => {
@@ -221,7 +236,6 @@ export default function DealDetailPage() {
     if (pendingNavigation) {
       navigate(`/deals/${pendingNavigation}`);
       setPendingNavigation(null);
-      setHasChanges(false);
     }
   };
 
@@ -729,7 +743,6 @@ export default function DealDetailPage() {
                     checked={isTeamDeal}
                     onCheckedChange={(checked) => {
                       setIsTeamDeal(checked);
-                      setHasChanges(true);
                       if (!checked) {
                         updateField('team_member', undefined);
                         updateField('team_member_portion', undefined);
