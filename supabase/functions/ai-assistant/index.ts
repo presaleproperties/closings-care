@@ -239,6 +239,13 @@ Look for these date fields in documents:
 - Dates can be in various formats: "Jan 15, 2025", "2025-01-15", "01/15/2025", "January 15 2025"
 - IMPORTANT: Years can be 2025, 2026, or 2027 - extract the exact year shown
 
+ADDRESS & CITY EXTRACTION - IMPORTANT:
+- The city is often PART OF the address (e.g., "123 Main St, Vancouver, BC")
+- Parse the city FROM the address - look for the city name after the street address
+- Common BC cities: Vancouver, Burnaby, Richmond, Surrey, Coquitlam, North Vancouver, West Vancouver, New Westminster, Port Moody, Langley, Abbotsford, Delta, White Rock
+- Extract the FULL address including unit number, street, city
+- Set city field separately from address - extract it from the address string
+
 APPROVAL FLOW:
 - When user says "yes", "approve", "create", "looks good", "confirm" after seeing a preview → use create_deal with the same details
 - When user says "no", "cancel", "reject" → acknowledge and ask if they want to make changes
