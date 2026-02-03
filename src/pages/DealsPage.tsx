@@ -496,20 +496,28 @@ export default function DealsPage() {
             ))}
           </div>
 
-          {/* Search */}
+          {/* Search and Add Deal */}
           <motion.div 
-            className="relative"
+            className="flex gap-3 items-center"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...springConfigs.gentle, delay: 0.2 }}
           >
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-muted-foreground" />
-            <Input
-              placeholder="Search by client, project, or city..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-11 h-12 bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 rounded-xl text-[15px] placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20"
-            />
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-muted-foreground" />
+              <Input
+                placeholder="Search by client, project, or city..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-11 h-12 bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 rounded-xl text-[15px] placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20"
+              />
+            </div>
+            <Link to="/deals/new">
+              <Button className="btn-premium h-12 px-5 gap-2 whitespace-nowrap">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Deal</span>
+              </Button>
+            </Link>
           </motion.div>
 
           {/* Payouts List */}
