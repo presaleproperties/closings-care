@@ -307,8 +307,7 @@ export default function DealDetailPage() {
   return (
     <AppLayout>
       <Header 
-        title={deal.client_name}
-        subtitle={deal.address || deal.project_name || undefined}
+        title={`${deal.client_name}${deal.project_name || deal.address ? ` - ${deal.project_name || deal.address}` : ''}`}
         showAddDeal={false}
         action={
           <div className="flex items-center gap-2">
