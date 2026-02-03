@@ -13,23 +13,28 @@ import {
   Shield
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { Deal, Payout } from '@/lib/types';
+import { Deal, Payout, Expense } from '@/lib/types';
 import { springConfigs } from '@/lib/haptics';
+import { getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
+import { Property } from '@/hooks/useProperties';
+import { format } from 'date-fns';
 
 interface FinancialHealthProps {
   deals: Deal[];
   payouts: Payout[];
+  expenses: Expense[];
+  properties: Property[];
   monthlyExpenses: number;
   annualExpenses: number;
 }
 
-export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
+export function FinancialHealth({ deals, payouts, expenses, properties, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Money you've received this year
+    // Money you've received this year (PAID payouts)
     const moneyReceived = payouts
       .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
@@ -39,8 +44,17 @@ export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpense
       .filter(p => p.status !== 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    // What you've spent (estimate based on monthly × months elapsed)
-    const moneySpent = monthlyExpenses * currentMonth;
+    // Calculate ACTUAL YTD expenses (not estimated)
+    // Sum up expenses for each month from January to current month
+    let moneySpent = 0;
+    const propertyCosts = getPropertyCostsForMonth(properties);
+    const monthlyPropertyNet = propertyCosts.personalCost - propertyCosts.rentalNet;
+    
+    for (let month = 1; month <= currentMonth; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      const monthExpenses = getTrackedExpensesForMonth(expenses, monthStr);
+      moneySpent += monthExpenses + monthlyPropertyNet;
+    }
 
     // What's left after expenses
     const netProfit = moneyReceived - moneySpent;
@@ -66,7 +80,7 @@ export function FinancialHealth({ deals, payouts, monthlyExpenses, annualExpense
       monthsCovered,
       healthStatus,
     };
-  }, [payouts, monthlyExpenses]);
+  }, [payouts, expenses, properties, monthlyExpenses]);
 
   const getStatusConfig = () => {
     switch (metrics.healthStatus) {
