@@ -1,13 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
-import { Loader2, Sparkles, X, Upload, Check, Edit2, ImagePlus, Trash2 } from 'lucide-react';
+import { Loader2, Sparkles, X, Upload, Check, Edit2, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/lib/format';
 import {
   Select,
   SelectContent,
@@ -26,6 +24,7 @@ interface DealExtraction {
   sale_price?: number;
   gross_commission_est?: number;
   close_date_est?: string;
+  pending_date?: string;
   advance_date?: string;
   advance_commission?: number;
   completion_date?: string;
@@ -68,7 +67,6 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
       return;
     }
 
-    // Convert all to base64
     const newImages: string[] = [];
     for (const file of imageFiles) {
       const base64 = await new Promise<string>((resolve) => {
@@ -114,7 +112,6 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
     setIsProcessing(true);
 
     try {
-      // Process all images and merge results
       let mergedData: DealExtraction = {};
 
       for (const imageData of uploadedImages) {
@@ -129,7 +126,6 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
         if (error) throw error;
 
         if (data.dealPreview) {
-          // Merge - keep existing non-null values, add new ones
           mergedData = {
             client_name: mergedData.client_name || data.dealPreview.client_name,
             deal_type: mergedData.deal_type || data.dealPreview.deal_type,
@@ -140,6 +136,7 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
             sale_price: mergedData.sale_price || data.dealPreview.sale_price,
             gross_commission_est: mergedData.gross_commission_est || data.dealPreview.gross_commission_est,
             close_date_est: mergedData.close_date_est || data.dealPreview.close_date_est,
+            pending_date: mergedData.pending_date || data.dealPreview.pending_date,
             advance_date: mergedData.advance_date || data.dealPreview.advance_date,
             advance_commission: mergedData.advance_commission || data.dealPreview.advance_commission,
             completion_date: mergedData.completion_date || data.dealPreview.completion_date,
@@ -173,7 +170,6 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
     if (extractedData) {
       onExtract(extractedData);
       toast.success('Deal details applied to form');
-      // Reset
       setExtractedData(null);
       setUploadedImages([]);
       setIsEditing(false);
@@ -186,19 +182,22 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
     setIsEditing(false);
   };
 
-  // Show extracted data preview/editor
+  const isPresale = extractedData?.property_type === 'PRESALE';
+
+  // Extracted data preview - matches form structure
   if (extractedData) {
     return (
-      <div className="border border-primary/30 rounded-xl bg-primary/5 overflow-hidden">
+      <div className="bg-card border border-primary/30 rounded-xl overflow-hidden">
+        {/* Header */}
         <div className="p-3 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm">Extracted Deal Details</span>
+            <span className="font-semibold text-sm">Extracted Deal Preview</span>
           </div>
           <div className="flex items-center gap-1">
             <Button
               type="button"
-              variant="ghost"
+              variant={isEditing ? "default" : "ghost"}
               size="sm"
               onClick={() => setIsEditing(!isEditing)}
               className="h-7 px-2 text-xs"
@@ -218,254 +217,342 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
           </div>
         </div>
 
-        <div className="p-3 space-y-3">
-          {/* Client & Type Row */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Client</Label>
-              {isEditing ? (
-                <Input
-                  value={extractedData.client_name || ''}
-                  onChange={(e) => updateField('client_name', e.target.value)}
-                  className="h-8 text-sm"
-                />
-              ) : (
-                <p className="text-sm font-medium truncate">{extractedData.client_name || '—'}</p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Deal Type</Label>
-              {isEditing ? (
-                <Select
-                  value={extractedData.deal_type || ''}
-                  onValueChange={(v) => updateField('deal_type', v as 'BUY' | 'SELL')}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BUY">Buy</SelectItem>
-                    <SelectItem value="SELL">Sell</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Badge variant={extractedData.deal_type === 'BUY' ? 'default' : 'secondary'}>
-                  {extractedData.deal_type || '—'}
-                </Badge>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Property Type</Label>
-              {isEditing ? (
-                <Select
-                  value={extractedData.property_type || ''}
-                  onValueChange={(v) => updateField('property_type', v as 'PRESALE' | 'RESALE')}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRESALE">Presale</SelectItem>
-                    <SelectItem value="RESALE">Resale</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Badge variant="outline">{extractedData.property_type || '—'}</Badge>
-              )}
-            </div>
+        {/* Section 1: Client & Deal Type - matches form */}
+        <div className="p-3 border-b border-border bg-muted/30">
+          <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">1. Client & Deal Type</h3>
+        </div>
+        <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="col-span-2 space-y-1">
+            <Label className="text-xs">Client Name</Label>
+            {isEditing ? (
+              <Input
+                value={extractedData.client_name || ''}
+                onChange={(e) => updateField('client_name', e.target.value)}
+                className="h-9"
+                placeholder="John Smith"
+              />
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.client_name || '—'}</p>
+            )}
           </div>
-
-          {/* Property Info Row */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">
-                {extractedData.property_type === 'PRESALE' ? 'Project' : 'Address'}
-              </Label>
-              {isEditing ? (
-                <Input
-                  value={extractedData.property_type === 'PRESALE' 
-                    ? (extractedData.project_name || '') 
-                    : (extractedData.address || '')}
-                  onChange={(e) => updateField(
-                    extractedData.property_type === 'PRESALE' ? 'project_name' : 'address',
-                    e.target.value
-                  )}
-                  className="h-8 text-sm"
-                />
-              ) : (
-                <p className="text-sm truncate">
-                  {extractedData.property_type === 'PRESALE' 
-                    ? extractedData.project_name 
-                    : extractedData.address || '—'}
-                </p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">City</Label>
-              {isEditing ? (
-                <Input
-                  value={extractedData.city || ''}
-                  onChange={(e) => updateField('city', e.target.value)}
-                  className="h-8 text-sm"
-                />
-              ) : (
-                <p className="text-sm">{extractedData.city || '—'}</p>
-              )}
-            </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Deal Type</Label>
+            {isEditing ? (
+              <Select
+                value={extractedData.deal_type || ''}
+                onValueChange={(v) => updateField('deal_type', v as 'BUY' | 'SELL')}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Buy / Sell" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="BUY">Buy</SelectItem>
+                  <SelectItem value="SELL">Sell</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.deal_type || '—'}</p>
+            )}
           </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Property Type</Label>
+            {isEditing ? (
+              <Select
+                value={extractedData.property_type || ''}
+                onValueChange={(v) => updateField('property_type', v as 'PRESALE' | 'RESALE')}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Presale / Resale" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRESALE">Presale</SelectItem>
+                  <SelectItem value="RESALE">Resale</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.property_type || '—'}</p>
+            )}
+          </div>
+        </div>
 
-          {/* Financial Row */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Sale Price</Label>
-              {isEditing ? (
+        {/* Section 2: Property Details - matches form */}
+        <div className="p-3 border-t border-b border-border bg-muted/30">
+          <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">2. Property Details</h3>
+        </div>
+        <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="col-span-2 space-y-1">
+            <Label className="text-xs">{isPresale ? 'Project Name' : 'Address'}</Label>
+            {isEditing ? (
+              <Input
+                value={isPresale ? (extractedData.project_name || '') : (extractedData.address || '')}
+                onChange={(e) => updateField(isPresale ? 'project_name' : 'address', e.target.value)}
+                className="h-9"
+                placeholder={isPresale ? 'The Palisades' : '123 Main St, Unit 1001'}
+              />
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium truncate">
+                {isPresale ? extractedData.project_name : extractedData.address || '—'}
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">City</Label>
+            {isEditing ? (
+              <Select
+                value={extractedData.city || ''}
+                onValueChange={(v) => updateField('city', v)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Vancouver">Vancouver</SelectItem>
+                  <SelectItem value="Burnaby">Burnaby</SelectItem>
+                  <SelectItem value="Surrey">Surrey</SelectItem>
+                  <SelectItem value="Langley">Langley</SelectItem>
+                  <SelectItem value="Delta">Delta</SelectItem>
+                  <SelectItem value="Coquitlam">Coquitlam</SelectItem>
+                  <SelectItem value="Abbotsford">Abbotsford</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.city || '—'}</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Sale Price</Label>
+            {isEditing ? (
+              <div className="relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                 <Input
                   value={formatNumber(extractedData.sale_price)}
                   onChange={(e) => updateField('sale_price', parseNumber(e.target.value))}
-                  className="h-8 text-sm"
-                  placeholder="0"
+                  className="h-9 pl-6"
+                  placeholder="1,250,000"
+                />
+              </div>
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">
+                {extractedData.sale_price ? `$${formatNumber(extractedData.sale_price)}` : '—'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Section 3: Dates & Commission - matches form */}
+        <div className="p-3 border-t border-b border-border bg-muted/30">
+          <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">3. Dates & Commission</h3>
+        </div>
+        <div className="p-3 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Firm Date */}
+            <div className="space-y-1">
+              <Label className="text-xs">Firm Date</Label>
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={extractedData.pending_date || ''}
+                  onChange={(e) => updateField('pending_date', e.target.value || undefined)}
+                  className="h-9"
                 />
               ) : (
-                <p className="text-sm font-medium">
-                  {extractedData.sale_price ? formatCurrency(extractedData.sale_price) : '—'}
+                <p className="h-9 flex items-center text-sm font-medium">
+                  {extractedData.pending_date ? new Date(extractedData.pending_date).toLocaleDateString() : '—'}
                 </p>
               )}
             </div>
-            {extractedData.property_type === 'PRESALE' ? (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Advance $</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formatNumber(extractedData.advance_commission)}
-                      onChange={(e) => updateField('advance_commission', parseNumber(e.target.value))}
-                      className="h-8 text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-info">
-                      {extractedData.advance_commission ? formatCurrency(extractedData.advance_commission) : '—'}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Completion $</Label>
-                  {isEditing ? (
-                    <Input
-                      value={formatNumber(extractedData.completion_commission)}
-                      onChange={(e) => updateField('completion_commission', parseNumber(e.target.value))}
-                      className="h-8 text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-primary">
-                      {extractedData.completion_commission ? formatCurrency(extractedData.completion_commission) : '—'}
-                    </p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="space-y-1 col-span-2">
-                <Label className="text-[10px] text-muted-foreground">Gross Commission</Label>
-                {isEditing ? (
-                  <Input
-                    value={formatNumber(extractedData.gross_commission_est)}
-                    onChange={(e) => updateField('gross_commission_est', parseNumber(e.target.value))}
-                    className="h-8 text-sm"
-                  />
-                ) : (
-                  <p className="text-sm font-medium text-success">
-                    {extractedData.gross_commission_est ? formatCurrency(extractedData.gross_commission_est) : '—'}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
 
-          {/* Dates Row */}
-          <div className="grid grid-cols-3 gap-2">
-            {extractedData.property_type === 'PRESALE' ? (
+            {/* Presale: Advance Date & Amount */}
+            {isPresale && (
               <>
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Advance Date</Label>
+                  <Label className="text-xs">Advance Date</Label>
                   {isEditing ? (
                     <Input
                       type="date"
                       value={extractedData.advance_date || ''}
-                      onChange={(e) => updateField('advance_date', e.target.value)}
-                      className="h-8 text-sm"
+                      onChange={(e) => updateField('advance_date', e.target.value || undefined)}
+                      className="h-9"
                     />
                   ) : (
-                    <p className="text-sm">
+                    <p className="h-9 flex items-center text-sm font-medium">
                       {extractedData.advance_date ? new Date(extractedData.advance_date).toLocaleDateString() : '—'}
                     </p>
                   )}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">Completion Date</Label>
+                  <Label className="text-xs">Advance $</Label>
                   {isEditing ? (
-                    <Input
-                      type="date"
-                      value={extractedData.completion_date || ''}
-                      onChange={(e) => updateField('completion_date', e.target.value)}
-                      className="h-8 text-sm"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        value={formatNumber(extractedData.advance_commission)}
+                        onChange={(e) => updateField('advance_commission', parseNumber(e.target.value))}
+                        className="h-9 pl-6"
+                        placeholder="5,000"
+                      />
+                    </div>
                   ) : (
-                    <p className="text-sm">
-                      {extractedData.completion_date ? new Date(extractedData.completion_date).toLocaleDateString() : '—'}
+                    <p className="h-9 flex items-center text-sm font-medium text-info">
+                      {extractedData.advance_commission ? `$${formatNumber(extractedData.advance_commission)}` : '—'}
                     </p>
                   )}
                 </div>
               </>
-            ) : (
-              <div className="space-y-1 col-span-2">
-                <Label className="text-[10px] text-muted-foreground">Closing Date</Label>
+            )}
+
+            {/* Presale: Completion Date & Amount */}
+            {isPresale && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs">Completion Date</Label>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={extractedData.completion_date || ''}
+                      onChange={(e) => updateField('completion_date', e.target.value || undefined)}
+                      className="h-9"
+                    />
+                  ) : (
+                    <p className="h-9 flex items-center text-sm font-medium">
+                      {extractedData.completion_date ? new Date(extractedData.completion_date).toLocaleDateString() : '—'}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Completion $</Label>
+                  {isEditing ? (
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        value={formatNumber(extractedData.completion_commission)}
+                        onChange={(e) => updateField('completion_commission', parseNumber(e.target.value))}
+                        className="h-9 pl-6"
+                        placeholder="26,250"
+                      />
+                    </div>
+                  ) : (
+                    <p className="h-9 flex items-center text-sm font-medium text-primary">
+                      {extractedData.completion_commission ? `$${formatNumber(extractedData.completion_commission)}` : '—'}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Resale: Closing Date */}
+            {!isPresale && (
+              <div className="space-y-1">
+                <Label className="text-xs">Closing Date</Label>
                 {isEditing ? (
                   <Input
                     type="date"
                     value={extractedData.close_date_est || ''}
-                    onChange={(e) => updateField('close_date_est', e.target.value)}
-                    className="h-8 text-sm"
+                    onChange={(e) => updateField('close_date_est', e.target.value || undefined)}
+                    className="h-9"
                   />
                 ) : (
-                  <p className="text-sm">
+                  <p className="h-9 flex items-center text-sm font-medium">
                     {extractedData.close_date_est ? new Date(extractedData.close_date_est).toLocaleDateString() : '—'}
                   </p>
                 )}
               </div>
             )}
+
+            {/* Gross Commission */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Buyer Type</Label>
+              <Label className="text-xs">
+                Gross Commission {isPresale && <span className="text-muted-foreground">(auto)</span>}
+              </Label>
               {isEditing ? (
-                <Input
-                  value={extractedData.buyer_type || ''}
-                  onChange={(e) => updateField('buyer_type', e.target.value)}
-                  className="h-8 text-sm"
-                />
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    value={formatNumber(extractedData.gross_commission_est || 
+                      ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0)) || undefined
+                    )}
+                    onChange={(e) => updateField('gross_commission_est', parseNumber(e.target.value))}
+                    className="h-9 pl-6"
+                    placeholder="31,250"
+                    disabled={isPresale}
+                  />
+                </div>
               ) : (
-                <p className="text-sm">{extractedData.buyer_type || '—'}</p>
+                <p className="h-9 flex items-center text-sm font-medium text-success">
+                  {(() => {
+                    const gross = extractedData.gross_commission_est || 
+                      ((extractedData.advance_commission || 0) + (extractedData.completion_commission || 0));
+                    return gross ? `$${formatNumber(gross)}` : '—';
+                  })()}
+                </p>
               )}
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              onClick={handleApply}
-              className="flex-1 gap-2"
-              size="sm"
-            >
-              <Check className="w-4 h-4" />
-              Apply to Form
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClear}
-              size="sm"
-            >
-              Cancel
-            </Button>
+        {/* Section 4: Additional Info - matches form */}
+        <div className="p-3 border-t border-b border-border bg-muted/30">
+          <h3 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">4. Additional Info</h3>
+        </div>
+        <div className="p-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Buyer Type</Label>
+            {isEditing ? (
+              <Input
+                value={extractedData.buyer_type || ''}
+                onChange={(e) => updateField('buyer_type', e.target.value)}
+                className="h-9"
+                placeholder="First-time, Investor..."
+              />
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.buyer_type || '—'}</p>
+            )}
           </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Lead Source</Label>
+            {isEditing ? (
+              <Input
+                value={extractedData.lead_source || ''}
+                onChange={(e) => updateField('lead_source', e.target.value)}
+                className="h-9"
+                placeholder="Referral, Open House..."
+              />
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium">{extractedData.lead_source || '—'}</p>
+            )}
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label className="text-xs">Notes</Label>
+            {isEditing ? (
+              <Input
+                value={extractedData.notes || ''}
+                onChange={(e) => updateField('notes', e.target.value)}
+                className="h-9"
+                placeholder="Additional notes..."
+              />
+            ) : (
+              <p className="h-9 flex items-center text-sm font-medium truncate">{extractedData.notes || '—'}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="p-3 border-t border-border bg-muted/20 flex gap-2">
+          <Button
+            type="button"
+            onClick={handleApply}
+            className="flex-1 gap-2"
+          >
+            <Check className="w-4 h-4" />
+            Apply to Form
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClear}
+          >
+            Cancel
+          </Button>
         </div>
       </div>
     );
