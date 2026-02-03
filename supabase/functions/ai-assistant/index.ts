@@ -373,16 +373,23 @@ serve(async (req) => {
         try {
           switch (functionName) {
             case "preview_deal": {
+              // Auto-calculate gross commission if advance + completion provided
+              const advanceComm = args.advance_commission || 0;
+              const completionComm = args.completion_commission || 0;
+              const calculatedGross = (advanceComm > 0 || completionComm > 0) 
+                ? advanceComm + completionComm 
+                : args.gross_commission_est || null;
+
               // Return deal details for user approval - don't create yet
               const previewData = {
                 client_name: args.client_name,
                 deal_type: args.deal_type,
-                property_type: args.property_type || "RESALE",
+                property_type: args.property_type || "PRESALE",
                 city: args.city || "Vancouver",
                 address: args.address || null,
                 project_name: args.project_name || null,
                 sale_price: args.sale_price || null,
-                gross_commission_est: args.gross_commission_est || null,
+                gross_commission_est: calculatedGross,
                 close_date_est: args.close_date_est || null,
                 pending_date: args.pending_date || null,
                 advance_date: args.advance_date || null,
@@ -404,15 +411,22 @@ serve(async (req) => {
             }
 
             case "create_deal": {
+              // Auto-calculate gross commission if advance + completion provided
+              const advanceCommission = args.advance_commission || 0;
+              const completionCommission = args.completion_commission || 0;
+              const grossCommission = (advanceCommission > 0 || completionCommission > 0) 
+                ? advanceCommission + completionCommission 
+                : args.gross_commission_est || null;
+
               const dealData = {
                 client_name: args.client_name,
                 deal_type: args.deal_type,
-                property_type: args.property_type || "RESALE",
+                property_type: args.property_type || "PRESALE",
                 city: args.city || "Vancouver",
                 address: args.address || null,
                 project_name: args.project_name || null,
                 sale_price: args.sale_price || null,
-                gross_commission_est: args.gross_commission_est || null,
+                gross_commission_est: grossCommission,
                 close_date_est: args.close_date_est || null,
                 pending_date: args.pending_date || null,
                 advance_date: args.advance_date || null,
