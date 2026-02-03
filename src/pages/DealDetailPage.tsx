@@ -362,7 +362,13 @@ export default function DealDetailPage() {
           <div className="landing-card p-4 text-center">
             <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gross Commission</div>
             <div className="text-lg font-bold text-primary">
-              {formData.gross_commission_est ? formatCurrencyDisplay(formData.gross_commission_est) : '—'}
+              {(() => {
+                // Calculate from advance + completion if both exist
+                const calculatedGross = (formData.advance_commission && formData.completion_commission)
+                  ? formData.advance_commission + formData.completion_commission
+                  : formData.gross_commission_est;
+                return calculatedGross ? formatCurrencyDisplay(calculatedGross) : '—';
+              })()}
             </div>
           </div>
           <div className="landing-card p-4 text-center">
@@ -680,7 +686,11 @@ export default function DealDetailPage() {
                     <Input
                       id="gross_commission_est"
                       className="pl-7"
-                      value={formatCurrencyInput(formData.gross_commission_est)}
+                      value={formatCurrencyInput(
+                        (formData.advance_commission && formData.completion_commission)
+                          ? formData.advance_commission + formData.completion_commission
+                          : formData.gross_commission_est
+                      )}
                       onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
                       placeholder="31,250"
                       readOnly={isPresale}
@@ -706,26 +716,31 @@ export default function DealDetailPage() {
               </div>
 
               {/* Commission breakdown */}
-              {formData.gross_commission_est && formData.gross_commission_est > 0 && (
-                <div className="flex items-start gap-2 p-3 mt-4 bg-muted/40 rounded-lg">
-                  <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>
-                      <span className="font-medium text-foreground">Gross:</span> ${formatCurrencyInput(formData.gross_commission_est)}
-                      {netCommissionResult.brokeragePortion > 0 && (
-                        <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
+              {(() => {
+                const calculatedGross = (formData.advance_commission && formData.completion_commission)
+                  ? formData.advance_commission + formData.completion_commission
+                  : formData.gross_commission_est;
+                return calculatedGross && calculatedGross > 0 && (
+                  <div className="flex items-start gap-2 p-3 mt-4 bg-muted/40 rounded-lg">
+                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>
+                        <span className="font-medium text-foreground">Gross:</span> ${formatCurrencyInput(calculatedGross)}
+                        {netCommissionResult.brokeragePortion > 0 && (
+                          <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
+                        )}
+                        {netCommissionResult.teamPortion > 0 && (
+                          <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.teamPortion)}</span> team</>
+                        )}
+                        {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
+                      </p>
+                      {netCommissionResult.capReached && (
+                        <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
                       )}
-                      {netCommissionResult.teamPortion > 0 && (
-                        <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.teamPortion)}</span> team</>
-                      )}
-                      {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
-                    </p>
-                    {netCommissionResult.capReached && (
-                      <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
-                    )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </section>
 
             {/* Team Split */}
