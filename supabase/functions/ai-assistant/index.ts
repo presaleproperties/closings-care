@@ -214,37 +214,46 @@ When the user uploads a screenshot or image of a deal document:
 7. For commission, look for gross commission, agent commission, or total commission amounts
 8. For dates, look for closing date, completion date, possession date, or similar
 
-DEAL NAMING PATTERN RECOGNITION - VERY IMPORTANT:
-The user's brokerage documents follow specific naming conventions:
-1. "Part 1/2" or "1/2" in the deal name = ADVANCE commission payment for a PRESALE deal
-   - Extract the commission amount as advance_commission
-   - Extract the date as advance_date
-2. "Part 2/2" or "2/2" in the deal name = COMPLETION commission payment for a PRESALE deal
-   - Extract the commission amount as completion_commission  
-   - Extract the date as completion_date
-3. Project names like "North Village", "Jericho", "Palisades", "Skyline", etc. indicate PRESALE deals
-   - Extract the project name from the deal title
-   - Set property_type to PRESALE
-4. ASSUME PRESALE by default - majority of deals are presales
-5. When you see multiple screenshots (Part 1/2 and Part 2/2), combine the info:
-   - Part 1/2 screenshot → advance_commission and advance_date
-   - Part 2/2 screenshot → completion_commission and completion_date
+BROKERAGE SCREENSHOT FORMAT - CRITICAL EXTRACTION RULES:
+The documents have this structure:
+- TITLE: "[Project Name] Part X/2 - [Full Address]"
+- Example: "North Village Part 1/2 - 20072 86 Avenue, Willoughby #422, Langley Township, BC, V2Y 2C1"
+
+PART 1/2 vs PART 2/2 LOGIC - VERY IMPORTANT:
+1. "Part 1/2" = ADVANCE payment for a PRESALE deal
+   - The "Estimated Closing Date" field → extract as advance_date
+   - The "Commission" amount → extract as advance_commission
+   
+2. "Part 2/2" = COMPLETION payment for a PRESALE deal
+   - The "Estimated Closing Date" field → extract as completion_date
+   - The "Commission" amount → extract as completion_commission
+
+3. When user uploads BOTH Part 1/2 and Part 2/2 screenshots, COMBINE them into ONE deal:
+   - Part 1/2 provides: advance_commission, advance_date
+   - Part 2/2 provides: completion_commission, completion_date
    - gross_commission_est = advance_commission + completion_commission
+   - Use the same client_name, address, project_name, sale_price from either
 
-DATE EXTRACTION - CRITICAL:
-Look for these date fields in documents:
-- "Firm Date" or "Subject Removal Date" → extract as pending_date (when deal becomes binding)
-- "Closing Date" or "Completion Date" → extract as close_date_est or completion_date
-- "Advance Date" or "1st Payment Date" → extract as advance_date
-- Dates can be in various formats: "Jan 15, 2025", "2025-01-15", "01/15/2025", "January 15 2025"
-- IMPORTANT: Years can be 2025, 2026, or 2027 - extract the exact year shown
+FIELD MAPPING FROM SCREENSHOTS:
+- "Buyer/Tenant:" → client_name (e.g., "Jaison Preet Bhullar")
+- Sale price (e.g., "$379,900.00 CAD") → sale_price (number only: 379900)
+- "Commission: X%|$Y CAD" → extract the dollar amount Y
+- "Firm Date:" → pending_date (when deal becomes firm/binding)
+- "Estimated Closing Date:" → depends on Part 1/2 or Part 2/2 (see above)
+- "Rep: Buy Side Representation" → deal_type: "BUY"
+- "Rep: Sell Side Representation" → deal_type: "SELL"
+- Project name before "Part" in title → project_name (e.g., "North Village")
+- Address after "Part X/2 - " in title → address
 
-ADDRESS & CITY EXTRACTION - IMPORTANT:
-- The city is often PART OF the address (e.g., "123 Main St, Vancouver, BC")
-- Parse the city FROM the address - look for the city name after the street address
-- Common BC cities: Vancouver, Burnaby, Richmond, Surrey, Coquitlam, North Vancouver, West Vancouver, New Westminster, Port Moody, Langley, Abbotsford, Delta, White Rock
-- Extract the FULL address including unit number, street, city
-- Set city field separately from address - extract it from the address string
+ADDRESS & CITY EXTRACTION:
+- Parse city FROM the address in the title
+- Look for: Langley Township, Surrey, Vancouver, Burnaby, Richmond, Coquitlam, North Vancouver, West Vancouver, New Westminster, Port Moody, Abbotsford, Delta, White Rock, Langley
+- Set property_type to PRESALE when project name is present
+
+DATE FORMATS - IMPORTANT:
+- Dates shown as "MM/DD/YYYY" (e.g., "05/22/2025", "09/15/2026")
+- Convert to "YYYY-MM-DD" format for storage
+- Years can be 2025, 2026, or 2027 - extract exact year shown
 
 APPROVAL FLOW:
 - When user says "yes", "approve", "create", "looks good", "confirm" after seeing a preview → use create_deal with the same details
