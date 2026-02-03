@@ -498,12 +498,18 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
           <div className="space-y-1">
             <Label className="text-xs">Buyer Type</Label>
             {isEditing ? (
-              <Input
+              <Select
                 value={extractedData.buyer_type || ''}
-                onChange={(e) => updateField('buyer_type', e.target.value)}
-                className="h-9"
-                placeholder="First-time, Investor..."
-              />
+                onValueChange={(v) => updateField('buyer_type', v)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
+                  <SelectItem value="Investor">Investor</SelectItem>
+                </SelectContent>
+              </Select>
             ) : (
               <p className="h-9 flex items-center text-sm font-medium">{extractedData.buyer_type || '—'}</p>
             )}
@@ -511,12 +517,20 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
           <div className="space-y-1">
             <Label className="text-xs">Lead Source</Label>
             {isEditing ? (
-              <Input
+              <Select
                 value={extractedData.lead_source || ''}
-                onChange={(e) => updateField('lead_source', e.target.value)}
-                className="h-9"
-                placeholder="Referral, Open House..."
-              />
+                onValueChange={(v) => updateField('lead_source', v)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select source" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="Tiktok">Tiktok</SelectItem>
+                  <SelectItem value="Instagram">Instagram</SelectItem>
+                  <SelectItem value="Youtube">Youtube</SelectItem>
+                  <SelectItem value="Referral">Referral</SelectItem>
+                </SelectContent>
+              </Select>
             ) : (
               <p className="h-9 flex items-center text-sm font-medium">{extractedData.lead_source || '—'}</p>
             )}
