@@ -534,6 +534,7 @@ export default function NewDealPage() {
                     <SelectItem value="Instagram">Instagram</SelectItem>
                     <SelectItem value="Youtube">Youtube</SelectItem>
                     <SelectItem value="Referral">Referral</SelectItem>
+                    <SelectItem value="Team">Team</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
