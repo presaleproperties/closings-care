@@ -36,10 +36,12 @@ export function OverduePayoutNotification({
   const [newDueDate, setNewDueDate] = useState<string>('');
   const [isOpen, setIsOpen] = useState(false);
 
-  // Get overdue payouts (past due date, not paid, not dismissed this session)
+  // Get due/overdue payouts (due today or past due date, not paid, not dismissed this session)
   const overduePayouts = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     
     return payouts.filter(p => {
       if (p.status === 'PAID') return false;
@@ -49,7 +51,8 @@ export function OverduePayoutNotification({
       const dueDate = parseISO(p.due_date);
       dueDate.setHours(0, 0, 0, 0);
       
-      return isBefore(dueDate, today);
+      // Include payouts due today or before (overdue)
+      return isBefore(dueDate, tomorrow);
     }).sort((a, b) => {
       // Sort by due date, oldest first
       return parseISO(a.due_date!).getTime() - parseISO(b.due_date!).getTime();
@@ -84,7 +87,13 @@ export function OverduePayoutNotification({
   if (!currentPayout) return null;
 
   const deal = currentPayout.deal;
-  const daysPastDue = Math.floor((Date.now() - parseISO(currentPayout.due_date!).getTime()) / (1000 * 60 * 60 * 24));
+  const dueDate = parseISO(currentPayout.due_date!);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  dueDate.setHours(0, 0, 0, 0);
+  const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+  const isDueToday = daysPastDue === 0;
+  const isOverdue = daysPastDue > 0;
 
   const handleMarkPaid = () => {
     onMarkPaid(currentPayout.id);
@@ -150,15 +159,23 @@ export function OverduePayoutNotification({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-full bg-amber-500/10">
-              <AlertCircle className="w-5 h-5 text-amber-500" />
+            <div className={cn(
+              "p-2 rounded-full",
+              isDueToday ? "bg-primary/10" : "bg-destructive/10"
+            )}>
+              <AlertCircle className={cn(
+                "w-5 h-5",
+                isDueToday ? "text-primary" : "text-destructive"
+              )} />
             </div>
             <div>
-              <DialogTitle className="text-lg">Overdue Commission</DialogTitle>
+              <DialogTitle className="text-lg">
+                {isDueToday ? 'Commission Due Today' : 'Overdue Commission'}
+              </DialogTitle>
               <DialogDescription className="text-sm">
                 {overduePayouts.length === 1 
-                  ? 'You have 1 overdue payout' 
-                  : `${currentPayoutIndex + 1} of ${overduePayouts.length} overdue payouts`}
+                  ? (isDueToday ? 'You have 1 payout due today' : 'You have 1 overdue payout')
+                  : `${currentPayoutIndex + 1} of ${overduePayouts.length} due payouts`}
               </DialogDescription>
             </div>
           </div>
@@ -210,7 +227,7 @@ export function OverduePayoutNotification({
                     <p className="text-sm text-muted-foreground">{deal.address}</p>
                   )}
                 </div>
-                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30">
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
                   {currentPayout.payout_type}
                 </Badge>
               </div>
@@ -233,15 +250,29 @@ export function OverduePayoutNotification({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-destructive" />
-                  <span className="text-sm text-destructive">Overdue</span>
+              {isOverdue && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-destructive" />
+                    <span className="text-sm text-destructive">Overdue</span>
+                  </div>
+                  <span className="font-medium text-destructive">
+                    {daysPastDue} day{daysPastDue !== 1 ? 's' : ''} late
+                  </span>
                 </div>
-                <span className="font-medium text-destructive">
-                  {daysPastDue} day{daysPastDue !== 1 ? 's' : ''} late
-                </span>
-              </div>
+              )}
+              
+              {isDueToday && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span className="text-sm text-primary">Due Today</span>
+                  </div>
+                  <span className="font-medium text-primary">
+                    Payment expected
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Question */}
@@ -257,12 +288,12 @@ export function OverduePayoutNotification({
                 className="h-12"
               >
                 <Calendar className="w-4 h-4 mr-2" />
-                Not Yet
+                Change Date
               </Button>
               <Button
                 onClick={handleMarkPaid}
                 disabled={isPending}
-                className="h-12 bg-emerald-600 hover:bg-emerald-700"
+                className="h-12 bg-accent hover:bg-accent/90 text-accent-foreground"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Mark as Paid
