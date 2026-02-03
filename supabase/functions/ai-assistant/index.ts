@@ -29,6 +29,7 @@ const tools = [
           advance_commission: { type: "number", description: "Advance commission amount for presale" },
           completion_date: { type: "string", description: "Completion date for presale (YYYY-MM-DD)" },
           completion_commission: { type: "number", description: "Completion commission for presale" },
+          pending_date: { type: "string", description: "Firm date / subject removal date when deal becomes binding (YYYY-MM-DD)" },
           notes: { type: "string", description: "Any additional notes about the deal" },
           lead_source: { type: "string", description: "Where the lead came from" },
           buyer_type: { type: "string", description: "Type of buyer (e.g., First-time, Investor)" },
@@ -58,6 +59,7 @@ const tools = [
           advance_commission: { type: "number", description: "Advance commission amount for presale" },
           completion_date: { type: "string", description: "Completion date for presale (YYYY-MM-DD)" },
           completion_commission: { type: "number", description: "Completion commission for presale" },
+          pending_date: { type: "string", description: "Firm date / subject removal date when deal becomes binding (YYYY-MM-DD)" },
           notes: { type: "string", description: "Any additional notes about the deal" },
           lead_source: { type: "string", description: "Where the lead came from" },
           buyer_type: { type: "string", description: "Type of buyer (e.g., First-time, Investor)" },
@@ -229,6 +231,14 @@ The user's brokerage documents follow specific naming conventions:
    - Part 2/2 screenshot → completion_commission and completion_date
    - gross_commission_est = advance_commission + completion_commission
 
+DATE EXTRACTION - CRITICAL:
+Look for these date fields in documents:
+- "Firm Date" or "Subject Removal Date" → extract as pending_date (when deal becomes binding)
+- "Closing Date" or "Completion Date" → extract as close_date_est or completion_date
+- "Advance Date" or "1st Payment Date" → extract as advance_date
+- Dates can be in various formats: "Jan 15, 2025", "2025-01-15", "01/15/2025", "January 15 2025"
+- IMPORTANT: Years can be 2025, 2026, or 2027 - extract the exact year shown
+
 APPROVAL FLOW:
 - When user says "yes", "approve", "create", "looks good", "confirm" after seeing a preview → use create_deal with the same details
 - When user says "no", "cancel", "reject" → acknowledge and ask if they want to make changes
@@ -358,6 +368,7 @@ serve(async (req) => {
                 sale_price: args.sale_price || null,
                 gross_commission_est: args.gross_commission_est || null,
                 close_date_est: args.close_date_est || null,
+                pending_date: args.pending_date || null,
                 advance_date: args.advance_date || null,
                 advance_commission: args.advance_commission || null,
                 completion_date: args.completion_date || null,
@@ -387,6 +398,7 @@ serve(async (req) => {
                 sale_price: args.sale_price || null,
                 gross_commission_est: args.gross_commission_est || null,
                 close_date_est: args.close_date_est || null,
+                pending_date: args.pending_date || null,
                 advance_date: args.advance_date || null,
                 advance_commission: args.advance_commission || null,
                 completion_date: args.completion_date || null,
