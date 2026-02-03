@@ -86,6 +86,7 @@ interface PayoutTemplateData {
   advanceDate?: string;
   completionDate?: string;
   closingDate?: string;
+  teamMemberPortion?: number; // Team member's share (user gets 100 - this)
 }
 
 export function useCreatePayoutsFromTemplate() {
@@ -101,21 +102,26 @@ export function useCreatePayoutsFromTemplate() {
       grossCommission = 0,
       advanceDate,
       completionDate,
-      closingDate
+      closingDate,
+      teamMemberPortion = 0
     }: PayoutTemplateData) => {
       if (!user) throw new Error('Not authenticated');
+      
+      // Calculate user's portion (if team deal, user gets 100 - teamMemberPortion)
+      const userPortion = teamMemberPortion > 0 ? (100 - teamMemberPortion) / 100 : 1;
       
       const payouts = template.map((type) => {
         let amount = 0;
         let dueDate: string | null = null;
 
-        // Set amount based on payout type
+        // Set amount based on payout type, then apply user's portion
         if (type === 'Advance') {
-          amount = advanceCommission;
+          amount = advanceCommission * userPortion;
           dueDate = advanceDate || null;
         } else if (type === 'Completion') {
           // For resale, completion gets full gross; for presale, use completion commission
-          amount = template.length === 1 ? grossCommission : completionCommission;
+          const baseAmount = template.length === 1 ? grossCommission : completionCommission;
+          amount = baseAmount * userPortion;
           dueDate = closingDate || completionDate || null;
         }
         // Other types (2nd Payment, 3rd Deposit, 4th Deposit) remain 0 until user sets them
@@ -124,7 +130,7 @@ export function useCreatePayoutsFromTemplate() {
           deal_id: dealId,
           user_id: user.id,
           payout_type: type as PayoutType,
-          amount,
+          amount: Math.round(amount * 100) / 100, // Round to cents
           due_date: dueDate,
           status: 'PROJECTED' as const,
         };
