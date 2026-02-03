@@ -35,8 +35,8 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   }, [payouts, onAutoMarkPaid, today]);
 
   const stats = useMemo(() => {
-    // Total projected income (all unpaid payouts)
-    const totalProjected = payouts
+    // Total projected commissions (all unpaid payouts)
+    const totalCommissions = payouts
       .filter(p => p.status !== 'PAID')
       .reduce((sum, p) => sum + Number(p.amount), 0);
 
@@ -49,6 +49,37 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
     const thisYearCommissions = payouts
       .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    // Calculate total Other Income (12 months from now for ongoing income)
+    let totalOtherIncome = 0;
+    const currentMonth = new Date().getMonth() + 1;
+    for (let i = 0; i < 12; i++) {
+      const monthOffset = currentMonth + i;
+      const year = thisYear + Math.floor((monthOffset - 1) / 12);
+      const month = ((monthOffset - 1) % 12) + 1;
+      const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      otherIncome.forEach(income => {
+        const startMonth = income.start_month;
+        const endMonth = income.end_month;
+        
+        const hasStarted = monthStr >= startMonth;
+        const hasNotEnded = !endMonth || monthStr <= endMonth;
+        
+        if (hasStarted && hasNotEnded) {
+          if (income.recurrence === 'monthly') {
+            totalOtherIncome += Number(income.amount);
+          } else if (income.recurrence === 'weekly') {
+            totalOtherIncome += Number(income.amount) * 4.33;
+          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
+            totalOtherIncome += Number(income.amount);
+          }
+        }
+      });
+    }
+    
+    // Total projected = commissions + other income
+    const totalProjected = totalCommissions + totalOtherIncome;
 
     // Calculate Other Income for this year (Jan to Dec)
     let thisYearOtherIncome = 0;
