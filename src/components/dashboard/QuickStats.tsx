@@ -133,7 +133,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       icon: Wallet,
       label: 'Projected Income',
       numericValue: stats.totalProjected,
-      subtitle: `${stats.activeDeals} active deals`,
+      subtitle: 'Commissions + RevShare',
       gradient: 'from-primary to-primary/70',
       textColor: 'text-primary-foreground',
     },
@@ -141,7 +141,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       icon: Calendar,
       label: `${thisYear} Projected`,
       numericValue: stats.thisYearProjected,
-      subtitle: 'Expected this year',
+      subtitle: 'Commissions + RevShare',
       gradient: 'from-amber-500 to-orange-500',
       textColor: 'text-white',
     },
@@ -202,7 +202,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               duration={1.5}
             />
             <p className="text-[13px] text-primary-foreground/70 mt-1">
-              {stats.activeDeals} active deal{stats.activeDeals !== 1 ? 's' : ''}
+              Commissions + RevShare
             </p>
           </motion.div>
 
@@ -229,7 +229,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               duration={1.3}
             />
             <p className="text-[11px] text-white/70 mt-0.5">
-              Expected
+              Commissions + RevShare
             </p>
           </motion.div>
 
