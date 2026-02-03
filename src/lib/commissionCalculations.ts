@@ -29,6 +29,15 @@ export function calculateNetCommission(
     return { netAmount: 0, brokeragePortion: 0, splitPercent: 0, capReached: false, teamPortion: 0 };
   }
 
+  // Step 1: Calculate user's gross portion (for team deals)
+  // User gets: 100% - teamMemberPortion
+  let teamPortion = 0;
+  let userGross = grossAmount;
+  if (teamMemberPortion && teamMemberPortion > 0) {
+    teamPortion = grossAmount * (teamMemberPortion / 100);
+    userGross = grossAmount - teamPortion; // User's gross portion
+  }
+
   const splitPercent = Number(settings?.brokerage_split_percent) || 0;
   const capEnabled = (settings as any)?.brokerage_cap_enabled || false;
   const capAmount = Number((settings as any)?.brokerage_cap_amount) || 0;
@@ -73,16 +82,9 @@ export function calculateNetCommission(
     }
   }
 
-  // Calculate brokerage portion
-  const brokeragePortion = grossAmount * (effectiveSplitPercent / 100);
-  let netAmount = grossAmount - brokeragePortion;
-
-  // Apply team split if applicable
-  let teamPortion = 0;
-  if (teamMemberPortion && teamMemberPortion > 0) {
-    teamPortion = netAmount * (teamMemberPortion / 100);
-    netAmount = netAmount - teamPortion;
-  }
+  // Step 2: Calculate brokerage portion from USER'S GROSS (not full deal)
+  const brokeragePortion = userGross * (effectiveSplitPercent / 100);
+  const netAmount = userGross - brokeragePortion;
 
   return {
     netAmount: Math.round(netAmount * 100) / 100,
