@@ -108,7 +108,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
-  const [projectionMonths, setProjectionMonths] = useState<12 | 24>(12);
+  const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(12);
   const { limits, isFree } = useSubscription();
 
   // Calculate property costs once (they're the same every month)
@@ -260,7 +260,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Toggle for 12/24 months */}
+          {/* Toggle for 12/24/36 months */}
           <div className="flex bg-muted rounded-lg p-0.5">
             <button
               onClick={() => setProjectionMonths(12)}
@@ -281,6 +281,16 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
               }`}
             >
               24mo
+            </button>
+            <button
+              onClick={() => setProjectionMonths(36)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                projectionMonths === 36
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              36mo
             </button>
           </div>
           <Link to="/forecast">
