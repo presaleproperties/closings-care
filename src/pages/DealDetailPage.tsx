@@ -338,6 +338,41 @@ export default function DealDetailPage() {
       />
 
       <div className="p-4 lg:p-6 max-w-6xl animate-fade-in">
+        {/* Deal Dashboard Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          <div className="landing-card p-4 text-center">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Sale Price</div>
+            <div className="text-lg font-bold text-foreground">
+              {formData.sale_price ? formatCurrencyDisplay(formData.sale_price) : '—'}
+            </div>
+          </div>
+          <div className="landing-card p-4 text-center">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Gross Commission</div>
+            <div className="text-lg font-bold text-primary">
+              {formData.gross_commission_est ? formatCurrencyDisplay(formData.gross_commission_est) : '—'}
+            </div>
+          </div>
+          <div className="landing-card p-4 text-center">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Net Commission</div>
+            <div className="text-lg font-bold text-accent">
+              {formData.net_commission_est ? formatCurrencyDisplay(formData.net_commission_est) : '—'}
+            </div>
+          </div>
+          <div className="landing-card p-4 text-center">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Payouts</div>
+            <div className="text-lg font-bold">
+              <span className="text-primary">{formatCurrencyDisplay(paidPayouts)}</span>
+              <span className="text-muted-foreground text-sm font-normal"> / {formatCurrencyDisplay(totalPayouts)}</span>
+            </div>
+          </div>
+          <div className="landing-card p-4 text-center col-span-2 sm:col-span-1">
+            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Status</div>
+            <div className="flex justify-center">
+              <StatusBadge status={deal.status} />
+            </div>
+          </div>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
