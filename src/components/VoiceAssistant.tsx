@@ -199,7 +199,7 @@ function MessageBubble({ message, onApproveDeal, onRejectDeal }: {
       {message.dealPreview && onApproveDeal && (
         <DealPreviewCard 
           preview={message.dealPreview}
-          onApprove={() => onApproveDeal(message.dealPreview!)}
+          onApprove={(editedPreview) => onApproveDeal(editedPreview)}
           onReject={onRejectDeal}
         />
       )}
@@ -207,134 +207,258 @@ function MessageBubble({ message, onApproveDeal, onRejectDeal }: {
   );
 }
 
-// Deal Preview Card Component
+// Deal Preview Card Component with Inline Editing
 function DealPreviewCard({ 
   preview, 
   onApprove, 
   onReject 
 }: { 
   preview: DealPreview; 
-  onApprove: () => void; 
+  onApprove: (editedPreview: DealPreview) => void; 
   onReject?: () => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPreview, setEditedPreview] = useState<DealPreview>(preview);
+
+  const updateField = <K extends keyof DealPreview>(field: K, value: DealPreview[K]) => {
+    setEditedPreview(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleApprove = () => {
+    onApprove(editedPreview);
+  };
+
   return (
     <Card className="bg-card/80 backdrop-blur border-primary/20 shadow-lg">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <User className="h-4 w-4 text-primary" />
-            {preview.client_name}
+            {isEditing ? (
+              <Input
+                value={editedPreview.client_name}
+                onChange={(e) => updateField('client_name', e.target.value)}
+                className="h-7 text-base font-semibold"
+              />
+            ) : (
+              editedPreview.client_name
+            )}
           </CardTitle>
           <div className="flex gap-1.5">
-            <Badge variant={preview.deal_type === 'BUY' ? 'default' : 'secondary'}>
-              {preview.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
+            <Badge variant={editedPreview.deal_type === 'BUY' ? 'default' : 'secondary'}>
+              {editedPreview.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
             </Badge>
             <Badge variant="outline">
-              {preview.property_type || 'RESALE'}
+              {editedPreview.property_type || 'RESALE'}
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Property Info */}
-        {(preview.address || preview.project_name) && (
-          <div className="flex items-start gap-2 text-sm">
-            <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
-            <div>
-              {preview.project_name && <p className="font-medium">{preview.project_name}</p>}
-              {preview.address && <p className="text-muted-foreground">{preview.address}</p>}
-            </div>
+        <div className="flex items-start gap-2 text-sm">
+          <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
+          <div className="flex-1 space-y-1.5">
+            {isEditing ? (
+              <>
+                <Input
+                  value={editedPreview.project_name || ''}
+                  onChange={(e) => updateField('project_name', e.target.value)}
+                  placeholder="Project name"
+                  className="h-7 text-sm"
+                />
+                <Input
+                  value={editedPreview.address || ''}
+                  onChange={(e) => updateField('address', e.target.value)}
+                  placeholder="Address"
+                  className="h-7 text-sm"
+                />
+              </>
+            ) : (
+              <>
+                {editedPreview.project_name && <p className="font-medium">{editedPreview.project_name}</p>}
+                {editedPreview.address && <p className="text-muted-foreground">{editedPreview.address}</p>}
+                {!editedPreview.project_name && !editedPreview.address && (
+                  <p className="text-muted-foreground/50 italic">No address specified</p>
+                )}
+              </>
+            )}
           </div>
-        )}
+        </div>
         
         {/* Location */}
-        {preview.city && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            {preview.city}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          {isEditing ? (
+            <Input
+              value={editedPreview.city || ''}
+              onChange={(e) => updateField('city', e.target.value)}
+              placeholder="City"
+              className="h-7 text-sm flex-1"
+            />
+          ) : (
+            <span className={editedPreview.city ? 'text-foreground' : 'text-muted-foreground/50 italic'}>
+              {editedPreview.city || 'No city specified'}
+            </span>
+          )}
+        </div>
         
         {/* Financial Info */}
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
-          {preview.sale_price && (
-            <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Sale Price</p>
-                <p className="font-medium">{formatCurrency(preview.sale_price)}</p>
-              </div>
+          <div className="flex items-center gap-2 text-sm">
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Sale Price</p>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  value={editedPreview.sale_price || ''}
+                  onChange={(e) => updateField('sale_price', e.target.value ? Number(e.target.value) : undefined)}
+                  placeholder="0"
+                  className="h-7 text-sm"
+                />
+              ) : (
+                <p className="font-medium">
+                  {editedPreview.sale_price ? formatCurrency(editedPreview.sale_price) : '—'}
+                </p>
+              )}
             </div>
-          )}
+          </div>
           
-          {preview.gross_commission_est && (
-            <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="h-4 w-4 text-success" />
-              <div>
-                <p className="text-xs text-muted-foreground">Commission</p>
-                <p className="font-medium text-success">{formatCurrency(preview.gross_commission_est)}</p>
-              </div>
+          <div className="flex items-center gap-2 text-sm">
+            <DollarSign className="h-4 w-4 text-success" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Commission</p>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  value={editedPreview.gross_commission_est || ''}
+                  onChange={(e) => updateField('gross_commission_est', e.target.value ? Number(e.target.value) : undefined)}
+                  placeholder="0"
+                  className="h-7 text-sm"
+                />
+              ) : (
+                <p className="font-medium text-success">
+                  {editedPreview.gross_commission_est ? formatCurrency(editedPreview.gross_commission_est) : '—'}
+                </p>
+              )}
             </div>
-          )}
+          </div>
           
-          {preview.advance_commission && (
+          {(isEditing || editedPreview.advance_commission) && (
             <div className="flex items-center gap-2 text-sm">
               <DollarSign className="h-4 w-4 text-info" />
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Advance</p>
-                <p className="font-medium">{formatCurrency(preview.advance_commission)}</p>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editedPreview.advance_commission || ''}
+                    onChange={(e) => updateField('advance_commission', e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="0"
+                    className="h-7 text-sm"
+                  />
+                ) : (
+                  <p className="font-medium">{formatCurrency(editedPreview.advance_commission!)}</p>
+                )}
               </div>
             </div>
           )}
           
-          {preview.completion_commission && (
+          {(isEditing || editedPreview.completion_commission) && (
             <div className="flex items-center gap-2 text-sm">
               <DollarSign className="h-4 w-4 text-primary" />
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-muted-foreground">Completion</p>
-                <p className="font-medium">{formatCurrency(preview.completion_commission)}</p>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editedPreview.completion_commission || ''}
+                    onChange={(e) => updateField('completion_commission', e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="0"
+                    className="h-7 text-sm"
+                  />
+                ) : (
+                  <p className="font-medium">{formatCurrency(editedPreview.completion_commission!)}</p>
+                )}
               </div>
             </div>
           )}
         </div>
         
         {/* Dates */}
-        {(preview.close_date_est || preview.advance_date || preview.completion_date) && (
-          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
-            {preview.close_date_est && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Closing</p>
-                  <p className="font-medium">{new Date(preview.close_date_est).toLocaleDateString()}</p>
-                </div>
-              </div>
-            )}
-            {preview.advance_date && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-info" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Advance</p>
-                  <p className="font-medium">{new Date(preview.advance_date).toLocaleDateString()}</p>
-                </div>
-              </div>
-            )}
-            {preview.completion_date && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Completion</p>
-                  <p className="font-medium">{new Date(preview.completion_date).toLocaleDateString()}</p>
-                </div>
-              </div>
-            )}
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Closing</p>
+              {isEditing ? (
+                <Input
+                  type="date"
+                  value={editedPreview.close_date_est || ''}
+                  onChange={(e) => updateField('close_date_est', e.target.value || undefined)}
+                  className="h-7 text-sm"
+                />
+              ) : (
+                <p className="font-medium">
+                  {editedPreview.close_date_est ? new Date(editedPreview.close_date_est).toLocaleDateString() : '—'}
+                </p>
+              )}
+            </div>
           </div>
-        )}
+          
+          {(isEditing || editedPreview.advance_date) && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-info" />
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground">Advance</p>
+                {isEditing ? (
+                  <Input
+                    type="date"
+                    value={editedPreview.advance_date || ''}
+                    onChange={(e) => updateField('advance_date', e.target.value || undefined)}
+                    className="h-7 text-sm"
+                  />
+                ) : (
+                  <p className="font-medium">{new Date(editedPreview.advance_date!).toLocaleDateString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {(isEditing || editedPreview.completion_date) && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-primary" />
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground">Completion</p>
+                {isEditing ? (
+                  <Input
+                    type="date"
+                    value={editedPreview.completion_date || ''}
+                    onChange={(e) => updateField('completion_date', e.target.value || undefined)}
+                    className="h-7 text-sm"
+                  />
+                ) : (
+                  <p className="font-medium">{new Date(editedPreview.completion_date!).toLocaleDateString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         
         {/* Action Buttons */}
         <div className="flex gap-2 pt-3">
+          <Button
+            onClick={() => setIsEditing(!isEditing)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            {isEditing ? <Check className="h-4 w-4" /> : <span className="text-xs">✏️</span>}
+            {isEditing ? 'Done Editing' : 'Edit'}
+          </Button>
           <Button 
-            onClick={onApprove} 
+            onClick={handleApprove} 
             className="flex-1 gap-2"
             size="sm"
           >
