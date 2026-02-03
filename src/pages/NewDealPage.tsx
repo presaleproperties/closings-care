@@ -151,6 +151,7 @@ export default function NewDealPage() {
           advanceDate: hasAdvanceCommission ? (formData as any).advance_date : undefined,
           completionDate: (formData as any).completion_date,
           closingDate: formData.close_date_est,
+          teamMemberPortion: isTeamDeal ? (formData.team_member_portion || 0) : 0,
         });
       }
 
