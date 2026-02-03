@@ -379,7 +379,11 @@ export default function DealDetailPage() {
             </div>
             {isTeamDeal && formData.team_member_portion && (
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {100 - formData.team_member_portion}% of deal
+                {100 - formData.team_member_portion}% of {formatCurrencyDisplay(
+                  (formData.advance_commission && formData.completion_commission)
+                    ? formData.advance_commission + formData.completion_commission
+                    : formData.gross_commission_est || 0
+                )}
               </div>
             )}
           </div>
@@ -734,17 +738,22 @@ export default function DealDetailPage() {
                 const calculatedGross = (formData.advance_commission && formData.completion_commission)
                   ? formData.advance_commission + formData.completion_commission
                   : formData.gross_commission_est;
+                const userPortion = isTeamDeal && formData.team_member_portion 
+                  ? (100 - formData.team_member_portion) / 100 
+                  : 1;
+                const userGross = calculatedGross ? calculatedGross * userPortion : 0;
+                
                 return calculatedGross && calculatedGross > 0 && (
                   <div className="flex items-start gap-2 p-3 mt-4 bg-muted/40 rounded-lg">
                     <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div className="text-sm text-muted-foreground space-y-1">
                       <p>
-                        <span className="font-medium text-foreground">Gross:</span> ${formatCurrencyInput(calculatedGross)}
+                        <span className="font-medium text-foreground">Deal Gross:</span> ${formatCurrencyInput(calculatedGross)}
+                        {isTeamDeal && formData.team_member_portion && (
+                          <> → <span className="text-primary font-medium">Your {100 - formData.team_member_portion}%: ${formatCurrencyInput(userGross)}</span></>
+                        )}
                         {netCommissionResult.brokeragePortion > 0 && (
                           <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
-                        )}
-                        {netCommissionResult.teamPortion > 0 && (
-                          <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.teamPortion)}</span> team</>
                         )}
                         {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
                       </p>

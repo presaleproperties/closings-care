@@ -405,7 +405,16 @@ export default function DealsPage() {
                   {deal?.gross_commission_est && (
                     <span className="inline-flex items-center gap-1">
                       <Percent className="h-3 w-3" />
-                      GCI: {formatCurrency(deal.gross_commission_est)}
+                      GCI: {formatCurrency(
+                        deal.team_member_portion && deal.team_member_portion > 0
+                          ? deal.gross_commission_est * (100 - deal.team_member_portion) / 100
+                          : deal.gross_commission_est
+                      )}
+                      {deal.team_member_portion && deal.team_member_portion > 0 && (
+                        <span className="text-slate-300 dark:text-muted-foreground/50 ml-0.5">
+                          ({100 - deal.team_member_portion}%)
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
