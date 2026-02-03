@@ -50,10 +50,10 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + Number(p.amount), 0);
     
-    // Calculate total Other Income (12 months from now for ongoing income)
+    // Calculate total Other Income (24 months from now for ongoing income)
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 24; i++) {
       const monthOffset = currentMonth + i;
       const year = thisYear + Math.floor((monthOffset - 1) / 12);
       const month = ((monthOffset - 1) % 12) + 1;

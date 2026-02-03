@@ -41,9 +41,9 @@ export default function ForecastPage() {
   const [view, setView] = useState<'table' | 'calendar'>('table');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
 
-  // Generate forecast data for next 12 months
+  // Generate forecast data for next 24 months
   const forecastData = useMemo(() => {
-    const months = getMonthRange(0, 12);
+    const months = getMonthRange(0, 24);
     
     return months.map((monthStr) => {
       const monthPayouts = payouts.filter((p) => {
