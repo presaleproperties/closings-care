@@ -12,7 +12,9 @@ import {
   Users, 
   FileText,
   MoreHorizontal,
-  Info
+  Info,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -53,7 +55,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useDeal, useUpdateDeal, useDeleteDeal } from '@/hooks/useDeals';
+import { useDeal, useUpdateDeal, useDeleteDeal, useDeals } from '@/hooks/useDeals';
 import { useSettings } from '@/hooks/useSettings';
 import { usePayouts } from '@/hooks/usePayouts';
 import { 
@@ -87,6 +89,7 @@ export default function DealDetailPage() {
   const navigate = useNavigate();
   
   const { data: deal, isLoading } = useDeal(id);
+  const { data: allDeals = [] } = useDeals();
   const { data: payouts = [] } = useDealPayouts(id);
   const { data: allPayouts = [] } = usePayouts();
   const { data: settings } = useSettings();
@@ -96,6 +99,21 @@ export default function DealDetailPage() {
   const updatePayout = useUpdatePayout();
   const markPaid = useMarkPayoutPaid();
   const deletePayout = useDeletePayout();
+
+  // Calculate prev/next deal for navigation
+  const dealNavigation = useMemo(() => {
+    if (!id || allDeals.length === 0) return { prev: null, next: null, currentIndex: -1, total: 0 };
+    
+    const currentIndex = allDeals.findIndex(d => d.id === id);
+    if (currentIndex === -1) return { prev: null, next: null, currentIndex: -1, total: 0 };
+    
+    return {
+      prev: currentIndex > 0 ? allDeals[currentIndex - 1].id : null,
+      next: currentIndex < allDeals.length - 1 ? allDeals[currentIndex + 1].id : null,
+      currentIndex: currentIndex + 1,
+      total: allDeals.length,
+    };
+  }, [id, allDeals]);
 
   const [formData, setFormData] = useState<Partial<DealFormData>>({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -262,6 +280,31 @@ export default function DealDetailPage() {
         showAddDeal={false}
         action={
           <div className="flex items-center gap-2">
+            {/* Deal Navigation */}
+            <div className="flex items-center gap-1 mr-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-9 w-9"
+                disabled={!dealNavigation.prev}
+                onClick={() => dealNavigation.prev && navigate(`/deals/${dealNavigation.prev}`)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground px-2 min-w-[60px] text-center">
+                {dealNavigation.currentIndex} / {dealNavigation.total}
+              </span>
+              <Button 
+                variant="outline" 
+                size="icon"
+                className="h-9 w-9"
+                disabled={!dealNavigation.next}
+                onClick={() => dealNavigation.next && navigate(`/deals/${dealNavigation.next}`)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            
             <Button variant="ghost" onClick={() => navigate('/deals')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
