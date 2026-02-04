@@ -94,28 +94,42 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     const closedDeals = filteredDeals.filter(d => d.status === 'CLOSED').length;
     const pendingDeals = filteredDeals.filter(d => d.status === 'PENDING').length;
     
-    const paidPayouts = payouts.filter(p => {
-      const deal = filteredDeals.find(d => d.id === p.deal_id);
-      return deal && p.status === 'PAID';
-    });
-    const totalRevenue = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
-    const avgCommission = totalDeals > 0 ? totalRevenue / closedDeals : 0;
+    // Get all payouts associated with filtered deals
+    const relevantPayouts = payouts.filter(p => 
+      filteredDeals.some(d => d.id === p.deal_id)
+    );
     
-    const projectedPayouts = payouts.filter(p => {
-      const deal = filteredDeals.find(d => d.id === p.deal_id);
-      return deal && p.status !== 'PAID';
-    });
+    const paidPayouts = relevantPayouts.filter(p => p.status === 'PAID');
+    const totalRevenue = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    const projectedPayouts = relevantPayouts.filter(p => p.status !== 'PAID');
     const projectedRevenue = projectedPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+    
+    // Calculate total expected commission from deals (use gross_commission_est)
+    const totalExpectedCommission = filteredDeals.reduce((sum, deal) => {
+      return sum + Number(deal.gross_commission_est || 0);
+    }, 0);
+    
+    // Average commission based on all deals (expected)
+    const avgCommission = totalDeals > 0 ? totalExpectedCommission / totalDeals : 0;
 
-    // Lead source breakdown
+    // Helper to get deal's total value (paid + projected, or expected commission)
+    const getDealValue = (deal: Deal) => {
+      const dealPayouts = payouts.filter(p => p.deal_id === deal.id);
+      if (dealPayouts.length > 0) {
+        return dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      }
+      return Number(deal.gross_commission_est || 0);
+    };
+
+    // Lead source breakdown - use total deal value (paid + projected)
     const leadSourceMap = new Map<string, { count: number; revenue: number; avgDeal: number }>();
     filteredDeals.forEach(deal => {
       const source = deal.lead_source || 'Unknown';
       const existing = leadSourceMap.get(source) || { count: 0, revenue: 0, avgDeal: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       const newCount = existing.count + 1;
-      const newRevenue = existing.revenue + revenue;
+      const newRevenue = existing.revenue + dealValue;
       leadSourceMap.set(source, {
         count: newCount,
         revenue: newRevenue,
@@ -131,10 +145,9 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     filteredDeals.forEach(deal => {
       const type = deal.property_type || 'Unknown';
       const existing = propertyTypeMap.get(type) || { count: 0, revenue: 0, avgDeal: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       const newCount = existing.count + 1;
-      const newRevenue = existing.revenue + revenue;
+      const newRevenue = existing.revenue + dealValue;
       propertyTypeMap.set(type, {
         count: newCount,
         revenue: newRevenue,
@@ -153,11 +166,10 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     filteredDeals.forEach(deal => {
       const type = deal.deal_type;
       const existing = dealTypeMap.get(type) || { count: 0, revenue: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       dealTypeMap.set(type, {
         count: existing.count + 1,
-        revenue: existing.revenue + revenue,
+        revenue: existing.revenue + dealValue,
       });
     });
     const dealTypes = Array.from(dealTypeMap.entries())
@@ -169,11 +181,10 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     filteredDeals.forEach(deal => {
       const type = deal.buyer_type || 'Not Specified';
       const existing = buyerTypeMap.get(type) || { count: 0, revenue: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       buyerTypeMap.set(type, {
         count: existing.count + 1,
-        revenue: existing.revenue + revenue,
+        revenue: existing.revenue + dealValue,
       });
     });
     const buyerTypes = Array.from(buyerTypeMap.entries())
@@ -185,11 +196,10 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     filteredDeals.forEach(deal => {
       const city = deal.city || 'Unknown';
       const existing = cityMap.get(city) || { count: 0, revenue: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       cityMap.set(city, {
         count: existing.count + 1,
-        revenue: existing.revenue + revenue,
+        revenue: existing.revenue + dealValue,
       });
     });
     const cities = Array.from(cityMap.entries())
@@ -202,18 +212,17 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
       const isTeamDeal = deal.team_member && deal.team_member_portion && deal.team_member_portion > 0;
       const category = isTeamDeal ? 'Team Deals' : 'Solo Deals';
       const existing = teamMap.get(category) || { count: 0, revenue: 0 };
-      const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-      const revenue = dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      const dealValue = getDealValue(deal);
       teamMap.set(category, {
         count: existing.count + 1,
-        revenue: existing.revenue + revenue,
+        revenue: existing.revenue + dealValue,
       });
     });
     const teamBreakdown = Array.from(teamMap.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.count - a.count);
 
-    // Monthly trend data (last 12 months)
+    // Monthly trend data (last 12 months) - use pending_date or completion_date for presales
     const monthlyData: { month: string; deals: number; revenue: number }[] = [];
     for (let i = 11; i >= 0; i--) {
       const monthDate = subMonths(new Date(), i);
@@ -221,14 +230,14 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
       const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
       
       const monthDeals = filteredDeals.filter(deal => {
-        const dealDate = deal.close_date_actual || deal.close_date_est;
+        // Use the most relevant date for each deal
+        const dealDate = deal.close_date_actual || deal.completion_date || deal.close_date_est || deal.pending_date;
         if (!dealDate) return false;
         return isWithinInterval(new Date(dealDate), { start: monthStart, end: monthEnd });
       });
       
       const monthRevenue = monthDeals.reduce((sum, deal) => {
-        const dealPayouts = payouts.filter(p => p.deal_id === deal.id && p.status === 'PAID');
-        return sum + dealPayouts.reduce((pSum, p) => pSum + Number(p.amount), 0);
+        return sum + getDealValue(deal);
       }, 0);
       
       monthlyData.push({
@@ -245,6 +254,7 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
       totalRevenue, 
       avgCommission,
       projectedRevenue,
+      totalExpectedCommission,
       leadSources, 
       propertyTypes, 
       dealTypes,
@@ -433,23 +443,23 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
         />
         <StatCard
           icon={DollarSign}
-          label="Total Revenue"
-          value={formatCurrency(analytics.totalRevenue)}
-          subValue="Commissions received"
+          label="Total GCI"
+          value={formatCurrency(analytics.totalExpectedCommission)}
+          subValue={`${formatCurrency(analytics.totalRevenue)} received`}
           color="primary"
         />
         <StatCard
           icon={Target}
           label="Avg Commission"
           value={formatCurrency(analytics.avgCommission)}
-          subValue="Per closed deal"
+          subValue="Per deal (GCI)"
           color="secondary"
         />
         <StatCard
           icon={TrendingUp}
           label="Pipeline"
           value={formatCurrency(analytics.projectedRevenue)}
-          subValue="Projected to receive"
+          subValue="Pending payouts"
           color="warning"
         />
       </div>
