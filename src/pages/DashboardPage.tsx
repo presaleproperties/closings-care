@@ -318,7 +318,7 @@ export default function DashboardPage() {
             animate="visible"
           >
             {/* Spacing Container */}
-            <div className="p-6 lg:p-8 xl:p-10 space-y-8">
+            <div className="p-5 lg:p-6 xl:p-8 space-y-6">
               
               {/* Overdue Alert */}
               <OverduePayoutNotification
@@ -353,7 +353,7 @@ export default function DashboardPage() {
               </motion.section>
 
               {/* Premium Tabs */}
-              <Tabs defaultValue="overview" className="space-y-8">
+              <Tabs defaultValue="overview" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -392,10 +392,10 @@ export default function DashboardPage() {
                 </motion.div>
 
                 {/* Overview Tab */}
-                <TabsContent value="overview" className="mt-0 space-y-8">
-                  <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+                <TabsContent value="overview" className="mt-0 space-y-6">
+                  <div className="grid lg:grid-cols-3 gap-5 lg:gap-6">
                     {/* Main Column */}
-                    <div className="lg:col-span-2 space-y-6 lg:space-y-8">
+                    <div className="lg:col-span-2 space-y-5 lg:space-y-6">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -404,11 +404,12 @@ export default function DashboardPage() {
                         <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                       </motion.div>
                       
-                      <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+                      <div className="grid md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ ...springConfig, delay: 0.3 }}
+                          className="h-full"
                         >
                           <OtherIncomeManager />
                         </motion.div>
@@ -416,6 +417,7 @@ export default function DashboardPage() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ ...springConfig, delay: 0.35 }}
+                          className="h-full"
                         >
                           <FinancialHealth 
                             deals={deals}
@@ -431,18 +433,11 @@ export default function DashboardPage() {
                     </div>
                     
                     {/* Sidebar */}
-                    <div className="space-y-6 lg:space-y-8">
+                    <div className="space-y-5 lg:space-y-6">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ ...springConfig, delay: 0.4 }}
-                      >
-                        <BrokerageCapCard />
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...springConfig, delay: 0.45 }}
                       >
                         <UpcomingPayouts 
                           payouts={payouts} 
@@ -468,8 +463,8 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 {/* Taxes Tab */}
-                <TabsContent value="taxes" className="mt-0 space-y-8">
-                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+                <TabsContent value="taxes" className="mt-0 space-y-6">
+                  <div className="grid lg:grid-cols-2 gap-5 lg:gap-6">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -494,7 +489,7 @@ export default function DashboardPage() {
                     </motion.div>
                   </div>
                   
-                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="grid lg:grid-cols-2 gap-5 lg:gap-6">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -521,7 +516,7 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 {/* Analytics Tab */}
-                <TabsContent value="analytics" className="mt-0 space-y-8">
+                <TabsContent value="analytics" className="mt-0 space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -530,7 +525,7 @@ export default function DashboardPage() {
                     <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                   </motion.div>
                   
-                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="grid lg:grid-cols-2 gap-5 lg:gap-6">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -557,7 +552,7 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 {/* Clients Tab */}
-                <TabsContent value="clients" className="mt-0 space-y-8">
+                <TabsContent value="clients" className="mt-0 space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
