@@ -177,11 +177,47 @@ export function useUpdatePayout() {
         .single();
       
       if (error) throw error;
+
+      // Reverse sync: Update deal dates when payout due_date changes
+      if (cleanedData.due_date !== undefined) {
+        // Get the deal to check property type
+        const { data: deal } = await supabase
+          .from('deals')
+          .select('property_type')
+          .eq('id', payout.deal_id)
+          .single();
+
+        if (deal?.property_type === 'PRESALE') {
+          // Sync payout due_date back to deal's advance_date or completion_date
+          if (payout.payout_type === 'Advance') {
+            await supabase
+              .from('deals')
+              .update({ advance_date: cleanedData.due_date })
+              .eq('id', payout.deal_id);
+          } else if (payout.payout_type === 'Completion') {
+            await supabase
+              .from('deals')
+              .update({ completion_date: cleanedData.due_date })
+              .eq('id', payout.deal_id);
+          }
+        } else if (deal?.property_type === 'RESALE') {
+          // For resale, Completion payout syncs to close_date_est
+          if (payout.payout_type === 'Completion') {
+            await supabase
+              .from('deals')
+              .update({ close_date_est: cleanedData.due_date })
+              .eq('id', payout.deal_id);
+          }
+        }
+      }
+
       return payout as Payout;
     },
     onSuccess: (payout) => {
       queryClient.invalidateQueries({ queryKey: ['payouts'] });
       queryClient.invalidateQueries({ queryKey: ['payouts', 'deal', payout.deal_id] });
+      queryClient.invalidateQueries({ queryKey: ['deals'] });
+      queryClient.invalidateQueries({ queryKey: ['deal', payout.deal_id] });
       toast.success('Payout updated');
     },
     onError: (error) => {
