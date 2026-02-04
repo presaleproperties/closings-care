@@ -1,18 +1,18 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Plus, Trash2, ChevronLeft, ChevronRight, Repeat, Calendar, Clock, 
-  User, Briefcase, Receipt, PiggyBank, CalendarClock, Building2, Home,
-  TrendingDown, Pencil
+  Plus, Trash2, ChevronLeft, ChevronRight, 
+  Home, Briefcase, Building2, PiggyBank, Receipt,
+  TrendingDown, Pencil, Wallet, ArrowUpRight, ArrowDownRight,
+  DollarSign, Calendar, MoreHorizontal, X, Check
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   useExpenses, 
   useCreateExpense, 
@@ -37,12 +43,9 @@ import { useProperties, getPropertyMonthlyExpenses, calculatePropertyCashflow } 
 import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { CategoryBudgetProgress } from '@/components/expenses/CategoryBudgetProgress';
-import { PropertyManager } from '@/components/expenses/PropertyManager';
-import { QuickAddExpense } from '@/components/expenses/QuickAddExpense';
-import { ExpenseVisualBreakdown } from '@/components/expenses/ExpenseVisualBreakdown';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 
-// Categorized expenses for real estate agents
+// Expense categories
 const expenseCategories = {
   personal: {
     'Housing': ['Personal Mortgage', 'Strata Fees', 'Property Taxes', 'Hydro/Utilities', 'Internet'],
@@ -59,7 +62,7 @@ const expenseCategories = {
     'Admin': ['Phone (Business)', 'Admin Support', 'Bookkeeping'],
   },
   rental: {
-    'Rental Property': ['Rental Mortgage', 'Rental Strata Fees', 'Rental Property Tax', 'Property Management', 'Rental Insurance', 'Rental Repairs/Maintenance', 'Rental Utilities', 'Rental Depreciation', 'Other Rental Expense'],
+    'Rental Property': ['Rental Mortgage', 'Rental Strata Fees', 'Rental Property Tax', 'Property Management', 'Rental Insurance', 'Rental Repairs/Maintenance', 'Rental Utilities', 'Other Rental Expense'],
   },
   taxes: {
     'Taxes & Savings': ['Tax Set-Aside', 'GST/HST Remittance', 'Debt Pay Down'],
@@ -70,7 +73,7 @@ const expenseCategories = {
 };
 
 const getAllCategories = () => {
-  const result: { category: string; type: 'personal' | 'business' | 'rental' | 'taxes' | 'other'; group: string }[] = [];
+  const result: { category: string; type: ExpenseType; group: string }[] = [];
   Object.entries(expenseCategories.personal).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'personal', group })));
   Object.entries(expenseCategories.business).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'business', group })));
   Object.entries(expenseCategories.rental).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'rental', group })));
@@ -81,7 +84,7 @@ const getAllCategories = () => {
 
 const allCategoriesFlat = getAllCategories();
 
-const getCategoryType = (category: string): 'personal' | 'business' | 'rental' | 'taxes' | 'other' => {
+const getCategoryType = (category: string): ExpenseType => {
   const found = allCategoriesFlat.find(c => c.category === category);
   return found?.type || 'other';
 };
@@ -89,12 +92,22 @@ const getCategoryType = (category: string): 'personal' | 'business' | 'rental' |
 type RecurrenceType = 'monthly' | 'weekly' | 'yearly' | 'one-time';
 type ExpenseType = 'personal' | 'business' | 'rental' | 'taxes' | 'other';
 
-const typeConfig: Record<ExpenseType, { icon: typeof User; label: string; color: string; bg: string; border: string }> = {
-  personal: { icon: Home, label: 'Personal', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-  business: { icon: Briefcase, label: 'Business', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-  rental: { icon: Building2, label: 'Rental', color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  taxes: { icon: PiggyBank, label: 'Taxes', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-  other: { icon: Receipt, label: 'Other', color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-border' },
+const typeConfig: Record<ExpenseType, { icon: typeof Home; label: string; gradient: string; bg: string; border: string; text: string }> = {
+  personal: { icon: Home, label: 'Personal', gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-500' },
+  business: { icon: Briefcase, label: 'Business', gradient: 'from-violet-500 to-purple-600', bg: 'bg-violet-500/10', border: 'border-violet-500/30', text: 'text-violet-500' },
+  rental: { icon: Building2, label: 'Rental', gradient: 'from-teal-500 to-emerald-600', bg: 'bg-teal-500/10', border: 'border-teal-500/30', text: 'text-teal-500' },
+  taxes: { icon: PiggyBank, label: 'Taxes', gradient: 'from-amber-500 to-orange-600', bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-500' },
+  other: { icon: Receipt, label: 'Other', gradient: 'from-slate-400 to-slate-500', bg: 'bg-muted/50', border: 'border-border', text: 'text-muted-foreground' },
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
 };
 
 export default function ExpensesPage() {
@@ -108,7 +121,7 @@ export default function ExpensesPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<ExpenseType>('personal');
-  const [activeTab, setActiveTab] = useState<'overview' | 'personal' | 'business' | 'rental' | 'taxes' | 'properties'>('overview');
+  const [activeFilter, setActiveFilter] = useState<ExpenseType | 'all'>('all');
   const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType; rental_property_id?: string; is_fixed?: boolean; is_tax_deductible?: boolean }>({
     category: '',
     amount: 0,
@@ -119,10 +132,7 @@ export default function ExpensesPage() {
     is_tax_deductible: true,
   });
 
-  // Auto-set tax deductible based on expense type
-  const getDefaultTaxDeductible = (type: ExpenseType): boolean => {
-    return type === 'business' || type === 'rental';
-  };
+  const getDefaultTaxDeductible = (type: ExpenseType): boolean => type === 'business' || type === 'rental';
 
   const handlePrevMonth = () => {
     const date = parseISO(`${currentMonth}-01`);
@@ -136,6 +146,7 @@ export default function ExpensesPage() {
     setCurrentMonth(format(date, 'yyyy-MM'));
   };
 
+  // Filter expenses for current month
   const monthExpenses = useMemo(() => {
     const currentMonthNum = parseInt(currentMonth.split('-')[1]);
     return expenses.filter((e) => {
@@ -150,14 +161,18 @@ export default function ExpensesPage() {
     });
   }, [expenses, currentMonth]);
 
-  const totalMonthExpenses = useMemo(() => {
-    return monthExpenses.reduce((sum, e) => {
-      const recurrence = (e as any).recurrence || 'monthly';
-      if (recurrence === 'weekly') return sum + Number(e.amount) * 4.33;
-      return sum + Number(e.amount);
-    }, 0);
-  }, [monthExpenses]);
+  // Calculate totals
+  const getDisplayAmount = (expense: typeof expenses[0]) => {
+    const recurrence = (expense as any).recurrence || 'monthly';
+    if (recurrence === 'weekly') return Number(expense.amount) * 4.33;
+    return Number(expense.amount);
+  };
 
+  const totalMonthExpenses = useMemo(() => 
+    monthExpenses.reduce((sum, e) => sum + getDisplayAmount(e), 0)
+  , [monthExpenses]);
+
+  // Property costs
   const propertyCarryingCosts = useMemo(() => {
     let totalPersonalCost = 0;
     let totalRentalNet = 0;
@@ -170,13 +185,12 @@ export default function ExpensesPage() {
         totalRentalNet += cashflow.net;
       }
     });
-    return { personalCost: totalPersonalCost, rentalNet: totalRentalNet, totalNet: totalRentalNet - totalPersonalCost };
+    return { personalCost: totalPersonalCost, rentalNet: totalRentalNet };
   }, [properties]);
 
-  const grandTotalExpenses = useMemo(() => {
-    return totalMonthExpenses + propertyCarryingCosts.personalCost - propertyCarryingCosts.rentalNet;
-  }, [totalMonthExpenses, propertyCarryingCosts]);
+  const grandTotalExpenses = totalMonthExpenses + propertyCarryingCosts.personalCost - propertyCarryingCosts.rentalNet;
 
+  // Group expenses by type
   const groupedExpenses = useMemo(() => {
     const groups: Record<ExpenseType, typeof expenses> = { personal: [], business: [], rental: [], taxes: [], other: [] };
     monthExpenses.forEach(e => {
@@ -186,7 +200,20 @@ export default function ExpensesPage() {
     return groups;
   }, [monthExpenses]);
 
-  const handleOpenAdd = (type?: ExpenseType, propertyId?: string) => {
+  const getTypeTotal = (type: ExpenseType) => {
+    let total = groupedExpenses[type].reduce((sum, e) => sum + getDisplayAmount(e), 0);
+    if (type === 'personal') total += propertyCarryingCosts.personalCost;
+    if (type === 'rental') total -= propertyCarryingCosts.rentalNet;
+    return total;
+  };
+
+  // Filtered expenses
+  const filteredExpenses = useMemo(() => {
+    if (activeFilter === 'all') return monthExpenses;
+    return groupedExpenses[activeFilter];
+  }, [activeFilter, monthExpenses, groupedExpenses]);
+
+  const handleOpenAdd = (type?: ExpenseType) => {
     const expenseType = type || 'personal';
     setEditingId(null);
     setSelectedType(expenseType);
@@ -195,7 +222,7 @@ export default function ExpensesPage() {
       amount: 0, 
       month: currentMonth, 
       recurrence: 'monthly', 
-      rental_property_id: propertyId,
+      rental_property_id: undefined,
       is_fixed: true,
       is_tax_deductible: getDefaultTaxDeductible(expenseType),
     });
@@ -242,81 +269,13 @@ export default function ExpensesPage() {
     }
   };
 
-  const getDisplayAmount = (expense: typeof expenses[0]) => {
-    const recurrence = (expense as any).recurrence || 'monthly';
-    if (recurrence === 'weekly') return Number(expense.amount) * 4.33;
-    return Number(expense.amount);
-  };
-
-  const getTypeTotal = (type: ExpenseType) => groupedExpenses[type].reduce((sum, e) => sum + getDisplayAmount(e), 0);
-
   const currentCategories = expenseCategories[selectedType] || {};
-
-  const renderExpenseList = (type: ExpenseType) => {
-    const typeExpenses = groupedExpenses[type];
-    const config = typeConfig[type];
-    
-    if (typeExpenses.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <config.icon className={`w-12 h-12 mx-auto mb-3 ${config.color} opacity-50`} />
-          <p className="text-muted-foreground mb-4">No {config.label.toLowerCase()} expenses yet</p>
-          <Button onClick={() => handleOpenAdd(type)} className="btn-premium">
-            <Plus className="w-4 h-4 mr-2" />
-            Add {config.label} Expense
-          </Button>
-        </div>
-      );
-    }
-
-    // Group by category
-    const byCategory: Record<string, typeof typeExpenses> = {};
-    typeExpenses.forEach(e => {
-      if (!byCategory[e.category]) byCategory[e.category] = [];
-      byCategory[e.category].push(e);
-    });
-
-    return (
-      <div className="space-y-3">
-        {Object.entries(byCategory).map(([category, items]) => {
-          const categoryTotal = items.reduce((sum, e) => sum + getDisplayAmount(e), 0);
-          return (
-            <div key={category} className="bg-card border border-border/50 rounded-xl overflow-hidden">
-              <div className={`px-4 py-3 ${config.bg} flex items-center justify-between`}>
-                <span className={`font-medium ${config.color}`}>{category}</span>
-                <span className="font-semibold">{formatCurrency(categoryTotal)}</span>
-              </div>
-              <div className="divide-y divide-border/30">
-                {items.map(expense => (
-                  <ExpenseRow
-                    key={expense.id}
-                    expense={expense}
-                    onEdit={() => handleOpenEdit(expense)}
-                    onDelete={() => handleDelete(expense.id)}
-                    getDisplayAmount={getDisplayAmount}
-                    propertyName={type === 'rental' ? properties.find(p => p.id === (expense as any).rental_property_id)?.name : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-        <button
-          onClick={() => handleOpenAdd(type)}
-          className={`w-full border-2 border-dashed ${config.border} rounded-xl p-4 flex items-center justify-center gap-2 ${config.color} hover:bg-muted/30 transition-colors`}
-        >
-          <Plus className="w-4 h-4" />
-          <span className="font-medium">Add {config.label} Expense</span>
-        </button>
-      </div>
-    );
-  };
 
   return (
     <AppLayout>
       <Header 
         title="Expenses" 
-        subtitle={format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
+        subtitle="Track your monthly spending"
         action={
           <Button onClick={() => handleOpenAdd()} className="btn-premium">
             <Plus className="w-4 h-4 mr-2" />
@@ -325,246 +284,363 @@ export default function ExpensesPage() {
         }
       />
 
-      <div className="p-4 lg:p-6 space-y-5 animate-fade-in">
-        {/* Month Navigation + Summary */}
-        <div className="bg-card border border-border/50 rounded-2xl p-5">
+      <motion.div 
+        className="p-4 lg:p-6 space-y-5"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Month Navigator & Total */}
+        <motion.div variants={itemVariants} className="landing-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-9 w-9 rounded-xl">
               <ChevronLeft className="w-5 h-5" />
             </Button>
-            <h2 className="text-lg font-semibold">
-              {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
-            </h2>
-            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-9 w-9">
+            <div className="text-center">
+              <h2 className="text-lg font-bold">
+                {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
+              </h2>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-9 w-9 rounded-xl">
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
 
           {/* Total Display */}
-          <div className="text-center mb-5">
-            <p className="text-sm text-muted-foreground mb-1">Total Monthly Expenses</p>
-            <p className="text-4xl font-bold text-destructive">{formatCurrency(grandTotalExpenses)}</p>
-            {properties.length > 0 && propertyCarryingCosts.totalNet !== 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Includes {formatCurrency(Math.abs(propertyCarryingCosts.totalNet))} property {propertyCarryingCosts.totalNet < 0 ? 'costs' : 'income'}
+          <div className="text-center py-4 px-6 rounded-2xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20">
+            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Total Monthly Spending</p>
+            <AnimatedNumber
+              value={grandTotalExpenses}
+              className="text-4xl font-bold text-rose-500"
+              duration={1}
+            />
+            {(propertyCarryingCosts.personalCost > 0 || propertyCarryingCosts.rentalNet !== 0) && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Includes property costs
               </p>
             )}
           </div>
+        </motion.div>
 
-          {/* Quick Stats - Include property costs in appropriate categories */}
-          <div className="grid grid-cols-4 gap-2">
-            {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
-              const config = typeConfig[type];
-              let total = getTypeTotal(type);
-              // Add personal property costs to personal total
-              if (type === 'personal') {
-                total += propertyCarryingCosts.personalCost;
-              }
-              // Add rental property net expense (negative means income) to rental total
-              if (type === 'rental') {
-                total -= propertyCarryingCosts.rentalNet; // Subtract because rentalNet is income - expense
-              }
-              return (
-                <button
-                  key={type}
-                  onClick={() => setActiveTab(type as 'personal' | 'business' | 'rental' | 'taxes')}
-                  className={cn(
-                    "p-3 rounded-xl border transition-all text-left",
-                    activeTab === type ? `${config.border} ${config.bg}` : "border-border/30 hover:border-border"
-                  )}
-                >
-                  <config.icon className={`w-4 h-4 ${config.color} mb-1`} />
-                  <p className="font-semibold text-sm truncate">{formatCurrency(total)}</p>
-                  <p className="text-xs text-muted-foreground">{config.label}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
-          <TabsList className="w-full grid grid-cols-6 h-11 bg-muted/50">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-            <TabsTrigger value="personal" className="text-xs sm:text-sm">Personal</TabsTrigger>
-            <TabsTrigger value="business" className="text-xs sm:text-sm">Business</TabsTrigger>
-            <TabsTrigger value="rental" className="text-xs sm:text-sm">Rental</TabsTrigger>
-            <TabsTrigger value="taxes" className="text-xs sm:text-sm">Taxes</TabsTrigger>
-            <TabsTrigger value="properties" className="text-xs sm:text-sm">Properties</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-5">
-            {/* Visual Expense Breakdown */}
-            <ExpenseVisualBreakdown 
-              expenses={expenses} 
-              currentMonth={currentMonth}
-              onCategoryClick={(type) => setActiveTab(type)}
-            />
-
-            {/* Quick Add Section */}
-            <QuickAddExpense currentMonth={currentMonth} />
-
-            {/* Budget Goals */}
-            <CategoryBudgetProgress expenses={expenses} currentMonth={currentMonth} />
-
-            {/* All Expenses Summary */}
-            {isLoading ? (
-              <div className="text-center py-12 text-muted-foreground">Loading...</div>
-            ) : monthExpenses.length === 0 ? (
-              <div className="text-center py-12 bg-card border border-border/50 rounded-2xl">
-                <TrendingDown className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="text-muted-foreground mb-4">No expenses tracked for this month</p>
-                <Button onClick={() => handleOpenAdd()} className="btn-premium">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Your First Expense
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {(['personal', 'business', 'rental', 'taxes', 'other'] as ExpenseType[]).map(type => {
-                  const typeExpenses = groupedExpenses[type];
-                  if (typeExpenses.length === 0) return null;
-                  const config = typeConfig[type];
-                  const total = getTypeTotal(type);
-                  return (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        if (type === 'other') return;
-                        setActiveTab(type as 'personal' | 'business' | 'rental' | 'taxes');
-                      }}
-                      className={`w-full bg-card border ${config.border} rounded-xl p-4 flex items-center justify-between hover:bg-muted/30 transition-colors`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${config.bg}`}>
-                          <config.icon className={`w-5 h-5 ${config.color}`} />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-medium">{config.label}</p>
-                          <p className="text-sm text-muted-foreground">{typeExpenses.length} expense{typeExpenses.length !== 1 ? 's' : ''}</p>
-                        </div>
-                      </div>
-                      <p className="text-xl font-bold">{formatCurrency(total)}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Personal Tab */}
-          <TabsContent value="personal" className="space-y-4">
-            {/* Personal Property Costs */}
-            {properties.filter(p => p.property_type === 'personal').length > 0 && (
-              <div className="bg-card border border-blue-500/30 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 bg-blue-500/10 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4 text-blue-400" />
-                    <span className="font-medium text-blue-400">Property Costs</span>
+        {/* Category Cards */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
+            const config = typeConfig[type];
+            const total = getTypeTotal(type);
+            const count = groupedExpenses[type].length;
+            const isActive = activeFilter === type;
+            
+            return (
+              <button
+                key={type}
+                onClick={() => setActiveFilter(isActive ? 'all' : type)}
+                className={cn(
+                  "relative p-4 rounded-2xl border-2 transition-all text-left overflow-hidden group",
+                  isActive 
+                    ? `${config.border} ${config.bg} shadow-lg` 
+                    : "border-border/50 hover:border-border bg-card"
+                )}
+              >
+                {/* Gradient overlay on hover/active */}
+                <div className={cn(
+                  "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
+                  config.gradient,
+                  isActive ? "opacity-10" : "group-hover:opacity-5"
+                )} />
+                
+                <div className="relative">
+                  <div className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-colors",
+                    isActive ? config.bg : "bg-muted/50"
+                  )}>
+                    <config.icon className={cn("w-4.5 h-4.5", isActive ? config.text : "text-muted-foreground")} />
                   </div>
-                  <span className="font-semibold">{formatCurrency(propertyCarryingCosts.personalCost)}</span>
+                  <p className="font-bold text-lg">{formatCurrency(total)}</p>
+                  <p className="text-xs text-muted-foreground">{config.label}</p>
                 </div>
-                <div className="divide-y divide-border/30">
+
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeIndicator"
+                    className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", `bg-gradient-to-r ${config.gradient}`)}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Filter Pills */}
+        <motion.div variants={itemVariants} className="flex items-center gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+              activeFilter === 'all'
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            )}
+          >
+            All Expenses
+          </button>
+          {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
+            const config = typeConfig[type];
+            return (
+              <button
+                key={type}
+                onClick={() => setActiveFilter(type)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                  activeFilter === type
+                    ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg`
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {config.label}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Property Costs Section */}
+        <AnimatePresence>
+          {(activeFilter === 'all' || activeFilter === 'personal') && properties.filter(p => p.property_type === 'personal').length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              variants={itemVariants}
+            >
+              <div className="landing-card overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-b border-blue-500/20 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-blue-500" />
+                    <span className="font-semibold text-sm">Personal Property</span>
+                  </div>
+                  <span className="font-bold text-blue-500">{formatCurrency(propertyCarryingCosts.personalCost)}</span>
+                </div>
+                <div className="divide-y divide-border/50">
                   {properties.filter(p => p.property_type === 'personal').map(property => {
                     const expenses = getPropertyMonthlyExpenses(property);
                     return (
-                      <div key={property.id} className="px-4 py-3 flex items-center justify-between">
+                      <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
                         <div>
                           <p className="font-medium text-sm">{property.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {[
-                              property.monthly_mortgage && `$${property.monthly_mortgage.toLocaleString()} mortgage`,
-                              property.monthly_strata && `$${property.monthly_strata.toLocaleString()} strata`,
-                              property.yearly_taxes && `$${Math.round(property.yearly_taxes / 12).toLocaleString()} taxes`
+                              property.monthly_mortgage && `Mortgage`,
+                              property.monthly_strata && `Strata`,
+                              property.yearly_taxes && `Taxes`
                             ].filter(Boolean).join(' • ')}
                           </p>
                         </div>
-                        <span className="font-semibold text-sm">{formatCurrency(expenses)}/mo</span>
+                        <span className="font-semibold">{formatCurrency(expenses)}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            )}
-            {renderExpenseList('personal')}
-          </TabsContent>
+            </motion.div>
+          )}
 
-          {/* Business Tab */}
-          <TabsContent value="business">
-            {renderExpenseList('business')}
-          </TabsContent>
-
-          {/* Rental Tab */}
-          <TabsContent value="rental" className="space-y-4">
-            {/* Rental Property Cashflow */}
-            {properties.filter(p => p.property_type === 'rental').length > 0 && (
-              <div className="bg-card border border-teal-500/30 rounded-xl overflow-hidden">
-                <div className="px-4 py-3 bg-teal-500/10 flex items-center justify-between">
+          {(activeFilter === 'all' || activeFilter === 'rental') && properties.filter(p => p.property_type === 'rental').length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              variants={itemVariants}
+            >
+              <div className="landing-card overflow-hidden">
+                <div className="px-4 py-3 bg-gradient-to-r from-teal-500/10 to-emerald-500/5 border-b border-teal-500/20 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-teal-400" />
-                    <span className="font-medium text-teal-400">Rental Properties</span>
+                    <Building2 className="w-4 h-4 text-teal-500" />
+                    <span className="font-semibold text-sm">Rental Properties</span>
                   </div>
                   <span className={cn(
-                    "font-semibold",
+                    "font-bold",
                     propertyCarryingCosts.rentalNet >= 0 ? "text-emerald-500" : "text-rose-500"
                   )}>
-                    {propertyCarryingCosts.rentalNet >= 0 ? '+' : ''}{formatCurrency(propertyCarryingCosts.rentalNet)}/mo
+                    {propertyCarryingCosts.rentalNet >= 0 ? '+' : ''}{formatCurrency(propertyCarryingCosts.rentalNet)}
                   </span>
                 </div>
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/50">
                   {properties.filter(p => p.property_type === 'rental').map(property => {
                     const cashflow = calculatePropertyCashflow(property, 0);
                     return (
-                      <div key={property.id} className="px-4 py-3 flex items-center justify-between">
+                      <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
                         <div>
                           <p className="font-medium text-sm">{property.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            <span className="text-emerald-500">${(property.monthly_rent || 0).toLocaleString()}</span>
-                            {' rent - '}
-                            <span className="text-rose-500">${cashflow.expenses.toLocaleString()}</span>
-                            {' costs'}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="flex items-center gap-1 text-emerald-500">
+                              <ArrowUpRight className="w-3 h-3" />
+                              {formatCurrency(property.monthly_rent || 0)}
+                            </span>
+                            <span className="text-muted-foreground">−</span>
+                            <span className="flex items-center gap-1 text-rose-500">
+                              <ArrowDownRight className="w-3 h-3" />
+                              {formatCurrency(cashflow.expenses)}
+                            </span>
+                          </div>
                         </div>
                         <span className={cn(
-                          "font-semibold text-sm",
+                          "font-semibold",
                           cashflow.net >= 0 ? "text-emerald-500" : "text-rose-500"
                         )}>
-                          {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}/mo
+                          {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}
                         </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            )}
-            {renderExpenseList('rental')}
-          </TabsContent>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          {/* Taxes Tab */}
-          <TabsContent value="taxes">
-            {renderExpenseList('taxes')}
-          </TabsContent>
+        {/* Expense List */}
+        <motion.div variants={itemVariants} className="space-y-2">
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          ) : filteredExpenses.length === 0 && activeFilter !== 'all' ? (
+            <div className="landing-card p-8 text-center">
+              {(() => {
+                const config = typeConfig[activeFilter as ExpenseType];
+                return (
+                  <>
+                    <div className={cn("w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4", config.bg)}>
+                      <config.icon className={cn("w-8 h-8", config.text)} />
+                    </div>
+                    <p className="text-muted-foreground mb-4">No {config.label.toLowerCase()} expenses yet</p>
+                    <Button onClick={() => handleOpenAdd(activeFilter as ExpenseType)} className="btn-premium">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add {config.label} Expense
+                    </Button>
+                  </>
+                );
+              })()}
+            </div>
+          ) : filteredExpenses.length === 0 ? (
+            <div className="landing-card p-8 text-center">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <Wallet className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-4">No expenses tracked for this month</p>
+              <Button onClick={() => handleOpenAdd()} className="btn-premium">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Expense
+              </Button>
+            </div>
+          ) : (
+            <div className="landing-card overflow-hidden">
+              <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+                <span className="text-sm font-semibold text-muted-foreground">
+                  {activeFilter === 'all' ? 'All Expenses' : typeConfig[activeFilter].label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {filteredExpenses.length} item{filteredExpenses.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="divide-y divide-border/50">
+                {filteredExpenses.map((expense) => {
+                  const type = getCategoryType(expense.category);
+                  const config = typeConfig[type];
+                  const recurrence = (expense as any).recurrence || 'monthly';
+                  const displayAmount = getDisplayAmount(expense);
+                  
+                  return (
+                    <div 
+                      key={expense.id}
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group"
+                    >
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
+                        <config.icon className={cn("w-5 h-5", config.text)} />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{expense.category}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[10px] font-medium uppercase",
+                            config.bg, config.text
+                          )}>
+                            {config.label}
+                          </span>
+                          {recurrence !== 'monthly' && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {recurrence}
+                            </span>
+                          )}
+                          {(expense as any).is_tax_deductible && (
+                            <span className="text-emerald-500">Tax Ded.</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold">{formatCurrency(displayAmount)}</p>
+                        {recurrence === 'weekly' && (
+                          <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
+                        )}
+                      </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(expense.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </motion.div>
 
-          {/* Properties Tab */}
-          <TabsContent value="properties">
-            <PropertyManager expenses={expenses} currentMonth={currentMonth} />
-          </TabsContent>
-        </Tabs>
-      </div>
+        {/* Quick Add FAB */}
+        <motion.button
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleOpenAdd()}
+          className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 w-14 h-14 rounded-full bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-xl shadow-primary/25 flex items-center justify-center z-50"
+        >
+          <Plus className="w-6 h-6" />
+        </motion.button>
+      </motion.div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+            <DialogTitle className="text-xl">{editingId ? 'Edit Expense' : 'New Expense'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-5">
+          <div className="space-y-5 py-2">
             {/* Type Selection */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Type</Label>
-              <div className="grid grid-cols-5 gap-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category Type</Label>
+              <div className="grid grid-cols-5 gap-2">
                 {(['personal', 'business', 'rental', 'taxes', 'other'] as ExpenseType[]).map(type => {
                   const config = typeConfig[type];
                   return (
@@ -580,12 +656,16 @@ export default function ExpensesPage() {
                         })); 
                       }}
                       className={cn(
-                        "p-2 rounded-lg border-2 transition-all flex flex-col items-center gap-1",
-                        selectedType === type ? `${config.border} ${config.bg}` : "border-border hover:border-muted-foreground"
+                        "p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5",
+                        selectedType === type 
+                          ? `${config.border} ${config.bg}` 
+                          : "border-border hover:border-muted-foreground"
                       )}
                     >
-                      <config.icon className={cn("w-4 h-4", selectedType === type ? config.color : "text-muted-foreground")} />
-                      <span className={cn("text-xs font-medium", selectedType === type ? config.color : "text-muted-foreground")}>{config.label}</span>
+                      <config.icon className={cn("w-5 h-5", selectedType === type ? config.text : "text-muted-foreground")} />
+                      <span className={cn("text-[10px] font-medium", selectedType === type ? config.text : "text-muted-foreground")}>
+                        {config.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -594,15 +674,15 @@ export default function ExpensesPage() {
 
             {/* Category Selection */}
             <div className="space-y-2">
-              <Label>Category *</Label>
+              <Label>Category</Label>
               <Select value={formData.category} onValueChange={(v) => setFormData(p => ({ ...p, category: v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl">
                   <SelectValue placeholder="Select category..." />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
                   {Object.entries(currentCategories).map(([group, items]) => (
                     <div key={group}>
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">{group}</div>
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold uppercase tracking-wide">{group}</div>
                       {(items as string[]).map((item: string) => (
                         <SelectItem key={item} value={item}>{item}</SelectItem>
                       ))}
@@ -617,7 +697,7 @@ export default function ExpensesPage() {
               <div className="space-y-2">
                 <Label>Link to Property</Label>
                 <Select value={formData.rental_property_id || ''} onValueChange={(v) => setFormData(p => ({ ...p, rental_property_id: v || undefined }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue placeholder="Select property (optional)" />
                   </SelectTrigger>
                   <SelectContent>
@@ -632,13 +712,13 @@ export default function ExpensesPage() {
             {/* Amount & Recurrence */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Amount *</Label>
+                <Label>Amount</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     type="number"
                     step="0.01"
-                    className="pl-7"
+                    className="pl-9 h-11 rounded-xl"
                     value={formData.amount || ''}
                     onChange={(e) => setFormData(p => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
                     placeholder="0.00"
@@ -646,9 +726,9 @@ export default function ExpensesPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Recurrence</Label>
+                <Label>Frequency</Label>
                 <Select value={formData.recurrence} onValueChange={(v) => setFormData(p => ({ ...p, recurrence: v as RecurrenceType }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -662,7 +742,7 @@ export default function ExpensesPage() {
             </div>
 
             {formData.recurrence === 'weekly' && formData.amount && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground px-1">
                 ≈ {formatCurrency(formData.amount * 4.33)}/month
               </p>
             )}
@@ -672,167 +752,63 @@ export default function ExpensesPage() {
               <Label>{formData.recurrence === 'one-time' ? 'Month' : 'Starts From'}</Label>
               <Input
                 type="month"
+                className="h-11 rounded-xl"
                 value={formData.month}
                 onChange={(e) => setFormData(p => ({ ...p, month: e.target.value }))}
               />
             </div>
 
             {/* Classification Toggles */}
-            <div className="space-y-3 p-4 rounded-xl bg-muted/30 border border-border/50">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Classification</Label>
-              
-              {/* Tax Deductible Toggle */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "p-1.5 rounded-lg",
-                    formData.is_tax_deductible ? "bg-success/10" : "bg-muted"
-                  )}>
-                    <Receipt className={cn(
-                      "w-4 h-4",
-                      formData.is_tax_deductible ? "text-success" : "text-muted-foreground"
-                    )} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Tax Deductible</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formData.is_tax_deductible ? 'Reduces taxable income' : 'Not deductible'}
-                    </p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-xl border-2 transition-colors",
+                formData.is_fixed ? "border-primary/30 bg-primary/5" : "border-border"
+              )}>
+                <Label className="text-sm cursor-pointer">Fixed Cost</Label>
                 <Switch
-                  checked={formData.is_tax_deductible !== false}
-                  onCheckedChange={(checked) => setFormData(p => ({ ...p, is_tax_deductible: checked }))}
+                  checked={formData.is_fixed}
+                  onCheckedChange={(v) => setFormData(p => ({ ...p, is_fixed: v }))}
                 />
               </div>
-
-              {/* Fixed vs Variable Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "p-1.5 rounded-lg",
-                    formData.is_fixed ? "bg-sky-500/10" : "bg-orange-500/10"
-                  )}>
-                    {formData.is_fixed ? (
-                      <Repeat className="w-4 h-4 text-sky-400" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-orange-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{formData.is_fixed ? 'Fixed Expense' : 'Variable Expense'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formData.is_fixed ? 'Required every month' : 'Can be reduced if needed'}
-                    </p>
-                  </div>
-                </div>
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-xl border-2 transition-colors",
+                formData.is_tax_deductible ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"
+              )}>
+                <Label className="text-sm cursor-pointer">Tax Ded.</Label>
                 <Switch
-                  checked={formData.is_fixed !== false}
-                  onCheckedChange={(checked) => setFormData(p => ({ ...p, is_fixed: checked }))}
+                  checked={formData.is_tax_deductible}
+                  onCheckedChange={(v) => setFormData(p => ({ ...p, is_tax_deductible: v }))}
                 />
               </div>
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>Notes (optional)</Label>
               <Input
+                className="h-11 rounded-xl"
                 value={formData.notes || ''}
                 onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Optional notes..."
+                placeholder="Add a note..."
               />
             </div>
           </div>
 
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={!formData.category || !formData.amount} className="btn-premium">
-              {editingId ? 'Update' : 'Add'} Expense
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDialog(false)} className="flex-1 h-11 rounded-xl">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSave} 
+              disabled={!formData.category || !formData.amount}
+              className="flex-1 h-11 rounded-xl btn-premium"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {editingId ? 'Save' : 'Add'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>
-  );
-}
-
-// Expense Row Component
-function ExpenseRow({ 
-  expense, 
-  onEdit, 
-  onDelete, 
-  getDisplayAmount,
-  propertyName
-}: { 
-  expense: any; 
-  onEdit: () => void; 
-  onDelete: () => void;
-  getDisplayAmount: (e: any) => number;
-  propertyName?: string;
-}) {
-  const recurrence = expense.recurrence || 'monthly';
-  const displayAmount = getDisplayAmount(expense);
-
-  const getRecurrenceIcon = () => {
-    switch (recurrence) {
-      case 'weekly': return <Clock className="w-3 h-3" />;
-      case 'yearly': return <CalendarClock className="w-3 h-3" />;
-      case 'one-time': return <Calendar className="w-3 h-3" />;
-      default: return <Repeat className="w-3 h-3" />;
-    }
-  };
-
-  const getRecurrenceLabel = () => {
-    switch (recurrence) {
-      case 'weekly': return 'Weekly';
-      case 'yearly': return 'Yearly';
-      case 'one-time': return 'One-time';
-      default: return 'Monthly';
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors group">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          {propertyName && (
-            <Badge variant="outline" className="text-xs shrink-0">
-              <Building2 className="w-3 h-3 mr-1" />
-              {propertyName}
-            </Badge>
-          )}
-          {expense.notes && (
-            <span className="text-xs text-muted-foreground truncate">{expense.notes}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant="secondary" className="text-xs gap-1">
-            {getRecurrenceIcon()}
-            {getRecurrenceLabel()}
-          </Badge>
-          {(expense as any).is_tax_deductible !== false && (
-            <Badge variant="outline" className="text-xs text-success border-success/30 bg-success/5">
-              Tax Deductible
-            </Badge>
-          )}
-          {recurrence === 'weekly' && (
-            <span className="text-xs text-muted-foreground">
-              ${expense.amount} × 4.33
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="font-semibold">{formatCurrency(displayAmount)}</span>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }
