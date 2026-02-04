@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Receipt, TrendingUp, Upload } from 'lucide-react';
+import { Plus, Receipt, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer } from '@/lib/haptics';
 
@@ -23,12 +23,6 @@ const actions = [
     label: 'View Forecast', 
     path: '/forecast',
     description: 'See projections'
-  },
-  { 
-    icon: Upload, 
-    label: 'Import Data', 
-    path: '/import',
-    description: 'Import from file'
   },
 ];
 

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 
 export function FloatingBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="hidden lg:block fixed inset-0 overflow-hidden pointer-events-none z-0">
       {/* Top right primary orb */}
       <motion.div
         className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-primary/12 to-primary/5 rounded-full blur-3xl"
