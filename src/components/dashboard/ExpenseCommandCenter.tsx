@@ -24,6 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useExpenseBudgets } from '@/hooks/useExpenseBudgets';
+import { getCategoryType, ExpenseType } from '@/lib/expenseCategories';
 
 interface Expense {
   id: string;
@@ -44,16 +45,17 @@ interface ExpenseCommandCenterProps {
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-const getExpenseType = (category: string): 'personal' | 'business' | 'rental' | 'other' => {
-  if (category.startsWith('Personal -')) return 'personal';
-  if (category.startsWith('Business -')) return 'business';
-  if (category.startsWith('Rental -')) return 'rental';
-  return 'other';
-};
-
 const getCurrentMonth = () => format(new Date(), 'yyyy-MM');
 
-const typeConfig = {
+const typeConfig: Record<ExpenseType, { 
+  icon: typeof Home; 
+  label: string;
+  gradient: string;
+  border: string;
+  iconBg: string;
+  iconColor: string;
+  textColor: string;
+}> = {
   personal: { 
     icon: Home, 
     label: 'Personal',
@@ -75,6 +77,15 @@ const typeConfig = {
   rental: { 
     icon: Building2, 
     label: 'Rental',
+    gradient: 'from-teal-500/15 to-teal-500/5',
+    border: 'border-teal-500/25',
+    iconBg: 'bg-teal-500/20',
+    iconColor: 'text-teal-500',
+    textColor: 'text-teal-600 dark:text-teal-400'
+  },
+  taxes: { 
+    icon: PiggyBank, 
+    label: 'Taxes',
     gradient: 'from-amber-500/15 to-amber-500/5',
     border: 'border-amber-500/25',
     iconBg: 'bg-amber-500/20',
@@ -102,14 +113,22 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       return Number(e.amount);
     };
 
-    const recentExpenses = [...expenses]
+    // Filter to current month's relevant expenses
+    const currentMonthExpenses = expenses.filter(e => {
+      const recurrence = e.recurrence || 'monthly';
+      if (recurrence === 'one-time') return e.month === currentMonth;
+      return e.month <= currentMonth; // Include ongoing expenses
+    });
+
+    const recentExpenses = [...currentMonthExpenses]
       .sort((a, b) => b.month.localeCompare(a.month))
       .slice(0, 5);
 
-    const byType = {
+    const byType: Record<ExpenseType, { recurring: number; oneTime: number }> = {
       personal: { recurring: 0, oneTime: 0 },
       business: { recurring: 0, oneTime: 0 },
       rental: { recurring: 0, oneTime: 0 },
+      taxes: { recurring: 0, oneTime: 0 },
       other: { recurring: 0, oneTime: 0 },
     };
 
@@ -117,16 +136,22 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
     let variableTotal = 0;
     let taxDeductible = 0;
     const categorySpending: Record<string, number> = {};
+    const processedCategories = new Set<string>();
 
-    expenses.forEach(e => {
-      const type = getExpenseType(e.category);
+    currentMonthExpenses.forEach(e => {
+      const type = getCategoryType(e.category);
       const isOneTime = e.recurrence === 'one-time';
-      const amount = isOneTime ? Number(e.amount) : calculateMonthlyAmount(e);
+      const monthlyAmount = isOneTime ? Number(e.amount) : calculateMonthlyAmount(e);
+      
+      // Avoid double-counting recurring expenses from different months
+      const categoryKey = `${e.category}-${e.recurrence || 'monthly'}`;
+      if (!isOneTime && processedCategories.has(categoryKey)) return;
+      if (!isOneTime) processedCategories.add(categoryKey);
 
       if (isOneTime) {
-        byType[type].oneTime += amount;
+        byType[type].oneTime += monthlyAmount;
       } else {
-        byType[type].recurring += amount;
+        byType[type].recurring += monthlyAmount;
       }
 
       if (e.is_fixed !== false) {
@@ -136,17 +161,11 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       }
 
       if (e.is_tax_deductible !== false && (type === 'business' || type === 'rental')) {
-        taxDeductible += amount;
+        taxDeductible += monthlyAmount;
       }
 
-      const recurrence = e.recurrence || 'monthly';
-      if (recurrence === 'one-time' && e.month !== currentMonth) return;
-      if (recurrence !== 'one-time' && e.month > currentMonth) return;
-      
-      let monthlyAmt = Number(e.amount);
-      if (recurrence === 'weekly') monthlyAmt *= 4.33;
-      
-      categorySpending[e.category] = (categorySpending[e.category] || 0) + monthlyAmt;
+      // Track category spending for budgets
+      categorySpending[e.category] = (categorySpending[e.category] || 0) + monthlyAmount;
     });
 
     const budgetStatus = budgets.map(budget => {
@@ -167,7 +186,8 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
     const totalPersonal = byType.personal.recurring + byType.personal.oneTime;
     const totalBusiness = byType.business.recurring + byType.business.oneTime;
     const totalRental = byType.rental.recurring + byType.rental.oneTime;
-    const totalRecurring = byType.personal.recurring + byType.business.recurring + byType.rental.recurring + byType.other.recurring;
+    const totalTaxes = byType.taxes.recurring + byType.taxes.oneTime;
+    const totalRecurring = Object.values(byType).reduce((sum, t) => sum + t.recurring, 0);
 
     return {
       recentExpenses,
@@ -175,6 +195,7 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       totalPersonal,
       totalBusiness,
       totalRental,
+      totalTaxes,
       totalRecurring,
       fixedTotal,
       variableTotal,
@@ -225,9 +246,9 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
   ];
 
   const typeBreakdown = [
-    { type: 'personal' as const, value: analytics.totalPersonal },
-    { type: 'business' as const, value: analytics.totalBusiness },
-    { type: 'rental' as const, value: analytics.totalRental },
+    { type: 'personal' as ExpenseType, value: analytics.totalPersonal },
+    { type: 'business' as ExpenseType, value: analytics.totalBusiness },
+    { type: 'rental' as ExpenseType, value: analytics.totalRental },
   ];
 
   return (
@@ -238,56 +259,54 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       transition={springConfig}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-5 border-b border-border/50 bg-gradient-to-r from-rose-500/5 via-orange-500/5 to-transparent">
+      <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-rose-500/5 via-orange-500/5 to-transparent">
         <div className="flex items-center gap-3">
           <motion.div
-            className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/25"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/25"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ type: "spring" as const, stiffness: 300, damping: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Receipt className="h-5 w-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="font-bold text-base">Expense Command Center</h3>
-            <p className="text-xs text-muted-foreground">Track, manage & optimize spending</p>
+            <h3 className="font-bold text-sm">Expense Center</h3>
+            <p className="text-[10px] text-muted-foreground">Track & optimize spending</p>
           </div>
         </div>
 
         <Link to="/expenses">
           <motion.div whileTap={{ scale: 0.95 }}>
-            <Button size="sm" className="gap-1.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 shadow-lg shadow-rose-500/20 rounded-xl">
-              <Plus className="h-4 w-4" />
+            <Button size="sm" className="gap-1.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 shadow-lg shadow-rose-500/20 rounded-xl h-8 text-xs">
+              <Plus className="h-3.5 w-3.5" />
               Add
             </Button>
           </motion.div>
         </Link>
       </div>
 
-      <div className="p-5 space-y-4">
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="p-4 space-y-3">
+        {/* Key Metrics Grid - 2x2 on mobile */}
+        <div className="grid grid-cols-2 gap-2">
           {statCards.map((stat, index) => (
             <motion.div 
               key={stat.label}
               className={cn(
-                "relative overflow-hidden p-3.5 rounded-xl border border-border/40 bg-card/80 backdrop-blur-sm",
-                "hover:border-primary/30 transition-all duration-200"
+                "relative overflow-hidden p-3 rounded-xl border border-border/40 bg-card/80 backdrop-blur-sm"
               )}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...springConfig, delay: index * 0.05 }}
-              whileHover={{ y: -1 }}
             >
               <div className={cn("absolute inset-0 bg-gradient-to-br opacity-80", stat.gradient)} />
               <div className="relative">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconBg)}>
-                    <stat.icon className={cn("h-3.5 w-3.5", stat.iconColor)} />
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", stat.iconBg)}>
+                    <stat.icon className={cn("h-3 w-3", stat.iconColor)} />
                   </div>
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
                 </div>
-                <p className={cn("text-lg font-bold tracking-tight", stat.valueColor)}>
+                <p className={cn("text-base font-bold tracking-tight", stat.valueColor)}>
                   {formatCurrency(stat.value)}
                 </p>
               </div>
@@ -295,8 +314,8 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
           ))}
         </div>
 
-        {/* Type Breakdown */}
-        <div className="grid grid-cols-3 gap-2.5">
+        {/* Type Breakdown - Compact horizontal */}
+        <div className="grid grid-cols-3 gap-2">
           {typeBreakdown.map((item, index) => {
             const config = typeConfig[item.type];
             const Icon = config.icon;
@@ -304,76 +323,76 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
               <motion.div 
                 key={item.type}
                 className={cn(
-                  "p-3 rounded-xl border bg-gradient-to-br",
+                  "p-2.5 rounded-xl border bg-gradient-to-br",
                   config.gradient, config.border
                 )}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ ...springConfig, delay: 0.2 + index * 0.05 }}
               >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", config.iconBg)}>
-                    <Icon className={cn("h-3.5 w-3.5", config.iconColor)} />
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div className={cn("w-5 h-5 rounded-md flex items-center justify-center", config.iconBg)}>
+                    <Icon className={cn("h-3 w-3", config.iconColor)} />
                   </div>
-                  <span className={cn("text-[10px] font-semibold uppercase tracking-wide", config.textColor)}>
+                  <span className={cn("text-[9px] font-semibold uppercase tracking-wide", config.textColor)}>
                     {config.label}
                   </span>
                 </div>
-                <p className="text-base font-bold">{formatCurrency(item.value)}</p>
+                <p className="text-sm font-bold">{formatCurrency(item.value)}</p>
               </motion.div>
             );
           })}
         </div>
 
-        {/* Budget Tracking */}
+        {/* Budget Tracking - Compact */}
         {analytics.budgetStatus.length > 0 && (
           <motion.div 
-            className="space-y-2.5"
+            className="space-y-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Budget Tracking</span>
-              </div>
               <div className="flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-semibold">Budgets</span>
+              </div>
+              <div className="flex items-center gap-1">
                 {analytics.budgetsOverLimit > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/15 text-destructive font-semibold">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-destructive/15 text-destructive font-semibold">
                     {analytics.budgetsOverLimit} over
                   </span>
                 )}
                 {analytics.budgetsWarning > 0 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 font-semibold">
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 font-semibold">
                     {analytics.budgetsWarning} warning
                   </span>
                 )}
               </div>
             </div>
             
-            <div className="space-y-2 max-h-28 overflow-y-auto scrollbar-hide">
-              {analytics.budgetStatus.slice(0, 3).map((budget, index) => (
+            <div className="space-y-1.5 max-h-20 overflow-y-auto scrollbar-hide">
+              {analytics.budgetStatus.slice(0, 2).map((budget, index) => (
                 <motion.div
                   key={budget.fullCategory}
-                  className="p-2.5 rounded-xl bg-card/60 border border-border/40"
+                  className="p-2 rounded-lg bg-card/60 border border-border/40"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ ...springConfig, delay: 0.35 + index * 0.05 }}
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
                       {budget.status === 'over' ? (
-                        <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                        <AlertTriangle className="h-3 w-3 text-destructive" />
                       ) : budget.status === 'warning' ? (
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                        <AlertTriangle className="h-3 w-3 text-amber-500" />
                       ) : (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                       )}
-                      <span className="text-xs font-medium">{budget.category}</span>
+                      <span className="text-[10px] font-medium truncate max-w-[100px]">{budget.category}</span>
                     </div>
                     <span className={cn(
-                      "text-[10px] font-bold",
+                      "text-[9px] font-bold",
                       budget.status === 'over' ? 'text-destructive' :
                       budget.status === 'warning' ? 'text-amber-600' : 'text-emerald-600'
                     )}>
@@ -383,7 +402,7 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
                   <Progress 
                     value={budget.percentage} 
                     className={cn(
-                      "h-1.5",
+                      "h-1",
                       budget.status === 'over' ? '[&>div]:bg-destructive' :
                       budget.status === 'warning' ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500'
                     )}
@@ -394,55 +413,54 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
           </motion.div>
         )}
 
-        {/* Recent Expenses */}
+        {/* Recent Expenses - Compact */}
         {analytics.recentExpenses.length > 0 ? (
           <motion.div 
-            className="space-y-2.5"
+            className="space-y-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Recent Expenses</span>
-              <Link to="/expenses" className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors">
-                View all <ArrowRight className="h-3 w-3" />
+              <span className="text-xs font-semibold">Recent</span>
+              <Link to="/expenses" className="text-[10px] text-primary hover:text-primary/80 font-medium flex items-center gap-0.5 transition-colors">
+                View all <ArrowRight className="h-2.5 w-2.5" />
               </Link>
             </div>
             
-            <div className="space-y-1.5 max-h-36 overflow-y-auto scrollbar-hide">
+            <div className="space-y-1 max-h-28 overflow-y-auto scrollbar-hide">
               <AnimatePresence mode="popLayout">
-                {analytics.recentExpenses.map((expense, index) => {
-                  const type = getExpenseType(expense.category);
+                {analytics.recentExpenses.slice(0, 4).map((expense, index) => {
+                  const type = getCategoryType(expense.category);
                   const config = typeConfig[type];
                   const Icon = config.icon;
-                  const displayCategory = expense.category.replace(/^(Personal|Business|Rental) - /, '');
                   
                   return (
                     <motion.div
                       key={expense.id}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-card/50 border border-border/30 hover:border-border/60 transition-all group"
+                      className="flex items-center justify-between p-2 rounded-lg bg-card/50 border border-border/30"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ ...springConfig, delay: 0.45 + index * 0.03 }}
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                          "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
                           config.iconBg
                         )}>
-                          <Icon className={cn("h-4 w-4", config.iconColor)} />
+                          <Icon className={cn("h-3.5 w-3.5", config.iconColor)} />
                         </div>
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium block truncate">{displayCategory}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {format(parseISO(`${expense.month}-01`), 'MMM yyyy')}
+                        <div className="min-w-0 flex-1">
+                          <span className="text-xs font-medium block truncate">{expense.category}</span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {format(parseISO(`${expense.month}-01`), 'MMM')}
                             {expense.recurrence && expense.recurrence !== 'one-time' && (
                               <span className="ml-1 text-primary font-medium">• {expense.recurrence}</span>
                             )}
                           </span>
                         </div>
                       </div>
-                      <span className="font-bold text-sm text-rose-500">
+                      <span className="font-bold text-xs text-rose-500 shrink-0">
                         -{formatCurrency(expense.amount)}
                       </span>
                     </motion.div>
@@ -453,50 +471,50 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
           </motion.div>
         ) : (
           <motion.div 
-            className="text-center py-8"
+            className="text-center py-6"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={springConfig}
           >
             <motion.div 
-              className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-rose-500/20 to-orange-500/10 flex items-center justify-center border border-rose-500/20"
+              className="w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br from-rose-500/20 to-orange-500/10 flex items-center justify-center border border-rose-500/20"
               animate={{ y: [0, -4, 0] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             >
-              <TrendingDown className="h-6 w-6 text-rose-400" />
+              <TrendingDown className="h-5 w-5 text-rose-400" />
             </motion.div>
-            <p className="text-sm font-semibold mb-1">No expenses tracked yet</p>
-            <p className="text-xs text-muted-foreground mb-4">Start tracking to get insights</p>
+            <p className="text-xs font-semibold mb-1">No expenses yet</p>
+            <p className="text-[10px] text-muted-foreground mb-3">Start tracking to get insights</p>
             <Link to="/expenses">
-              <Button size="sm" variant="outline" className="gap-1.5 rounded-xl">
-                <Plus className="h-3.5 w-3.5" />
+              <Button size="sm" variant="outline" className="gap-1 rounded-xl h-7 text-xs">
+                <Plus className="h-3 w-3" />
                 Add Expense
               </Button>
             </Link>
           </motion.div>
         )}
 
-        {/* Quick Insights */}
+        {/* Quick Insight - Compact */}
         {analytics.totalRecurring > 0 && (
           <motion.div 
-            className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20"
+            className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...springConfig, delay: 0.5 }}
           >
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+            <div className="flex items-start gap-2">
+              <div className="w-6 h-6 rounded-md bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Sparkles className="h-3 w-3 text-amber-500" />
               </div>
               <div>
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Quick Insight</span>
-                <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
-                  Your fixed expenses are <span className="font-bold text-violet-600 dark:text-violet-400">{formatCurrency(analytics.fixedTotal)}/mo</span>
+                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Insight</span>
+                <p className="text-[10px] text-muted-foreground leading-relaxed mt-0.5">
+                  Fixed: <span className="font-bold text-violet-600 dark:text-violet-400">{formatCurrency(analytics.fixedTotal)}/mo</span>
                   {analytics.variableTotal > 0 && (
-                    <>, plus <span className="font-bold text-foreground">{formatCurrency(analytics.variableTotal)}/mo</span> variable</>
-                  )}. 
+                    <> + <span className="font-bold">{formatCurrency(analytics.variableTotal)}</span> variable</>
+                  )}
                   {analytics.taxDeductible > 0 && (
-                    <> Deductible: <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(analytics.taxDeductible)}</span>.</>
+                    <>. Tax deductible: <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(analytics.taxDeductible)}</span></>
                   )}
                 </p>
               </div>
