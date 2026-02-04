@@ -20,6 +20,7 @@ import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency, getExtendedMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
+import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
 import {
   BarChart,
   Bar,
@@ -42,23 +43,30 @@ export default function ForecastPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
+  // Process all payouts with brokerage cap logic
+  const payoutsWithCap = useMemo(() => {
+    return calculatePayoutsWithBrokerageCap(payouts, settings);
+  }, [payouts, settings]);
+
   // Generate forecast data from Jan 2025 through end of 2028
   const forecastData = useMemo(() => {
     const months = getExtendedMonthRange(48);
     
     return months.map((monthStr) => {
-      const monthPayouts = payouts.filter((p) => {
+      // Get processed payouts for this month (with brokerage already deducted)
+      const monthPayoutsWithCap = payoutsWithCap.filter((p) => {
         if (!p.due_date) return false;
         return p.due_date.startsWith(monthStr);
       });
 
-      const income = monthPayouts
+      // Use NET amounts (after brokerage deduction)
+      const income = monthPayoutsWithCap
         .filter((p) => p.status !== 'PAID')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+        .reduce((sum, p) => sum + p.netAmount, 0);
 
-      const paid = monthPayouts
+      const paid = monthPayoutsWithCap
         .filter((p) => p.status === 'PAID')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+        .reduce((sum, p) => sum + p.netAmount, 0);
 
       const totalIncome = income + paid;
 
@@ -81,7 +89,7 @@ export default function ForecastPage() {
         net,
       };
     });
-  }, [payouts, expenses, properties, settings]);
+  }, [payoutsWithCap, expenses, properties, settings]);
 
   // Running totals
   const runningTotals = useMemo(() => {
