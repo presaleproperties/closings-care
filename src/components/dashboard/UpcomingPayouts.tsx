@@ -166,67 +166,96 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
                           }`} />
                         )}
                         
-                        <div className="p-2.5 sm:p-3">
-                          {/* Client name + Badge + Amount */}
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm truncate text-slate-800 dark:text-foreground">
-                                {deal?.client_name || 'Unknown'}
-                              </h4>
-                              <motion.span 
-                                className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
-                                  badge.variant === 'destructive' ? 'bg-destructive/15 text-destructive' :
-                                  badge.variant === 'warning' ? 'bg-warning/15 text-warning' :
-                                  'bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground'
-                                }`}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ ...springConfigs.bouncy, delay: index * 0.05 + 0.2 }}
-                              >
-                                <Calendar className="h-2.5 w-2.5" />
-                                {badge.label}
-                              </motion.span>
+                        <div className="p-3 sm:p-4">
+                          {/* Top row: Client name + Badge + Amount */}
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-[15px] sm:text-base truncate text-slate-800 dark:text-foreground">
+                                  {deal?.client_name || 'Unknown'}
+                                </h4>
+                                <motion.span 
+                                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 ${
+                                    badge.variant === 'destructive' ? 'bg-destructive/15 text-destructive' :
+                                    badge.variant === 'warning' ? 'bg-warning/15 text-warning' :
+                                    'bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground'
+                                  }`}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ ...springConfigs.bouncy, delay: index * 0.05 + 0.2 }}
+                                >
+                                  <BadgeIcon className="h-2.5 w-2.5" />
+                                  {badge.label}
+                                </motion.span>
+                              </div>
+                              
+                              {/* Property info row */}
+                              <div className="flex items-center gap-3 text-[12px] text-slate-500 dark:text-muted-foreground">
+                                <span className="inline-flex items-center gap-1">
+                                  <DealIcon className="h-3 w-3" />
+                                  {isPresale ? deal?.project_name || 'Presale' : 'Resale'}
+                                </span>
+                                {deal?.city && (
+                                  <>
+                                    <span className="text-slate-200 dark:text-border">•</span>
+                                    <span className="inline-flex items-center gap-1 truncate">
+                                      <MapPin className="h-3 w-3 shrink-0" />
+                                      {deal.city}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            <p className="font-bold text-base text-emerald-600 dark:text-accent shrink-0">
-                              {formatCurrency(payout.amount)}
-                            </p>
+                            
+                            <div className="text-right shrink-0">
+                              <p className="font-bold text-lg sm:text-xl text-emerald-600 dark:text-accent">
+                                {formatCurrency(payout.amount)}
+                              </p>
+                            </div>
                           </div>
                           
-                          {/* Property info + Payout type */}
-                          <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1">
-                                <DealIcon className="h-3 w-3" />
-                                {isPresale ? deal?.project_name || 'Presale' : 'Resale'}
+                          {/* Bottom row: Payout type + Due date + Mark paid */}
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-border/30">
+                            <div className="flex items-center gap-3">
+                              <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md font-medium ${
+                                payout.payout_type === 'Completion' 
+                                  ? 'bg-emerald-100 dark:bg-success/20 text-emerald-700 dark:text-success' 
+                                  : payout.payout_type === 'Advance'
+                                  ? 'bg-blue-100 dark:bg-primary/20 text-blue-700 dark:text-primary'
+                                  : 'bg-slate-100 dark:bg-muted text-slate-600 dark:text-muted-foreground'
+                              }`}>
+                                <TrendingUp className="h-3 w-3" />
+                                {payout.payout_type}
                               </span>
-                              {deal?.city && (
-                                <>
-                                  <span className="text-slate-200 dark:text-border">•</span>
-                                  <span className="inline-flex items-center gap-1 truncate">
-                                    <MapPin className="h-3 w-3 shrink-0" />
-                                    {deal.city}
-                                  </span>
-                                </>
+                              
+                              {payout.due_date && (
+                                <span className="text-[11px] text-slate-400 dark:text-muted-foreground">
+                                  {format(parseISO(payout.due_date), 'MMM d, yyyy')}
+                                </span>
                               )}
                             </div>
-                            <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                              payout.payout_type === 'Completion' 
-                                ? 'bg-emerald-100 dark:bg-success/20 text-emerald-700 dark:text-success' 
-                                : payout.payout_type === 'Advance'
-                                ? 'bg-blue-100 dark:bg-primary/20 text-blue-700 dark:text-primary'
-                                : 'bg-slate-100 dark:bg-muted text-slate-600 dark:text-muted-foreground'
-                            }`}>
-                              <TrendingUp className="h-2.5 w-2.5" />
-                              {payout.payout_type}
-                            </span>
+                            
+                            <motion.div
+                              whileTap={{ scale: 0.85 }}
+                              whileHover={{ scale: 1.05 }}
+                            >
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 gap-1.5 text-[11px] font-medium text-success hover:text-success hover:bg-success/10 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  triggerHaptic('success');
+                                  onMarkPaid(payout.id);
+                                }}
+                                disabled={isPending}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Mark Paid</span>
+                              </Button>
+                            </motion.div>
                           </div>
-                          
-                          {/* Due date */}
-                          {payout.due_date && (
-                            <div className="text-[10px] text-slate-400 dark:text-muted-foreground mt-1">
-                              {format(parseISO(payout.due_date), 'MMM d, yyyy')}
-                            </div>
-                          )}
                         </div>
                       </motion.div>
                     </Link>
