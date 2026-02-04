@@ -229,6 +229,7 @@ export default function DealsPage() {
     const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
     const deal = payout.deal;
     const isPresale = deal?.property_type === 'PRESALE';
+    const isTeamDeal = !!deal?.team_member;
     const typeStyles = getPayoutTypeStyles(payout.payout_type);
     const TypeIcon = typeStyles.icon;
     const dueBadge = getDueBadge(payout.due_date, payout.status);
@@ -249,15 +250,23 @@ export default function DealsPage() {
             className={cn(
               "relative overflow-hidden rounded-2xl border transition-all group",
               payout.status === 'PAID' 
-                ? "bg-slate-50/80 dark:bg-card/30 border-slate-200 dark:border-border/30"
+                ? isTeamDeal
+                  ? "bg-violet-50/50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/30"
+                  : "bg-slate-50/80 dark:bg-card/30 border-slate-200 dark:border-border/30"
                 : overdue 
                   ? "bg-destructive/5 border-destructive/30 dark:border-destructive/50"
-                  : "bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 hover:border-primary/40 hover:shadow-lg"
+                  : isTeamDeal
+                    ? "bg-violet-50/40 dark:bg-violet-500/5 border-violet-200 dark:border-violet-500/40 hover:border-violet-400 hover:shadow-lg hover:shadow-violet-500/10"
+                    : "bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 hover:border-primary/40 hover:shadow-lg"
             )}
             whileHover={{ y: -3, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             transition={springConfigs.snappy}
           >
+            {/* Team deal indicator bar */}
+            {isTeamDeal && !overdue && dueBadge?.variant !== 'warning' && (
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-400 dark:bg-violet-500" />
+            )}
             {/* Urgency bar */}
             {overdue && (
               <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive" />
@@ -363,9 +372,9 @@ export default function DealsPage() {
 
                   {/* Team member indicator */}
                   {deal?.team_member && (
-                    <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-muted text-slate-500 dark:text-muted-foreground font-medium">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-medium">
                       <Users className="h-2.5 w-2.5" />
-                      {deal.team_member_portion}% split
+                      <span className="hidden sm:inline">{deal.team_member} •</span> {deal.team_member_portion}%
                     </span>
                   )}
                 </div>
