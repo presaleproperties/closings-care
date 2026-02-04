@@ -86,13 +86,62 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       moneySpent += monthExpenses + monthlyPropertyNet;
     }
 
-    // What's left after expenses
-    const netProfit = moneyReceived - moneySpent;
+    // === NET PROFIT FOR THE YEAR ===
+    // Total commissions coming in THIS YEAR (all payouts with due_date in this year, paid or projected)
+    const totalYearCommissions = payouts
+      .filter(p => {
+        const dueDate = p.due_date ? new Date(p.due_date) : null;
+        const paidDate = p.paid_date ? new Date(p.paid_date) : null;
+        // Include if paid this year OR due this year
+        const paidThisYear = p.status === 'PAID' && paidDate && paidDate.getFullYear() === thisYear;
+        const dueThisYear = dueDate && dueDate.getFullYear() === thisYear;
+        return paidThisYear || dueThisYear;
+      })
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+
+    // Calculate annual other income for this year
+    let annualOtherIncome = 0;
+    for (let month = 1; month <= 12; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      const monthDate = parseISO(`${monthStr}-01`);
+      
+      for (const income of otherIncome) {
+        const startDate = parseISO(`${income.start_month}-01`);
+        const endDate = income.end_month ? parseISO(`${income.end_month}-01`) : null;
+        
+        const hasStarted = !isAfter(startDate, monthDate);
+        const hasNotEnded = !endDate || !isBefore(endDate, monthDate);
+        
+        if (hasStarted && hasNotEnded) {
+          if (income.recurrence === 'monthly') {
+            annualOtherIncome += Number(income.amount);
+          } else if (income.recurrence === 'weekly') {
+            annualOtherIncome += Number(income.amount) * 4.33;
+          } else if (income.recurrence === 'one-time' && income.start_month === monthStr) {
+            annualOtherIncome += Number(income.amount);
+          }
+        }
+      }
+    }
+
+    // Total income for the year = commissions + other income
+    const totalYearIncome = totalYearCommissions + annualOtherIncome;
+
+    // Calculate annual expenses (full 12 months)
+    let annualExpensesCalc = 0;
+    for (let month = 1; month <= 12; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      const monthExpenses = getTrackedExpensesForMonth(expenses, monthStr);
+      annualExpensesCalc += monthExpenses + monthlyPropertyNet;
+    }
+
+    // Net Profit = Total Year Income - Annual Expenses
+    const netProfit = totalYearIncome - annualExpensesCalc;
 
     // How many months your pipeline covers
     const monthsCovered = monthlyExpenses > 0 ? Math.floor(moneyComing / monthlyExpenses) : 0;
 
-    // Simple health status
+    // Simple health status based on net profit and pipeline
     let healthStatus: 'great' | 'good' | 'needs-attention';
     if (netProfit > 0 && monthsCovered >= 3) {
       healthStatus = 'great';
@@ -109,6 +158,8 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       netProfit,
       monthsCovered,
       healthStatus,
+      totalYearIncome,
+      annualExpenses: annualExpensesCalc,
     };
   }, [payouts, expenses, properties, otherIncome, monthlyExpenses]);
 
@@ -298,9 +349,9 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
                 )}
               </div>
               <div>
-                <span className="text-sm font-medium text-slate-600 dark:text-muted-foreground">Net Profit (YTD)</span>
+                <span className="text-sm font-medium text-slate-600 dark:text-muted-foreground">Net Cashflow ({new Date().getFullYear()})</span>
                 <p className="text-[11px] text-slate-400 dark:text-muted-foreground">
-                  {metrics.netProfit >= 0 ? 'Keep up the momentum!' : 'Incoming payouts will help'}
+                  {metrics.netProfit >= 0 ? 'Positive cashflow for the year!' : 'Expenses exceed projected income'}
                 </p>
               </div>
             </div>
