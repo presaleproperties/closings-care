@@ -22,9 +22,52 @@ interface ExpenseAnalyticsProps {
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
 const getExpenseType = (category: string): 'personal' | 'business' | 'rental' | 'other' => {
+  // Check for explicit prefixes first
   if (category.startsWith('Personal -')) return 'personal';
   if (category.startsWith('Business -')) return 'business';
   if (category.startsWith('Rental -')) return 'rental';
+  
+  const lowerCat = category.toLowerCase();
+  
+  // Personal categories
+  const personalKeywords = [
+    'groceries', 'hydro', 'utilities', 'internet', 'gym', 'health',
+    'childcare', 'clothing', 'shopping', 'personal'
+  ];
+  if (lowerCat.includes('(personal)') || personalKeywords.some(k => lowerCat.includes(k))) {
+    return 'personal';
+  }
+  if (lowerCat === 'car insurance (personal)' || lowerCat === 'car charging/gas') {
+    return 'personal';
+  }
+  
+  // Rental categories
+  const rentalKeywords = ['rental', 'tenant', 'property management', 'strata', 'mortgage'];
+  if (rentalKeywords.some(k => lowerCat.includes(k))) {
+    return 'rental';
+  }
+  
+  // Business categories - most expense categories for realtors are business
+  const businessKeywords = [
+    'brokerage', 'board', 'mls', 'crm', 'office', 'website', 'marketing',
+    'advertising', 'staging', 'photography', 'desk', 'software', 'phone',
+    'entertainment', 'dining', 'car (business', 'car insurance (business',
+    'business', 'car lease', 'car payment', 'gas', 'client', 'gift',
+    'education', 'training', 'license', 'membership', 'association'
+  ];
+  if (lowerCat.includes('(business)') || businessKeywords.some(k => lowerCat.includes(k))) {
+    return 'business';
+  }
+  
+  // Default business-related categories that don't have explicit markers
+  const defaultBusinessCategories = [
+    'board fees', 'brokerage fees', 'entertainment/dining', 'office lease',
+    'other software', 'website hosting', 'phone'
+  ];
+  if (defaultBusinessCategories.some(cat => lowerCat === cat || lowerCat.startsWith(cat))) {
+    return 'business';
+  }
+  
   return 'other';
 };
 
