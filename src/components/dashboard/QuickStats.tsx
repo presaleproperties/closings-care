@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat, X } from 'lucide-react';
+import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat } from 'lucide-react';
 import { Deal, Payout, OtherIncome } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -24,18 +24,18 @@ interface QuickStatsProps {
   onAutoMarkPaid?: (payoutIds: string[]) => void;
 }
 
+const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
+
 export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid }: QuickStatsProps) {
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
   const [showBreakdown, setShowBreakdown] = useState(false);
   const { data: settings } = useSettings();
 
-  // Process payouts with brokerage cap logic
   const payoutsWithCap = useMemo(() => {
     return calculatePayoutsWithBrokerageCap(payouts, settings);
   }, [payouts, settings]);
 
-  // Find payouts that should be auto-marked as paid (due date has passed)
   useEffect(() => {
     if (!onAutoMarkPaid) return;
     
@@ -50,7 +50,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
     }
   }, [payouts, onAutoMarkPaid, today]);
 
-  // Calculate breakdown for display (using NET amounts after brokerage)
   const breakdown = useMemo(() => {
     const totalCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID')
@@ -58,7 +57,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
 
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
-    let monthsIncluded = 0;
     
     for (let i = 0; i < 48; i++) {
       const monthOffset = currentMonth + i;
@@ -76,7 +74,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
         if (hasStarted && hasNotEnded) {
           if (income.recurrence === 'monthly') {
             totalOtherIncome += Number(income.amount);
-            monthsIncluded++;
           } else if (income.recurrence === 'weekly') {
             totalOtherIncome += Number(income.amount) * 4.33;
           } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
@@ -97,22 +94,18 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   }, [payoutsWithCap, payouts, otherIncome, thisYear]);
 
   const stats = useMemo(() => {
-    // Total projected commissions (all unpaid payouts) - NET after brokerage
     const totalCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID')
       .reduce((sum, p) => sum + p.netAmount, 0);
 
-    // Total earned (paid payouts) - NET after brokerage
     const totalEarned = payoutsWithCap
       .filter(p => p.status === 'PAID')
       .reduce((sum, p) => sum + p.netAmount, 0);
 
-    // This year's projected commission income (unpaid payouts due this year) - NET
     const thisYearCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
       .reduce((sum, p) => sum + p.netAmount, 0);
     
-    // Calculate total Other Income (48 months to cover through 2028)
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
     for (let i = 0; i < 48; i++) {
@@ -140,10 +133,8 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       });
     }
     
-    // Total projected = commissions + other income
     const totalProjected = totalCommissions + totalOtherIncome;
 
-    // Calculate Other Income for this year (Jan to Dec)
     let thisYearOtherIncome = 0;
     for (let month = 1; month <= 12; month++) {
       const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
@@ -159,7 +150,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
           if (income.recurrence === 'monthly') {
             thisYearOtherIncome += Number(income.amount);
           } else if (income.recurrence === 'weekly') {
-            // Weekly income: ~4.33 weeks per month
             thisYearOtherIncome += Number(income.amount) * 4.33;
           } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
             thisYearOtherIncome += Number(income.amount);
@@ -168,13 +158,9 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       });
     }
 
-    // Total projected for this year = commissions + other income
     const thisYearProjected = thisYearCommissions + thisYearOtherIncome;
 
-    // Average deal value - use GROSS commission from deals (not user's split portion)
-    // For team deals, this shows the FULL deal value, not just user's cut
     const dealsWithCommission = deals.filter(d => {
-      // Use gross_commission_est, or sum of advance + completion for presale
       const grossCommission = d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
       return grossCommission > 0;
@@ -188,7 +174,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       ? totalGrossCommission / dealsWithCommission.length
       : 0;
 
-    // Active deals count
     const activeDeals = deals.filter(d => d.status === 'PENDING').length;
 
     return {
@@ -201,44 +186,9 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
     };
   }, [deals, payouts, payoutsWithCap, otherIncome, monthlyExpenses, thisYear]);
 
-  const statCards = [
-    {
-      icon: Wallet,
-      label: 'Projected Income',
-      numericValue: stats.totalProjected,
-      subtitle: 'Commissions + RevShare',
-      gradient: 'from-primary to-primary/70',
-      textColor: 'text-primary-foreground',
-    },
-    {
-      icon: Calendar,
-      label: `${thisYear} Projected`,
-      numericValue: stats.thisYearProjected,
-      subtitle: 'Commissions + RevShare',
-      gradient: 'from-amber-500 to-orange-500',
-      textColor: 'text-white',
-    },
-    {
-      icon: Receipt,
-      label: 'Monthly Expenses',
-      numericValue: stats.monthlyExpenses,
-      subtitle: 'Recurring costs',
-      accent: true,
-      accentColor: 'text-destructive',
-    },
-    {
-      icon: Target,
-      label: 'Avg Per Deal',
-      numericValue: stats.avgDealValue,
-      subtitle: 'Gross commission',
-      accent: true,
-      accentColor: 'text-accent',
-    },
-  ];
-
   return (
-    <div className="space-y-3">
-      {/* Mobile: iOS Widget Grid Layout with Spring Animations */}
+    <div className="space-y-4">
+      {/* Mobile Layout */}
       <motion.div 
         className="sm:hidden"
         variants={staggerContainer}
@@ -246,172 +196,236 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
         animate="visible"
       >
         <div className="grid grid-cols-2 gap-3">
-          {/* Primary Large Widget - Projected Income */}
+          {/* Primary Widget - Projected Income */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
             onClick={() => setShowBreakdown(true)}
-            className="col-span-2 rounded-[20px] p-5 cursor-pointer"
+            className="col-span-2 rounded-3xl p-6 cursor-pointer relative overflow-hidden"
             style={{
-              background: 'linear-gradient(145deg, hsl(158 64% 36%) 0%, hsl(158 64% 28%) 50%, hsl(175 60% 30%) 100%)',
-              boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(158 64% 32% / 0.35), 0 12px 28px -6px hsl(158 64% 32% / 0.25)'
+              background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
+              boxShadow: '0 8px 32px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
             }}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <motion.div 
-                className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={springConfigs.bouncy}
-              >
-                <Wallet className="h-4 w-4 text-primary-foreground" />
-              </motion.div>
-              <span className="text-[13px] font-medium text-primary-foreground/80 uppercase tracking-wide">
-                Projected Income
-              </span>
+            {/* Decorative circles */}
+            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
+            <div className="absolute -right-4 top-12 w-20 h-20 rounded-full bg-white/5" />
+            
+            <div className="relative">
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                  <Wallet className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <span className="text-sm font-semibold text-primary-foreground/80 uppercase tracking-wider">
+                  Projected Income
+                </span>
+              </div>
+              <AnimatedCurrency 
+                value={stats.totalProjected}
+                className="text-4xl font-bold text-primary-foreground tracking-tight block"
+                duration={1.5}
+              />
+              <p className="text-sm text-primary-foreground/60 mt-2">
+                Tap to see breakdown →
+              </p>
             </div>
-            <AnimatedCurrency 
-              value={stats.totalProjected}
-              className="text-[34px] font-bold text-primary-foreground tracking-tight leading-tight block"
-              duration={1.5}
-            />
-            <p className="text-[13px] text-primary-foreground/70 mt-1">
-              Tap for breakdown
-            </p>
           </motion.div>
 
-          {/* This Year Projected - Widget */}
+          {/* This Year Widget */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-[20px] p-4 cursor-pointer"
+            className="rounded-3xl p-5 cursor-pointer relative overflow-hidden"
             style={{
-              background: 'linear-gradient(145deg, hsl(38 75% 55%) 0%, hsl(32 85% 48%) 50%, hsl(25 80% 42%) 100%)',
-              boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(38 75% 50% / 0.35), 0 12px 28px -6px hsl(38 75% 50% / 0.25)'
+              background: 'linear-gradient(145deg, hsl(38 92% 50%) 0%, hsl(25 95% 45%) 100%)',
+              boxShadow: '0 8px 24px -8px hsl(38 92% 50%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
             }}
           >
-            <div className="flex items-center gap-1.5 mb-1">
-              <Calendar className="h-3.5 w-3.5 text-white/80" />
-              <span className="text-[11px] font-medium text-white/80 uppercase tracking-wide">
-                {thisYear}
-              </span>
+            <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-white/10" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-4 w-4 text-white/80" />
+                <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
+                  {thisYear}
+                </span>
+              </div>
+              <AnimatedCurrency 
+                value={stats.thisYearProjected}
+                className="text-2xl font-bold text-white tracking-tight block"
+                duration={1.3}
+              />
+              <p className="text-[11px] text-white/60 mt-1">Commissions + RevShare</p>
             </div>
-            <AnimatedCurrency 
-              value={stats.thisYearProjected}
-              className="text-[22px] font-bold text-white tracking-tight leading-tight block"
-              duration={1.3}
-            />
-            <p className="text-[11px] text-white/70 mt-0.5">
-              Commissions + RevShare
-            </p>
           </motion.div>
 
-          {/* Monthly Expenses - Widget */}
+          {/* Monthly Expenses Widget */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-[20px] bg-card/98 backdrop-blur-2xl border border-border/40 p-4 shadow-ios cursor-pointer"
+            className="rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-5 shadow-lg cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 mb-1">
-              <Receipt className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-xl bg-destructive/15 flex items-center justify-center">
+                <Receipt className="h-4 w-4 text-destructive" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Expenses
               </span>
             </div>
             <AnimatedCurrency 
               value={stats.monthlyExpenses}
-              className="text-[22px] font-bold text-destructive tracking-tight leading-tight block"
+              className="text-2xl font-bold text-destructive tracking-tight block"
               duration={1.1}
             />
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              Monthly
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">Monthly recurring</p>
           </motion.div>
 
-          {/* Avg Per Deal - Widget */}
+          {/* Avg Per Deal Widget */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="col-span-2 rounded-[20px] bg-card/98 backdrop-blur-2xl border border-border/40 p-4 shadow-ios cursor-pointer"
+            className="col-span-2 rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-5 shadow-lg cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Target className="h-3.5 w-3.5 text-accent" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-accent" />
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Avg Per Deal
                   </span>
                 </div>
                 <AnimatedCurrency 
                   value={stats.avgDealValue}
-                  className="text-[22px] font-bold text-accent tracking-tight block"
+                  className="text-2xl font-bold text-accent tracking-tight block"
                   duration={1.4}
                 />
               </div>
               <div className="text-right">
-                <p className="text-[11px] text-muted-foreground">Gross commission</p>
-                <p className="text-[13px] font-medium text-muted-foreground">
-                  {deals.length} total deals
-                </p>
+                <p className="text-xs text-muted-foreground">Gross commission</p>
+                <p className="text-sm font-semibold">{deals.length} total deals</p>
               </div>
             </div>
           </motion.div>
         </div>
       </motion.div>
 
-      {/* Desktop: Grid layout */}
-      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((stat, index) => (
-          <div
-            key={stat.label}
-            onClick={stat.label === 'Projected Income' ? () => setShowBreakdown(true) : undefined}
-            className={cn(
-              "relative overflow-hidden rounded-2xl p-5 transition-all duration-400 hover:scale-[1.02] hover:-translate-y-1 active:scale-[0.98]",
-              stat.gradient 
-                ? `${stat.textColor} cursor-pointer`
-                : "bg-card/98 backdrop-blur-2xl border border-border/40 shadow-ios hover:shadow-ios-lg hover:border-primary/20"
-            )}
-            style={stat.gradient ? {
-              background: stat.label.includes('Projected Income') 
-                ? 'linear-gradient(145deg, hsl(158 64% 36%) 0%, hsl(158 64% 28%) 50%, hsl(175 60% 30%) 100%)'
-                : 'linear-gradient(145deg, hsl(38 75% 55%) 0%, hsl(32 85% 48%) 50%, hsl(25 80% 42%) 100%)',
-              boxShadow: stat.label.includes('Projected Income')
-                ? 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(158 64% 32% / 0.35), 0 12px 28px -6px hsl(158 64% 32% / 0.25)'
-                : 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 12px -2px hsl(38 75% 50% / 0.35), 0 12px 28px -6px hsl(38 75% 50% / 0.25)'
-            } : undefined}
-          >
-            {stat.gradient && (
-              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            )}
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon className={cn(
-                  "h-4 w-4",
-                  stat.gradient ? "opacity-80" : stat.accentColor
-                )} />
-                <span className={cn(
-                  "text-xs font-medium",
-                  stat.gradient ? "opacity-80" : "text-muted-foreground"
-                )}>{stat.label}</span>
+      {/* Desktop Layout */}
+      <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Projected Income */}
+        <motion.div
+          onClick={() => setShowBreakdown(true)}
+          className="relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+          style={{
+            background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
+            boxShadow: '0 8px 32px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springConfig, delay: 0 }}
+        >
+          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
+          <div className="absolute -right-4 top-16 w-20 h-20 rounded-full bg-white/5" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-primary-foreground" />
               </div>
-              <AnimatedCurrency 
-                value={stat.numericValue}
-                className={cn(
-                  "text-2xl lg:text-3xl font-bold tracking-tight block",
-                  stat.accent && stat.accentColor
-                )}
-                duration={1.2}
-              />
-              <p className={cn(
-                "text-xs mt-1",
-                stat.gradient ? "opacity-70" : "text-muted-foreground"
-              )}>{stat.label === 'Projected Income' ? 'Click for breakdown' : stat.subtitle}</p>
+              <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">Projected Income</span>
             </div>
+            <AnimatedCurrency 
+              value={stats.totalProjected}
+              className="text-3xl font-bold text-primary-foreground tracking-tight block"
+              duration={1.2}
+            />
+            <p className="text-xs text-primary-foreground/60 mt-2">Click for breakdown</p>
           </div>
-        ))}
+        </motion.div>
+
+        {/* This Year */}
+        <motion.div
+          className="relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+          style={{
+            background: 'linear-gradient(145deg, hsl(38 92% 50%) 0%, hsl(25 95% 45%) 100%)',
+            boxShadow: '0 8px 24px -8px hsl(38 92% 50%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springConfig, delay: 0.05 }}
+        >
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <Calendar className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">{thisYear} Projected</span>
+            </div>
+            <AnimatedCurrency 
+              value={stats.thisYearProjected}
+              className="text-3xl font-bold text-white tracking-tight block"
+              duration={1.2}
+            />
+            <p className="text-xs text-white/60 mt-2">Commissions + RevShare</p>
+          </div>
+        </motion.div>
+
+        {/* Monthly Expenses */}
+        <motion.div
+          className="relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-destructive/30"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springConfig, delay: 0.1 }}
+        >
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-destructive/5" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center">
+                <Receipt className="h-4 w-4 text-destructive" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monthly Expenses</span>
+            </div>
+            <AnimatedCurrency 
+              value={stats.monthlyExpenses}
+              className="text-3xl font-bold text-destructive tracking-tight block"
+              duration={1.2}
+            />
+            <p className="text-xs text-muted-foreground mt-2">Recurring costs</p>
+          </div>
+        </motion.div>
+
+        {/* Avg Per Deal */}
+        <motion.div
+          className="relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-accent/30"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...springConfig, delay: 0.15 }}
+        >
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-accent/5" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center">
+                <Target className="h-4 w-4 text-accent" />
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Per Deal</span>
+            </div>
+            <AnimatedCurrency 
+              value={stats.avgDealValue}
+              className="text-3xl font-bold text-accent tracking-tight block"
+              duration={1.2}
+            />
+            <p className="text-xs text-muted-foreground mt-2">Gross commission</p>
+          </div>
+        </motion.div>
       </div>
 
       {/* Breakdown Dialog */}
@@ -419,49 +433,63 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-primary" />
+              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-primary" />
+              </div>
               Projected Income Breakdown
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             {/* Total */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
               <p className="text-sm text-muted-foreground mb-1">Total Projected</p>
               <p className="text-3xl font-bold text-primary">{formatCurrency(breakdown.total)}</p>
               <p className="text-xs text-muted-foreground mt-1">Next {breakdown.monthsProjected} months</p>
             </div>
 
             {/* Commissions */}
-            <div className="p-4 rounded-xl bg-success/10 border border-success/20">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="h-4 w-4 text-success" />
-                <p className="text-sm font-medium text-success">Deal Commissions</p>
+            <div className="p-5 rounded-2xl bg-success/10 border border-success/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-success" />
+                  <span className="font-semibold">Deal Commissions</span>
+                </div>
+                <span className="font-bold text-xl text-success">{formatCurrency(breakdown.commissions)}</span>
               </div>
-              <p className="text-2xl font-bold text-success">{formatCurrency(breakdown.commissions)}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {breakdown.unpaidPayoutsCount} unpaid payout{breakdown.unpaidPayoutsCount !== 1 ? 's' : ''}
+              <p className="text-xs text-muted-foreground mt-2">
+                {breakdown.unpaidPayoutsCount} pending payout{breakdown.unpaidPayoutsCount !== 1 ? 's' : ''} (net of brokerage split)
               </p>
             </div>
 
             {/* Other Income */}
-            <div className="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20">
-              <div className="flex items-center gap-2 mb-1">
-                <Repeat className="h-4 w-4 text-sky-500" />
-                <p className="text-sm font-medium text-sky-500">Other Income (RevShare)</p>
+            <div className="p-5 rounded-2xl bg-sky-500/10 border border-sky-500/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-sky-500" />
+                  <span className="font-semibold">Other Income</span>
+                </div>
+                <span className="font-bold text-xl text-sky-500">{formatCurrency(breakdown.otherIncome)}</span>
               </div>
-              <p className="text-2xl font-bold text-sky-500">{formatCurrency(breakdown.otherIncome)}</p>
-              {breakdown.otherIncomeItems.map((item) => (
-                <p key={item.id} className="text-xs text-muted-foreground mt-1">
-                  {item.name}: {formatCurrency(item.amount)}/{item.recurrence}
-                </p>
-              ))}
+              <p className="text-xs text-muted-foreground mt-2">
+                Revenue share, rentals, etc. over {breakdown.monthsProjected} months
+              </p>
             </div>
 
-            {/* Calculation note */}
-            <p className="text-xs text-muted-foreground text-center">
-              Projection includes all unpaid commissions + recurring income through {thisYear + 3}
-            </p>
+            {/* Income Sources */}
+            {breakdown.otherIncomeItems.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Income Sources</p>
+                <div className="max-h-32 overflow-y-auto space-y-1.5">
+                  {breakdown.otherIncomeItems.map((income) => (
+                    <div key={income.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
+                      <span className="text-sm font-medium">{income.name}</span>
+                      <span className="text-sm font-bold">{formatCurrency(income.amount)}/{income.recurrence === 'monthly' ? 'mo' : income.recurrence}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
