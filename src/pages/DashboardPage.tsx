@@ -13,7 +13,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { QuickStats } from '@/components/dashboard/QuickStats';
-import { ClientAnalytics } from '@/components/dashboard/ClientAnalytics';
+import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
 import { ExpenseAnalytics } from '@/components/dashboard/ExpenseAnalytics';
 import { UpcomingPayouts } from '@/components/dashboard/UpcomingPayouts';
@@ -30,7 +30,7 @@ import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, Calculator, TrendingUp, Users, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Calculator, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
@@ -198,13 +198,13 @@ export default function DashboardPage() {
               <div className="px-5 mb-5">
                 <div className="bg-muted/50 backdrop-blur-xl rounded-2xl p-1.5 border border-border/30">
                   <TabsList className="w-full grid grid-cols-4 h-11 bg-transparent p-0 gap-1">
-                    {['overview', 'taxes', 'analytics', 'clients'].map((tab) => (
+                    {['overview', 'taxes', 'charts', 'analytics'].map((tab) => (
                       <TabsTrigger 
                         key={tab}
                         value={tab}
                         className="text-[13px] font-semibold rounded-xl h-full capitalize data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 data-[state=inactive]:text-muted-foreground transition-all duration-200"
                       >
-                        {tab === 'overview' ? 'Overview' : tab === 'taxes' ? 'Taxes' : tab === 'analytics' ? 'Charts' : 'Clients'}
+                        {tab === 'overview' ? 'Overview' : tab === 'taxes' ? 'Taxes' : tab === 'charts' ? 'Charts' : 'Analytics'}
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -254,7 +254,7 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
+              <TabsContent value="charts" className="px-5 space-y-4 mt-0">
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <ExpenseAnalytics expenses={expenses} />
                 <FinancialHealth 
@@ -268,44 +268,8 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="clients" className="px-5 space-y-4 mt-0">
-                <ClientAnalytics deals={deals} payouts={payouts} />
-                <UpcomingPayouts 
-                  payouts={payouts} 
-                  onMarkPaid={(id) => markPaid.mutate(id)}
-                  isPending={markPaid.isPending}
-                />
-                {/* Deal Summary */}
-                <motion.div 
-                  className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/40 overflow-hidden shadow-lg"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={springConfig}
-                >
-                  <div className="px-5 py-4 border-b border-border/40 bg-gradient-to-r from-primary/5 to-transparent">
-                    <h3 className="font-bold text-lg">Deal Summary</h3>
-                  </div>
-                  <div className="divide-y divide-border/30">
-                    {[
-                      { label: 'Total Deals', value: deals.length },
-                      { label: 'Active Deals', value: deals.filter(d => d.status === 'PENDING').length },
-                      { label: 'Closed Deals', value: deals.filter(d => d.status === 'CLOSED').length },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center justify-between px-5 py-4">
-                        <span className="text-muted-foreground">{item.label}</span>
-                        <span className="font-bold text-lg">{item.value}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between px-5 py-4 bg-success/5">
-                      <span className="text-muted-foreground">Close Rate</span>
-                      <span className="font-bold text-lg text-success">
-                        {deals.length > 0 
-                          ? ((deals.filter(d => d.status === 'CLOSED').length / deals.length) * 100).toFixed(0)
-                          : 0}%
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
+              <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
+                <BusinessAnalytics deals={deals} payouts={payouts} />
               </TabsContent>
             </Tabs>
           </div>
@@ -375,18 +339,18 @@ export default function DashboardPage() {
                       Taxes
                     </TabsTrigger>
                     <TabsTrigger 
-                      value="analytics" 
+                      value="charts" 
                       className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
                     >
                       <TrendingUp className="h-4 w-4" />
-                      Analytics
+                      Charts
                     </TabsTrigger>
                     <TabsTrigger 
-                      value="clients" 
+                      value="analytics" 
                       className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
                     >
-                      <Users className="h-4 w-4" />
-                      Clients
+                      <BarChart3 className="h-4 w-4" />
+                      Analytics
                     </TabsTrigger>
                   </TabsList>
                 </motion.div>
@@ -516,8 +480,8 @@ export default function DashboardPage() {
                   </div>
                 </TabsContent>
 
-                {/* Analytics Tab */}
-                <TabsContent value="analytics" className="mt-0 space-y-6">
+                {/* Charts Tab */}
+                <TabsContent value="charts" className="mt-0 space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -552,65 +516,15 @@ export default function DashboardPage() {
                   </div>
                 </TabsContent>
 
-                {/* Clients Tab */}
-                <TabsContent value="clients" className="mt-0 space-y-6">
+                {/* Business Analytics Tab */}
+                <TabsContent value="analytics" className="mt-0">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <ClientAnalytics deals={deals} payouts={payouts} />
+                    <BusinessAnalytics deals={deals} payouts={payouts} />
                   </motion.div>
-                  
-                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.3 }}
-                    >
-                      <UpcomingPayouts 
-                        payouts={payouts} 
-                        onMarkPaid={(id) => markPaid.mutate(id)}
-                        isPending={markPaid.isPending}
-                      />
-                    </motion.div>
-                    
-                    {/* Premium Deal Summary Card */}
-                    <motion.div 
-                      className="rounded-2xl bg-card/95 backdrop-blur-xl border border-border/40 overflow-hidden shadow-lg"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.35 }}
-                    >
-                      <div className="px-6 py-5 border-b border-border/40 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent">
-                        <h3 className="font-bold text-lg">Deal Summary</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">Your deal performance overview</p>
-                      </div>
-                      <div className="divide-y divide-border/30">
-                        {[
-                          { label: 'Total Deals', value: deals.length },
-                          { label: 'Active Deals', value: deals.filter(d => d.status === 'PENDING').length, highlight: true },
-                          { label: 'Closed Deals', value: deals.filter(d => d.status === 'CLOSED').length },
-                        ].map((item) => (
-                          <div key={item.label} className={`flex items-center justify-between px-6 py-4 ${item.highlight ? 'bg-primary/5' : ''}`}>
-                            <span className="text-muted-foreground font-medium">{item.label}</span>
-                            <span className={`font-bold text-xl ${item.highlight ? 'text-primary' : ''}`}>{item.value}</span>
-                          </div>
-                        ))}
-                        <div className="flex items-center justify-between px-6 py-5 bg-success/10">
-                          <div>
-                            <span className="text-foreground font-semibold">Close Rate</span>
-                            <p className="text-xs text-muted-foreground mt-0.5">Overall success rate</p>
-                          </div>
-                          <span className="font-bold text-2xl text-success">
-                            {deals.length > 0 
-                              ? ((deals.filter(d => d.status === 'CLOSED').length / deals.length) * 100).toFixed(0)
-                              : 0}%
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
                 </TabsContent>
               </Tabs>
             </div>
