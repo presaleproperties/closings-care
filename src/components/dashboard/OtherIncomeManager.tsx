@@ -116,7 +116,7 @@ export function OtherIncomeManager() {
       transition={springConfigs.gentle}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50 bg-gradient-to-r from-sky-50/50 to-cyan-50/30 dark:from-sky-500/5 dark:to-cyan-500/10">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-border/50 bg-gradient-to-r from-sky-50/50 to-cyan-50/30 dark:from-sky-500/5 dark:to-cyan-500/10">
         <div className="flex items-center gap-3">
           <motion.div
             className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/20"
@@ -127,10 +127,10 @@ export function OtherIncomeManager() {
             <Wallet className="h-5 w-5 text-white" />
           </motion.div>
           <div>
-            <h3 className="font-bold text-base text-slate-800 dark:text-foreground">
+            <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
               Other Income
             </h3>
-            <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Revenue share, side income, etc.</p>
+            <p className="text-[11px] text-slate-500 dark:text-muted-foreground">RevShare, side income</p>
           </div>
         </div>
 

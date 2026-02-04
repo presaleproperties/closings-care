@@ -211,7 +211,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <TabsContent value="overview" className="px-5 space-y-5 mt-0">
+              <TabsContent value="overview" className="px-5 space-y-4 mt-0">
                 <BrokerageCapCard />
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <UpcomingPayouts 
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="taxes" className="px-5 space-y-5 mt-0">
+              <TabsContent value="taxes" className="px-5 space-y-4 mt-0">
                 <TaxSafetyCard 
                   paidIncome={incomeTotals.paid}
                   projectedIncome={incomeTotals.projected}
@@ -254,7 +254,7 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="analytics" className="px-5 space-y-5 mt-0">
+              <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <ExpenseAnalytics expenses={expenses} />
                 <FinancialHealth 
@@ -268,7 +268,7 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="clients" className="px-5 space-y-5 mt-0">
+              <TabsContent value="clients" className="px-5 space-y-4 mt-0">
                 <ClientAnalytics deals={deals} payouts={payouts} />
                 <UpcomingPayouts 
                   payouts={payouts} 

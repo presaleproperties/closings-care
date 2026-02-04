@@ -40,7 +40,7 @@ export function BrokerageCapCard() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-border/50 relative">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-border/50 relative">
         <div className="flex items-center gap-3">
           {capStatus.capReached ? (
             <div className="icon-gradient-primary icon-gradient-sm">
@@ -51,7 +51,7 @@ export function BrokerageCapCard() {
               <Target className="h-4 w-4 text-white" />
             </div>
           )}
-          <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">Brokerage Cap</h3>
+          <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">Brokerage Cap</h3>
         </div>
         {capStatus.capReached && (
           <motion.div
@@ -66,7 +66,7 @@ export function BrokerageCapCard() {
         )}
       </div>
 
-      <div className="p-4 sm:p-5 relative space-y-4">
+      <div className="p-4 relative space-y-4">
         {/* Progress visualization */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
