@@ -20,7 +20,7 @@ export function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[env(safe-area-inset-bottom,8px)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom,8px)+12px)] mb-2">
       {/* Premium liquid glass container */}
       <div className="relative mx-auto max-w-md">
         {/* Outer ambient glow */}
