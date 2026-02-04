@@ -393,7 +393,7 @@ export default function DashboardPage() {
 
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="mt-0 space-y-6">
-                  <div className="grid lg:grid-cols-3 gap-5 lg:gap-6">
+                  <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
                     {/* Main Column */}
                     <div className="lg:col-span-2 space-y-5 lg:space-y-6">
                       <motion.div
