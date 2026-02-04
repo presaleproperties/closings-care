@@ -351,12 +351,19 @@ export default function ExpensesPage() {
             )}
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats - Include property costs in appropriate categories */}
           <div className="grid grid-cols-4 gap-2">
             {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
               const config = typeConfig[type];
-              const total = getTypeTotal(type);
-              const count = groupedExpenses[type].length;
+              let total = getTypeTotal(type);
+              // Add personal property costs to personal total
+              if (type === 'personal') {
+                total += propertyCarryingCosts.personalCost;
+              }
+              // Add rental property net expense (negative means income) to rental total
+              if (type === 'rental') {
+                total -= propertyCarryingCosts.rentalNet; // Subtract because rentalNet is income - expense
+              }
               return (
                 <button
                   key={type}
@@ -447,7 +454,39 @@ export default function ExpensesPage() {
           </TabsContent>
 
           {/* Personal Tab */}
-          <TabsContent value="personal">
+          <TabsContent value="personal" className="space-y-4">
+            {/* Personal Property Costs */}
+            {properties.filter(p => p.property_type === 'personal').length > 0 && (
+              <div className="bg-card border border-blue-500/30 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-blue-500/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4 text-blue-400" />
+                    <span className="font-medium text-blue-400">Property Costs</span>
+                  </div>
+                  <span className="font-semibold">{formatCurrency(propertyCarryingCosts.personalCost)}</span>
+                </div>
+                <div className="divide-y divide-border/30">
+                  {properties.filter(p => p.property_type === 'personal').map(property => {
+                    const expenses = getPropertyMonthlyExpenses(property);
+                    return (
+                      <div key={property.id} className="px-4 py-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{property.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[
+                              property.monthly_mortgage && `$${property.monthly_mortgage.toLocaleString()} mortgage`,
+                              property.monthly_strata && `$${property.monthly_strata.toLocaleString()} strata`,
+                              property.yearly_taxes && `$${Math.round(property.yearly_taxes / 12).toLocaleString()} taxes`
+                            ].filter(Boolean).join(' • ')}
+                          </p>
+                        </div>
+                        <span className="font-semibold text-sm">{formatCurrency(expenses)}/mo</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {renderExpenseList('personal')}
           </TabsContent>
 
@@ -457,7 +496,48 @@ export default function ExpensesPage() {
           </TabsContent>
 
           {/* Rental Tab */}
-          <TabsContent value="rental">
+          <TabsContent value="rental" className="space-y-4">
+            {/* Rental Property Cashflow */}
+            {properties.filter(p => p.property_type === 'rental').length > 0 && (
+              <div className="bg-card border border-teal-500/30 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-teal-500/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-teal-400" />
+                    <span className="font-medium text-teal-400">Rental Properties</span>
+                  </div>
+                  <span className={cn(
+                    "font-semibold",
+                    propertyCarryingCosts.rentalNet >= 0 ? "text-emerald-500" : "text-rose-500"
+                  )}>
+                    {propertyCarryingCosts.rentalNet >= 0 ? '+' : ''}{formatCurrency(propertyCarryingCosts.rentalNet)}/mo
+                  </span>
+                </div>
+                <div className="divide-y divide-border/30">
+                  {properties.filter(p => p.property_type === 'rental').map(property => {
+                    const cashflow = calculatePropertyCashflow(property, 0);
+                    return (
+                      <div key={property.id} className="px-4 py-3 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-sm">{property.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="text-emerald-500">${(property.monthly_rent || 0).toLocaleString()}</span>
+                            {' rent - '}
+                            <span className="text-rose-500">${cashflow.expenses.toLocaleString()}</span>
+                            {' costs'}
+                          </p>
+                        </div>
+                        <span className={cn(
+                          "font-semibold text-sm",
+                          cashflow.net >= 0 ? "text-emerald-500" : "text-rose-500"
+                        )}>
+                          {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}/mo
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {renderExpenseList('rental')}
           </TabsContent>
 
