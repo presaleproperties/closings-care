@@ -21,53 +21,37 @@ interface ExpenseAnalyticsProps {
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
+// Match the exact category list from ExpensesPage for consistent categorization
+const expenseCategories = {
+  personal: [
+    'Personal Mortgage', 'Strata Fees', 'Property Taxes', 'Hydro/Utilities', 'Internet',
+    'Car Lease/Payment', 'Car Insurance (Personal)', 'Car Charging/Gas',
+    'Phone (Personal)', 'Groceries', 'Entertainment/Dining', 'Gym/Fitness', 'Apps & Subscriptions',
+  ],
+  business: [
+    'Office Lease', 'Board Fees', 'Brokerage Fees',
+    'CRM (CHIME, etc.)', 'Website Hosting', 'Google Workspace', 'iCloud/Storage', 'Canva/Design Tools', 
+    'Email Marketing (MailerLite)', 'Editing Apps', 'Other Software',
+    'Facebook/Social Ads', 'Signs & Signage', 'Marketing Agency', 'Marketing Manager', 'Print Marketing',
+    'Car (Business Use)', 'Car Insurance (Business)', 'Car Charging (Business)',
+    'BCFSA License', 'Real Estate License', 'Professional Development', 'Continuing Education',
+    'Client Gifts', 'Staging/Clean-ups', 'Photography',
+    'Phone (Business)', 'Admin Support', 'Bookkeeping',
+  ],
+  rental: [
+    'Rental Mortgage', 'Rental Strata Fees', 'Rental Property Tax', 'Property Management', 
+    'Rental Insurance', 'Rental Repairs/Maintenance', 'Rental Utilities', 'Other Rental Expense',
+  ],
+  taxes: [
+    'Tax Set-Aside', 'GST/HST Remittance', 'Debt Pay Down',
+  ],
+};
+
 const getExpenseType = (category: string): 'personal' | 'business' | 'rental' | 'other' => {
-  // Check for explicit prefixes first
-  if (category.startsWith('Personal -')) return 'personal';
-  if (category.startsWith('Business -')) return 'business';
-  if (category.startsWith('Rental -')) return 'rental';
-  
-  const lowerCat = category.toLowerCase();
-  
-  // Personal categories
-  const personalKeywords = [
-    'groceries', 'hydro', 'utilities', 'internet', 'gym', 'health',
-    'childcare', 'clothing', 'shopping', 'personal'
-  ];
-  if (lowerCat.includes('(personal)') || personalKeywords.some(k => lowerCat.includes(k))) {
-    return 'personal';
-  }
-  if (lowerCat === 'car insurance (personal)' || lowerCat === 'car charging/gas') {
-    return 'personal';
-  }
-  
-  // Rental categories
-  const rentalKeywords = ['rental', 'tenant', 'property management', 'strata', 'mortgage'];
-  if (rentalKeywords.some(k => lowerCat.includes(k))) {
-    return 'rental';
-  }
-  
-  // Business categories - most expense categories for realtors are business
-  const businessKeywords = [
-    'brokerage', 'board', 'mls', 'crm', 'office', 'website', 'marketing',
-    'advertising', 'staging', 'photography', 'desk', 'software', 'phone',
-    'entertainment', 'dining', 'car (business', 'car insurance (business',
-    'business', 'car lease', 'car payment', 'gas', 'client', 'gift',
-    'education', 'training', 'license', 'membership', 'association'
-  ];
-  if (lowerCat.includes('(business)') || businessKeywords.some(k => lowerCat.includes(k))) {
-    return 'business';
-  }
-  
-  // Default business-related categories that don't have explicit markers
-  const defaultBusinessCategories = [
-    'board fees', 'brokerage fees', 'entertainment/dining', 'office lease',
-    'other software', 'website hosting', 'phone'
-  ];
-  if (defaultBusinessCategories.some(cat => lowerCat === cat || lowerCat.startsWith(cat))) {
-    return 'business';
-  }
-  
+  if (expenseCategories.personal.includes(category)) return 'personal';
+  if (expenseCategories.business.includes(category)) return 'business';
+  if (expenseCategories.rental.includes(category)) return 'rental';
+  if (expenseCategories.taxes.includes(category)) return 'other'; // taxes grouped with other
   return 'other';
 };
 
