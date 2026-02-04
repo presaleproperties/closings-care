@@ -8,15 +8,14 @@ import {
   DollarSign, 
   CheckCircle2, 
   Clock, 
-  ChevronRight,
   Building2,
   Home,
   MapPin,
   Users,
   TrendingUp,
   ArrowUpRight,
-  Filter,
-  Percent
+  Percent,
+  Sparkles
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore, getYear, getMonth, differenceInDays } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -24,15 +23,16 @@ import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
 import { useDeals } from '@/hooks/useDeals';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { springConfigs, triggerHaptic } from '@/lib/haptics';
+import { triggerHaptic } from '@/lib/haptics';
 
 type TimeFilter = 'upcoming' | 'this-month' | 'next-month' | 'paid';
+
+const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 export default function DealsPage() {
   const { data: payouts = [], isLoading: payoutsLoading } = usePayouts();
@@ -45,7 +45,6 @@ export default function DealsPage() {
 
   const isLoading = payoutsLoading || dealsLoading;
 
-  // Filter payouts
   const filteredPayouts = useMemo(() => {
     const now = new Date();
     const thisMonthStart = startOfMonth(now);
@@ -55,7 +54,6 @@ export default function DealsPage() {
 
     return payouts
       .filter((payout) => {
-        // Search filter
         if (search) {
           const searchLower = search.toLowerCase();
           const matchesClient = payout.deal?.client_name?.toLowerCase().includes(searchLower);
@@ -65,7 +63,6 @@ export default function DealsPage() {
           if (!matchesClient && !matchesAddress && !matchesProject && !matchesCity) return false;
         }
 
-        // Time filter
         if (timeFilter === 'paid') {
           return payout.status === 'PAID';
         }
@@ -100,7 +97,6 @@ export default function DealsPage() {
       });
   }, [payouts, search, timeFilter]);
 
-  // Group payouts by year and month
   const groupedPayouts = useMemo(() => {
     const groups: Map<number, Map<number, typeof filteredPayouts>> = new Map();
     
@@ -126,7 +122,6 @@ export default function DealsPage() {
       yearGroup.get(month)!.push(payout);
     });
 
-    // Convert to array and sort
     const result: { year: number; months: { month: number; monthName: string; payouts: typeof filteredPayouts; total: number }[] }[] = [];
     
     const sortedYears = Array.from(groups.keys()).sort((a, b) => a - b);
@@ -148,7 +143,6 @@ export default function DealsPage() {
     return result;
   }, [filteredPayouts]);
 
-  // Stats
   const stats = useMemo(() => {
     const unpaid = payouts.filter(p => p.status !== 'PAID');
     const paid = payouts.filter(p => p.status === 'PAID');
@@ -191,12 +185,12 @@ export default function DealsPage() {
 
   const getPayoutTypeStyles = (type: string) => {
     switch (type) {
-      case 'Advance': return { bg: 'bg-blue-100 dark:bg-blue-500/20', text: 'text-blue-700 dark:text-blue-400', icon: TrendingUp };
-      case 'Completion': return { bg: 'bg-emerald-100 dark:bg-success/20', text: 'text-emerald-700 dark:text-success', icon: CheckCircle2 };
-      case '2nd Payment': return { bg: 'bg-purple-100 dark:bg-purple-500/20', text: 'text-purple-700 dark:text-purple-400', icon: DollarSign };
-      case '3rd Deposit': return { bg: 'bg-amber-100 dark:bg-warning/20', text: 'text-amber-700 dark:text-warning', icon: DollarSign };
-      case '4th Deposit': return { bg: 'bg-orange-100 dark:bg-orange-500/20', text: 'text-orange-700 dark:text-orange-400', icon: DollarSign };
-      default: return { bg: 'bg-slate-100 dark:bg-muted', text: 'text-slate-600 dark:text-muted-foreground', icon: DollarSign };
+      case 'Advance': return { bg: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-400', icon: TrendingUp };
+      case 'Completion': return { bg: 'bg-success/15', text: 'text-success', icon: CheckCircle2 };
+      case '2nd Payment': return { bg: 'bg-purple-500/15', text: 'text-purple-600 dark:text-purple-400', icon: DollarSign };
+      case '3rd Deposit': return { bg: 'bg-warning/15', text: 'text-warning', icon: DollarSign };
+      case '4th Deposit': return { bg: 'bg-orange-500/15', text: 'text-orange-600 dark:text-orange-400', icon: DollarSign };
+      default: return { bg: 'bg-muted', text: 'text-muted-foreground', icon: DollarSign };
     }
   };
 
@@ -224,7 +218,6 @@ export default function DealsPage() {
 
   const currentYear = new Date().getFullYear();
 
-  // Enhanced payout card
   const renderPayoutCard = (payout: typeof payouts[0], index: number) => {
     const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
     const deal = payout.deal;
@@ -240,7 +233,7 @@ export default function DealsPage() {
         key={payout.id}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springConfigs.gentle, delay: index * 0.03 }}
+        transition={{ ...springConfig, delay: index * 0.03 }}
       >
         <Link
           to={`/deals/${payout.deal_id}`}
@@ -248,49 +241,51 @@ export default function DealsPage() {
         >
           <motion.div
             className={cn(
-              "relative overflow-hidden rounded-2xl border transition-all group",
+              "relative overflow-hidden rounded-3xl border transition-all duration-300 group",
               payout.status === 'PAID' 
                 ? isTeamDeal
-                  ? "bg-violet-50/50 dark:bg-violet-500/10 border-violet-200 dark:border-violet-500/30"
-                  : "bg-slate-50/80 dark:bg-card/30 border-slate-200 dark:border-border/30"
+                  ? "bg-violet-50/50 dark:bg-violet-500/10 border-violet-200/50 dark:border-violet-500/30"
+                  : "bg-card/50 border-border/30"
                 : overdue 
-                  ? "bg-destructive/5 border-destructive/30 dark:border-destructive/50"
+                  ? "bg-destructive/5 border-destructive/40"
                   : isTeamDeal
-                    ? "bg-violet-50/40 dark:bg-violet-500/5 border-violet-200 dark:border-violet-500/40 hover:border-violet-400 hover:shadow-lg hover:shadow-violet-500/10"
-                    : "bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 hover:border-primary/40 hover:shadow-lg"
+                    ? "bg-violet-50/30 dark:bg-violet-500/5 border-violet-200/50 dark:border-violet-500/30 hover:border-violet-400/60 hover:shadow-xl hover:shadow-violet-500/10"
+                    : "bg-card/95 border-border/50 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
             )}
-            whileHover={{ y: -3, scale: 1.01 }}
+            whileHover={{ y: -4, scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            transition={springConfigs.snappy}
+            transition={springConfig}
           >
-            {/* Team deal indicator bar */}
-            {isTeamDeal && !overdue && dueBadge?.variant !== 'warning' && (
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-violet-400 dark:bg-violet-500" />
-            )}
-            {/* Urgency bar */}
-            {overdue && (
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-destructive" />
-            )}
-            {dueBadge?.variant === 'warning' && (
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-warning" />
-            )}
+            {/* Status indicator bar */}
+            <div className={cn(
+              "absolute left-0 top-0 bottom-0 w-1.5 rounded-l-3xl",
+              payout.status === 'PAID' 
+                ? "bg-success/60"
+                : overdue 
+                  ? "bg-destructive"
+                  : dueBadge?.variant === 'warning'
+                    ? "bg-warning"
+                    : isTeamDeal
+                      ? "bg-violet-400"
+                      : "bg-primary/40"
+            )} />
             
-            {/* Paid overlay gradient */}
+            {/* Paid gradient overlay */}
             {payout.status === 'PAID' && (
               <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent pointer-events-none" />
             )}
 
-            <div className="p-4 sm:p-5">
-              {/* Header row */}
-              <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="p-5 sm:p-6 pl-6 sm:pl-7">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <h3 className="font-bold text-base sm:text-lg truncate text-slate-800 dark:text-foreground">
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <h3 className="font-bold text-lg truncate">
                       {deal?.client_name || 'Unknown Client'}
                     </h3>
                     {dueBadge && (
                       <span className={cn(
-                        "shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold",
+                        "shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide",
                         dueBadge.variant === 'destructive' && "bg-destructive/15 text-destructive",
                         dueBadge.variant === 'warning' && "bg-warning/15 text-warning",
                         dueBadge.variant === 'muted' && "bg-muted text-muted-foreground"
@@ -299,27 +294,27 @@ export default function DealsPage() {
                       </span>
                     )}
                     {payout.status === 'PAID' && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-success/15 text-success">
-                        <CheckCircle2 className="h-2.5 w-2.5" />
+                      <span className="shrink-0 inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide bg-success/15 text-success">
+                        <CheckCircle2 className="h-3 w-3" />
                         Paid
                       </span>
                     )}
                   </div>
                   
-                  {/* Property details row */}
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-slate-500 dark:text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <DealIcon className="h-3.5 w-3.5" />
+                  {/* Property info */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <DealIcon className="h-4 w-4" />
                       {isPresale ? (deal?.project_name || 'Presale') : 'Resale'}
                     </span>
                     {deal?.city && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4" />
                         {deal.city}
                       </span>
                     )}
                     {deal?.address && !isPresale && (
-                      <span className="hidden sm:inline-flex items-center gap-1 truncate max-w-[200px]">
+                      <span className="hidden sm:inline-flex items-center gap-1.5 truncate max-w-[200px]">
                         {deal.address}
                       </span>
                     )}
@@ -329,16 +324,16 @@ export default function DealsPage() {
                 {/* Amount */}
                 <div className="text-right shrink-0">
                   <p className={cn(
-                    "text-xl sm:text-2xl font-bold",
+                    "text-2xl sm:text-3xl font-bold",
                     payout.status === 'PAID' 
                       ? "text-success" 
                       : overdue 
                         ? "text-destructive"
-                        : "text-emerald-600 dark:text-accent"
+                        : "text-primary"
                   )}>
                     {formatCurrency(payout.amount)}
                   </p>
-                  <p className="text-[11px] text-slate-400 dark:text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {payout.status === 'PAID' && payout.paid_date
                       ? `Received ${format(parseISO(payout.paid_date), 'MMM d, yyyy')}`
                       : payout.due_date
@@ -349,31 +344,31 @@ export default function DealsPage() {
               </div>
 
               {/* Details row */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-border/30">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between pt-4 border-t border-border/30">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   {/* Payout type badge */}
                   <span className={cn(
-                    "inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-medium",
+                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold",
                     typeStyles.bg, typeStyles.text
                   )}>
-                    <TypeIcon className="h-3 w-3" />
+                    <TypeIcon className="h-3.5 w-3.5" />
                     {payout.payout_type}
                   </span>
 
                   {/* Deal type badge */}
                   <span className={cn(
-                    "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-medium",
+                    "inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold",
                     deal?.deal_type === 'BUY' 
-                      ? "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                      : "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                      : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
                   )}>
                     {deal?.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
                   </span>
 
                   {/* Team member indicator */}
                   {deal?.team_member && (
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-medium">
-                      <Users className="h-2.5 w-2.5" />
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-semibold">
+                      <Users className="h-3 w-3" />
                       <span className="hidden sm:inline">{deal.team_member} •</span> {deal.team_member_portion}%
                     </span>
                   )}
@@ -385,42 +380,42 @@ export default function DealsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 text-[11px] font-medium text-success hover:text-success hover:bg-success/10 rounded-lg gap-1.5"
+                      className="h-9 text-xs font-semibold text-success hover:text-success hover:bg-success/10 rounded-xl gap-1.5"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         handleMarkPaid(payout.id);
                       }}
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2 className="h-4 w-4" />
                       Mark Paid
                     </Button>
                   </motion.div>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                     View details
-                    <ArrowUpRight className="h-3 w-3" />
+                    <ArrowUpRight className="h-3.5 w-3.5" />
                   </span>
                 )}
               </div>
 
-              {/* Sale price info - only on desktop */}
+              {/* Sale price info */}
               {deal?.sale_price && (
-                <div className="hidden sm:flex items-center gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-border/30 text-[11px] text-slate-400 dark:text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Home className="h-3 w-3" />
+                <div className="hidden sm:flex items-center gap-5 mt-4 pt-4 border-t border-border/30 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Home className="h-3.5 w-3.5" />
                     Sale: {formatCurrency(deal.sale_price)}
                   </span>
                   {deal?.gross_commission_est && (
-                    <span className="inline-flex items-center gap-1">
-                      <Percent className="h-3 w-3" />
+                    <span className="inline-flex items-center gap-1.5">
+                      <Percent className="h-3.5 w-3.5" />
                       GCI: {formatCurrency(
                         deal.team_member_portion && deal.team_member_portion > 0
                           ? deal.gross_commission_est * (100 - deal.team_member_portion) / 100
                           : deal.gross_commission_est
                       )}
                       {deal.team_member_portion && deal.team_member_portion > 0 && (
-                        <span className="text-slate-300 dark:text-muted-foreground/50 ml-0.5">
+                        <span className="text-muted-foreground/50 ml-0.5">
                           ({100 - deal.team_member_portion}%)
                         </span>
                       )}
@@ -444,7 +439,7 @@ export default function DealsPage() {
         action={
           <Link 
             to="/deals/new"
-            className="sm:hidden text-primary font-semibold text-[17px] active:opacity-50 transition-opacity"
+            className="sm:hidden text-primary font-semibold active:opacity-50 transition-opacity"
           >
             <Plus className="h-6 w-6" strokeWidth={2.5} />
           </Link>
@@ -452,10 +447,10 @@ export default function DealsPage() {
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-        <div className="p-4 lg:p-6 space-y-5 lg:space-y-6 animate-fade-in">
+        <div className="p-5 lg:p-8 xl:p-10 space-y-6 lg:space-y-8">
           
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Premium Stats Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {filterButtons.map((btn, i) => (
               <motion.button
                 key={btn.key}
@@ -465,152 +460,186 @@ export default function DealsPage() {
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ ...springConfigs.gentle, delay: i * 0.05 }}
+                transition={{ ...springConfig, delay: i * 0.05 }}
                 className={cn(
-                  "relative p-4 rounded-2xl border text-left transition-all overflow-hidden",
+                  "relative p-5 rounded-3xl border text-left transition-all duration-300 overflow-hidden",
                   timeFilter === btn.key 
                     ? btn.success 
-                      ? "bg-gradient-to-br from-success/15 to-success/5 border-success/50 shadow-lg shadow-success/10" 
-                      : "bg-gradient-to-br from-primary/15 to-primary/5 border-primary/50 shadow-lg shadow-primary/10"
-                    : "bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 hover:border-primary/30"
+                      ? "border-success/50 shadow-xl shadow-success/15" 
+                      : "border-primary/50 shadow-xl shadow-primary/15"
+                    : "bg-card/95 border-border/40 hover:border-primary/30 hover:shadow-lg"
                 )}
+                style={timeFilter === btn.key ? {
+                  background: btn.success 
+                    ? 'linear-gradient(145deg, hsl(var(--success)/0.15) 0%, hsl(var(--success)/0.05) 100%)'
+                    : 'linear-gradient(145deg, hsl(var(--primary)/0.15) 0%, hsl(var(--primary)/0.05) 100%)'
+                } : undefined}
               >
+                {/* Active indicator */}
                 {timeFilter === btn.key && (
                   <div className={cn(
-                    "absolute top-2 right-2 w-2 h-2 rounded-full",
+                    "absolute top-3 right-3 w-2.5 h-2.5 rounded-full",
                     btn.success ? "bg-success" : "bg-primary"
                   )} />
                 )}
+                
+                {/* Decorative circle */}
                 <div className={cn(
-                  "flex items-center gap-2 mb-2",
+                  "absolute -right-6 -top-6 w-20 h-20 rounded-full transition-opacity",
                   timeFilter === btn.key 
-                    ? btn.success ? "text-success" : "text-primary"
-                    : "text-slate-500 dark:text-muted-foreground"
-                )}>
-                  <btn.icon className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wide">{btn.label}</span>
+                    ? btn.success ? "bg-success/10" : "bg-primary/10"
+                    : "bg-muted/30 opacity-0 group-hover:opacity-100"
+                )} />
+                
+                <div className="relative">
+                  <div className={cn(
+                    "flex items-center gap-2 mb-3",
+                    timeFilter === btn.key 
+                      ? btn.success ? "text-success" : "text-primary"
+                      : "text-muted-foreground"
+                  )}>
+                    <div className={cn(
+                      "w-8 h-8 rounded-xl flex items-center justify-center",
+                      timeFilter === btn.key 
+                        ? btn.success ? "bg-success/20" : "bg-primary/20"
+                        : "bg-muted/50"
+                    )}>
+                      <btn.icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider">{btn.label}</span>
+                  </div>
+                  <p className={cn(
+                    "text-2xl sm:text-3xl font-bold",
+                    timeFilter === btn.key 
+                      ? btn.success ? "text-success" : "text-primary"
+                      : "text-foreground"
+                  )}>
+                    {formatCurrency(btn.amount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+                    {btn.count} payout{btn.count !== 1 ? 's' : ''}
+                  </p>
                 </div>
-                <p className={cn(
-                  "text-2xl font-bold",
-                  timeFilter === btn.key 
-                    ? btn.success ? "text-success" : "text-primary"
-                    : "text-slate-800 dark:text-foreground"
-                )}>
-                  {formatCurrency(btn.amount)}
-                </p>
-                <p className="text-[11px] text-slate-400 dark:text-muted-foreground mt-0.5">
-                  {btn.count} payout{btn.count !== 1 ? 's' : ''}
-                </p>
               </motion.button>
             ))}
           </div>
 
-          {/* Search and Add Deal */}
+          {/* Search and Add */}
           <motion.div 
-            className="flex gap-3 items-center"
+            className="flex gap-4 items-center"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...springConfigs.gentle, delay: 0.2 }}
+            transition={{ ...springConfig, delay: 0.2 }}
           >
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Search by client, project, or city..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-11 h-12 bg-white dark:bg-card/80 border-slate-200 dark:border-border/50 rounded-xl text-[15px] placeholder:text-slate-400 dark:placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20"
+                className="pl-12 h-14 bg-card/95 border-border/50 rounded-2xl text-base placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 shadow-sm"
               />
             </div>
             <Link to="/deals/new">
-              <Button className="btn-premium h-12 px-5 gap-2 whitespace-nowrap">
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Add Deal</span>
+              <Button className="btn-premium h-14 px-6 gap-2.5 rounded-2xl whitespace-nowrap shadow-lg">
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline font-semibold">Add Deal</span>
               </Button>
             </Link>
           </motion.div>
 
           {/* Payouts List */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">Loading deals...</p>
-              </div>
+            <div className="flex items-center justify-center py-24">
+              <motion.div 
+                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center animate-pulse">
+                  <Sparkles className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">Loading your deals...</p>
+              </motion.div>
             </div>
           ) : filteredPayouts.length === 0 ? (
             <motion.div 
-              className="text-center py-20"
+              className="text-center py-24"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={springConfigs.gentle}
+              transition={springConfig}
             >
-              <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-muted dark:to-muted/50 flex items-center justify-center shadow-inner">
-                <DollarSign className="w-10 h-10 text-slate-300 dark:text-muted-foreground/50" />
-              </div>
-              <p className="text-lg font-medium text-slate-600 dark:text-muted-foreground mb-1">
+              <motion.div 
+                className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shadow-inner border border-primary/20"
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <DollarSign className="w-12 h-12 text-primary/60" />
+              </motion.div>
+              <p className="text-xl font-bold mb-2">
                 {timeFilter === 'paid' ? 'No paid payouts yet' : 'No pending payouts'}
               </p>
-              <p className="text-sm text-slate-400 dark:text-muted-foreground mb-6">
+              <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
                 {timeFilter === 'paid' ? 'Complete some deals to see your earnings' : 'Add a deal to start tracking your income'}
               </p>
-              <Button asChild className="btn-premium h-12 px-6">
+              <Button asChild className="btn-premium h-14 px-8 rounded-2xl shadow-lg">
                 <Link to="/deals/new">
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-5 h-5 mr-2" />
                   Add Your First Deal
                 </Link>
               </Button>
             </motion.div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-10">
               {groupedPayouts.map((yearGroup) => (
-                <div key={yearGroup.year} className="space-y-6">
+                <div key={yearGroup.year} className="space-y-8">
                   {/* Year Header */}
                   {(yearGroup.year !== currentYear || groupedPayouts.length > 1) && (
                     <motion.div 
-                      className="flex items-center gap-4"
+                      className="flex items-center gap-6"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 dark:via-border to-transparent" />
-                      <span className="text-sm font-bold text-slate-600 dark:text-foreground px-4 py-1.5 bg-slate-100 dark:bg-muted rounded-full">
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                      <span className="text-sm font-bold px-5 py-2 bg-muted/50 rounded-full border border-border/50">
                         {yearGroup.year}
                       </span>
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 dark:via-border to-transparent" />
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
                     </motion.div>
                   )}
 
                   {yearGroup.months.map((monthGroup) => (
-                    <div key={`${yearGroup.year}-${monthGroup.month}`} className="space-y-4">
+                    <div key={`${yearGroup.year}-${monthGroup.month}`} className="space-y-5">
                       {/* Month Header */}
                       <motion.div 
                         className="flex items-center justify-between"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={springConfigs.gentle}
+                        transition={springConfig}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                            <Calendar className="w-5 h-5 text-primary" />
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
+                            <Calendar className="w-6 h-6 text-primary" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-lg text-slate-800 dark:text-foreground">{monthGroup.monthName}</h3>
-                            <p className="text-xs text-slate-400 dark:text-muted-foreground">
+                            <h3 className="font-bold text-xl">{monthGroup.monthName}</h3>
+                            <p className="text-sm text-muted-foreground">
                               {monthGroup.payouts.length} payout{monthGroup.payouts.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-bold text-emerald-600 dark:text-accent">
+                          <p className="text-2xl font-bold text-primary">
                             {formatCurrency(monthGroup.total)}
                           </p>
-                          <p className="text-[11px] text-slate-400 dark:text-muted-foreground">
+                          <p className="text-xs text-muted-foreground font-medium">
                             {timeFilter === 'paid' ? 'received' : 'expected'}
                           </p>
                         </div>
                       </motion.div>
 
-                      {/* Payout Cards Grid */}
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      {/* Payout Cards */}
+                      <div className="grid gap-4 sm:grid-cols-2">
                         {monthGroup.payouts.map((payout, idx) => renderPayoutCard(payout, idx))}
                       </div>
                     </div>
@@ -623,25 +652,25 @@ export default function DealsPage() {
           {/* Quick link */}
           {filteredPayouts.length > 0 && (
             <motion.div 
-              className="text-center pt-4"
+              className="text-center pt-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
               <Link 
                 to="/payouts" 
-                className="inline-flex items-center gap-1 text-[13px] text-primary font-medium hover:underline"
+                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
                 onClick={() => triggerHaptic('light')}
               >
                 View full payout schedule
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
             </motion.div>
           )}
 
-          {/* Desktop: Add button */}
-          <div className="hidden sm:flex justify-center pt-4">
-            <Button asChild size="lg" className="btn-premium h-12 px-8">
+          {/* Desktop Add button */}
+          <div className="hidden sm:flex justify-center pt-6">
+            <Button asChild size="lg" className="btn-premium h-14 px-10 rounded-2xl shadow-lg">
               <Link to="/deals/new">
                 <Plus className="w-5 h-5 mr-2" />
                 New Deal
