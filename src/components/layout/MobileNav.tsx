@@ -20,49 +20,76 @@ export function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom,8px)+12px)] mb-2">
+    <nav className="lg:hidden fixed bottom-4 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom,12px)+8px)]">
       {/* Premium liquid glass container */}
-      <div className="relative mx-auto max-w-md">
-        {/* Outer ambient glow */}
+      <div className="relative mx-auto max-w-[380px]">
+        {/* Outer ambient glow - enhanced */}
         <div 
-          className="absolute -inset-3 rounded-[36px] pointer-events-none"
+          className="absolute -inset-4 rounded-[40px] pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse 80% 60% at 50% 100%, hsl(158 64% 32% / 0.12) 0%, transparent 60%)',
-            filter: 'blur(24px)',
+            background: 'radial-gradient(ellipse 90% 70% at 50% 100%, hsl(158 64% 32% / 0.18) 0%, transparent 65%)',
+            filter: 'blur(28px)',
+          }}
+        />
+        
+        {/* Secondary glow layer for depth */}
+        <div 
+          className="absolute -inset-2 rounded-[32px] pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 70% 50% at 50% 90%, hsl(158 64% 40% / 0.1) 0%, transparent 50%)',
+            filter: 'blur(16px)',
           }}
         />
         
         {/* Main premium glass container */}
         <div 
-          className="relative overflow-hidden rounded-[24px]"
+          className="relative overflow-hidden rounded-[28px]"
           style={{
             boxShadow: `
-              inset 0 1px 0 0 rgba(255,255,255,0.15),
-              0 0 0 1px hsl(var(--border) / 0.2),
-              0 -1px 3px 0 hsl(220 25% 10% / 0.03),
-              0 4px 16px -4px hsl(220 25% 10% / 0.12),
-              0 12px 32px -8px hsl(220 25% 10% / 0.1),
-              0 24px 48px -12px hsl(158 64% 32% / 0.06)
+              inset 0 1px 0 0 rgba(255,255,255,0.2),
+              inset 0 -1px 0 0 rgba(0,0,0,0.05),
+              0 0 0 1px hsl(var(--border) / 0.15),
+              0 0 0 2px hsl(158 64% 32% / 0.08),
+              0 -2px 6px 0 hsl(220 25% 10% / 0.04),
+              0 8px 24px -6px hsl(220 25% 10% / 0.18),
+              0 16px 40px -12px hsl(220 25% 10% / 0.14),
+              0 32px 64px -16px hsl(158 64% 32% / 0.1)
             `,
           }}
         >
-          {/* Multi-layer glass backdrop */}
+          {/* Multi-layer glass backdrop - enhanced blur */}
           <div 
-            className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
+            className="absolute inset-0 backdrop-blur-3xl backdrop-saturate-[1.8]"
             style={{
-              background: 'linear-gradient(180deg, hsl(var(--card) / 0.85) 0%, hsl(var(--card) / 0.92) 100%)',
+              background: 'linear-gradient(180deg, hsl(var(--card) / 0.88) 0%, hsl(var(--card) / 0.95) 100%)',
             }}
           />
           
-          {/* Premium top highlight */}
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-          <div className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
+          {/* Gradient border overlay */}
+          <div 
+            className="absolute inset-0 rounded-[28px] pointer-events-none"
+            style={{
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.02) 100%)',
+            }}
+          />
+          
+          {/* Premium top highlight - dual layer */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          
+          {/* Animated shimmer effect */}
+          <div className="absolute inset-x-0 top-0 h-12 pointer-events-none overflow-hidden rounded-t-[28px]">
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent"
+              style={{ transform: 'translateX(-100%)' }}
+            />
+          </div>
           
           {/* Subtle inner glow from top */}
-          <div className="absolute inset-x-0 top-0 h-8 pointer-events-none bg-gradient-to-b from-white/[0.04] to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-10 pointer-events-none bg-gradient-to-b from-white/[0.06] to-transparent" />
           
           {/* Nav items */}
-          <div className="relative flex justify-around items-center h-[72px] px-2">
+          <div className="relative flex justify-around items-center h-[76px] px-3">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || 
                 (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -72,7 +99,7 @@ export function MobileNav() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-300 ease-out',
+                    'flex flex-col items-center justify-center gap-1.5 flex-1 py-2 transition-all duration-300 ease-out',
                     'active:scale-90 active:opacity-70',
                     isActive 
                       ? 'text-primary' 
@@ -80,12 +107,13 @@ export function MobileNav() {
                   )}
                 >
                   <div className={cn(
-                    "relative flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-300 ease-out",
-                    isActive && "bg-primary/10"
+                    "relative flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-300 ease-out",
+                    isActive && "bg-primary/12"
                   )}>
-                    {/* Premium glow behind active icon */}
+                    {/* Premium glow behind active icon - enhanced */}
                     {isActive && (
                       <>
+                        <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl" />
                         <div className="absolute inset-0 rounded-2xl bg-primary/15 blur-lg" />
                         <div className="absolute inset-1 rounded-xl bg-primary/10 blur-md" />
                       </>
@@ -93,7 +121,7 @@ export function MobileNav() {
                     <item.icon 
                       className={cn(
                         "relative w-[22px] h-[22px] transition-all duration-300",
-                        isActive && "drop-shadow-[0_0_6px_hsl(158_64%_32%/0.6)]"
+                        isActive && "drop-shadow-[0_0_8px_hsl(158_64%_32%/0.7)]"
                       )}
                       strokeWidth={isActive ? 2.25 : 1.5} 
                     />
