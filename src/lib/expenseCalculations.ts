@@ -97,11 +97,19 @@ export function getTotalExpensesForMonth(
 /**
  * Calculate monthly recurring expense total (for quick stats)
  * Includes property carrying costs
+ * Only counts expenses that have started (month <= current month)
  */
 export function getMonthlyRecurringExpenses(expenses: Expense[], properties: Property[]): number {
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  
   // Calculate recurring expense base (monthly + weekly converted)
+  // Only count expenses that have started
   const monthlyRecurring = expenses
-    .filter(e => e.recurrence === 'monthly' || e.recurrence === 'weekly')
+    .filter(e => {
+      const isRecurring = e.recurrence === 'monthly' || e.recurrence === 'weekly';
+      const hasStarted = !e.month || e.month <= currentMonth;
+      return isRecurring && hasStarted;
+    })
     .reduce((sum, e) => {
       if (e.recurrence === 'weekly') {
         return sum + Number(e.amount) * 4.33;
@@ -117,9 +125,15 @@ export function getMonthlyRecurringExpenses(expenses: Expense[], properties: Pro
 /**
  * Calculate annual expenses (for tax projections)
  * Includes property costs for 12 months
+ * Only counts expenses that have started
  */
 export function getAnnualExpenses(expenses: Expense[], properties: Property[]): number {
-  const monthlyRecurring = expenses
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  
+  // Filter to only expenses that have started
+  const startedExpenses = expenses.filter(e => !e.month || e.month <= currentMonth);
+  
+  const monthlyRecurring = startedExpenses
     .filter(e => e.recurrence === 'monthly' || e.recurrence === 'weekly')
     .reduce((sum, e) => {
       if (e.recurrence === 'weekly') {
@@ -128,7 +142,7 @@ export function getAnnualExpenses(expenses: Expense[], properties: Property[]): 
       return sum + Number(e.amount);
     }, 0);
 
-  const yearlyExpenses = expenses
+  const yearlyExpenses = startedExpenses
     .filter(e => e.recurrence === 'yearly')
     .reduce((sum, e) => sum + Number(e.amount), 0);
 
