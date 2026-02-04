@@ -530,11 +530,259 @@ export default function ExpensesPage() {
                 Add Your First Expense
               </Button>
             </div>
+          ) : activeFilter === 'all' ? (
+            // Grouped view for "All" filter - separate Personal, Business, etc.
+            <div className="space-y-4">
+              {/* Personal Expenses Section */}
+              {groupedExpenses.personal.length > 0 && (
+                <div className="landing-card overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-b border-blue-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Home className="w-4 h-4 text-blue-500" />
+                      <span className="font-semibold text-sm">Personal Expenses</span>
+                    </div>
+                    <span className="font-bold text-blue-500">
+                      {formatCurrency(groupedExpenses.personal.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {groupedExpenses.personal.map((expense) => {
+                      const config = typeConfig.personal;
+                      const recurrence = (expense as any).recurrence || 'monthly';
+                      const displayAmount = getDisplayAmount(expense);
+                      return (
+                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
+                            <config.icon className={cn("w-5 h-5", config.text)} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{expense.category}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {recurrence !== 'monthly' && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {recurrence}
+                                </span>
+                              )}
+                              {(expense as any).is_tax_deductible && (
+                                <span className="text-emerald-500">Tax Ded.</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
+                            {recurrence === 'weekly' && (
+                              <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
+                            )}
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Business Expenses Section */}
+              {groupedExpenses.business.length > 0 && (
+                <div className="landing-card overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r from-violet-500/10 to-purple-500/5 border-b border-violet-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-violet-500" />
+                      <span className="font-semibold text-sm">Business Expenses</span>
+                    </div>
+                    <span className="font-bold text-violet-500">
+                      {formatCurrency(groupedExpenses.business.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {groupedExpenses.business.map((expense) => {
+                      const config = typeConfig.business;
+                      const recurrence = (expense as any).recurrence || 'monthly';
+                      const displayAmount = getDisplayAmount(expense);
+                      return (
+                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
+                            <config.icon className={cn("w-5 h-5", config.text)} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{expense.category}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {recurrence !== 'monthly' && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {recurrence}
+                                </span>
+                              )}
+                              {(expense as any).is_tax_deductible && (
+                                <span className="text-emerald-500">Tax Ded.</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
+                            {recurrence === 'weekly' && (
+                              <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
+                            )}
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Taxes Expenses Section */}
+              {groupedExpenses.taxes.length > 0 && (
+                <div className="landing-card overflow-hidden">
+                  <div className="px-4 py-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b border-amber-500/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PiggyBank className="w-4 h-4 text-amber-500" />
+                      <span className="font-semibold text-sm">Taxes & Savings</span>
+                    </div>
+                    <span className="font-bold text-amber-500">
+                      {formatCurrency(groupedExpenses.taxes.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {groupedExpenses.taxes.map((expense) => {
+                      const config = typeConfig.taxes;
+                      const recurrence = (expense as any).recurrence || 'monthly';
+                      const displayAmount = getDisplayAmount(expense);
+                      return (
+                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
+                            <config.icon className={cn("w-5 h-5", config.text)} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{expense.category}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              {recurrence !== 'monthly' && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {recurrence}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Other Expenses Section */}
+              {groupedExpenses.other.length > 0 && (
+                <div className="landing-card overflow-hidden">
+                  <div className="px-4 py-3 bg-muted/30 border-b border-border/50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-semibold text-sm">Other</span>
+                    </div>
+                    <span className="font-bold text-muted-foreground">
+                      {formatCurrency(groupedExpenses.other.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    {groupedExpenses.other.map((expense) => {
+                      const config = typeConfig.other;
+                      const recurrence = (expense as any).recurrence || 'monthly';
+                      const displayAmount = getDisplayAmount(expense);
+                      return (
+                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
+                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
+                            <config.icon className={cn("w-5 h-5", config.text)} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{expense.category}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
+            // Single category view
             <div className="landing-card overflow-hidden">
               <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
                 <span className="text-sm font-semibold text-muted-foreground">
-                  {activeFilter === 'all' ? 'All Expenses' : typeConfig[activeFilter].label}
+                  {typeConfig[activeFilter].label}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {filteredExpenses.length} item{filteredExpenses.length !== 1 ? 's' : ''}
@@ -559,12 +807,6 @@ export default function ExpensesPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{expense.category}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className={cn(
-                            "px-1.5 py-0.5 rounded text-[10px] font-medium uppercase",
-                            config.bg, config.text
-                          )}>
-                            {config.label}
-                          </span>
                           {recurrence !== 'monthly' && (
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
