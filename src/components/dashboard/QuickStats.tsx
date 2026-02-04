@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { formatCurrency } from '@/lib/format';
+import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
+import { useSettings } from '@/hooks/useSettings';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,12 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const { data: settings } = useSettings();
+
+  // Process payouts with brokerage cap logic
+  const payoutsWithCap = useMemo(() => {
+    return calculatePayoutsWithBrokerageCap(payouts, settings);
+  }, [payouts, settings]);
 
   // Find payouts that should be auto-marked as paid (due date has passed)
   useEffect(() => {
@@ -42,11 +50,11 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
     }
   }, [payouts, onAutoMarkPaid, today]);
 
-  // Calculate breakdown for display
+  // Calculate breakdown for display (using NET amounts after brokerage)
   const breakdown = useMemo(() => {
-    const totalCommissions = payouts
+    const totalCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => sum + p.netAmount, 0);
 
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
@@ -86,23 +94,23 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       otherIncomeItems: otherIncome,
       monthsProjected: 48,
     };
-  }, [payouts, otherIncome, thisYear]);
+  }, [payoutsWithCap, payouts, otherIncome, thisYear]);
 
   const stats = useMemo(() => {
-    // Total projected commissions (all unpaid payouts)
-    const totalCommissions = payouts
+    // Total projected commissions (all unpaid payouts) - NET after brokerage
+    const totalCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => sum + p.netAmount, 0);
 
-    // Total earned (paid payouts)
-    const totalEarned = payouts
+    // Total earned (paid payouts) - NET after brokerage
+    const totalEarned = payoutsWithCap
       .filter(p => p.status === 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => sum + p.netAmount, 0);
 
-    // This year's projected commission income (unpaid payouts due this year)
-    const thisYearCommissions = payouts
+    // This year's projected commission income (unpaid payouts due this year) - NET
+    const thisYearCommissions = payoutsWithCap
       .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+      .reduce((sum, p) => sum + p.netAmount, 0);
     
     // Calculate total Other Income (48 months to cover through 2028)
     let totalOtherIncome = 0;
@@ -185,7 +193,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       activeDeals,
       monthlyExpenses,
     };
-  }, [deals, payouts, otherIncome, monthlyExpenses, thisYear]);
+  }, [deals, payouts, payoutsWithCap, otherIncome, monthlyExpenses, thisYear]);
 
   const statCards = [
     {

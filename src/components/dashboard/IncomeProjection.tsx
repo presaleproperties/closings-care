@@ -9,7 +9,9 @@ import { Payout, OtherIncome, Expense } from '@/lib/types';
 import { Property } from '@/hooks/useProperties';
 import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
 import { getTotalExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
+import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSettings } from '@/hooks/useSettings';
 import {
   ComposedChart,
   Bar,
@@ -110,9 +112,15 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
   const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(12);
   const { limits, isFree } = useSubscription();
+  const { data: settings } = useSettings();
 
   // Calculate property costs once (they're the same every month)
   const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
+
+  // Process all payouts with brokerage cap logic
+  const payoutsWithCap = useMemo(() => {
+    return calculatePayoutsWithBrokerageCap(payouts, settings);
+  }, [payouts, settings]);
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];
@@ -125,30 +133,35 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       const monthStart = startOfMonth(monthDate);
       const monthEnd = endOfMonth(monthDate);
 
-      const monthPayouts = payouts.filter((p) => {
+      // Get processed payouts for this month (with brokerage already deducted)
+      const monthPayoutsWithCap = payoutsWithCap.filter((p) => {
         if (!p.due_date || p.status === 'PAID') return false;
         const date = parseISO(p.due_date);
         return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
 
-      const income = monthPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+      // Use NET amount (after brokerage deduction) for income
+      const income = monthPayoutsWithCap.reduce((sum, p) => sum + p.netAmount, 0);
       const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
       
       // Property net: positive if rental income > costs, negative if costs > income
       const propertyNet = propertyCosts.totalNet;
       
-      // Total income = commissions + other income
-      // Property net is shown separately in the UI but handled in expenses calculation
+      // Total income = commissions (net of brokerage) + other income
       const totalIncome = income + monthOtherIncome;
       
       // Calculate expenses for this month (includes property costs properly)
-      // getTotalExpensesForMonth = tracked expenses + personal property costs - rental net
-      // This means if rental is profitable, it REDUCES expenses (effectively income)
-      // If rental is losing, it ADDS to expenses
       const monthExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
       
       const net = totalIncome - monthExpenses;
       cumulativeNet += net;
+
+      // Map back to regular payouts for the detail view
+      const monthPayouts = payouts.filter((p) => {
+        if (!p.due_date || p.status === 'PAID') return false;
+        const date = parseISO(p.due_date);
+        return isWithinInterval(date, { start: monthStart, end: monthEnd });
+      });
 
       months.push({
         month: monthLabel,
@@ -166,7 +179,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       });
     }
     return months;
-  }, [payouts, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
+  }, [payouts, payoutsWithCap, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
