@@ -45,52 +45,12 @@ import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 
-// Expense categories
-const expenseCategories = {
-  personal: {
-    'Housing': ['Personal Mortgage', 'Strata Fees', 'Property Taxes', 'Hydro/Utilities', 'Internet'],
-    'Transportation': ['Car Lease/Payment', 'Car Insurance (Personal)', 'Car Charging/Gas'],
-    'Living': ['Phone (Personal)', 'Groceries', 'Entertainment/Dining', 'Gym/Fitness', 'Apps & Subscriptions'],
-  },
-  business: {
-    'Office': ['Office Lease', 'Board Fees', 'Brokerage Fees'],
-    'Technology': ['CRM (CHIME, etc.)', 'Website Hosting', 'Google Workspace', 'iCloud/Storage', 'Canva/Design Tools', 'Email Marketing (MailerLite)', 'Editing Apps', 'Other Software'],
-    'Marketing': ['Facebook/Social Ads', 'Signs & Signage', 'Marketing Agency', 'Marketing Manager', 'Print Marketing'],
-    'Transportation': ['Car (Business Use)', 'Car Insurance (Business)', 'Car Charging (Business)'],
-    'Professional': ['BCFSA License', 'Real Estate License', 'Professional Development', 'Continuing Education'],
-    'Client': ['Client Gifts', 'Staging/Clean-ups', 'Photography'],
-    'Admin': ['Phone (Business)', 'Admin Support', 'Bookkeeping'],
-  },
-  rental: {
-    'Rental Property': ['Rental Mortgage', 'Rental Strata Fees', 'Rental Property Tax', 'Property Management', 'Rental Insurance', 'Rental Repairs/Maintenance', 'Rental Utilities', 'Other Rental Expense'],
-  },
-  taxes: {
-    'Taxes & Savings': ['Tax Set-Aside', 'GST/HST Remittance', 'Debt Pay Down'],
-  },
-  other: {
-    'Other': ['Miscellaneous'],
-  },
-};
+// Use shared expense categories
+import { expenseCategories, getCategoryType, getAllCategoriesFlat, ExpenseType } from '@/lib/expenseCategories';
 
-const getAllCategories = () => {
-  const result: { category: string; type: ExpenseType; group: string }[] = [];
-  Object.entries(expenseCategories.personal).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'personal', group })));
-  Object.entries(expenseCategories.business).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'business', group })));
-  Object.entries(expenseCategories.rental).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'rental', group })));
-  Object.entries(expenseCategories.taxes).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'taxes', group })));
-  Object.entries(expenseCategories.other).forEach(([group, items]) => items.forEach(item => result.push({ category: item, type: 'other', group })));
-  return result;
-};
-
-const allCategoriesFlat = getAllCategories();
-
-const getCategoryType = (category: string): ExpenseType => {
-  const found = allCategoriesFlat.find(c => c.category === category);
-  return found?.type || 'other';
-};
+const allCategoriesFlat = getAllCategoriesFlat();
 
 type RecurrenceType = 'monthly' | 'weekly' | 'yearly' | 'one-time';
-type ExpenseType = 'personal' | 'business' | 'rental' | 'taxes' | 'other';
 
 const typeConfig: Record<ExpenseType, { icon: typeof Home; label: string; gradient: string; bg: string; border: string; text: string }> = {
   personal: { icon: Home, label: 'Personal', gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-500' },
