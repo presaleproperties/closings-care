@@ -225,13 +225,13 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
 
   return (
     <motion.div 
-      className="rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 overflow-hidden shadow-lg"
+      className="rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 overflow-hidden shadow-lg h-full flex flex-col"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springConfig}
     >
       {/* Status Header */}
-      <div className="p-6 border-b border-border/40">
+      <div className="p-5 border-b border-border/40">
         <motion.div 
           className={`flex items-center gap-4 p-4 rounded-2xl border ${status.bg} ${status.border}`}
           initial={{ opacity: 0, scale: 0.95 }}
@@ -257,7 +257,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
         </motion.div>
       </div>
 
-      <div className="p-6 space-y-5">
+      <div className="p-5 space-y-4 flex-1">
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-3">
           {statCards.map((stat, index) => (

@@ -110,7 +110,7 @@ export function OtherIncomeManager() {
 
   return (
     <motion.div 
-      className="landing-card overflow-hidden"
+      className="landing-card overflow-hidden h-full flex flex-col"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springConfigs.gentle}
@@ -253,7 +253,7 @@ export function OtherIncomeManager() {
         </Dialog>
       </div>
 
-      <div className="p-5">
+      <div className="p-5 flex-1 flex flex-col">
         {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <motion.div 
