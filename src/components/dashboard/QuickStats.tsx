@@ -30,10 +30,10 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   const [showBreakdown, setShowBreakdown] = useState(false);
   const { data: settings } = useSettings();
 
-  // Process payouts (brokerage is now a fixed expense, not deducted from commissions)
+  // Process payouts with brokerage cap logic
   const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts);
-  }, [payouts]);
+    return calculatePayoutsWithBrokerageCap(payouts, settings);
+  }, [payouts, settings]);
 
   // Find payouts that should be auto-marked as paid (due date has passed)
   useEffect(() => {
