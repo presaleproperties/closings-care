@@ -231,58 +231,58 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       transition={springConfig}
     >
       {/* Status Header */}
-      <div className="p-5 border-b border-border/40">
+      <div className="p-4 border-b border-border/40">
         <motion.div 
-          className={`flex items-center gap-4 p-4 rounded-2xl border ${status.bg} ${status.border}`}
+          className={`flex items-center gap-3 p-3 rounded-xl border ${status.bg} ${status.border}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ ...springConfig, delay: 0.1 }}
         >
           <motion.div 
-            className={`w-12 h-12 rounded-2xl ${status.iconBg} flex items-center justify-center shadow-lg`}
+            className={`w-10 h-10 rounded-xl ${status.iconBg} flex items-center justify-center shadow-lg`}
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <StatusIcon className="h-6 w-6 text-white" />
+            <StatusIcon className="h-5 w-5 text-white" />
           </motion.div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className={`font-bold text-lg ${status.color}`}>{status.label}</p>
+              <p className={`font-bold text-[15px] ${status.color}`}>{status.label}</p>
               {metrics.healthStatus === 'great' && (
                 <Sparkles className="h-4 w-4 text-warning" />
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{status.subtitle}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{status.subtitle}</p>
           </div>
         </motion.div>
       </div>
 
-      <div className="p-5 space-y-4 flex-1">
+      <div className="p-4 space-y-3 flex-1">
         {/* Metrics Grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {statCards.map((stat, index) => (
             <motion.div
               key={stat.label}
-              className={`relative overflow-hidden p-4 rounded-2xl ${stat.bg} border ${stat.border}`}
+              className={`relative overflow-hidden p-3 rounded-xl ${stat.bg} border ${stat.border}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...springConfig, delay: 0.1 + index * 0.05 }}
             >
-              <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/10 to-transparent rounded-bl-full" />
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-br from-white/10 to-transparent rounded-bl-full" />
               
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-8 h-8 rounded-xl ${stat.iconBg} flex items-center justify-center`}>
-                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className={`w-6 h-6 rounded-lg ${stat.iconBg} flex items-center justify-center`}>
+                  <stat.icon className={`h-3 w-3 ${stat.color}`} />
                 </div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                   {stat.label}
                 </span>
               </div>
-              <p className={`text-2xl font-bold ${stat.color}`}>
+              <p className={`text-lg font-bold ${stat.color}`}>
                 {stat.isMonths ? (
                   <>
                     {stat.value}
-                    <span className="text-sm font-medium text-muted-foreground ml-1">mo</span>
+                    <span className="text-xs font-medium text-muted-foreground ml-1">mo</span>
                   </>
                 ) : (
                   formatCurrency(stat.value)
@@ -294,7 +294,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
 
         {/* Net Profit Highlight */}
         <motion.div 
-          className={`relative overflow-hidden p-5 rounded-2xl border ${
+          className={`relative overflow-hidden p-3 rounded-xl border ${
             metrics.netProfit >= 0 
               ? 'bg-gradient-to-r from-success/15 via-success/10 to-success/5 border-success/30' 
               : 'bg-gradient-to-r from-destructive/15 via-destructive/10 to-destructive/5 border-destructive/30'
@@ -303,38 +303,38 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springConfig, delay: 0.3 }}
         >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/10 to-transparent rounded-bl-full" />
+          <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/10 to-transparent rounded-bl-full" />
           {metrics.netProfit >= 0 && (
             <motion.div 
-              className="absolute top-3 right-3"
+              className="absolute top-2 right-2"
               animate={{ rotate: [0, 10, -10, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             >
-              <Sparkles className="h-5 w-5 text-warning/60" />
+              <Sparkles className="h-4 w-4 text-warning/60" />
             </motion.div>
           )}
           
           <div className="flex items-center justify-between relative">
-            <div className="flex items-center gap-3">
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg ${
-                metrics.netProfit >= 0 
+            <div className="flex items-center gap-2.5">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg ${
+                metrics.netProfit >= 0
                   ? 'bg-gradient-to-br from-success to-emerald-600' 
                   : 'bg-gradient-to-br from-destructive to-red-600'
               }`}>
                 {metrics.netProfit >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-white" />
+                  <TrendingUp className="h-4 w-4 text-white" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-white" />
+                  <TrendingDown className="h-4 w-4 text-white" />
                 )}
               </div>
               <div>
-                <span className="text-sm font-semibold">Net Cashflow ({new Date().getFullYear()})</span>
-                <p className="text-xs text-muted-foreground">
+                <span className="text-[13px] font-semibold">Net Cashflow ({new Date().getFullYear()})</span>
+                <p className="text-[10px] text-muted-foreground">
                   {metrics.netProfit >= 0 ? 'Positive cashflow!' : 'Expenses exceed income'}
                 </p>
               </div>
             </div>
-            <span className={`text-2xl sm:text-3xl font-bold ${
+            <span className={`text-xl font-bold ${
               metrics.netProfit >= 0 ? 'text-success' : 'text-destructive'
             }`}>
               {metrics.netProfit >= 0 ? '+' : ''}{formatCurrency(metrics.netProfit)}

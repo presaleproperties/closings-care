@@ -67,7 +67,7 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
       transition={springConfigs.gentle}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-border/50 bg-gradient-to-r from-amber-50/50 to-orange-50/30 dark:from-accent/5 dark:to-accent/10">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-border/50 bg-gradient-to-r from-amber-50/50 to-orange-50/30 dark:from-accent/5 dark:to-accent/10">
         <div className="flex items-center gap-3">
           <motion.div
             className="icon-gradient-accent icon-gradient-sm"
@@ -78,10 +78,10 @@ export function UpcomingPayouts({ payouts, onMarkPaid, isPending }: UpcomingPayo
             <DollarSign className="h-4 w-4 text-white" />
           </motion.div>
           <div>
-            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+            <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
               Upcoming Payouts
             </h3>
-            <div className="flex items-center gap-2 text-[12px]">
+            <div className="flex items-center gap-2 text-[11px]">
               <span className="text-slate-500 dark:text-muted-foreground">{pendingCount} pending</span>
               <span className="text-slate-300 dark:text-border">•</span>
               <span className="font-semibold text-emerald-600 dark:text-accent">{formatCurrency(totalPending)}</span>

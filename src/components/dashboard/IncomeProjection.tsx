@@ -199,21 +199,21 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
   if (hasNoCommissions && totalExpenses === 0) {
     return (
       <div className="landing-card h-full">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-border/50">
           <div className="flex items-center gap-3">
             <div className="icon-gradient-primary icon-gradient-sm">
               <TrendingUp className="h-4 w-4 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+              <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
                 {projectionMonths}-Month Projection
               </h3>
-              <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Income & expense forecast</p>
+              <p className="text-[11px] text-slate-500 dark:text-muted-foreground">Income & expense forecast</p>
             </div>
           </div>
         </div>
         
-        <div className="p-6 flex flex-col items-center justify-center min-h-[400px]">
+        <div className="p-4 flex flex-col items-center justify-center min-h-[350px]">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -260,16 +260,16 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
 
   return (
     <div className="landing-card">
-      <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-border/50">
+      <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-border/50">
         <div className="flex items-center gap-3">
           <div className="icon-gradient-primary icon-gradient-sm">
             <TrendingUp className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h3 className="font-bold text-[15px] sm:text-base text-slate-800 dark:text-foreground">
+            <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
               {projectionMonths}-Month Projection
             </h3>
-            <p className="text-[12px] text-slate-500 dark:text-muted-foreground">Click a bar for details</p>
+            <p className="text-[11px] text-slate-500 dark:text-muted-foreground">Click bar for details</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
