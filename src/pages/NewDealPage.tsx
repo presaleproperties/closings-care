@@ -189,10 +189,10 @@ export default function NewDealPage() {
         }
       />
 
-      <form onSubmit={handleSubmit} className="p-4 lg:p-6 max-w-3xl animate-fade-in">
+      <form onSubmit={handleSubmit} className="p-3 sm:p-4 lg:p-6 max-w-3xl animate-fade-in">
         {/* Subscription limit indicator for free users */}
         {isFree && (
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <UsageLimitIndicator />
           </div>
         )}
@@ -205,7 +205,7 @@ export default function NewDealPage() {
 
         {/* Screenshot Extractor */}
         {user?.id && (
-          <div className="mb-4">
+          <div className="mb-3 sm:mb-4">
             <ScreenshotExtractor 
               onExtract={handleScreenshotExtract}
               userId={user.id}
@@ -215,28 +215,28 @@ export default function NewDealPage() {
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           {/* Step 1: Essential Info */}
-          <div className="p-4 border-b border-border bg-muted/30">
-            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">1. Client & Deal Type</h2>
+          <div className="p-3 sm:p-4 border-b border-border bg-muted/30">
+            <h2 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">1. Client & Deal Type</h2>
           </div>
-          <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="client_name" className="text-xs">Client Name *</Label>
+          <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="col-span-2 space-y-1">
+              <Label htmlFor="client_name" className="text-[11px] sm:text-xs">Client Name *</Label>
               <Input
                 id="client_name"
                 value={formData.client_name || ''}
                 onChange={(e) => updateField('client_name', e.target.value)}
                 placeholder="John Smith"
                 required
-                className="h-9"
+                className="h-8 sm:h-9 text-sm"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Deal Type *</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] sm:text-xs">Deal Type *</Label>
               <Select
                 value={formData.deal_type}
                 onValueChange={(v) => updateField('deal_type', v as DealType)}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-sm">
                   <SelectValue placeholder="Buy / Sell" />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,13 +245,13 @@ export default function NewDealPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Property Type *</Label>
+            <div className="space-y-1">
+              <Label className="text-[11px] sm:text-xs">Property Type *</Label>
               <Select
                 value={formData.property_type || ''}
                 onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-sm">
                   <SelectValue placeholder="Presale / Resale" />
                 </SelectTrigger>
                 <SelectContent>
@@ -265,26 +265,26 @@ export default function NewDealPage() {
           {/* Step 2: Property & Location (shows after property type selected) */}
           {formData.property_type && (
             <>
-              <div className="p-4 border-t border-b border-border bg-muted/30">
-                <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">2. Property Details</h2>
+              <div className="p-3 sm:p-4 border-t border-b border-border bg-muted/30">
+                <h2 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wide">2. Property Details</h2>
               </div>
-              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="col-span-2 space-y-1.5">
-                  <Label className="text-xs">{isPresale ? 'Project Name' : 'Address'}</Label>
+              <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-[11px] sm:text-xs">{isPresale ? 'Project Name' : 'Address'}</Label>
                   <Input
                     value={isPresale ? (formData.project_name || '') : (formData.address || '')}
                     onChange={(e) => updateField(isPresale ? 'project_name' : 'address', e.target.value)}
                     placeholder={isPresale ? 'The Palisades' : '123 Main St, Unit 1001'}
-                    className="h-9"
+                    className="h-8 sm:h-9 text-sm"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">City</Label>
+                <div className="space-y-1">
+                  <Label className="text-[11px] sm:text-xs">City</Label>
                   <Select
                     value={formData.city || ''}
                     onValueChange={(v) => updateField('city', v)}
                   >
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-8 sm:h-9 text-sm">
                       <SelectValue placeholder="Select city" />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
@@ -298,12 +298,12 @@ export default function NewDealPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Sale Price</Label>
+                <div className="space-y-1">
+                  <Label className="text-[11px] sm:text-xs">Sale Price</Label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs sm:text-sm">$</span>
                     <Input
-                      className="pl-6 h-9"
+                      className="pl-5 h-8 sm:h-9 text-sm"
                       value={formatCurrency(formData.sale_price)}
                       onChange={(e) => updateField('sale_price', parseCurrency(e.target.value))}
                       placeholder="1,250,000"

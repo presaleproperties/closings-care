@@ -39,16 +39,16 @@ export function Header({
       {/* Subtle top highlight for glass effect */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       
-      <div className="relative flex items-center justify-between h-12 lg:h-14 px-4 lg:px-6 safe-area-inset-top">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="relative flex items-center justify-between h-11 sm:h-12 lg:h-14 px-3 sm:px-4 lg:px-6 safe-area-inset-top">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           {/* Mobile back button - premium styling */}
           {showBackButton && (
             <Link 
               to={backPath}
-              className="lg:hidden -ml-2 flex items-center text-primary font-medium active:opacity-50 transition-all duration-200"
+              className="lg:hidden -ml-1.5 sm:-ml-2 flex items-center text-primary font-medium active:opacity-50 transition-all duration-200"
             >
-              <ChevronLeft className="h-6 w-6" strokeWidth={2.5} />
-              <span className="text-[17px] -ml-1 tracking-tight">Back</span>
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={2.5} />
+              <span className="text-[15px] sm:text-[17px] -ml-0.5 sm:-ml-1 tracking-tight">Back</span>
             </Link>
           )}
           
@@ -66,16 +66,16 @@ export function Header({
 
           <div className="min-w-0">
             {/* Premium typography with refined weight */}
-            <h1 className="text-[17px] lg:text-lg font-semibold tracking-[-0.02em] truncate text-foreground">
+            <h1 className="text-[15px] sm:text-[17px] lg:text-lg font-semibold tracking-[-0.02em] truncate text-foreground">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[11px] lg:text-xs text-muted-foreground/80 tracking-tight truncate hidden lg:block">{subtitle}</p>
+              <p className="text-[10px] sm:text-[11px] lg:text-xs text-muted-foreground/80 tracking-tight truncate hidden sm:block">{subtitle}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {action}
           {showAddDeal && (
             <>
@@ -85,12 +85,12 @@ export function Header({
                 className="sm:hidden relative group"
               >
                 <div className="absolute inset-0 rounded-full bg-primary/20 blur-md opacity-0 group-active:opacity-100 transition-opacity" />
-                <Plus className="relative h-6 w-6 text-primary active:scale-90 transition-transform" strokeWidth={2.5} />
+                <Plus className="relative h-5 w-5 sm:h-6 sm:w-6 text-primary active:scale-90 transition-transform" strokeWidth={2.5} />
               </Link>
               {/* Desktop: Premium button with enhanced styling */}
-              <Button asChild className="btn-premium hidden sm:flex h-9 px-4 text-[14px] font-semibold tracking-tight">
+              <Button asChild className="btn-premium hidden sm:flex h-8 sm:h-9 px-3 sm:px-4 text-[13px] sm:text-[14px] font-semibold tracking-tight">
                 <Link to="/deals/new">
-                  <Plus className="w-4 h-4 mr-1.5" strokeWidth={2.5} />
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" strokeWidth={2.5} />
                   Add Deal
                 </Link>
               </Button>

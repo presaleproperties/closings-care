@@ -258,148 +258,143 @@ export default function DealsPage() {
             whileTap={{ scale: 0.98 }}
             transition={springConfig}
           >
-            {/* Status indicator bar */}
-            <div className={cn(
-              "absolute left-0 top-0 bottom-0 w-1.5 rounded-l-3xl",
-              payout.status === 'PAID' 
-                ? "bg-success/60"
-                : overdue 
-                  ? "bg-destructive"
-                  : dueBadge?.variant === 'warning'
-                    ? "bg-warning"
-                    : isTeamDeal
-                      ? "bg-violet-400"
-                      : "bg-primary/40"
-            )} />
-            
-            {/* Paid gradient overlay */}
-            {payout.status === 'PAID' && (
-              <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent pointer-events-none" />
-            )}
+              {/* Status indicator bar */}
+              <div className={cn(
+                "absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 rounded-l-xl sm:rounded-l-2xl",
+                payout.status === 'PAID' 
+                  ? "bg-success/60"
+                  : overdue 
+                    ? "bg-destructive"
+                    : dueBadge?.variant === 'warning'
+                      ? "bg-warning"
+                      : isTeamDeal
+                        ? "bg-violet-400"
+                        : "bg-primary/40"
+              )} />
+              
+              {/* Paid gradient overlay */}
+              {payout.status === 'PAID' && (
+                <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent pointer-events-none" />
+              )}
 
-            <div className="p-5 sm:p-6 pl-6 sm:pl-7">
-              {/* Header */}
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <h3 className="font-bold text-lg truncate">
-                      {deal?.client_name || 'Unknown Client'}
-                    </h3>
-                    {dueBadge && (
-                      <span className={cn(
-                        "shrink-0 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide",
-                        dueBadge.variant === 'destructive' && "bg-destructive/15 text-destructive",
-                        dueBadge.variant === 'warning' && "bg-warning/15 text-warning",
-                        dueBadge.variant === 'muted' && "bg-muted text-muted-foreground"
-                      )}>
-                        {dueBadge.label}
+              <div className="p-3 sm:p-4 pl-4 sm:pl-5">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
+                      <h3 className="font-bold text-sm sm:text-base truncate">
+                        {deal?.client_name || 'Unknown Client'}
+                      </h3>
+                      {dueBadge && (
+                        <span className={cn(
+                          "shrink-0 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wide",
+                          dueBadge.variant === 'destructive' && "bg-destructive/15 text-destructive",
+                          dueBadge.variant === 'warning' && "bg-warning/15 text-warning",
+                          dueBadge.variant === 'muted' && "bg-muted text-muted-foreground"
+                        )}>
+                          {dueBadge.label}
+                        </span>
+                      )}
+                      {payout.status === 'PAID' && (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wide bg-success/15 text-success">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          Paid
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Property info */}
+                    <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <DealIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        {isPresale ? (deal?.project_name || 'Presale') : 'Resale'}
                       </span>
-                    )}
-                    {payout.status === 'PAID' && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide bg-success/15 text-success">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Paid
-                      </span>
-                    )}
+                      {deal?.city && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                          {deal.city}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  
-                  {/* Property info */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <DealIcon className="h-4 w-4" />
-                      {isPresale ? (deal?.project_name || 'Presale') : 'Resale'}
+
+                  {/* Amount */}
+                  <div className="text-right shrink-0">
+                    <p className={cn(
+                      "text-lg sm:text-xl lg:text-2xl font-bold",
+                      payout.status === 'PAID' 
+                        ? "text-success" 
+                        : overdue 
+                          ? "text-destructive"
+                          : "text-primary"
+                    )}>
+                      {formatCurrency(payout.amount)}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                      {payout.status === 'PAID' && payout.paid_date
+                        ? format(parseISO(payout.paid_date), 'MMM d')
+                        : payout.due_date
+                          ? format(parseISO(payout.due_date), 'MMM d, yyyy')
+                          : 'No date'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Details row */}
+                <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/30">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    {/* Payout type badge */}
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-lg font-semibold",
+                      typeStyles.bg, typeStyles.text
+                    )}>
+                      <TypeIcon className="h-3 w-3" />
+                      {payout.payout_type}
                     </span>
-                    {deal?.city && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <MapPin className="h-4 w-4" />
-                        {deal.city}
-                      </span>
-                    )}
-                    {deal?.address && !isPresale && (
-                      <span className="hidden sm:inline-flex items-center gap-1.5 truncate max-w-[200px]">
-                        {deal.address}
+
+                    {/* Deal type badge */}
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg font-semibold",
+                      deal?.deal_type === 'BUY' 
+                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                        : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                    )}>
+                      {deal?.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
+                    </span>
+
+                    {/* Team member indicator */}
+                    {deal?.team_member && (
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-semibold">
+                        <Users className="h-2.5 w-2.5" />
+                        {deal.team_member_portion}%
                       </span>
                     )}
                   </div>
-                </div>
 
-                {/* Amount */}
-                <div className="text-right shrink-0">
-                  <p className={cn(
-                    "text-2xl sm:text-3xl font-bold",
-                    payout.status === 'PAID' 
-                      ? "text-success" 
-                      : overdue 
-                        ? "text-destructive"
-                        : "text-primary"
-                  )}>
-                    {formatCurrency(payout.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {payout.status === 'PAID' && payout.paid_date
-                      ? `Received ${format(parseISO(payout.paid_date), 'MMM d, yyyy')}`
-                      : payout.due_date
-                        ? format(parseISO(payout.due_date), 'MMM d, yyyy')
-                        : 'No date set'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Details row */}
-              <div className="flex items-center justify-between pt-4 border-t border-border/30">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {/* Payout type badge */}
-                  <span className={cn(
-                    "inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold",
-                    typeStyles.bg, typeStyles.text
-                  )}>
-                    <TypeIcon className="h-3.5 w-3.5" />
-                    {payout.payout_type}
-                  </span>
-
-                  {/* Deal type badge */}
-                  <span className={cn(
-                    "inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg font-semibold",
-                    deal?.deal_type === 'BUY' 
-                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                      : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                  )}>
-                    {deal?.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
-                  </span>
-
-                  {/* Team member indicator */}
-                  {deal?.team_member && (
-                    <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-semibold">
-                      <Users className="h-3 w-3" />
-                      <span className="hidden sm:inline">{deal.team_member} •</span> {deal.team_member_portion}%
+                  {/* Action button */}
+                  {payout.status !== 'PAID' ? (
+                    <motion.div whileTap={{ scale: 0.9 }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 sm:h-8 text-[10px] sm:text-xs font-semibold text-success hover:text-success hover:bg-success/10 rounded-lg gap-1 px-2 sm:px-3"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMarkPaid(payout.id);
+                        }}
+                      >
+                        <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <span className="hidden sm:inline">Mark</span> Paid
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-medium">
+                      View
+                      <ArrowUpRight className="h-3 w-3" />
                     </span>
                   )}
                 </div>
-
-                {/* Action button */}
-                {payout.status !== 'PAID' ? (
-                  <motion.div whileTap={{ scale: 0.9 }}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 text-xs font-semibold text-success hover:text-success hover:bg-success/10 rounded-xl gap-1.5"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMarkPaid(payout.id);
-                      }}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Mark Paid
-                    </Button>
-                  </motion.div>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                    View details
-                    <ArrowUpRight className="h-3.5 w-3.5" />
-                  </span>
-                )}
-              </div>
 
               {/* Sale price info */}
               {deal?.sale_price && (
@@ -449,10 +444,10 @@ export default function DealsPage() {
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-        <div className="p-5 lg:p-8 xl:p-10 space-y-6 lg:space-y-8">
+        <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
           
-          {/* Premium Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Premium Stats Cards - Compact on mobile */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             {filterButtons.map((btn, i) => (
               <motion.button
                 key={btn.key}
@@ -464,11 +459,11 @@ export default function DealsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...springConfig, delay: i * 0.05 }}
                 className={cn(
-                  "relative p-5 rounded-3xl border text-left transition-all duration-300 overflow-hidden",
+                  "relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all duration-300 overflow-hidden",
                   timeFilter === btn.key 
                     ? btn.success 
-                      ? "border-success/50 shadow-xl shadow-success/15" 
-                      : "border-primary/50 shadow-xl shadow-primary/15"
+                      ? "border-success/50 shadow-lg shadow-success/15" 
+                      : "border-primary/50 shadow-lg shadow-primary/15"
                     : "bg-card/95 border-border/40 hover:border-primary/30 hover:shadow-lg"
                 )}
                 style={timeFilter === btn.key ? {
@@ -480,14 +475,14 @@ export default function DealsPage() {
                 {/* Active indicator */}
                 {timeFilter === btn.key && (
                   <div className={cn(
-                    "absolute top-3 right-3 w-2.5 h-2.5 rounded-full",
+                    "absolute top-2 right-2 w-2 h-2 rounded-full",
                     btn.success ? "bg-success" : "bg-primary"
                   )} />
                 )}
                 
-                {/* Decorative circle */}
+                {/* Decorative circle - hidden on mobile */}
                 <div className={cn(
-                  "absolute -right-6 -top-6 w-20 h-20 rounded-full transition-opacity",
+                  "absolute -right-6 -top-6 w-16 h-16 rounded-full transition-opacity hidden sm:block",
                   timeFilter === btn.key 
                     ? btn.success ? "bg-success/10" : "bg-primary/10"
                     : "bg-muted/30 opacity-0 group-hover:opacity-100"
@@ -495,30 +490,30 @@ export default function DealsPage() {
                 
                 <div className="relative">
                   <div className={cn(
-                    "flex items-center gap-2 mb-3",
+                    "flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2",
                     timeFilter === btn.key 
                       ? btn.success ? "text-success" : "text-primary"
                       : "text-muted-foreground"
                   )}>
                     <div className={cn(
-                      "w-8 h-8 rounded-xl flex items-center justify-center",
+                      "w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center",
                       timeFilter === btn.key 
                         ? btn.success ? "bg-success/20" : "bg-primary/20"
                         : "bg-muted/50"
                     )}>
-                      <btn.icon className="w-4 h-4" />
+                      <btn.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     </div>
-                    <span className="text-xs font-bold uppercase tracking-wider">{btn.label}</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{btn.label}</span>
                   </div>
                   <p className={cn(
-                    "text-2xl sm:text-3xl font-bold",
+                    "text-lg sm:text-xl lg:text-2xl font-bold",
                     timeFilter === btn.key 
                       ? btn.success ? "text-success" : "text-primary"
                       : "text-foreground"
                   )}>
                     {formatCurrency(btn.amount)}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">
                     {btn.count} payout{btn.count !== 1 ? 's' : ''}
                   </p>
                 </div>
@@ -526,26 +521,26 @@ export default function DealsPage() {
             ))}
           </div>
 
-          {/* Search and Add */}
+          {/* Search and Add - Compact on mobile */}
           <motion.div 
-            className="flex gap-4 items-center"
+            className="flex gap-2 sm:gap-3 items-center"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...springConfig, delay: 0.2 }}
           >
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
               <Input
-                placeholder="Search by client, project, or city..."
+                placeholder="Search clients..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-12 h-14 bg-card/95 border-border/50 rounded-2xl text-base placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 shadow-sm"
+                className="pl-9 sm:pl-11 h-10 sm:h-12 bg-card/95 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 shadow-sm"
               />
             </div>
             <Link to="/deals/new">
-              <Button className="btn-premium h-14 px-6 gap-2.5 rounded-2xl whitespace-nowrap shadow-lg">
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline font-semibold">Add Deal</span>
+              <Button className="btn-premium h-10 sm:h-12 px-3 sm:px-5 gap-1.5 sm:gap-2 rounded-xl whitespace-nowrap shadow-lg">
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline text-sm font-semibold">Add Deal</span>
               </Button>
             </Link>
           </motion.div>

@@ -144,30 +144,30 @@ export default function ForecastPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <motion.div 
-          className="p-4 lg:p-6 space-y-6"
+          className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           {/* Year Pills */}
-          <motion.div variants={itemVariants} className="flex items-center gap-2 overflow-x-auto pb-1">
+          <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setSelectedYear('all')}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
                 selectedYear === 'all'
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               )}
             >
-              All Years
+              All
             </button>
             {availableYears.map(year => (
               <button
                 key={year}
                 onClick={() => setSelectedYear(year)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                  "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
                   selectedYear === year
                     ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -179,106 +179,103 @@ export default function ForecastPage() {
           </motion.div>
 
           {/* Summary Stats */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             {/* Total Income */}
-            <div className="landing-card p-4 lg:p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-lg bg-emerald-500/20">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
+              <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+                <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
+                  <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
                 </div>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Income</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Income</span>
               </div>
               <AnimatedNumber
                 value={totals.income}
-                className="text-xl lg:text-2xl font-bold text-emerald-600"
+                className="text-base sm:text-lg lg:text-xl font-bold text-emerald-600"
                 duration={1.2}
               />
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
                 {filteredData.length} months
               </p>
             </div>
 
             {/* Total Expenses */}
-            <div className="landing-card p-4 lg:p-5 bg-gradient-to-br from-rose-500/10 to-orange-500/5 border-rose-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 rounded-lg bg-rose-500/20">
-                  <Wallet className="w-3.5 h-3.5 text-rose-600" />
+            <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-rose-500/10 to-orange-500/5 border-rose-500/20">
+              <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+                <div className="p-1 sm:p-1.5 rounded-lg bg-rose-500/20">
+                  <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-600" />
                 </div>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Expenses</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Expenses</span>
               </div>
               <AnimatedNumber
                 value={totals.expenses}
-                className="text-xl lg:text-2xl font-bold text-rose-600"
+                className="text-base sm:text-lg lg:text-xl font-bold text-rose-600"
                 duration={1.2}
               />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {formatCurrency(totals.expenses / Math.max(filteredData.length, 1))}/mo avg
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+                {formatCurrency(totals.expenses / Math.max(filteredData.length, 1))}/mo
               </p>
             </div>
 
             {/* Net Profit */}
             <div className={cn(
-              "landing-card p-4 lg:p-5",
+              "landing-card p-3 sm:p-4",
               totals.net >= 0 
                 ? "bg-gradient-to-br from-primary/10 to-accent/5 border-primary/20"
                 : "bg-gradient-to-br from-destructive/10 to-rose-500/5 border-destructive/20"
             )}>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
                 <div className={cn(
-                  "p-1.5 rounded-lg",
+                  "p-1 sm:p-1.5 rounded-lg",
                   totals.net >= 0 ? "bg-primary/20" : "bg-destructive/20"
                 )}>
                   <PiggyBank className={cn(
-                    "w-3.5 h-3.5",
+                    "w-3 h-3 sm:w-3.5 sm:h-3.5",
                     totals.net >= 0 ? "text-primary" : "text-destructive"
                   )} />
                 </div>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Net Profit</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Net</span>
               </div>
               <AnimatedNumber
                 value={totals.net}
                 className={cn(
-                  "text-xl lg:text-2xl font-bold",
+                  "text-base sm:text-lg lg:text-xl font-bold",
                   totals.net >= 0 ? "text-primary" : "text-destructive"
                 )}
                 duration={1.2}
               />
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                {totals.net >= 0 ? <TrendingUp className="w-3 h-3 text-success" /> : <TrendingDown className="w-3 h-3 text-destructive" />}
-                {formatCurrency(totals.avgMonthlyNet)}/mo avg
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                {totals.net >= 0 ? <TrendingUp className="w-2.5 h-2.5 text-success" /> : <TrendingDown className="w-2.5 h-2.5 text-destructive" />}
+                {formatCurrency(totals.avgMonthlyNet)}/mo
               </p>
             </div>
 
             {/* Slow Months Alert */}
             <div className={cn(
-              "landing-card p-4 lg:p-5",
+              "landing-card p-3 sm:p-4",
               totals.slowMonths > 0
                 ? "bg-gradient-to-br from-amber-500/10 to-orange-500/5 border-amber-500/20"
                 : "bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20"
             )}>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
                 <div className={cn(
-                  "p-1.5 rounded-lg",
+                  "p-1 sm:p-1.5 rounded-lg",
                   totals.slowMonths > 0 ? "bg-amber-500/20" : "bg-emerald-500/20"
                 )}>
                   <AlertTriangle className={cn(
-                    "w-3.5 h-3.5",
+                    "w-3 h-3 sm:w-3.5 sm:h-3.5",
                     totals.slowMonths > 0 ? "text-amber-600" : "text-emerald-600"
                   )} />
                 </div>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Cash Alerts</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Alerts</span>
               </div>
               <div className={cn(
-                "text-xl lg:text-2xl font-bold",
+                "text-base sm:text-lg lg:text-xl font-bold",
                 totals.slowMonths > 0 ? "text-amber-600" : "text-emerald-600"
               )}>
                 {totals.slowMonths > 0 ? totals.slowMonths : '✓'}
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {totals.slowMonths > 0 
-                  ? `${totals.slowMonths} month${totals.slowMonths > 1 ? 's' : ''} negative`
-                  : 'All months positive'
-                }
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+                {totals.slowMonths > 0 ? `${totals.slowMonths} negative` : 'All positive'}
               </p>
             </div>
           </motion.div>
@@ -286,21 +283,21 @@ export default function ForecastPage() {
           {/* Chart */}
           <motion.div
             variants={itemVariants}
-            className="landing-card p-5 lg:p-6"
+            className="landing-card p-3 sm:p-4 lg:p-6"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
-                <h3 className="text-sm font-semibold">Cashflow Projection</h3>
-                <p className="text-xs text-muted-foreground">Income vs expenses over time</p>
+                <h3 className="text-xs sm:text-sm font-semibold">Cashflow</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Income vs expenses</p>
               </div>
               {settings?.apply_tax_to_forecasts && (
-                <span className="text-[10px] px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                  {settings.tax_set_aside_percent}% tax included
+                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  {settings.tax_set_aside_percent}% tax
                 </span>
               )}
             </div>
             
-            <div className="h-72 lg:h-80">
+            <div className="h-48 sm:h-60 lg:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -364,14 +361,14 @@ export default function ForecastPage() {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-xs text-muted-foreground">Income</span>
+            <div className="flex items-center justify-center gap-4 sm:gap-6 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500" />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Income</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-rose-500" />
-                <span className="text-xs text-muted-foreground">Expenses</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500" />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Expenses</span>
               </div>
             </div>
           </motion.div>
@@ -381,19 +378,19 @@ export default function ForecastPage() {
             variants={itemVariants}
             className="landing-card overflow-hidden"
           >
-            <div className="p-4 border-b border-border">
-              <h3 className="text-sm font-semibold">Monthly Breakdown</h3>
-              <p className="text-xs text-muted-foreground">Detailed cashflow by month</p>
+            <div className="p-3 sm:p-4 border-b border-border">
+              <h3 className="text-xs sm:text-sm font-semibold">Monthly Breakdown</h3>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Detailed cashflow</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[400px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left text-[11px] font-semibold text-muted-foreground p-4 uppercase tracking-wider">Month</th>
-                    <th className="text-right text-[11px] font-semibold text-muted-foreground p-4 uppercase tracking-wider">Income</th>
-                    <th className="text-right text-[11px] font-semibold text-muted-foreground p-4 uppercase tracking-wider">Expenses</th>
-                    <th className="text-right text-[11px] font-semibold text-muted-foreground p-4 uppercase tracking-wider">Net</th>
-                    <th className="text-right text-[11px] font-semibold text-muted-foreground p-4 uppercase tracking-wider">Running Total</th>
+                    <th className="text-left text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Month</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Income</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Expenses</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Net</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider hidden sm:table-cell">Running</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -407,35 +404,34 @@ export default function ForecastPage() {
                         month.month === format(new Date(), 'yyyy-MM') && "bg-primary/5"
                       )}
                     >
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
+                      <td className="p-2 sm:p-3">
+                        <div className="flex items-center gap-1">
                           {month.isSlowMonth && (
-                            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                           )}
                           {month.isWarningMonth && (
-                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                           )}
-                          <span className="font-medium text-sm">{month.fullLabel}</span>
+                          <span className="font-medium text-[11px] sm:text-sm">{month.label} '{month.shortYear}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-right">
-                        <span className="text-sm text-emerald-600 font-medium">{formatCurrency(month.income)}</span>
+                      <td className="p-2 sm:p-3 text-right">
+                        <span className="text-[11px] sm:text-sm text-emerald-600 font-medium">{formatCurrency(month.income)}</span>
                       </td>
-                      <td className="p-4 text-right">
-                        <span className="text-sm text-rose-600">{formatCurrency(month.expenses)}</span>
+                      <td className="p-2 sm:p-3 text-right">
+                        <span className="text-[11px] sm:text-sm text-rose-600">{formatCurrency(month.expenses)}</span>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-2 sm:p-3 text-right">
                         <span className={cn(
-                          "inline-flex items-center gap-1 text-sm font-semibold",
+                          "inline-flex items-center gap-0.5 text-[11px] sm:text-sm font-semibold",
                           month.net >= 0 ? "text-emerald-600" : "text-rose-600"
                         )}>
-                          {month.net >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {formatCurrency(month.net)}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-2 sm:p-3 text-right hidden sm:table-cell">
                         <span className={cn(
-                          "text-sm font-bold",
+                          "text-[11px] sm:text-sm font-bold",
                           month.cumulative >= 0 ? "text-primary" : "text-destructive"
                         )}>
                           {formatCurrency(month.cumulative)}

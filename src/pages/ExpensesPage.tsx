@@ -245,45 +245,40 @@ export default function ExpensesPage() {
       />
 
       <motion.div 
-        className="p-4 lg:p-6 space-y-5"
+        className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Month Navigator & Total */}
-        <motion.div variants={itemVariants} className="landing-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-9 w-9 rounded-xl">
-              <ChevronLeft className="w-5 h-5" />
+        <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-lg">
+              <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="text-center">
-              <h2 className="text-lg font-bold">
+              <h2 className="text-base sm:text-lg font-bold">
                 {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
               </h2>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-9 w-9 rounded-xl">
-              <ChevronRight className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-lg">
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
 
           {/* Total Display */}
-          <div className="text-center py-4 px-6 rounded-2xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20">
-            <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">Total Monthly Spending</p>
+          <div className="text-center py-3 sm:py-4 px-4 sm:px-6 rounded-xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 uppercase tracking-wide">Total Monthly</p>
             <AnimatedNumber
               value={grandTotalExpenses}
-              className="text-4xl font-bold text-rose-500"
+              className="text-2xl sm:text-3xl lg:text-4xl font-bold text-rose-500"
               duration={1}
             />
-            {(propertyCarryingCosts.personalCost > 0 || propertyCarryingCosts.rentalNet !== 0) && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Includes property costs
-              </p>
-            )}
           </div>
         </motion.div>
 
         {/* Category Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
             const config = typeConfig[type];
             const total = getTypeTotal(type);
@@ -295,7 +290,7 @@ export default function ExpensesPage() {
                 key={type}
                 onClick={() => setActiveFilter(isActive ? 'all' : type)}
                 className={cn(
-                  "relative p-4 rounded-2xl border-2 transition-all text-left overflow-hidden group",
+                  "relative p-3 sm:p-4 rounded-xl border-2 transition-all text-left overflow-hidden group",
                   isActive 
                     ? `${config.border} ${config.bg} shadow-lg` 
                     : "border-border/50 hover:border-border bg-card"
@@ -310,13 +305,13 @@ export default function ExpensesPage() {
                 
                 <div className="relative">
                   <div className={cn(
-                    "w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-colors",
+                    "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-2 transition-colors",
                     isActive ? config.bg : "bg-muted/50"
                   )}>
-                    <config.icon className={cn("w-4.5 h-4.5", isActive ? config.text : "text-muted-foreground")} />
+                    <config.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? config.text : "text-muted-foreground")} />
                   </div>
-                  <p className="font-bold text-lg">{formatCurrency(total)}</p>
-                  <p className="text-xs text-muted-foreground">{config.label}</p>
+                  <p className="font-bold text-base sm:text-lg">{formatCurrency(total)}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">{config.label}</p>
                 </div>
 
                 {isActive && (
@@ -331,17 +326,17 @@ export default function ExpensesPage() {
         </motion.div>
 
         {/* Filter Pills */}
-        <motion.div variants={itemVariants} className="flex items-center gap-2 overflow-x-auto pb-1">
+        <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setActiveFilter('all')}
             className={cn(
-              "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+              "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
               activeFilter === 'all'
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted"
             )}
           >
-            All Expenses
+            All
           </button>
           {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
             const config = typeConfig[type];
@@ -350,7 +345,7 @@ export default function ExpensesPage() {
                 key={type}
                 onClick={() => setActiveFilter(type)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap",
+                  "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
                   activeFilter === type
                     ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg`
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
