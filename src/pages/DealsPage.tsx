@@ -15,7 +15,8 @@ import {
   TrendingUp,
   ArrowUpRight,
   Percent,
-  Sparkles
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore, getYear, getMonth, differenceInDays } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -42,6 +43,7 @@ export default function DealsPage() {
 
   const [search, setSearch] = useState('');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
+  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
 
   const isLoading = payoutsLoading || dealsLoading;
 
@@ -591,61 +593,103 @@ export default function DealsPage() {
             </motion.div>
           ) : (
             <div className="space-y-10">
-              {groupedPayouts.map((yearGroup) => (
+              {groupedPayouts.map((yearGroup) => {
+                const isYearExpanded = !expandedYears.has(yearGroup.year);
+                const yearTotal = yearGroup.months.reduce((sum, m) => sum + m.total, 0);
+                const yearPayoutCount = yearGroup.months.reduce((sum, m) => sum + m.payouts.length, 0);
+                
+                const toggleYear = () => {
+                  triggerHaptic('light');
+                  setExpandedYears(prev => {
+                    const next = new Set(prev);
+                    if (next.has(yearGroup.year)) {
+                      next.delete(yearGroup.year);
+                    } else {
+                      next.add(yearGroup.year);
+                    }
+                    return next;
+                  });
+                };
+                
+                return (
                 <div key={yearGroup.year} className="space-y-8">
-                  {/* Year Header */}
+                  {/* Year Header - Always clickable */}
                   {(yearGroup.year !== currentYear || groupedPayouts.length > 1) && (
-                    <motion.div 
-                      className="flex items-center gap-6"
+                    <motion.button
+                      onClick={toggleYear}
+                      className="w-full flex items-center gap-4 group cursor-pointer"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
                     >
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                      <span className="text-sm font-bold px-5 py-2 bg-muted/50 rounded-full border border-border/50">
-                        {yearGroup.year}
-                      </span>
+                      <div className="flex items-center gap-3 px-5 py-2.5 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
+                        <span className="text-base font-bold">{yearGroup.year}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {formatCurrency(yearTotal)} · {yearPayoutCount} payouts
+                        </span>
+                        <motion.div
+                          animate={{ rotate: isYearExpanded ? 0 : -90 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </motion.div>
+                      </div>
                       <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                    </motion.div>
+                    </motion.button>
                   )}
 
-                  {yearGroup.months.map((monthGroup) => (
-                    <div key={`${yearGroup.year}-${monthGroup.month}`} className="space-y-5">
-                      {/* Month Header */}
-                      <motion.div 
-                        className="flex items-center justify-between"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={springConfig}
+                  <AnimatePresence initial={false}>
+                    {isYearExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-8"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
-                            <Calendar className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-xl">{monthGroup.monthName}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {monthGroup.payouts.length} payout{monthGroup.payouts.length !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-primary">
-                            {formatCurrency(monthGroup.total)}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-medium">
-                            {timeFilter === 'paid' ? 'received' : 'expected'}
-                          </p>
-                        </div>
-                      </motion.div>
+                        {yearGroup.months.map((monthGroup) => (
+                          <div key={`${yearGroup.year}-${monthGroup.month}`} className="space-y-5">
+                            {/* Month Header */}
+                            <motion.div 
+                              className="flex items-center justify-between"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={springConfig}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
+                                  <Calendar className="w-6 h-6 text-primary" />
+                                </div>
+                                <div>
+                                  <h3 className="font-bold text-xl">{monthGroup.monthName}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {monthGroup.payouts.length} payout{monthGroup.payouts.length !== 1 ? 's' : ''}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-primary">
+                                  {formatCurrency(monthGroup.total)}
+                                </p>
+                                <p className="text-xs text-muted-foreground font-medium">
+                                  {timeFilter === 'paid' ? 'received' : 'expected'}
+                                </p>
+                              </div>
+                            </motion.div>
 
-                      {/* Payout Cards */}
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {monthGroup.payouts.map((payout, idx) => renderPayoutCard(payout, idx))}
-                      </div>
-                    </div>
-                  ))}
+                            {/* Payout Cards */}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {monthGroup.payouts.map((payout, idx) => renderPayoutCard(payout, idx))}
+                            </div>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              ))}
+              )})}
             </div>
           )}
 
