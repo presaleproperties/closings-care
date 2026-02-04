@@ -3,45 +3,45 @@ import { motion } from 'framer-motion';
 export function FloatingBackground() {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {/* Top right emerald orb */}
+      {/* Top right primary orb */}
       <motion.div
-        className="absolute -top-20 -right-20 w-96 h-96 bg-gradient-to-br from-emerald-400/15 to-teal-400/10 dark:from-emerald-500/10 dark:to-teal-500/5 rounded-full blur-3xl"
+        className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-gradient-to-br from-primary/12 to-primary/5 rounded-full blur-3xl"
         animate={{ 
-          y: [0, -30, 0], 
+          y: [0, -40, 0], 
           scale: [1, 1.05, 1],
           rotate: [0, 5, 0]
         }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
       />
       
-      {/* Left side teal orb */}
+      {/* Left side accent orb */}
       <motion.div
-        className="absolute top-1/4 -left-32 w-72 h-72 bg-gradient-to-br from-teal-400/12 to-cyan-400/8 dark:from-teal-500/8 dark:to-cyan-500/4 rounded-full blur-3xl"
+        className="absolute top-1/4 -left-40 w-80 h-80 bg-gradient-to-br from-accent/10 to-warning/5 rounded-full blur-3xl"
         animate={{ 
-          y: [0, 25, 0], 
-          x: [0, 15, 0],
+          y: [0, 30, 0], 
+          x: [0, 20, 0],
           scale: [1, 0.95, 1] 
         }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
       />
       
-      {/* Bottom center accent orb */}
+      {/* Bottom center subtle orb */}
       <motion.div
-        className="absolute bottom-10 right-1/4 w-80 h-80 bg-gradient-to-br from-amber-400/8 to-orange-400/5 dark:from-amber-500/5 dark:to-orange-500/3 rounded-full blur-3xl"
+        className="absolute bottom-20 right-1/3 w-96 h-96 bg-gradient-to-br from-success/8 to-primary/5 rounded-full blur-3xl"
         animate={{ 
-          x: [0, 20, 0], 
-          y: [0, -15, 0],
-          scale: [1, 1.08, 1]
+          x: [0, 25, 0], 
+          y: [0, -20, 0],
+          scale: [1, 1.1, 1]
         }}
-        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       />
 
-      {/* Subtle grid pattern overlay */}
+      {/* Very subtle grid overlay */}
       <div 
-        className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.02] dark:opacity-[0.025]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(158 64% 32%) 1px, transparent 0)`,
-          backgroundSize: '32px 32px'
+          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--primary)) 0.5px, transparent 0)`,
+          backgroundSize: '40px 40px'
         }}
       />
     </div>
