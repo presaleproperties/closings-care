@@ -40,7 +40,7 @@ export default function ForecastPage() {
   const refreshData = useRefreshData();
 
   const [view, setView] = useState<'table' | 'calendar'>('table');
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 0, 1));
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
   // Process all payouts with brokerage cap logic
@@ -48,7 +48,7 @@ export default function ForecastPage() {
     return calculatePayoutsWithBrokerageCap(payouts, settings);
   }, [payouts, settings]);
 
-  // Generate forecast data from Jan 2025 through end of 2028
+  // Generate forecast data from Jan 2026 through end of 2030
   const forecastData = useMemo(() => {
     const months = getExtendedMonthRange(48);
     
@@ -140,7 +140,7 @@ export default function ForecastPage() {
     <AppLayout>
       <Header 
         title="Forecast" 
-        subtitle={selectedYear === 'all' ? 'Jan 2025 - Full Projection' : `${selectedYear} Overview`}
+        subtitle={selectedYear === 'all' ? 'Jan 2026 - Full Projection' : `${selectedYear} Overview`}
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
@@ -360,7 +360,7 @@ export default function ForecastPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
+                    {[2026, 2027, 2028, 2029, 2030].map((year) => (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
                       </SelectItem>
