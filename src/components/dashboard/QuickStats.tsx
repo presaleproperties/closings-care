@@ -160,18 +160,14 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
 
     const thisYearProjected = thisYearCommissions + thisYearOtherIncome;
 
-    const dealsWithCommission = deals.filter(d => {
-      const grossCommission = d.gross_commission_est || 
-        ((d.advance_commission || 0) + (d.completion_commission || 0));
-      return grossCommission > 0;
-    });
-    const totalGrossCommission = dealsWithCommission.reduce((sum, d) => {
+    // Calculate average using ALL deals (not just those with commission entered)
+    const totalGrossCommission = deals.reduce((sum, d) => {
       const grossCommission = d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
       return sum + grossCommission;
     }, 0);
-    const avgDealValue = dealsWithCommission.length > 0
-      ? totalGrossCommission / dealsWithCommission.length
+    const avgDealValue = deals.length > 0
+      ? totalGrossCommission / deals.length
       : 0;
 
     const activeDeals = deals.filter(d => d.status === 'PENDING').length;
