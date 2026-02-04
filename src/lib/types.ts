@@ -31,6 +31,12 @@ export interface Deal {
   status: DealStatus;
   created_at: string;
   updated_at: string;
+  // Presale-specific fields
+  buyer_type: string | null;
+  advance_commission: number | null;
+  completion_commission: number | null;
+  advance_date: string | null;
+  completion_date: string | null;
 }
 
 export interface Payout {
