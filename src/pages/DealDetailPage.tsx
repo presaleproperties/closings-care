@@ -362,20 +362,20 @@ export default function DealDetailPage() {
         }
       />
 
-      <div className="p-4 lg:p-6 max-w-6xl animate-fade-in">
-        {/* Deal Dashboard Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-          <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Sale Price</div>
-            <div className="text-lg font-bold text-foreground">
+      <div className="p-3 sm:p-4 lg:p-6 max-w-6xl animate-fade-in">
+        {/* Deal Dashboard Stats - Compact on mobile */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="landing-card p-2.5 sm:p-3 text-center">
+            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Sale Price</div>
+            <div className="text-sm sm:text-base font-bold text-foreground">
               {formData.sale_price ? formatCurrencyDisplay(formData.sale_price) : '—'}
             </div>
           </div>
-          <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              {isTeamDeal ? 'Your Gross' : 'Gross Commission'}
+          <div className="landing-card p-2.5 sm:p-3 text-center">
+            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">
+              {isTeamDeal ? 'Your Gross' : 'Gross'}
             </div>
-            <div className="text-lg font-bold text-primary">
+            <div className="text-sm sm:text-base font-bold text-primary">
               {(() => {
                 // Calculate from advance + completion if both exist
                 const calculatedGross = (formData.advance_commission && formData.completion_commission)
@@ -399,47 +399,47 @@ export default function DealDetailPage() {
               </div>
             )}
           </div>
-          <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              {isTeamDeal ? 'Your Net' : 'Net Commission'}
+          <div className="landing-card p-2.5 sm:p-3 text-center">
+            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">
+              {isTeamDeal ? 'Your Net' : 'Net'}
             </div>
-            <div className="text-lg font-bold text-accent">
+            <div className="text-sm sm:text-base font-bold text-accent">
               {formData.net_commission_est ? formatCurrencyDisplay(formData.net_commission_est) : '—'}
             </div>
           </div>
-          <div className="landing-card p-4 text-center">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Payouts</div>
-            <div className="text-lg font-bold mb-2">
+          <div className="landing-card p-2.5 sm:p-3 text-center">
+            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Payouts</div>
+            <div className="text-sm sm:text-base font-bold mb-1 sm:mb-2">
               <span className="text-primary">{formatCurrencyDisplay(paidPayouts)}</span>
-              <span className="text-muted-foreground text-sm font-normal"> / {formatCurrencyDisplay(totalPayouts)}</span>
+              <span className="text-muted-foreground text-xs font-normal"> / {formatCurrencyDisplay(totalPayouts)}</span>
             </div>
-            <div className="w-full bg-muted/50 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-muted/50 rounded-full h-1.5 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
                 style={{ width: `${totalPayouts > 0 ? Math.min((paidPayouts / totalPayouts) * 100, 100) : 0}%` }}
               />
             </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {totalPayouts > 0 ? Math.round((paidPayouts / totalPayouts) * 100) : 0}% collected
+            <div className="text-[10px] text-muted-foreground mt-0.5 sm:mt-1">
+              {totalPayouts > 0 ? Math.round((paidPayouts / totalPayouts) * 100) : 0}%
             </div>
           </div>
-          <div className="landing-card p-4 text-center col-span-2 sm:col-span-1">
-            <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Status</div>
+          <div className="landing-card p-2.5 sm:p-3 text-center col-span-2 sm:col-span-1">
+            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Status</div>
             <div className="flex justify-center">
               <StatusBadge status={deal.status} />
             </div>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4 lg:space-y-6">
             {/* Client Info */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
+            <section className="bg-card border border-border rounded-xl p-3 sm:p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-accent" />
-                  <h2 className="font-semibold">Client Information</h2>
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                  <h2 className="font-semibold text-sm sm:text-base">Client Information</h2>
                 </div>
                 <StatusBadge status={deal.status} />
               </div>

@@ -20,9 +20,9 @@ export function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="lg:hidden fixed bottom-4 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom,12px)+8px)]">
+    <nav className="lg:hidden fixed bottom-3 sm:bottom-4 left-0 right-0 z-50 px-3 sm:px-4 pb-[calc(env(safe-area-inset-bottom,12px)+4px)] sm:pb-[calc(env(safe-area-inset-bottom,12px)+8px)]">
       {/* Premium liquid glass container */}
-      <div className="relative mx-auto max-w-[380px]">
+      <div className="relative mx-auto max-w-[340px] sm:max-w-[380px]">
         {/* Outer ambient glow - enhanced */}
         <div 
           className="absolute -inset-4 rounded-[40px] pointer-events-none"
@@ -89,7 +89,7 @@ export function MobileNav() {
           <div className="absolute inset-x-0 top-0 h-10 pointer-events-none bg-gradient-to-b from-white/[0.06] to-transparent" />
           
           {/* Nav items */}
-          <div className="relative flex justify-around items-center h-[76px] px-3">
+          <div className="relative flex justify-around items-center h-[64px] sm:h-[72px] px-2 sm:px-3">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path || 
                 (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -99,7 +99,7 @@ export function MobileNav() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    'flex flex-col items-center justify-center gap-1.5 flex-1 py-2 transition-all duration-300 ease-out',
+                    'flex flex-col items-center justify-center gap-1 sm:gap-1.5 flex-1 py-1.5 sm:py-2 transition-all duration-300 ease-out',
                     'active:scale-90 active:opacity-70',
                     isActive 
                       ? 'text-primary' 
@@ -107,27 +107,27 @@ export function MobileNav() {
                   )}
                 >
                   <div className={cn(
-                    "relative flex items-center justify-center w-11 h-11 rounded-2xl transition-all duration-300 ease-out",
+                    "relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl transition-all duration-300 ease-out",
                     isActive && "bg-primary/12"
                   )}>
                     {/* Premium glow behind active icon - enhanced */}
                     {isActive && (
                       <>
-                        <div className="absolute inset-0 rounded-2xl bg-primary/20 blur-xl" />
-                        <div className="absolute inset-0 rounded-2xl bg-primary/15 blur-lg" />
-                        <div className="absolute inset-1 rounded-xl bg-primary/10 blur-md" />
+                        <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-primary/20 blur-xl" />
+                        <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-primary/15 blur-lg" />
+                        <div className="absolute inset-1 rounded-lg sm:rounded-xl bg-primary/10 blur-md" />
                       </>
                     )}
                     <item.icon 
                       className={cn(
-                        "relative w-[22px] h-[22px] transition-all duration-300",
+                        "relative w-5 h-5 sm:w-[22px] sm:h-[22px] transition-all duration-300",
                         isActive && "drop-shadow-[0_0_8px_hsl(158_64%_32%/0.7)]"
                       )}
                       strokeWidth={isActive ? 2.25 : 1.5} 
                     />
                   </div>
                   <span className={cn(
-                    "text-[10px] tracking-wide transition-all duration-300",
+                    "text-[9px] sm:text-[10px] tracking-wide transition-all duration-300",
                     isActive 
                       ? "font-semibold" 
                       : "font-medium opacity-80"
