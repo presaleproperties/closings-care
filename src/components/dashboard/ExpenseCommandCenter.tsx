@@ -25,6 +25,7 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { useExpenseBudgets } from '@/hooks/useExpenseBudgets';
 import { getCategoryType, ExpenseType } from '@/lib/expenseCategories';
+import { Property, getPropertyMonthlyExpenses, calculatePropertyCashflow } from '@/hooks/useProperties';
 
 interface Expense {
   id: string;
@@ -39,6 +40,7 @@ interface Expense {
 
 interface ExpenseCommandCenterProps {
   expenses: Expense[];
+  properties: Property[];
   monthlyExpenses: number;
   annualExpenses: number;
 }
@@ -103,7 +105,7 @@ const typeConfig: Record<ExpenseType, {
   },
 };
 
-export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses }: ExpenseCommandCenterProps) {
+export function ExpenseCommandCenter({ expenses, properties, monthlyExpenses, annualExpenses }: ExpenseCommandCenterProps) {
   const { data: budgets = [] } = useExpenseBudgets();
   const currentMonth = getCurrentMonth();
   
@@ -112,6 +114,25 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       if (e.recurrence === 'weekly') return Number(e.amount) * 4.33;
       return Number(e.amount);
     };
+
+    // Calculate property costs
+    let personalPropertyCost = 0;
+    let rentalPropertyCost = 0;
+    let rentalPropertyIncome = 0;
+    
+    properties.forEach(property => {
+      const monthlyExpenses = getPropertyMonthlyExpenses(property);
+      
+      if (property.property_type === 'personal') {
+        personalPropertyCost += monthlyExpenses;
+      } else {
+        // Rental property - track both income and expenses
+        rentalPropertyIncome += property.monthly_rent || 0;
+        rentalPropertyCost += monthlyExpenses;
+      }
+    });
+    
+    const rentalNet = rentalPropertyCost - rentalPropertyIncome; // Positive = net expense, Negative = net income
 
     // Filter to current month's relevant expenses
     const currentMonthExpenses = expenses.filter(e => {
@@ -168,6 +189,14 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       categorySpending[e.category] = (categorySpending[e.category] || 0) + monthlyAmount;
     });
 
+    // Add property costs to fixed totals and type breakdowns
+    fixedTotal += personalPropertyCost + rentalPropertyCost;
+    
+    // Add rental property net to deductible (rental expenses are deductible)
+    if (rentalPropertyCost > 0) {
+      taxDeductible += rentalPropertyCost;
+    }
+
     const budgetStatus = budgets.map(budget => {
       const spent = categorySpending[budget.category] || 0;
       const limit = Number(budget.monthly_limit);
@@ -183,9 +212,10 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       };
     }).sort((a, b) => b.percentage - a.percentage);
 
-    const totalPersonal = byType.personal.recurring + byType.personal.oneTime;
+    // Include property costs in type totals
+    const totalPersonal = byType.personal.recurring + byType.personal.oneTime + personalPropertyCost;
     const totalBusiness = byType.business.recurring + byType.business.oneTime;
-    const totalRental = byType.rental.recurring + byType.rental.oneTime;
+    const totalRental = byType.rental.recurring + byType.rental.oneTime + rentalNet; // Net rental (expense - income)
     const totalTaxes = byType.taxes.recurring + byType.taxes.oneTime;
     const totalRecurring = Object.values(byType).reduce((sum, t) => sum + t.recurring, 0);
 
@@ -203,8 +233,12 @@ export function ExpenseCommandCenter({ expenses, monthlyExpenses, annualExpenses
       budgetStatus,
       budgetsOverLimit: budgetStatus.filter(b => b.status === 'over').length,
       budgetsWarning: budgetStatus.filter(b => b.status === 'warning').length,
+      // Property-specific data for display
+      rentalPropertyIncome,
+      rentalPropertyCost,
+      personalPropertyCost,
     };
-  }, [expenses, budgets, currentMonth]);
+  }, [expenses, properties, budgets, currentMonth]);
 
   const statCards = [
     { 

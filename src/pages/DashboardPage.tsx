@@ -456,6 +456,7 @@ export default function DashboardPage() {
                   >
                     <ExpenseCommandCenter 
                       expenses={expenses}
+                      properties={properties}
                       monthlyExpenses={expenseTotals.monthly}
                       annualExpenses={expenseTotals.annual}
                     />
