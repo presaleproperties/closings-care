@@ -180,7 +180,7 @@ export default function SettingsPage() {
     <AppLayout>
       <Header 
         title="Settings" 
-        subtitle="Configure your CommissionIQ experience"
+        subtitle="Configure your dealzflow experience"
         showAddDeal={false}
         action={
           <Button 

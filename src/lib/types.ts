@@ -1,4 +1,4 @@
-// Database types for CommissionIQ
+// Database types for dealzflow
 
 export type DealStatus = 'PENDING' | 'CLOSED';
 export type DealType = 'BUY' | 'SELL';
