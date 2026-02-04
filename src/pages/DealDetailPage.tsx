@@ -156,11 +156,9 @@ export default function DealDetailPage() {
     
     return calculateNetCommission(
       effectiveGross,
-      settings as any,
-      allPayouts,
       isTeamDeal ? formData.team_member_portion : undefined
     );
-  }, [formData.gross_commission_est, formData.advance_commission, formData.completion_commission, formData.team_member_portion, settings, allPayouts, isTeamDeal, isPresale]);
+  }, [formData.gross_commission_est, formData.advance_commission, formData.completion_commission, formData.team_member_portion, isTeamDeal, isPresale]);
 
   // Update net commission when calculation changes
   useEffect(() => {
@@ -765,14 +763,8 @@ export default function DealDetailPage() {
                         {isTeamDeal && formData.team_member_portion && (
                           <> → <span className="text-primary font-medium">Your {100 - formData.team_member_portion}%: ${formatCurrencyInput(userGross)}</span></>
                         )}
-                        {netCommissionResult.brokeragePortion > 0 && (
-                          <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
-                        )}
                         {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
                       </p>
-                      {netCommissionResult.capReached && (
-                        <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
-                      )}
                     </div>
                   </div>
                 );

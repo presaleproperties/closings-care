@@ -1,55 +1,55 @@
 import { useMemo } from 'react';
-import { usePayouts } from './usePayouts';
+import { useExpenses } from './useExpenses';
 import { useSettings } from './useSettings';
-import { parseISO, isWithinInterval, addYears, subYears, isBefore, isAfter } from 'date-fns';
+import { parseISO, isWithinInterval, addYears, isBefore, isAfter, startOfYear, endOfYear } from 'date-fns';
 
 export interface BrokerageCapStatus {
   isEnabled: boolean;
   capAmount: number;
-  splitPercent: number;
-  capStartDate: Date | null;
   currentPeriodStart: Date | null;
   currentPeriodEnd: Date | null;
   amountPaidTowardsCap: number;
   amountRemainingUntilCap: number;
   capReached: boolean;
   progressPercent: number;
-  effectiveSplitPercent: number; // 0 if cap reached, otherwise splitPercent
   daysUntilReset: number | null;
+  monthlyExpense: number;
 }
 
+/**
+ * Track brokerage cap progress based on monthly brokerage fee expenses
+ * The $15,000 cap is tracked via $1,250/month fixed expenses
+ */
 export function useBrokerageCap(): BrokerageCapStatus {
   const { data: settings } = useSettings();
-  const { data: payouts = [] } = usePayouts();
+  const { data: expenses = [] } = useExpenses();
 
   return useMemo(() => {
     const isEnabled = (settings as any)?.brokerage_cap_enabled || false;
-    const capAmount = Number((settings as any)?.brokerage_cap_amount) || 0;
-    const splitPercent = Number(settings?.brokerage_split_percent) || 0;
+    const capAmount = Number((settings as any)?.brokerage_cap_amount) || 15000;
     const capStartDateStr = (settings as any)?.brokerage_cap_start_date;
+    const monthlyExpense = capAmount / 12; // $1,250/month for $15K cap
 
     // Default return if not enabled
-    if (!isEnabled || !capStartDateStr || capAmount <= 0 || splitPercent <= 0) {
+    if (!isEnabled || !capStartDateStr) {
       return {
         isEnabled,
         capAmount,
-        splitPercent,
-        capStartDate: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
         amountPaidTowardsCap: 0,
         amountRemainingUntilCap: capAmount,
         capReached: false,
         progressPercent: 0,
-        effectiveSplitPercent: splitPercent,
         daysUntilReset: null,
+        monthlyExpense,
       };
     }
 
     const capStartDate = parseISO(capStartDateStr);
     const today = new Date();
 
-    // Calculate the current cap period based on anniversary date
+    // Calculate the current cap period based on anniversary date (Jan 1st)
     let currentPeriodStart = new Date(capStartDate);
     let currentPeriodEnd = addYears(currentPeriodStart, 1);
 
@@ -60,26 +60,30 @@ export function useBrokerageCap(): BrokerageCapStatus {
     }
     while (isBefore(today, currentPeriodStart)) {
       currentPeriodEnd = currentPeriodStart;
-      currentPeriodStart = subYears(currentPeriodStart, 1);
+      currentPeriodStart = addYears(currentPeriodStart, -1);
     }
 
-    // Calculate amount paid towards cap from PAID payouts in current period
-    const paidPayoutsInPeriod = payouts.filter(payout => {
-      if (payout.status !== 'PAID' || !payout.paid_date) return false;
-      const paidDate = parseISO(payout.paid_date);
-      return isWithinInterval(paidDate, { start: currentPeriodStart, end: currentPeriodEnd });
+    // Calculate brokerage fees paid this year from expenses
+    // Look for expenses with "Brokerage" in notes within the current period
+    const brokerageExpenses = expenses.filter(expense => {
+      if (!expense.month) return false;
+      const expenseDate = parseISO(`${expense.month}-01`);
+      const inPeriod = isWithinInterval(expenseDate, { 
+        start: currentPeriodStart, 
+        end: currentPeriodEnd 
+      });
+      const isBrokerageFee = expense.notes?.toLowerCase().includes('brokerage');
+      return inPeriod && isBrokerageFee;
     });
 
-    // Calculate brokerage portion of each payout
-    const amountPaidTowardsCap = paidPayoutsInPeriod.reduce((total, payout) => {
-      const brokeragePortion = Number(payout.amount) * (splitPercent / 100);
-      return total + brokeragePortion;
-    }, 0);
+    const amountPaidTowardsCap = brokerageExpenses.reduce(
+      (total, expense) => total + Number(expense.amount), 
+      0
+    );
 
     const capReached = amountPaidTowardsCap >= capAmount;
     const amountRemainingUntilCap = Math.max(0, capAmount - amountPaidTowardsCap);
     const progressPercent = capAmount > 0 ? Math.min(100, (amountPaidTowardsCap / capAmount) * 100) : 0;
-    const effectiveSplitPercent = capReached ? 0 : splitPercent;
 
     // Calculate days until reset
     const msUntilReset = currentPeriodEnd.getTime() - today.getTime();
@@ -88,31 +92,14 @@ export function useBrokerageCap(): BrokerageCapStatus {
     return {
       isEnabled,
       capAmount,
-      splitPercent,
-      capStartDate,
       currentPeriodStart,
       currentPeriodEnd,
       amountPaidTowardsCap,
       amountRemainingUntilCap,
       capReached,
       progressPercent,
-      effectiveSplitPercent,
       daysUntilReset,
+      monthlyExpense,
     };
-  }, [settings, payouts]);
-}
-
-// Helper to calculate net commission after brokerage split
-export function calculateNetAfterSplit(
-  grossAmount: number, 
-  capStatus: BrokerageCapStatus
-): { netAmount: number; brokeragePortion: number } {
-  if (!capStatus.isEnabled || capStatus.capReached) {
-    return { netAmount: grossAmount, brokeragePortion: 0 };
-  }
-
-  const brokeragePortion = grossAmount * (capStatus.effectiveSplitPercent / 100);
-  const netAmount = grossAmount - brokeragePortion;
-
-  return { netAmount, brokeragePortion };
+  }, [settings, expenses]);
 }

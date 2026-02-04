@@ -125,16 +125,10 @@ export function BrokerageCapCard() {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <TrendingUp className="h-3.5 w-3.5" />
-              <span>Current Split</span>
+              <span>Monthly Expense</span>
             </div>
-            <span className={cn(
-              "font-semibold",
-              capStatus.capReached ? "text-success" : "text-foreground"
-            )}>
-              {capStatus.capReached 
-                ? "100% (You keep all!)" 
-                : `${100 - capStatus.splitPercent}% / ${capStatus.splitPercent}%`
-              }
+            <span className="font-semibold text-foreground">
+              ${capStatus.monthlyExpense.toLocaleString()}/month
             </span>
           </div>
 

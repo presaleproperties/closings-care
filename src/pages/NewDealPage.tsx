@@ -103,11 +103,9 @@ export default function NewDealPage() {
   const netCommissionResult = useMemo(() => {
     return calculateNetCommission(
       formData.gross_commission_est || 0,
-      settings as any,
-      paidPayouts,
       isTeamDeal ? formData.team_member_portion : undefined
     );
-  }, [formData.gross_commission_est, formData.team_member_portion, settings, paidPayouts, isTeamDeal]);
+  }, [formData.gross_commission_est, formData.team_member_portion, isTeamDeal]);
 
   // Update net commission in form when calculation changes
   useEffect(() => {
@@ -472,17 +470,11 @@ export default function NewDealPage() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p>
                         <span className="font-medium text-foreground">Gross:</span> ${formatCurrency(formData.gross_commission_est)}
-                        {netCommissionResult.brokeragePortion > 0 && (
-                          <> → <span className="text-destructive">-${formatCurrency(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
-                        )}
                         {netCommissionResult.teamPortion > 0 && (
                           <> → <span className="text-destructive">-${formatCurrency(netCommissionResult.teamPortion)}</span> team</>
                         )}
                         {' '}= <span className="font-semibold text-success">${formatCurrency(netCommissionResult.netAmount)}</span> net
                       </p>
-                      {netCommissionResult.capReached && (
-                        <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
-                      )}
                     </div>
                   </div>
                 )}
