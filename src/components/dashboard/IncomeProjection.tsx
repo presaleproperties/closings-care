@@ -117,10 +117,10 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
   // Calculate property costs once (they're the same every month)
   const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
 
-  // Process all payouts with brokerage cap logic
+  // Process all payouts (brokerage is now a fixed expense, not deducted from commissions)
   const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts, settings);
-  }, [payouts, settings]);
+    return calculatePayoutsWithBrokerageCap(payouts);
+  }, [payouts]);
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];

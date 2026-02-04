@@ -43,10 +43,10 @@ export default function ForecastPage() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
-  // Process all payouts with brokerage cap logic
+  // Process all payouts (brokerage is now a fixed expense, not deducted from commissions)
   const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts, settings);
-  }, [payouts, settings]);
+    return calculatePayoutsWithBrokerageCap(payouts);
+  }, [payouts]);
 
   // Generate forecast data from Jan 2025 through end of 2028
   const forecastData = useMemo(() => {
