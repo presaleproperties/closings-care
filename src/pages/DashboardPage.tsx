@@ -35,6 +35,7 @@ import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNot
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
+// Dashboard v2.1 - Updated Feb 2026
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 const staggerContainer = {
   hidden: { opacity: 0 },
