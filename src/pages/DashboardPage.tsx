@@ -21,9 +21,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
 import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
-import { ExpenseIntelligence } from '@/components/dashboard/ExpenseIntelligence';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
-import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
 import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
 import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
@@ -31,7 +29,7 @@ import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, Calculator, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
+import { Calculator, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
@@ -196,32 +194,30 @@ export default function DashboardPage() {
             </div>
 
             {/* Mobile Tabs */}
-            <Tabs defaultValue="overview" className="pb-8">
+            <Tabs defaultValue="cashflow" className="pb-8">
               <div className="px-5 mb-5">
                 <div className="bg-muted/50 backdrop-blur-xl rounded-2xl p-1.5 border border-border/30">
-                  <TabsList className="w-full grid grid-cols-4 h-11 bg-transparent p-0 gap-1">
-                    {['overview', 'taxes', 'charts', 'analytics'].map((tab) => (
+                  <TabsList className="w-full grid grid-cols-3 h-11 bg-transparent p-0 gap-1">
+                    {['cashflow', 'taxes', 'analytics'].map((tab) => (
                       <TabsTrigger 
                         key={tab}
                         value={tab}
                         className="text-[13px] font-semibold rounded-xl h-full capitalize data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 data-[state=inactive]:text-muted-foreground transition-all duration-200"
                       >
-                        {tab === 'overview' ? 'Overview' : tab === 'taxes' ? 'Taxes' : tab === 'charts' ? 'Charts' : 'Analytics'}
+                        {tab === 'cashflow' ? 'Cashflow' : tab === 'taxes' ? 'Taxes' : 'Analytics'}
                       </TabsTrigger>
                     ))}
                   </TabsList>
                 </div>
               </div>
 
-              <TabsContent value="overview" className="px-5 space-y-4 mt-0">
-                <BrokerageCapCard />
+              <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <UpcomingPayouts 
                   payouts={payouts} 
                   onMarkPaid={(id) => markPaid.mutate(id)}
                   isPending={markPaid.isPending}
                 />
-                <OtherIncomeManager />
                 <FinancialHealth 
                   deals={deals}
                   payouts={payouts}
@@ -231,36 +227,29 @@ export default function DashboardPage() {
                   monthlyExpenses={expenseTotals.monthly}
                   annualExpenses={expenseTotals.annual}
                 />
+                <BrokerageCapCard />
               </TabsContent>
 
               <TabsContent value="taxes" className="px-5 space-y-4 mt-0">
-                <TaxSafetyCard 
-                  paidIncome={incomeTotals.paid}
-                  projectedIncome={incomeTotals.projected}
-                  deductibleExpenses={expenseTotals.annual}
-                />
                 <SafeToSpendCard
                   projectedCashIn={incomeTotals.projected}
                   monthlyExpenses={expenseTotals.monthly}
                   taxSetAsideRequired={taxSetAsideRequired}
+                />
+                <TaxSafetyCard 
+                  paidIncome={incomeTotals.paid}
+                  projectedIncome={incomeTotals.projected}
+                  deductibleExpenses={expenseTotals.annual}
                 />
                 <TaxProjection 
                   projectedIncome={incomeTotals.projected}
                   paidIncome={incomeTotals.paid}
                   totalExpenses={expenseTotals.annual}
                 />
-                <ExpenseIntelligence 
-                  expenses={expenses}
-                  monthlyFixedExpenses={expenseTotals.monthly}
-                  pipelineValue={incomeTotals.projected}
-                />
-              </TabsContent>
-
-              <TabsContent value="charts" className="px-5 space-y-4 mt-0">
-                <ExpenseAnalytics expenses={expenses} />
               </TabsContent>
 
               <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
+                <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights deals={deals} />
                 <BusinessAnalytics deals={deals} payouts={payouts} />
               </TabsContent>
@@ -310,7 +299,7 @@ export default function DashboardPage() {
               </motion.section>
 
               {/* Premium Tabs */}
-              <Tabs defaultValue="overview" className="space-y-6">
+              <Tabs defaultValue="cashflow" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -318,11 +307,11 @@ export default function DashboardPage() {
                 >
                   <TabsList className="w-auto inline-flex h-12 p-1.5 bg-muted/40 backdrop-blur-xl rounded-2xl border border-border/30 shadow-sm">
                     <TabsTrigger 
-                      value="overview" 
+                      value="cashflow" 
                       className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
                     >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Overview
+                      <TrendingUp className="h-4 w-4" />
+                      Cashflow
                     </TabsTrigger>
                     <TabsTrigger 
                       value="taxes" 
@@ -330,13 +319,6 @@ export default function DashboardPage() {
                     >
                       <Calculator className="h-4 w-4" />
                       Taxes
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="charts" 
-                      className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                      Charts
                     </TabsTrigger>
                     <TabsTrigger 
                       value="analytics" 
@@ -348,45 +330,48 @@ export default function DashboardPage() {
                   </TabsList>
                 </motion.div>
 
-                {/* Overview Tab */}
-                <TabsContent value="overview" className="mt-0 space-y-6">
+                {/* Cashflow Tab - Primary Focus */}
+                <TabsContent value="cashflow" className="mt-0 space-y-6">
+                  {/* 3-Year Projection - Hero Component */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.25 }}
+                  >
+                    <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                  </motion.div>
+
                   <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
                     {/* Main Column */}
                     <div className="lg:col-span-2 space-y-5 lg:space-y-6">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...springConfig, delay: 0.25 }}
+                        transition={{ ...springConfig, delay: 0.3 }}
                       >
-                        <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                        <FinancialHealth 
+                          deals={deals}
+                          payouts={payouts}
+                          expenses={expenses}
+                          properties={properties}
+                          otherIncome={otherIncome}
+                          monthlyExpenses={expenseTotals.monthly}
+                          annualExpenses={expenseTotals.annual}
+                        />
                       </motion.div>
                       
-                      <div className="grid md:grid-cols-2 gap-5 lg:gap-6 items-stretch">
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ ...springConfig, delay: 0.3 }}
-                          className="h-full"
-                        >
-                          <OtherIncomeManager />
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ ...springConfig, delay: 0.35 }}
-                          className="h-full"
-                        >
-                          <FinancialHealth 
-                            deals={deals}
-                            payouts={payouts}
-                            expenses={expenses}
-                            properties={properties}
-                            otherIncome={otherIncome}
-                            monthlyExpenses={expenseTotals.monthly}
-                            annualExpenses={expenseTotals.annual}
-                          />
-                        </motion.div>
-                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ ...springConfig, delay: 0.35 }}
+                      >
+                        <ExpenseCommandCenter 
+                          expenses={expenses}
+                          properties={properties}
+                          monthlyExpenses={expenseTotals.monthly}
+                          annualExpenses={expenseTotals.annual}
+                        />
+                      </motion.div>
                     </div>
                     
                     {/* Sidebar */}
@@ -402,22 +387,15 @@ export default function DashboardPage() {
                           isPending={markPaid.isPending}
                         />
                       </motion.div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ ...springConfig, delay: 0.45 }}
+                      >
+                        <BrokerageCapCard />
+                      </motion.div>
                     </div>
                   </div>
-                  
-                  {/* Expense Command Center - Full Width */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...springConfig, delay: 0.5 }}
-                  >
-                    <ExpenseCommandCenter 
-                      expenses={expenses}
-                      properties={properties}
-                      monthlyExpenses={expenseTotals.monthly}
-                      annualExpenses={expenseTotals.annual}
-                    />
-                  </motion.div>
                 </TabsContent>
 
                 {/* Taxes Tab */}
@@ -428,10 +406,10 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...springConfig, delay: 0.25 }}
                     >
-                      <TaxSafetyCard 
-                        paidIncome={incomeTotals.paid}
-                        projectedIncome={incomeTotals.projected}
-                        deductibleExpenses={expenseTotals.annual}
+                      <SafeToSpendCard
+                        projectedCashIn={incomeTotals.projected}
+                        monthlyExpenses={expenseTotals.monthly}
+                        taxSetAsideRequired={taxSetAsideRequired}
                       />
                     </motion.div>
                     <motion.div
@@ -439,64 +417,47 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...springConfig, delay: 0.3 }}
                     >
-                      <SafeToSpendCard
-                        projectedCashIn={incomeTotals.projected}
-                        monthlyExpenses={expenseTotals.monthly}
-                        taxSetAsideRequired={taxSetAsideRequired}
+                      <TaxSafetyCard 
+                        paidIncome={incomeTotals.paid}
+                        projectedIncome={incomeTotals.projected}
+                        deductibleExpenses={expenseTotals.annual}
                       />
                     </motion.div>
                   </div>
                   
-                  <div className="grid lg:grid-cols-2 gap-5 lg:gap-6">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.35 }}
-                    >
-                      <TaxProjection 
-                        projectedIncome={incomeTotals.projected}
-                        paidIncome={incomeTotals.paid}
-                        totalExpenses={expenseTotals.annual}
-                      />
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.4 }}
-                    >
-                      <ExpenseIntelligence 
-                        expenses={expenses}
-                        monthlyFixedExpenses={expenseTotals.monthly}
-                        pipelineValue={incomeTotals.projected}
-                      />
-                    </motion.div>
-                  </div>
-                </TabsContent>
-
-                {/* Charts Tab */}
-                <TabsContent value="charts" className="mt-0 space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...springConfig, delay: 0.25 }}
+                    transition={{ ...springConfig, delay: 0.35 }}
                   >
-                    <ExpenseAnalytics expenses={expenses} />
+                    <TaxProjection 
+                      projectedIncome={incomeTotals.projected}
+                      paidIncome={incomeTotals.paid}
+                      totalExpenses={expenseTotals.annual}
+                    />
                   </motion.div>
                 </TabsContent>
 
-                {/* Business Analytics Tab */}
+                {/* Analytics Tab */}
                 <TabsContent value="analytics" className="mt-0 space-y-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.2 }}
                   >
-                    <AIBusinessInsights deals={deals} />
+                    <ExpenseAnalytics expenses={expenses} />
                   </motion.div>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
+                  >
+                    <AIBusinessInsights deals={deals} />
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.3 }}
                   >
                     <BusinessAnalytics deals={deals} payouts={payouts} />
                   </motion.div>
