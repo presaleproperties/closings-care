@@ -265,8 +265,10 @@ export default function AnalyticsPage() {
         const totalGCI = deal.gross_commission_actual || deal.gross_commission_est || 
           ((deal.advance_commission || 0) + (deal.completion_commission || 0));
         members[deal.team_member].gci += totalGCI;
-        // User's portion (typically 30%)
-        const userPortionPercent = deal.team_member_portion || 30;
+        // team_member_portion stores team member's percentage (default 70%)
+        // User gets (100 - team_member_portion) = 30%
+        const teamMemberPercent = deal.team_member_portion || 70;
+        const userPortionPercent = 100 - teamMemberPercent;
         members[deal.team_member].userPortion += totalGCI * (userPortionPercent / 100);
       }
     });
