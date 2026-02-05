@@ -214,7 +214,6 @@ export default function DashboardPage() {
               </div>
 
               <TabsContent value="overview" className="px-5 space-y-4 mt-0">
-                <AIBusinessInsights deals={deals} />
                 <BrokerageCapCard />
                 <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <UpcomingPayouts 
@@ -361,15 +360,6 @@ export default function DashboardPage() {
 
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="mt-0 space-y-6">
-                  {/* AI Business Insights - Full Width at Top */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ ...springConfig, delay: 0.2 }}
-                  >
-                    <AIBusinessInsights deals={deals} />
-                  </motion.div>
-
                   <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
                     {/* Main Column */}
                     <div className="lg:col-span-2 space-y-5 lg:space-y-6">
