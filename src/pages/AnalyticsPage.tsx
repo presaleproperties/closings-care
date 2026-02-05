@@ -64,14 +64,27 @@ export default function AnalyticsPage() {
   const { data: payouts = [] } = usePayouts();
   const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all'>('12m');
 
-  const now = new Date();
+  // Stable date reference
+  const now = useMemo(() => new Date(), []);
   const thisYear = now.getFullYear();
+
+  // Get number of months to show based on time range
+  const monthsToShow = useMemo(() => {
+    switch (timeRange) {
+      case '3m': return 3;
+      case '6m': return 6;
+      case 'ytd': return now.getMonth() + 1;
+      case '12m': return 12;
+      case 'all': return 24;
+      default: return 12;
+    }
+  }, [timeRange, now]);
 
   // Filter deals based on time range
   const filteredDeals = useMemo(() => {
     if (timeRange === 'all') return deals;
     
-    const ranges = {
+    const ranges: Record<string, { start: Date; end: Date }> = {
       'ytd': { start: new Date(thisYear, 0, 1), end: now },
       '12m': { start: subMonths(now, 12), end: now },
       '6m': { start: subMonths(now, 6), end: now },
@@ -79,9 +92,12 @@ export default function AnalyticsPage() {
     };
     
     const range = ranges[timeRange];
+    if (!range) return deals;
+    
     return deals.filter(deal => {
       const dealDate = deal.created_at ? parseISO(deal.created_at) : null;
-      return dealDate && isWithinInterval(dealDate, range);
+      if (!dealDate) return false;
+      return isWithinInterval(dealDate, range);
     });
   }, [deals, timeRange, thisYear, now]);
 
@@ -174,7 +190,7 @@ export default function AnalyticsPage() {
   // Monthly Deals Written (by created_at)
   const dealsWrittenByMonth = useMemo(() => {
     const months = eachMonthOfInterval({
-      start: subMonths(now, 11),
+      start: subMonths(now, monthsToShow - 1),
       end: now,
     });
 
@@ -182,7 +198,7 @@ export default function AnalyticsPage() {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       
-      const monthDeals = deals.filter(deal => {
+      const monthDeals = filteredDeals.filter(deal => {
         const createdDate = deal.created_at ? parseISO(deal.created_at) : null;
         return createdDate && isWithinInterval(createdDate, { start: monthStart, end: monthEnd });
       });
@@ -198,12 +214,12 @@ export default function AnalyticsPage() {
         gci,
       };
     });
-  }, [deals, now]);
+  }, [filteredDeals, now, monthsToShow]);
 
   // Monthly Deals Closing (by close_date_est or close_date_actual)
   const dealsClosingByMonth = useMemo(() => {
     const months = eachMonthOfInterval({
-      start: subMonths(now, 11),
+      start: subMonths(now, monthsToShow - 1),
       end: now,
     });
 
@@ -211,7 +227,7 @@ export default function AnalyticsPage() {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       
-      const closingDeals = deals.filter(deal => {
+      const closingDeals = filteredDeals.filter(deal => {
         const closeDate = deal.close_date_actual || deal.close_date_est;
         if (!closeDate) return false;
         const parsedDate = parseISO(closeDate);
@@ -234,7 +250,7 @@ export default function AnalyticsPage() {
         gci,
       };
     });
-  }, [deals, now]);
+  }, [filteredDeals, now, monthsToShow]);
 
   // Team Member Performance
   const teamMemberData = useMemo(() => {
@@ -284,7 +300,7 @@ export default function AnalyticsPage() {
   // GCI Trends
   const gciTrends = useMemo(() => {
     const months = eachMonthOfInterval({
-      start: subMonths(now, 11),
+      start: subMonths(now, monthsToShow - 1),
       end: now,
     });
 
@@ -293,7 +309,7 @@ export default function AnalyticsPage() {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       
-      const monthDeals = deals.filter(deal => {
+      const monthDeals = filteredDeals.filter(deal => {
         const closeDate = deal.close_date_actual;
         if (!closeDate) return false;
         const parsedDate = parseISO(closeDate);
@@ -312,7 +328,7 @@ export default function AnalyticsPage() {
         cumulative,
       };
     });
-  }, [deals, now]);
+  }, [filteredDeals, now, monthsToShow]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
