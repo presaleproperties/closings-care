@@ -257,17 +257,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="charts" className="px-5 space-y-4 mt-0">
-                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
                 <ExpenseAnalytics expenses={expenses} />
-                <FinancialHealth 
-                  deals={deals}
-                  payouts={payouts}
-                  expenses={expenses}
-                  properties={properties}
-                  otherIncome={otherIncome}
-                  monthlyExpenses={expenseTotals.monthly}
-                  annualExpenses={expenseTotals.annual}
-                />
               </TabsContent>
 
               <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
@@ -490,33 +480,8 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                    <ExpenseAnalytics expenses={expenses} />
                   </motion.div>
-                  
-                  <div className="grid lg:grid-cols-2 gap-5 lg:gap-6">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.3 }}
-                    >
-                      <ExpenseAnalytics expenses={expenses} />
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springConfig, delay: 0.35 }}
-                    >
-                      <FinancialHealth 
-                        deals={deals}
-                        payouts={payouts}
-                        expenses={expenses}
-                        properties={properties}
-                        otherIncome={otherIncome}
-                        monthlyExpenses={expenseTotals.monthly}
-                        annualExpenses={expenseTotals.annual}
-                      />
-                    </motion.div>
-                  </div>
                 </TabsContent>
 
                 {/* Business Analytics Tab */}
