@@ -26,6 +26,7 @@ import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { OtherIncomeManager } from '@/components/dashboard/OtherIncomeManager';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
 import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
+import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -270,6 +271,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
+                <AIBusinessInsights deals={deals} />
                 <BusinessAnalytics deals={deals} payouts={payouts} />
               </TabsContent>
             </Tabs>
@@ -518,7 +520,14 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 {/* Business Analytics Tab */}
-                <TabsContent value="analytics" className="mt-0">
+                <TabsContent value="analytics" className="mt-0 space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.2 }}
+                  >
+                    <AIBusinessInsights deals={deals} />
+                  </motion.div>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
