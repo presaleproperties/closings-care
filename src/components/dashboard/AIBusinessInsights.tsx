@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles, Target, TrendingUp, Users, Calendar, Loader2, RefreshCw } from 'lucide-react';
+import { Sparkles, Target, TrendingUp, Users, Calendar, Loader2, RefreshCw, ChevronRight } from 'lucide-react';
 import { Deal } from '@/lib/types';
 import { format, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +17,7 @@ interface AIBusinessInsightsProps {
 const YEARLY_TARGET = 100;
 
 export function AIBusinessInsights({ deals }: AIBusinessInsightsProps) {
+  const navigate = useNavigate();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -224,13 +226,14 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {sortedMonths.length > 0 ? (
               sortedMonths.map(([month, data]) => (
-                <div
+                <button
                   key={month}
-                  className="p-3 rounded-xl bg-muted/50 text-center hover:bg-muted transition-colors"
+                  onClick={() => navigate('/deals')}
+                  className="p-3 rounded-xl bg-muted/50 text-center hover:bg-muted transition-colors cursor-pointer group"
                 >
-                  <div className="text-2xl font-bold text-primary">{data.count}</div>
+                  <div className="text-2xl font-bold text-primary group-hover:scale-110 transition-transform">{data.count}</div>
                   <div className="text-xs text-muted-foreground">{month}</div>
-                </div>
+                </button>
               ))
             ) : (
               <div className="col-span-full text-center text-muted-foreground py-4">
@@ -251,9 +254,10 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
             <div className="space-y-2">
               {leadSourceBreakdown.length > 0 ? (
                 leadSourceBreakdown.map(([source, count], idx) => (
-                  <div
+                  <button
                     key={source}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate('/deals')}
+                    className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center gap-2">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -265,8 +269,11 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
                       </span>
                       <span className="text-sm font-medium">{source}</span>
                     </div>
-                    <Badge variant="secondary">{count} deals</Badge>
-                  </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary">{count} deals</Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
                 ))
               ) : (
                 <div className="text-center text-muted-foreground py-4">
@@ -287,9 +294,10 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
                 teamBreakdown.map(([name, data]) => {
                   const isSolo = name === 'You (Solo)';
                   return (
-                    <div
+                    <button
                       key={name}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate('/deals')}
+                      className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
                     >
                       <div className="flex items-center gap-2">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -299,13 +307,14 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
                         </div>
                         <span className="text-sm font-medium">{name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Badge variant="secondary">{data.deals} deals</Badge>
                         {!isSolo && (
                           <Badge variant="outline" className="text-xs">30% yours</Badge>
                         )}
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               ) : (
