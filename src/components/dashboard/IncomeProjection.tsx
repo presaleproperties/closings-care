@@ -110,7 +110,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
-  const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(12);
+  const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(36);
   const { limits, isFree } = useSubscription();
   const { data: settings } = useSettings();
 
