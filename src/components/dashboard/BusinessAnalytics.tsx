@@ -113,13 +113,21 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     // Average commission based on all deals (expected)
     const avgCommission = totalDeals > 0 ? totalExpectedCommission / totalDeals : 0;
 
-    // Helper to get deal's total value (paid + projected, or expected commission)
+    // Helper to get deal's total value (user's portion for team deals)
     const getDealValue = (deal: Deal) => {
       const dealPayouts = payouts.filter(p => p.deal_id === deal.id);
       if (dealPayouts.length > 0) {
+        // Payouts already have user's portion applied
         return dealPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
       }
-      return Number(deal.gross_commission_est || 0);
+      // Fallback to gross commission, applying user's portion for team deals
+      // team_member_portion stores team member's % (default 70%), user gets (100 - 70) = 30%
+      const grossCommission = Number(deal.gross_commission_est || 0);
+      if (deal.team_member && deal.team_member_portion && deal.team_member_portion > 0) {
+        const userPortionPercent = 100 - deal.team_member_portion;
+        return grossCommission * (userPortionPercent / 100);
+      }
+      return grossCommission;
     };
 
     // Lead source breakdown - use total deal value (paid + projected)
