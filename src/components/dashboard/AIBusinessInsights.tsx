@@ -305,13 +305,15 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
                         }`}>
                           {isSolo ? 'You' : name.charAt(0)}
                         </div>
-                        <span className="text-sm font-medium">{name}</span>
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm font-medium">{isSolo ? 'Your Solo Deals' : name}</span>
+                          {!isSolo && (
+                            <span className="text-xs text-muted-foreground">Wrote {data.deals} deals • You earn 30%</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Badge variant="secondary">{data.deals} deals</Badge>
-                        {!isSolo && (
-                          <Badge variant="outline" className="text-xs">30% yours</Badge>
-                        )}
+                        <Badge variant="secondary">{data.deals}</Badge>
                         <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     </button>
