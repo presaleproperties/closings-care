@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Building2, 
-  Receipt, 
+  BarChart3,
   TrendingUp,
   Settings,
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { triggerHaptic } from '@/lib/haptics';
 const navItems = [
   { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
   { icon: Building2, label: 'Deals', path: '/deals' },
-  { icon: Receipt, label: 'Expenses', path: '/expenses' },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics' },
   { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];

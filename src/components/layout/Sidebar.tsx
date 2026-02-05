@@ -4,7 +4,8 @@ import {
   Building2,
   Wallet, 
   Receipt, 
-  TrendingUp, 
+  TrendingUp,
+  BarChart3,
   Settings,
   LogOut,
   ChevronLeft,
@@ -23,6 +24,7 @@ const navItems = [
   { icon: Wallet, label: 'Payouts', path: '/payouts' },
   { icon: Receipt, label: 'Expenses', path: '/expenses' },
   { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 

@@ -16,6 +16,7 @@ import DealDetailPage from "./pages/DealDetailPage";
 import PayoutsPage from "./pages/PayoutsPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ForecastPage from "./pages/ForecastPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AdminPage from "./pages/AdminPage";
 import TermsPage from "./pages/TermsPage";
@@ -83,6 +84,7 @@ const App = () => (
                 <Route path="/payouts" element={<ProtectedRoute><PayoutsPage /></ProtectedRoute>} />
                 <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
                 <Route path="/forecast" element={<ProtectedRoute><ForecastPage /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
