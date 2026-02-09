@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -36,14 +36,15 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Check if user is admin
-    const { data: profile, error: profileError } = await supabaseClient
-      .from("profiles")
-      .select("is_admin")
+    // Check if user is admin via user_roles table
+    const { data: adminRole, error: roleError } = await supabaseClient
+      .from("user_roles")
+      .select("role")
       .eq("user_id", user.id)
-      .single();
+      .eq("role", "admin")
+      .maybeSingle();
 
-    if (profileError || !profile?.is_admin) {
+    if (roleError || !adminRole) {
       throw new Error("Unauthorized: Admin access required");
     }
 

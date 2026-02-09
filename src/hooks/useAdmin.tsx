@@ -46,18 +46,20 @@ export function useIsAdmin() {
     queryFn: async () => {
       if (!user) return false;
 
+      // Check user_roles table (secure, separate from profiles)
       const { data, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
+        .from('user_roles')
+        .select('role')
         .eq('user_id', user.id)
-        .single();
+        .eq('role', 'admin')
+        .maybeSingle();
 
       if (error) {
         console.error('Error checking admin status:', error);
         return false;
       }
 
-      return data?.is_admin ?? false;
+      return !!data;
     },
     enabled: !!user,
   });
