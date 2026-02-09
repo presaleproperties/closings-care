@@ -306,6 +306,42 @@ export type Database = {
           },
         ]
       }
+      pipeline_prospects: {
+        Row: {
+          client_name: string
+          created_at: string
+          home_type: string
+          id: string
+          notes: string | null
+          potential_commission: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          home_type?: string
+          id?: string
+          notes?: string | null
+          potential_commission?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          home_type?: string
+          id?: string
+          notes?: string | null
+          potential_commission?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
