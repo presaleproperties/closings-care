@@ -207,7 +207,8 @@
 
   /* KPI Card - Premium widget style with depth */
   .kpi-card {
-    @apply bg-card/98 backdrop-blur-2xl border border-border/40 rounded-2xl p-5 transition-all duration-400 ease-out;
+    @apply backdrop-blur-2xl border border-border/40 rounded-2xl p-5 transition-all duration-300 ease-out;
+    background-color: hsl(var(--card) / 0.98);
     box-shadow: 
       0 0 0 1px hsl(var(--border) / 0.3),
       0 2px 4px 0 hsl(220 25% 10% / 0.03),
