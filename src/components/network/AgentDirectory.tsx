@@ -1,9 +1,16 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Users, FileText, Mail, Phone, Shield } from 'lucide-react';
+import { Search, Users, FileText, Mail, Phone, Shield, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { NetworkAgent } from '@/hooks/useNetworkData';
 
 interface AgentDirectoryProps {
@@ -29,13 +36,41 @@ const TIER_COLORS: Record<number, string> = {
 export function AgentDirectory({ agents }: AgentDirectoryProps) {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'tier' | 'network'>('name');
+  const [filterTier, setFilterTier] = useState<number | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'active' | 'departed' | null>(null);
+  const [filterTenure, setFilterTenure] = useState<'0-6' | '6-12' | '12-24' | '24+' | null>(null);
 
   const filteredAgents = useMemo(() => {
-    let result = agents.filter(a => 
-      a.agent_name.toLowerCase().includes(search.toLowerCase()) ||
-      a.email?.toLowerCase().includes(search.toLowerCase()) ||
-      a.sponsor_name?.toLowerCase().includes(search.toLowerCase())
-    );
+    let result = agents.filter(a => {
+      // Search filter
+      const matchesSearch = 
+        a.agent_name.toLowerCase().includes(search.toLowerCase()) ||
+        a.email?.toLowerCase().includes(search.toLowerCase()) ||
+        a.sponsor_name?.toLowerCase().includes(search.toLowerCase());
+      
+      // Tier filter
+      const matchesTier = !filterTier || a.tier === filterTier;
+      
+      // Status filter
+      let matchesStatus = true;
+      if (filterStatus === 'active') {
+        matchesStatus = a.status === 'ACTIVE' && !a.departure_date;
+      } else if (filterStatus === 'departed') {
+        matchesStatus = a.status !== 'ACTIVE' || !!a.departure_date;
+      }
+      
+      // Tenure filter
+      let matchesTenure = true;
+      if (filterTenure && a.days_with_brokerage !== null) {
+        const years = a.days_with_brokerage / 365;
+        if (filterTenure === '0-6') matchesTenure = years < 0.5;
+        else if (filterTenure === '6-12') matchesTenure = years >= 0.5 && years < 1;
+        else if (filterTenure === '12-24') matchesTenure = years >= 1 && years < 2;
+        else if (filterTenure === '24+') matchesTenure = years >= 2;
+      }
+      
+      return matchesSearch && matchesTier && matchesStatus && matchesTenure;
+    });
 
     // Sort
     result.sort((a, b) => {
@@ -51,13 +86,13 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
     });
 
     return result;
-  }, [agents, search, sortBy]);
+  }, [agents, search, sortBy, filterTier, filterStatus, filterTenure]);
 
   const activeAgents = filteredAgents.filter(a => a.status === 'ACTIVE' && !a.departure_date);
   const departedAgents = filteredAgents.filter(a => a.status !== 'ACTIVE' || !!a.departure_date);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Search & Sort */}
       <div className="flex gap-3 flex-col sm:flex-row">
         <div className="relative flex-1">
@@ -86,6 +121,79 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap items-start sm:items-center">
+        <div className="text-sm font-semibold text-foreground">Filters:</div>
+        
+        {/* Tier Filter */}
+        <Select value={filterTier?.toString() || ''} onValueChange={(v) => setFilterTier(v ? parseInt(v) : null)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="All Tiers" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Tiers</SelectItem>
+            {[1, 2, 3, 4, 5].map(tier => (
+              <SelectItem key={tier} value={tier.toString()}>
+                {TIER_LABELS[tier as keyof typeof TIER_LABELS]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Status Filter */}
+        <div className="flex gap-1">
+          <button
+            onClick={() => setFilterStatus(filterStatus === 'active' ? null : 'active')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filterStatus === 'active'
+                ? 'bg-success/20 text-success border border-success/30'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => setFilterStatus(filterStatus === 'departed' ? null : 'departed')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              filterStatus === 'departed'
+                ? 'bg-destructive/20 text-destructive border border-destructive/30'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Departed
+          </button>
+        </div>
+
+        {/* Tenure Filter */}
+        <Select value={filterTenure || ''} onValueChange={(v) => setFilterTenure((v as any) || null)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Tenure" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Tenure</SelectItem>
+            <SelectItem value="0-6">0-6 months</SelectItem>
+            <SelectItem value="6-12">6-12 months</SelectItem>
+            <SelectItem value="12-24">1-2 years</SelectItem>
+            <SelectItem value="24+">2+ years</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Clear Filters Button */}
+        {(filterTier || filterStatus || filterTenure) && (
+          <button
+            onClick={() => {
+              setFilterTier(null);
+              setFilterStatus(null);
+              setFilterTenure(null);
+            }}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-muted/50 text-muted-foreground hover:bg-muted transition-all flex items-center gap-1"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Active Agents */}
