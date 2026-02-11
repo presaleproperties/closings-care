@@ -87,15 +87,16 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
 
             // Commission
+            // ReZen returns monetary amounts in dollars (not cents)
             let commission: number | null = null
-            if (tx.grossCommission?.amount) commission = tx.grossCommission.amount / 100
-            else if (tx.totalGci) commission = tx.totalGci / 100
+            if (tx.grossCommission?.amount) commission = tx.grossCommission.amount
+            else if (tx.totalGci) commission = tx.totalGci
             else if (tx.grossCommission && typeof tx.grossCommission === 'number') commission = tx.grossCommission
             else if (tx.commission && typeof tx.commission === 'number') commission = tx.commission
 
             // Sale price
             let salePrice: number | null = null
-            if (tx.price?.amount) salePrice = tx.price.amount / 100
+            if (tx.price?.amount) salePrice = tx.price.amount
             else if (tx.salePrice) salePrice = tx.salePrice
             else if (tx.purchasePrice) salePrice = tx.purchasePrice
             else if (tx.price && typeof tx.price === 'number') salePrice = tx.price
@@ -167,13 +168,13 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
 
           let commission: number | null = null
-          if (tx.grossCommission?.amount) commission = tx.grossCommission.amount / 100
-          else if (tx.totalGci) commission = tx.totalGci / 100
+          if (tx.grossCommission?.amount) commission = tx.grossCommission.amount
+          else if (tx.totalGci) commission = tx.totalGci
           else if (typeof tx.grossCommission === 'number') commission = tx.grossCommission
           else if (typeof tx.commission === 'number') commission = tx.commission
 
           let salePrice: number | null = null
-          if (tx.price?.amount) salePrice = tx.price.amount / 100
+          if (tx.price?.amount) salePrice = tx.price.amount
           else if (tx.salePrice) salePrice = tx.salePrice
           else if (tx.purchasePrice) salePrice = tx.purchasePrice
           else if (typeof tx.price === 'number') salePrice = tx.price
@@ -242,7 +243,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           }
 
           const amount = payment.amount?.amount
-            ? payment.amount.amount / 100
+            ? payment.amount.amount
             : (typeof payment.amount === 'number' ? payment.amount : 0)
 
           await supabase.from('revenue_share').upsert({

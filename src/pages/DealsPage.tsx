@@ -450,7 +450,7 @@ export default function DealsPage() {
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
           
-          <Tabs defaultValue="my-deals" className="space-y-4">
+          <Tabs defaultValue="synced" className="space-y-4">
             <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/40 backdrop-blur-xl rounded-xl border border-border/30">
               <TabsTrigger value="my-deals" className="text-sm font-semibold px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md">
                 My Deals
