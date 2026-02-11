@@ -14,7 +14,10 @@ import {
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
-  Filter
+  Filter,
+  MapPin,
+  Home,
+  UserCheck,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -71,6 +74,95 @@ export default function AnalyticsPage() {
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { syncedPayouts, receivedYTD: syncedReceivedYTD, comingIn: syncedComingIn } = useSyncedIncome(syncedTransactions);
   const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all'>('12m');
+  const [dealTypeFilter, setDealTypeFilter] = useState<'all' | 'presale' | 'resale'>('all');
+  const [cityFilter, setCityFilter] = useState<string>('all');
+  const [agentFilter, setAgentFilter] = useState<string>('all');
+
+  // Normalize city names (title case, trim, merge duplicates)
+  const normalizeCity = (city: string | null): string => {
+    if (!city) return 'Unknown';
+    const trimmed = city.trim();
+    // Normalize to title case
+    const normalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+    // Merge known duplicates
+    const cityMap: Record<string, string> = {
+      'Surrey bc': 'Surrey',
+      'New westminister': 'New Westminster',
+      'New westminster district plan': 'New Westminster',
+      'New westminster district plan ': 'New Westminster',
+    };
+    return cityMap[normalized.toLowerCase()] || normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  // Detect presale from property address
+  const isPresaleTransaction = (tx: any): boolean => {
+    const addr = (tx.property_address || '').toLowerCase();
+    return addr.includes('part 1/2') || addr.includes('1/2 -') || 
+           addr.includes('part 2/2') || addr.includes('2/2 -') ||
+           addr.includes('part 3/3') || addr.includes('3/3 -');
+  };
+
+  // Extract writing agents from participants (BUYERS_AGENT, SELLERS_AGENT roles, excluding hidden)
+  const getWritingAgents = (tx: any): string[] => {
+    try {
+      const participants = tx.raw_data?.participants || [];
+      return participants
+        .filter((p: any) => 
+          ['BUYERS_AGENT', 'SELLERS_AGENT'].includes(p.participantRole) && 
+          !p.hidden && !p.external
+        )
+        .map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim())
+        .filter((n: string) => n.length > 0);
+    } catch { return []; }
+  };
+
+  // Extract unique cities and agents from synced transactions
+  const filterDimensions = useMemo(() => {
+    const citySet = new Map<string, number>();
+    const agentSet = new Map<string, number>();
+
+    syncedTransactions.forEach(tx => {
+      const city = normalizeCity(tx.city);
+      citySet.set(city, (citySet.get(city) || 0) + 1);
+
+      const agents = getWritingAgents(tx);
+      agents.forEach(agent => {
+        agentSet.set(agent, (agentSet.get(agent) || 0) + 1);
+      });
+    });
+
+    return {
+      cities: Array.from(citySet.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+      agents: Array.from(agentSet.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, count]) => ({ name, count })),
+    };
+  }, [syncedTransactions]);
+
+  // Filter synced transactions based on deal type, city, and agent
+  const filteredSyncedTransactions = useMemo(() => {
+    return syncedTransactions.filter(tx => {
+      // Deal type filter
+      if (dealTypeFilter === 'presale' && !isPresaleTransaction(tx)) return false;
+      if (dealTypeFilter === 'resale' && isPresaleTransaction(tx)) return false;
+
+      // City filter
+      if (cityFilter !== 'all' && normalizeCity(tx.city) !== cityFilter) return false;
+
+      // Agent filter
+      if (agentFilter !== 'all') {
+        const agents = getWritingAgents(tx);
+        if (!agents.includes(agentFilter)) return false;
+      }
+
+      return true;
+    });
+  }, [syncedTransactions, dealTypeFilter, cityFilter, agentFilter]);
+
+  // Use filtered synced transactions for income calculations
+  const { syncedPayouts: filteredSyncedPayouts, receivedYTD: filteredReceivedYTD, comingIn: filteredComingIn } = useSyncedIncome(filteredSyncedTransactions);
 
   // Stable date reference
   const now = useMemo(() => new Date(), []);
@@ -118,8 +210,8 @@ export default function AnalyticsPage() {
       return sum + gci;
     }, 0);
 
-    // Synced transaction GCI (user's net split)
-    const syncedGCI = syncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
+    // Synced transaction GCI (user's net split) - using filtered data
+    const syncedGCI = filteredSyncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
     const totalGCI = manualGCI + syncedGCI;
 
     const closedDeals = filteredDeals.filter(d => d.status === 'CLOSED');
@@ -129,13 +221,13 @@ export default function AnalyticsPage() {
       const gci = d.gross_commission_actual || d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
       return sum + gci;
-    }, 0) + syncedReceivedYTD;
+    }, 0) + filteredReceivedYTD;
 
-    const totalDealCount = filteredDeals.length + syncedPayouts.length;
+    const totalDealCount = filteredDeals.length + filteredSyncedPayouts.length;
     const avgDealSize = totalDealCount > 0 ? totalGCI / totalDealCount : 0;
     
     const paidPayouts = payouts.filter(p => p.status === 'PAID');
-    const totalReceived = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0) + syncedReceivedYTD;
+    const totalReceived = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0) + filteredReceivedYTD;
 
     // Team deals
     const teamDeals = filteredDeals.filter(d => d.team_member);
@@ -151,9 +243,9 @@ export default function AnalyticsPage() {
       totalReceived,
       teamDeals: teamDeals.length,
       soloDeals: soloDeals.length,
-      syncedComingIn,
+      syncedComingIn: filteredComingIn,
     };
-  }, [filteredDeals, payouts, syncedPayouts, syncedReceivedYTD, syncedComingIn]);
+  }, [filteredDeals, payouts, filteredSyncedPayouts, filteredReceivedYTD, filteredComingIn]);
 
   // Lead Source Analytics
   const leadSourceData = useMemo(() => {
@@ -299,10 +391,17 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.gci - a.gci);
   }, [filteredDeals]);
 
-  // City Distribution
+  // City Distribution - from synced transactions (primary source)
   const cityData = useMemo(() => {
     const cities: Record<string, number> = {};
     
+    // Synced transactions (primary)
+    filteredSyncedTransactions.forEach(tx => {
+      const city = normalizeCity(tx.city);
+      cities[city] = (cities[city] || 0) + 1;
+    });
+
+    // Manual deals (secondary)
     filteredDeals.forEach(deal => {
       const city = deal.city || 'Unknown';
       cities[city] = (cities[city] || 0) + 1;
@@ -311,8 +410,8 @@ export default function AnalyticsPage() {
     return Object.entries(cities)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [filteredDeals]);
+      .slice(0, 10);
+  }, [filteredDeals, filteredSyncedTransactions]);
 
   // GCI Trends - blending manual deals + synced transactions
   const gciTrends = useMemo(() => {
@@ -337,8 +436,8 @@ export default function AnalyticsPage() {
         sum + (d.gross_commission_actual || d.gross_commission_est || 
           ((d.advance_commission || 0) + (d.completion_commission || 0))), 0);
 
-      // Synced transaction GCI for this month
-      const syncedGCI = syncedPayouts
+      // Synced transaction GCI for this month (filtered)
+      const syncedGCI = filteredSyncedPayouts
         .filter(p => {
           const date = parseISO(p.close_date);
           return isWithinInterval(date, { start: monthStart, end: monthEnd });
@@ -354,7 +453,7 @@ export default function AnalyticsPage() {
         cumulative,
       };
     });
-  }, [filteredDeals, syncedPayouts, now, monthsToShow]);
+  }, [filteredDeals, filteredSyncedPayouts, now, monthsToShow]);
 
   // RevShare by Month (grouped by year for comparison)
   const revShareMonthly = useMemo(() => {
@@ -427,24 +526,94 @@ export default function AnalyticsPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        {/* Time Range Filter */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-muted-foreground">Time Period:</span>
+        {/* Filters Bar */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Filter className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Filters</span>
+            {(dealTypeFilter !== 'all' || cityFilter !== 'all' || agentFilter !== 'all') && (
+              <button 
+                onClick={() => { setDealTypeFilter('all'); setCityFilter('all'); setAgentFilter('all'); }}
+                className="ml-auto text-xs text-primary hover:underline font-medium"
+              >
+                Clear all
+              </button>
+            )}
           </div>
-          <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ytd">Year to Date</SelectItem>
-              <SelectItem value="12m">Last 12 Months</SelectItem>
-              <SelectItem value="6m">Last 6 Months</SelectItem>
-              <SelectItem value="3m">Last 3 Months</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
-            </SelectContent>
-          </Select>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Time Period */}
+            <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
+              <SelectTrigger className="w-[140px] h-10 rounded-xl bg-background/50 border-border/50">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="ytd">Year to Date</SelectItem>
+                <SelectItem value="12m">Last 12 Months</SelectItem>
+                <SelectItem value="6m">Last 6 Months</SelectItem>
+                <SelectItem value="3m">Last 3 Months</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Deal Type: Presale / Resale */}
+            <Select value={dealTypeFilter} onValueChange={(v: any) => setDealTypeFilter(v)}>
+              <SelectTrigger className="w-[140px] h-10 rounded-xl bg-background/50 border-border/50">
+                <Home className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="presale">Presale</SelectItem>
+                <SelectItem value="resale">Resale</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* City Filter */}
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger className="w-[160px] h-10 rounded-xl bg-background/50 border-border/50">
+                <MapPin className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="All Cities" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl max-h-[300px]">
+                <SelectItem value="all">All Cities</SelectItem>
+                {filterDimensions.cities.map(c => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name} ({c.count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Agent Filter */}
+            {filterDimensions.agents.length > 1 && (
+              <Select value={agentFilter} onValueChange={setAgentFilter}>
+                <SelectTrigger className="w-[180px] h-10 rounded-xl bg-background/50 border-border/50">
+                  <UserCheck className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="All Agents" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-[300px]">
+                  <SelectItem value="all">All Agents</SelectItem>
+                  {filterDimensions.agents.map(a => (
+                    <SelectItem key={a.name} value={a.name}>
+                      {a.name} ({a.count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Active filter summary */}
+          {(dealTypeFilter !== 'all' || cityFilter !== 'all' || agentFilter !== 'all') && (
+            <div className="flex items-center gap-2 flex-wrap pt-1">
+              <span className="text-xs text-muted-foreground">Showing:</span>
+              <span className="text-xs font-semibold text-primary">
+                {filteredSyncedTransactions.length} of {syncedTransactions.length} transactions
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Key Metrics */}
