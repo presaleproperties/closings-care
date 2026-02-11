@@ -62,6 +62,24 @@ export function NeedsAttention({ deals, payouts, syncedTransactions }: NeedsAtte
       });
     }
 
+    // Synced active deals with past close dates (flagged)
+    const flaggedSynced = syncedTransactions.filter((tx: any) => {
+      if (tx.status !== 'active') return false;
+      const closeDate = tx.close_date;
+      return closeDate && isBefore(new Date(closeDate), now);
+    });
+    if (flaggedSynced.length > 0) {
+      const flaggedValue = flaggedSynced.reduce((s: number, tx: any) => s + Number(tx.my_net_payout || tx.commission_amount || 0), 0);
+      items.push({
+        id: 'flagged-synced',
+        title: `${flaggedSynced.length} active deal${flaggedSynced.length > 1 ? 's' : ''} past close date`,
+        subtitle: 'These deals are still active but their close date has passed',
+        amount: flaggedValue,
+        link: '/deals',
+        severity: 'error',
+      });
+    }
+
     // Aging pipeline - pending > 30 days
     const agingDeals = deals.filter(d => {
       if (d.status !== 'PENDING') return false;
