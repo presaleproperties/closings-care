@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { AgentDirectory } from '@/components/network/AgentDirectory';
 import { SponsorTree } from '@/components/network/SponsorTree';
-import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network } from 'lucide-react';
+import { TopPerformers } from '@/components/network/TopPerformers';
+import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network, Trophy } from 'lucide-react';
 import { useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -213,6 +214,7 @@ export default function NetworkPage() {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="top">Top Performers</TabsTrigger>
             <TabsTrigger value="tree">Tree</TabsTrigger>
             <TabsTrigger value="revshare">RevShare</TabsTrigger>
             <TabsTrigger value="agents">Agents</TabsTrigger>
@@ -342,6 +344,24 @@ export default function NetworkPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Top Performers Tab */}
+          <TabsContent value="top" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-primary" />
+                  Top Performers
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your highest-performing agents ranked by network size and revenue share contributions
+                </p>
+              </CardHeader>
+              <CardContent>
+                <TopPerformers agents={agents} revenueShare={revenueShare} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Tree Tab - Sponsor Relationships */}
