@@ -81,20 +81,23 @@ export default function NetworkPage() {
   // Days with brokerage distribution
   const daysDistribution = useMemo(() => {
     const buckets = [
-      { label: '0-90', min: 0, max: 90, count: 0 },
-      { label: '91-180', min: 91, max: 180, count: 0 },
-      { label: '181-365', min: 181, max: 365, count: 0 },
-      { label: '1-2 yrs', min: 366, max: 730, count: 0 },
-      { label: '2+ yrs', min: 731, max: Infinity, count: 0 },
+      { label: '0-90 days', min: 0, max: 90, count: 0, agents: [] as string[] },
+      { label: '91-180 days', min: 91, max: 180, count: 0, agents: [] as string[] },
+      { label: '6m-1yr', min: 181, max: 365, count: 0, agents: [] as string[] },
+      { label: '1-2 yrs', min: 366, max: 730, count: 0, agents: [] as string[] },
+      { label: '2+ yrs', min: 731, max: Infinity, count: 0, agents: [] as string[] },
     ];
     agents.forEach(a => {
       const days = a.days_with_brokerage;
       if (days != null) {
         const bucket = buckets.find(b => days >= b.min && days <= b.max);
-        if (bucket) bucket.count++;
+        if (bucket) {
+          bucket.count++;
+          bucket.agents.push(a.agent_name);
+        }
       }
     });
-    return buckets.map(b => ({ name: b.label, value: b.count }));
+    return buckets.map(b => ({ name: b.label, value: b.count, agents: b.agents }));
   }, [agents]);
 
   // RevShare by month/year
@@ -325,21 +328,44 @@ export default function NetworkPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Clock className="w-4 h-4 text-primary" />
-                    Days with Brokerage
+                    Tenure Distribution
                   </CardTitle>
+                  <p className="text-xs text-muted-foreground">Hover to see agent names in each group</p>
                 </CardHeader>
                 <CardContent>
                   {daysDistribution.every(b => b.value === 0) ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No tenure data available.</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[340px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={daysDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                          <Tooltip {...tooltipStyle} />
-                          <Bar dataKey="value" name="Agents" fill="hsl(175, 60%, 38%)" radius={[6, 6, 0, 0]} />
+                          <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const data = payload[0].payload;
+                              return (
+                                <div className="rounded-lg border border-border/50 bg-background px-3 py-2.5 shadow-xl text-xs max-w-[220px]">
+                                  <p className="font-semibold text-foreground mb-1">{data.name} — {data.value} agent{data.value !== 1 ? 's' : ''}</p>
+                                  <div className="space-y-0.5">
+                                    {data.agents.slice(0, 8).map((name: string, i: number) => (
+                                      <p key={i} className="text-muted-foreground truncate">• {name}</p>
+                                    ))}
+                                    {data.agents.length > 8 && (
+                                      <p className="text-muted-foreground italic">+{data.agents.length - 8} more</p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="value" name="Agents" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                            {daysDistribution.map((_, i) => (
+                              <Cell key={i} fill={`hsl(158, ${50 + i * 5}%, ${38 - i * 3}%)`} />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
