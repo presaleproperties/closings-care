@@ -66,10 +66,13 @@ export default function NetworkPage() {
         if (!months[m]) months[m] = { month: m, additions: 0, departures: 0 };
         months[m].additions++;
       }
-      if (a.departure_date) {
-        const m = a.departure_date.slice(0, 7);
-        if (!months[m]) months[m] = { month: m, additions: 0, departures: 0 };
-        months[m].departures++;
+      // Use departure_date if available, otherwise use updated_at for INACTIVE agents
+      const departureMonth = a.departure_date
+        ? a.departure_date.slice(0, 7)
+        : (a.status === 'INACTIVE' && a.updated_at ? a.updated_at.slice(0, 7) : null);
+      if (departureMonth) {
+        if (!months[departureMonth]) months[departureMonth] = { month: departureMonth, additions: 0, departures: 0 };
+        months[departureMonth].departures++;
       }
     });
     return Object.values(months).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
