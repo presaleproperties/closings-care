@@ -25,8 +25,8 @@ export function SyncedTransactionsList({ transactions, isLoading }: SyncedTransa
   const [sortBy, setSortBy] = useState<SortBy>('date');
 
   const stats = useMemo(() => {
-    const closed = transactions.filter(t => t.status === 'Closed' || t.status === 'CLOSED');
-    const pending = transactions.filter(t => t.status === 'Pending' || t.status === 'PENDING');
+    const closed = transactions.filter(t => (t.status || '').toLowerCase() === 'closed');
+    const pending = transactions.filter(t => (t.status || '').toLowerCase() !== 'closed');
     const totalVolume = transactions.reduce((s, t) => s + Number(t.sale_price || 0), 0);
     const totalCommission = transactions.reduce((s, t) => s + Number(t.commission_amount || 0), 0);
     return {
