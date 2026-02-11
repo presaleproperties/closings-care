@@ -12,8 +12,9 @@ import {
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
-import { usePayouts } from '@/hooks/usePayouts';
 import { useRevenueShare } from '@/hooks/usePlatformConnections';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
+import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
@@ -21,7 +22,6 @@ import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency, getExtendedMonthRange } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
-import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   AreaChart,
@@ -48,7 +48,8 @@ const itemVariants = {
 };
 
 export default function ForecastPage() {
-  const { data: payouts = [] } = usePayouts();
+  const { data: syncedTransactions = [] } = useSyncedTransactions();
+  const { syncedPayouts } = useSyncedIncome(syncedTransactions);
   const { data: revenueShare = [] } = useRevenueShare();
   const { data: expenses = [] } = useExpenses();
   const { data: properties = [] } = useProperties();
@@ -56,11 +57,6 @@ export default function ForecastPage() {
   const refreshData = useRefreshData();
 
   const [selectedYear, setSelectedYear] = useState<string>('2026');
-
-  // Process all payouts with brokerage cap logic
-  const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts, settings);
-  }, [payouts, settings]);
 
   // Generate forecast data from Jan 2026 through end of 2030
   const forecastData = useMemo(() => {
@@ -74,21 +70,20 @@ export default function ForecastPage() {
     });
     
     return months.map((monthStr) => {
-      const monthPayoutsWithCap = payoutsWithCap.filter((p) => {
-        if (!p.due_date) return false;
-        return p.due_date.startsWith(monthStr);
-      });
-
-      const income = monthPayoutsWithCap
-        .filter((p) => p.status !== 'PAID')
+      // Get synced transactions for this month by close_date
+      const monthSynced = syncedPayouts.filter(p => p.close_date.startsWith(monthStr));
+      
+      // Income from closed (received) + active (projected) transactions
+      const received = monthSynced
+        .filter(p => p.status === 'closed')
         .reduce((sum, p) => sum + p.netAmount, 0);
-
-      const paid = monthPayoutsWithCap
-        .filter((p) => p.status === 'PAID')
+      
+      const projected = monthSynced
+        .filter(p => p.status === 'active')
         .reduce((sum, p) => sum + p.netAmount, 0);
 
       const revShareIncome = revShareByMonth[monthStr] || 0;
-      const totalIncome = income + paid + revShareIncome;
+      const totalIncome = received + projected + revShareIncome;
       const totalExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
 
       let adjustedIncome = totalIncome;
@@ -113,7 +108,7 @@ export default function ForecastPage() {
         isWarningMonth,
       };
     });
-  }, [payoutsWithCap, revenueShare, expenses, properties, settings]);
+  }, [syncedPayouts, revenueShare, expenses, properties, settings]);
 
   // Running totals
   const runningTotals = useMemo(() => {

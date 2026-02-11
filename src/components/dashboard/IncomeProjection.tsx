@@ -9,7 +9,7 @@ import { Payout, OtherIncome, Expense } from '@/lib/types';
 import { Property } from '@/hooks/useProperties';
 import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
 import { getTotalExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
-import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
+import { SyncedPayout } from '@/hooks/useSyncedIncome';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSettings } from '@/hooks/useSettings';
 import {
@@ -35,6 +35,7 @@ interface IncomeProjectionProps {
   expenses: Expense[];
   otherIncome?: OtherIncome[];
   properties?: Property[];
+  syncedPayouts?: SyncedPayout[];
 }
 
 interface MonthData {
@@ -107,7 +108,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [] }: IncomeProjectionProps) {
+export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [], syncedPayouts = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
   const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(36);
@@ -116,11 +117,6 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
 
   // Calculate property costs once (they're the same every month)
   const propertyCosts = useMemo(() => getPropertyCostsForMonth(properties), [properties]);
-
-  // Process all payouts with brokerage cap logic
-  const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts, settings);
-  }, [payouts, settings]);
 
   const chartData = useMemo(() => {
     const months: MonthData[] = [];
@@ -133,21 +129,21 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       const monthStart = startOfMonth(monthDate);
       const monthEnd = endOfMonth(monthDate);
 
-      // Get processed payouts for this month (with brokerage already deducted)
-      const monthPayoutsWithCap = payoutsWithCap.filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
+      // Get synced transactions for this month by close_date (user's net, future only)
+      const monthSyncedPayouts = syncedPayouts.filter((p) => {
+        if (p.status === 'closed') return false; // Skip already received
+        const date = parseISO(p.close_date);
         return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
 
-      // Use NET amount (after brokerage deduction) for income
-      const income = monthPayoutsWithCap.reduce((sum, p) => sum + p.netAmount, 0);
+      // User's net income from synced transactions (already includes team split & brokerage)
+      const income = monthSyncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
       const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
       
       // Property net: positive if rental income > costs, negative if costs > income
       const propertyNet = propertyCosts.totalNet;
       
-      // Total income = commissions (net of brokerage) + other income
+      // Total income = commissions (user's net) + other income
       const totalIncome = income + monthOtherIncome;
       
       // Calculate expenses for this month (includes property costs properly)
@@ -155,13 +151,6 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       
       const net = totalIncome - monthExpenses;
       cumulativeNet += net;
-
-      // Map back to regular payouts for the detail view
-      const monthPayouts = payouts.filter((p) => {
-        if (!p.due_date || p.status === 'PAID') return false;
-        const date = parseISO(p.due_date);
-        return isWithinInterval(date, { start: monthStart, end: monthEnd });
-      });
 
       months.push({
         month: monthLabel,
@@ -175,11 +164,11 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
         expenses: monthExpenses,
         net,
         cumulativeNet,
-        payouts: monthPayouts,
+        payouts: [], // Legacy field
       });
     }
     return months;
-  }, [payouts, payoutsWithCap, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
+  }, [syncedPayouts, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
