@@ -129,9 +129,8 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       const monthStart = startOfMonth(monthDate);
       const monthEnd = endOfMonth(monthDate);
 
-      // Get synced transactions for this month by close_date (user's net, future only)
+      // Get synced transactions for this month by close_date (both closed & active)
       const monthSyncedPayouts = syncedPayouts.filter((p) => {
-        if (p.status === 'closed') return false; // Skip already received
         const date = parseISO(p.close_date);
         return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
