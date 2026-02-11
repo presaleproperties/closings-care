@@ -1,1126 +1,521 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  Trash2, 
-  Plus, 
-  Check, 
-  Building2, 
-  Calendar as CalendarIcon, 
-  DollarSign, 
-  Users, 
+import { motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  MapPin,
+  DollarSign,
+  Calendar,
+  Users,
+  Building2,
+  Home,
+  CheckCircle2,
+  AlertTriangle,
   FileText,
-  MoreHorizontal,
-  Info,
   ChevronLeft,
   ChevronRight,
-  RefreshCw
+  ExternalLink,
+  Shield,
+  Clock,
+  TrendingUp,
+  Mail,
+  Phone,
+  Briefcase,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { DatePicker } from '@/components/DatePicker';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { useDeal, useUpdateDeal, useDeleteDeal, useDeals } from '@/hooks/useDeals';
-import { useSettings } from '@/hooks/useSettings';
-import { usePayouts } from '@/hooks/usePayouts';
-import { 
-  useDealPayouts, 
-  useCreatePayout, 
-  useUpdatePayout, 
-  useMarkPayoutPaid,
-  useDeletePayout,
-  useRecalculatePayouts
-} from '@/hooks/usePayouts';
-import { formatCurrency as formatCurrencyDisplay, formatDate } from '@/lib/format';
-import { DealFormData, DealType, DealStatus, PropertyType, PayoutType, PayoutStatus, PayoutFormData } from '@/lib/types';
-import { calculateNetCommission } from '@/lib/commissionCalculations';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
+import { formatCurrency, formatDate } from '@/lib/format';
+import { format, parseISO, differenceInDays } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/haptics';
 
-const payoutTypes: PayoutType[] = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion', 'Custom'];
+const spring = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-// Format number with commas for input display
-const formatCurrencyInput = (value: number | undefined | null): string => {
-  if (value === undefined || value === null || isNaN(value)) return '';
-  return value.toLocaleString('en-US');
-};
+interface Participant {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  emailAddress?: string;
+  phoneNumber?: string;
+  participantRole: string;
+  participantStatus?: string;
+  payment?: { percent?: number; amount?: { amount?: number } };
+  hidden?: boolean;
+  external?: boolean;
+  paidByReal?: boolean;
+}
 
-// Parse formatted string back to number
-const parseCurrency = (value: string): number | null => {
-  const cleaned = value.replace(/,/g, '');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? null : num;
-};
+function extractNetPayout(rawData: any): number {
+  try {
+    return Number(rawData?.myNetPayout?.amount) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function roleLabel(role: string): string {
+  const map: Record<string, string> = {
+    BUYER: 'Buyer',
+    SELLER: 'Seller',
+    BUYERS_AGENT: "Buyer's Agent",
+    SELLERS_AGENT: "Seller's Agent",
+    BUYERS_LAWYER: "Buyer's Lawyer",
+    SELLERS_LAWYER: "Seller's Lawyer",
+    OTHER_AGENT: 'Other Agent',
+    REAL: 'Real Brokerage',
+    REAL_ADMIN: 'Real Admin',
+  };
+  return map[role] || role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  const { data: deal, isLoading } = useDeal(id);
-  const { data: allDeals = [] } = useDeals();
-  const { data: payouts = [] } = useDealPayouts(id);
-  const { data: allPayouts = [] } = usePayouts();
-  const { data: settings } = useSettings();
-  const updateDeal = useUpdateDeal();
-  const deleteDeal = useDeleteDeal();
-  const createPayout = useCreatePayout();
-  const updatePayout = useUpdatePayout();
-  const markPaid = useMarkPayoutPaid();
-  const deletePayout = useDeletePayout();
-  const recalculatePayouts = useRecalculatePayouts();
+  const { data: syncedTransactions = [], isLoading } = useSyncedTransactions();
 
-  // Calculate prev/next deal for navigation
-  const dealNavigation = useMemo(() => {
-    if (!id || allDeals.length === 0) return { prev: null, next: null, currentIndex: -1, total: 0 };
-    
-    const currentIndex = allDeals.findIndex(d => d.id === id);
-    if (currentIndex === -1) return { prev: null, next: null, currentIndex: -1, total: 0 };
-    
+  const transaction = useMemo(
+    () => syncedTransactions.find(tx => tx.id === id),
+    [syncedTransactions, id]
+  );
+
+  // Navigation between deals
+  const nav = useMemo(() => {
+    if (!id || syncedTransactions.length === 0) return { prev: null, next: null, idx: 0, total: 0 };
+    const idx = syncedTransactions.findIndex(tx => tx.id === id);
     return {
-      prev: currentIndex > 0 ? allDeals[currentIndex - 1].id : null,
-      next: currentIndex < allDeals.length - 1 ? allDeals[currentIndex + 1].id : null,
-      currentIndex: currentIndex + 1,
-      total: allDeals.length,
+      prev: idx > 0 ? syncedTransactions[idx - 1].id : null,
+      next: idx < syncedTransactions.length - 1 ? syncedTransactions[idx + 1].id : null,
+      idx: idx + 1,
+      total: syncedTransactions.length,
     };
-  }, [id, allDeals]);
-
-  const [formData, setFormData] = useState<Partial<DealFormData>>({});
-  const [originalFormData, setOriginalFormData] = useState<Partial<DealFormData>>({});
-  
-  // Compute hasChanges by comparing current formData with original
-  const hasChanges = useMemo(() => {
-    if (Object.keys(originalFormData).length === 0) return false;
-    return Object.keys(formData).some(key => {
-      const current = formData[key as keyof DealFormData];
-      const original = originalFormData[key as keyof DealFormData];
-      // Handle undefined vs empty string vs null comparison
-      const normalizedCurrent = current === '' || current === null ? undefined : current;
-      const normalizedOriginal = original === '' || original === null ? undefined : original;
-      return normalizedCurrent !== normalizedOriginal;
-    });
-  }, [formData, originalFormData]);
-  const [isTeamDeal, setIsTeamDeal] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showPayoutDialog, setShowPayoutDialog] = useState(false);
-  const [editingPayout, setEditingPayout] = useState<string | null>(null);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-  const [payoutForm, setPayoutForm] = useState<Partial<PayoutFormData>>({
-    payout_type: 'Completion',
-    amount: 0,
-    status: 'PROJECTED',
-  });
-
-  const isPresale = formData.property_type === 'PRESALE';
-  const isResale = formData.property_type === 'RESALE';
-
-  // Auto-calculate net commission when gross changes
-  // For presale deals, use advance + completion as the gross base
-  const netCommissionResult = useMemo(() => {
-    const effectiveGross = (isPresale && formData.advance_commission && formData.completion_commission)
-      ? formData.advance_commission + formData.completion_commission
-      : formData.gross_commission_est || 0;
-    
-    return calculateNetCommission(
-      effectiveGross,
-      settings as any,
-      allPayouts,
-      isTeamDeal ? formData.team_member_portion : undefined
-    );
-  }, [formData.gross_commission_est, formData.advance_commission, formData.completion_commission, formData.team_member_portion, settings, allPayouts, isTeamDeal, isPresale]);
-
-  // Update net commission when calculation changes
-  useEffect(() => {
-    const hasGross = isPresale 
-      ? (formData.advance_commission && formData.completion_commission)
-      : (formData.gross_commission_est && formData.gross_commission_est > 0);
-    
-    if (hasGross) {
-      const newNet = netCommissionResult.netAmount;
-      if (newNet !== formData.net_commission_est) {
-        setFormData(prev => ({ ...prev, net_commission_est: newNet }));
-        // Also update original so auto-calculated net commission doesn't count as a change
-        setOriginalFormData(prev => ({ ...prev, net_commission_est: newNet }));
-      }
-    }
-  }, [netCommissionResult.netAmount, isPresale]);
-
-  useEffect(() => {
-    if (deal) {
-      const dealData = deal as any; // Handle extended fields from DB
-      const initialData = {
-        client_name: deal.client_name,
-        deal_type: deal.deal_type,
-        property_type: deal.property_type || undefined,
-        address: deal.address || '',
-        project_name: deal.project_name || '',
-        city: deal.city || '',
-        listing_date: deal.listing_date || '',
-        pending_date: deal.pending_date || '',
-        close_date_est: deal.close_date_est || '',
-        close_date_actual: deal.close_date_actual || '',
-        sale_price: deal.sale_price || undefined,
-        gross_commission_est: deal.gross_commission_est || undefined,
-        net_commission_est: deal.net_commission_est || undefined,
-        gross_commission_actual: deal.gross_commission_actual || undefined,
-        net_commission_actual: deal.net_commission_actual || undefined,
-        team_member: deal.team_member || '',
-        team_member_portion: deal.team_member_portion || undefined,
-        lead_source: deal.lead_source || '',
-        notes: deal.notes || '',
-        status: deal.status,
-        // Presale-specific fields
-        buyer_type: dealData.buyer_type || '',
-        advance_commission: dealData.advance_commission || undefined,
-        completion_commission: dealData.completion_commission || undefined,
-        advance_date: dealData.advance_date || '',
-        completion_date: dealData.completion_date || '',
-      };
-      setFormData(initialData);
-      setOriginalFormData(initialData);
-      setIsTeamDeal(!!deal.team_member);
-    }
-  }, [deal]);
-
-  const updateField = (field: keyof DealFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handlePropertyTypeChange = (value: PropertyType) => {
-    updateField('property_type', value);
-  };
-
-  const handleSave = async () => {
-    if (!id) return;
-    await updateDeal.mutateAsync({ id, data: formData });
-    setOriginalFormData(formData); // Reset original to current after save
-  };
-
-  const handleDelete = async () => {
-    if (!id) return;
-    await deleteDeal.mutateAsync(id);
-    navigate('/deals');
-  };
-
-  const handleNavigateToDeal = (dealId: string | null) => {
-    if (!dealId) return;
-    if (hasChanges) {
-      setPendingNavigation(dealId);
-    } else {
-      navigate(`/deals/${dealId}`);
-    }
-  };
-
-  const confirmNavigation = () => {
-    if (pendingNavigation) {
-      navigate(`/deals/${pendingNavigation}`);
-      setPendingNavigation(null);
-    }
-  };
-
-  const handleAddPayout = () => {
-    setEditingPayout(null);
-    setPayoutForm({
-      payout_type: 'Completion',
-      amount: 0,
-      status: 'PROJECTED',
-    });
-    setShowPayoutDialog(true);
-  };
-
-  const handleEditPayout = (payoutId: string) => {
-    const payout = payouts.find((p) => p.id === payoutId);
-    if (payout) {
-      setEditingPayout(payoutId);
-      setPayoutForm({
-        payout_type: payout.payout_type,
-        custom_type_name: payout.custom_type_name || '',
-        amount: payout.amount,
-        due_date: payout.due_date || '',
-        status: payout.status,
-        paid_date: payout.paid_date || '',
-        notes: payout.notes || '',
-      });
-      setShowPayoutDialog(true);
-    }
-  };
-
-  const handleSavePayout = async () => {
-    if (!id) return;
-    
-    if (editingPayout) {
-      await updatePayout.mutateAsync({ id: editingPayout, data: payoutForm });
-    } else {
-      await createPayout.mutateAsync({ ...payoutForm, deal_id: id } as PayoutFormData);
-    }
-    
-    setShowPayoutDialog(false);
-  };
-
-  const totalPayouts = payouts.reduce((sum, p) => sum + Number(p.amount), 0);
-  const paidPayouts = payouts.filter((p) => p.status === 'PAID').reduce((sum, p) => sum + Number(p.amount), 0);
+  }, [id, syncedTransactions]);
 
   if (isLoading) {
     return (
       <AppLayout>
-        <Header title="Loading..." showAddDeal={false} />
-        <div className="p-6 text-center text-muted-foreground">Loading deal...</div>
-      </AppLayout>
-    );
-  }
-
-  if (!deal) {
-    return (
-      <AppLayout>
-        <Header title="Deal Not Found" showAddDeal={false} />
-        <div className="p-6 text-center">
-          <p className="text-muted-foreground mb-4">This deal could not be found.</p>
-          <Button asChild>
-            <Link to="/deals">Back to Deals</Link>
-          </Button>
+        <Header title="Loading..." />
+        <div className="p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="animate-pulse flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/20" />
+            <p className="text-sm text-muted-foreground">Loading deal...</p>
+          </div>
         </div>
       </AppLayout>
     );
   }
 
+  if (!transaction) {
+    return (
+      <AppLayout>
+        <Header title="Deal Not Found" />
+        <div className="p-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground mb-4">This deal could not be found.</p>
+          <Button asChild><Link to="/deals">Back to Deals</Link></Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const raw = transaction.raw_data || {};
+  const participants: Participant[] = raw.participants || [];
+  const visibleParticipants = participants.filter(p => !p.hidden && p.participantRole !== 'REAL' && p.participantRole !== 'REAL_ADMIN');
+  const netPayout = extractNetPayout(raw);
+  const grossCommission = transaction.commission_amount || 0;
+  const salePrice = transaction.sale_price || 0;
+  const isClosed = transaction.status === 'closed';
+  const isListing = transaction.is_listing;
+  const partMatch = transaction.property_address?.match(/Part (\d+\/\d+)/);
+  const isPresale = !!partMatch;
+  const cleanAddress = transaction.property_address
+    ? transaction.property_address.replace(/Part \d+\/\d+\s*-\s*/, '').trim()
+    : 'Unknown';
+
+  const lifecycleState = raw.lifecycleState?.state || transaction.lifecycle_state || null;
+  const lifecycleDesc = raw.lifecycleState?.description || null;
+  const complianceStatus = raw.complianceStatus || transaction.compliance_status;
+  const isCompliant = complianceStatus === 'COMPLIANT' || complianceStatus === 'NOT_APPLICABLE';
+  const transactionCode = raw.code || transaction.transaction_code;
+  const firmDate = raw.firmDate || transaction.firm_date;
+  const closeDate = transaction.close_date;
+  const listingDate = transaction.listing_date;
+
+  const now = new Date();
+  const isPastDue = !isClosed && closeDate && new Date(closeDate) < now;
+  const daysUntilClose = closeDate ? differenceInDays(parseISO(closeDate), now) : null;
+
   return (
     <AppLayout>
-      <Header 
-        title={`${deal.client_name}${deal.project_name || deal.address ? ` - ${deal.project_name || deal.address}` : ''}`}
-        showAddDeal={false}
+      <Header
+        title="Deal Details"
         action={
           <div className="flex items-center gap-2">
-            {/* Deal Navigation */}
-            <div className="flex items-center gap-1 mr-2">
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="h-9 w-9"
-                disabled={!dealNavigation.prev}
-                onClick={() => handleNavigateToDeal(dealNavigation.prev)}
-              >
+            {/* Navigation */}
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl" disabled={!nav.prev}
+                onClick={() => { triggerHaptic('light'); navigate(`/deals/${nav.prev}`); }}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-muted-foreground px-2 min-w-[60px] text-center">
-                {dealNavigation.currentIndex} / {dealNavigation.total}
+              <span className="text-xs text-muted-foreground px-2 min-w-[50px] text-center">
+                {nav.idx}/{nav.total}
               </span>
-              <Button 
-                variant="outline" 
-                size="icon"
-                className="h-9 w-9"
-                disabled={!dealNavigation.next}
-                onClick={() => handleNavigateToDeal(dealNavigation.next)}
-              >
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl" disabled={!nav.next}
+                onClick={() => { triggerHaptic('light'); navigate(`/deals/${nav.next}`); }}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            
-            <Button variant="ghost" onClick={() => navigate('/deals')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+            <Button variant="ghost" onClick={() => navigate('/deals')} className="gap-2 rounded-xl">
+              <ArrowLeft className="w-4 h-4" /> Back
             </Button>
-            {hasChanges && (
-              <Button onClick={handleSave} className="btn-premium" disabled={updateDeal.isPending}>
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
-            )}
           </div>
         }
       />
 
-      <div className="p-3 sm:p-4 lg:p-6 max-w-6xl animate-fade-in">
-        {/* Deal Dashboard Stats - Compact on mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="landing-card p-2.5 sm:p-3 text-center">
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Sale Price</div>
-            <div className="text-sm sm:text-base font-bold text-foreground">
-              {formData.sale_price ? formatCurrencyDisplay(formData.sale_price) : '—'}
-            </div>
-          </div>
-          <div className="landing-card p-2.5 sm:p-3 text-center">
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">
-              {isTeamDeal ? 'Your Gross' : 'Gross'}
-            </div>
-            <div className="text-sm sm:text-base font-bold text-primary">
-              {(() => {
-                // Calculate from advance + completion if both exist
-                const calculatedGross = (formData.advance_commission && formData.completion_commission)
-                  ? formData.advance_commission + formData.completion_commission
-                  : formData.gross_commission_est;
-                // Apply user's portion for team deals
-                const userPortion = isTeamDeal && formData.team_member_portion 
-                  ? (100 - formData.team_member_portion) / 100 
-                  : 1;
-                const userGross = calculatedGross ? calculatedGross * userPortion : null;
-                return userGross ? formatCurrencyDisplay(userGross) : '—';
-              })()}
-            </div>
-            {isTeamDeal && formData.team_member_portion && (
-              <div className="text-[10px] text-muted-foreground mt-0.5">
-                {100 - formData.team_member_portion}% of {formatCurrencyDisplay(
-                  (formData.advance_commission && formData.completion_commission)
-                    ? formData.advance_commission + formData.completion_commission
-                    : formData.gross_commission_est || 0
+      <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
+        {/* Hero Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={spring}
+          className={cn(
+            "relative overflow-hidden rounded-3xl border p-5 lg:p-6",
+            isClosed
+              ? "bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/30"
+              : isPastDue
+                ? "bg-gradient-to-br from-amber-500/5 to-card border-amber-500/30"
+                : "bg-card/80 border-border/50"
+          )}
+        >
+          {/* Status bar */}
+          <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-3xl",
+            isClosed ? "bg-success" : isPastDue ? "bg-amber-500" : "bg-primary"
+          )} />
+
+          <div className="pl-3">
+            {/* Address */}
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className="h-5 w-5 text-primary shrink-0" />
+                  <h1 className="text-lg lg:text-xl font-bold text-foreground truncate">{cleanAddress}</h1>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 ml-7">
+                  {transaction.city && (
+                    <span className="text-sm text-muted-foreground">{transaction.city}</span>
+                  )}
+                  {transactionCode && (
+                    <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                      {transactionCode}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status badge */}
+              <div className="shrink-0">
+                {isClosed ? (
+                  <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 gap-1.5 px-3 py-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Settled
+                  </Badge>
+                ) : isPastDue ? (
+                  <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 gap-1.5 px-3 py-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" /> Past Due
+                  </Badge>
+                ) : (
+                  <Badge className="bg-primary/15 text-primary border-primary/30 gap-1.5 px-3 py-1.5">
+                    <Clock className="h-3.5 w-3.5" /> Active
+                  </Badge>
                 )}
               </div>
-            )}
+            </div>
+
+            {/* Tags row */}
+            <div className="flex flex-wrap items-center gap-2 mb-4 ml-7">
+              {lifecycleState && (
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-muted/60 text-muted-foreground font-medium">
+                  {lifecycleState.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                </span>
+              )}
+              {isPresale && (
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 font-medium flex items-center gap-1">
+                  <Building2 className="h-3 w-3" /> Presale {partMatch?.[1]}
+                </span>
+              )}
+              {!isPresale && (
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 font-medium flex items-center gap-1">
+                  <Home className="h-3 w-3" /> Resale
+                </span>
+              )}
+              {isListing && (
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-600 font-medium">
+                  Listing
+                </span>
+              )}
+              {transaction.mls_number && transaction.mls_number !== 'N/A' && (
+                <span className="text-xs px-2.5 py-1 rounded-lg bg-muted/40 text-muted-foreground font-mono">
+                  MLS {transaction.mls_number}
+                </span>
+              )}
+              {complianceStatus && (
+                <span className={cn(
+                  "text-xs px-2.5 py-1 rounded-lg font-medium flex items-center gap-1",
+                  isCompliant ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"
+                )}>
+                  <Shield className="h-3 w-3" />
+                  {isCompliant ? 'Compliant' : complianceStatus.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="landing-card p-2.5 sm:p-3 text-center">
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">
-              {isTeamDeal ? 'Your Net' : 'Net'}
+        </motion.div>
+
+        {/* Stats Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...spring, delay: 0.05 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+        >
+          <StatCard label="Sale Price" value={formatCurrency(salePrice)} icon={DollarSign}
+            color="text-foreground" iconBg="bg-muted" />
+          <StatCard label="GCI" value={formatCurrency(grossCommission)} icon={TrendingUp}
+            color="text-primary" iconBg="bg-primary/15" />
+          <StatCard label="My Net Payout" value={formatCurrency(netPayout)} icon={DollarSign}
+            color="text-success" iconBg="bg-success/15"
+            subtitle={transaction.my_split_percent ? `${(transaction.my_split_percent * 100).toFixed(0)}% split` : undefined} />
+          <StatCard
+            label={isClosed ? 'Closed' : isPastDue ? 'Was Due' : 'Close Date'}
+            value={closeDate ? format(parseISO(closeDate), 'MMM d, yyyy') : '—'}
+            icon={Calendar}
+            color={isPastDue ? 'text-amber-600' : 'text-foreground'}
+            iconBg={isPastDue ? 'bg-amber-500/15' : 'bg-muted'}
+            subtitle={daysUntilClose !== null && !isClosed
+              ? daysUntilClose < 0 ? `${Math.abs(daysUntilClose)}d overdue` : `${daysUntilClose}d away`
+              : undefined}
+          />
+        </motion.div>
+
+        {/* Dates & Details */}
+        <div className="grid lg:grid-cols-2 gap-5">
+          {/* Key Dates */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.1 }}
+            className="rounded-2xl border border-border/50 bg-card/80 p-5"
+          >
+            <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Key Dates
+            </h3>
+            <div className="space-y-3">
+              <DateRow label="Firm Date" date={firmDate} />
+              <DateRow label="Close Date" date={closeDate} highlight={isPastDue} />
+              {listingDate && <DateRow label="Listing Date" date={listingDate} />}
+              {raw.closedAt && (
+                <DateRow label="Settled" date={format(new Date(raw.closedAt), 'yyyy-MM-dd')} />
+              )}
+              {raw.compliantAt && (
+                <DateRow label="Compliant Since" date={format(new Date(raw.compliantAt), 'yyyy-MM-dd')} />
+              )}
             </div>
-            <div className="text-sm sm:text-base font-bold text-accent">
-              {formData.net_commission_est ? formatCurrencyDisplay(formData.net_commission_est) : '—'}
+          </motion.div>
+
+          {/* Transaction Details */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.15 }}
+            className="rounded-2xl border border-border/50 bg-card/80 p-5"
+          >
+            <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" /> Transaction Details
+            </h3>
+            <div className="space-y-3">
+              <DetailRow label="Type" value={raw.transactionType || transaction.transaction_type || '—'} />
+              <DetailRow label="Property Type" value={raw.propertyType || '—'} />
+              <DetailRow label="Currency" value={transaction.currency || 'CAD'} />
+              {raw.kind && <DetailRow label="Kind" value={raw.kind} />}
+              {lifecycleDesc && <DetailRow label="Status Info" value={lifecycleDesc} />}
+              {transaction.lead_source && <DetailRow label="Lead Source" value={transaction.lead_source} />}
+              {transaction.agent_name && <DetailRow label="Agent" value={transaction.agent_name} />}
             </div>
-          </div>
-          <div className="landing-card p-2.5 sm:p-3 text-center">
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Payouts</div>
-            <div className="text-sm sm:text-base font-bold mb-1 sm:mb-2">
-              <span className="text-primary">{formatCurrencyDisplay(paidPayouts)}</span>
-              <span className="text-muted-foreground text-xs font-normal"> / {formatCurrencyDisplay(totalPayouts)}</span>
-            </div>
-            <div className="w-full bg-muted/50 rounded-full h-1.5 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
-                style={{ width: `${totalPayouts > 0 ? Math.min((paidPayouts / totalPayouts) * 100, 100) : 0}%` }}
-              />
-            </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5 sm:mt-1">
-              {totalPayouts > 0 ? Math.round((paidPayouts / totalPayouts) * 100) : 0}%
-            </div>
-          </div>
-          <div className="landing-card p-2.5 sm:p-3 text-center col-span-2 sm:col-span-1">
-            <div className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide mb-0.5 sm:mb-1">Status</div>
-            <div className="flex justify-center">
-              <StatusBadge status={deal.status} />
-            </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-3 sm:space-y-4 lg:space-y-6">
-            {/* Client Info */}
-            <section className="bg-card border border-border rounded-xl p-3 sm:p-4 lg:p-6">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
-                  <h2 className="font-semibold text-sm sm:text-base">Client Information</h2>
-                </div>
-                <StatusBadge status={deal.status} />
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="client_name">Client Name</Label>
-                  <Input
-                    id="client_name"
-                    value={formData.client_name || ''}
-                    onChange={(e) => updateField('client_name', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="deal_type">Deal Type</Label>
-                  <Select
-                    value={formData.deal_type || ''}
-                    onValueChange={(v) => updateField('deal_type', v as DealType)}
+        {/* Participants */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ ...spring, delay: 0.2 }}
+          className="rounded-2xl border border-border/50 bg-card/80 p-5"
+        >
+          <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" /> Participants
+            <span className="text-xs text-muted-foreground ml-auto">{visibleParticipants.length} visible</span>
+          </h3>
+
+          {visibleParticipants.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No participants found.</p>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-3">
+              {visibleParticipants.map(p => {
+                const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || p.company || 'Unknown';
+                const pct = p.payment?.percent ? `${(p.payment.percent * 100).toFixed(0)}%` : null;
+
+                return (
+                  <div
+                    key={p.id}
+                    className="rounded-xl border border-border/40 bg-muted/20 p-4 hover:bg-muted/40 transition-colors"
                   >
-                    <SelectTrigger id="deal_type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BUY">Buy</SelectItem>
-                      <SelectItem value="SELL">Sell</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="property_type">Property Type</Label>
-                  <Select
-                    value={formData.property_type || ''}
-                    onValueChange={(v) => handlePropertyTypeChange(v as PropertyType)}
-                  >
-                    <SelectTrigger id="property_type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PRESALE">Presale</SelectItem>
-                      <SelectItem value="RESALE">Resale</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status || ''}
-                    onValueChange={(v) => updateField('status', v as DealStatus)}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PENDING">Pending</SelectItem>
-                      <SelectItem value="CLOSED">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="buyer_type">Buyer Type</Label>
-                  <Select
-                    value={formData.buyer_type || ''}
-                    onValueChange={(v) => updateField('buyer_type', v)}
-                  >
-                    <SelectTrigger id="buyer_type">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="First Time Homebuyer">First Time Homebuyer</SelectItem>
-                      <SelectItem value="Investor">Investor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lead_source">Lead Source</Label>
-                  <Select
-                    value={formData.lead_source || ''}
-                    onValueChange={(v) => updateField('lead_source', v)}
-                  >
-                    <SelectTrigger id="lead_source">
-                      <SelectValue placeholder="Select source" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="Tiktok">Tiktok</SelectItem>
-                      <SelectItem value="Instagram">Instagram</SelectItem>
-                      <SelectItem value="Youtube">Youtube</SelectItem>
-                      <SelectItem value="Referral">Referral</SelectItem>
-                      <SelectItem value="Team">Team</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </section>
-
-            {/* Property Info - Conditional based on property type */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Property Details</h2>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {(isPresale || !formData.property_type) && (
-                  <div className="space-y-2">
-                    <Label htmlFor="project_name">Project Name</Label>
-                    <Input
-                      id="project_name"
-                      value={formData.project_name || ''}
-                      onChange={(e) => updateField('project_name', e.target.value)}
-                      placeholder="The Palisades"
-                    />
-                  </div>
-                )}
-
-                {(isResale || !formData.property_type) && (
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      value={formData.address || ''}
-                      onChange={(e) => updateField('address', e.target.value)}
-                      placeholder="123 Main Street, Unit 1001"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Select
-                    value={formData.city || ''}
-                    onValueChange={(v) => updateField('city', v)}
-                  >
-                    <SelectTrigger id="city">
-                      <SelectValue placeholder="Select city" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover">
-                      <SelectItem value="Vancouver">Vancouver</SelectItem>
-                      <SelectItem value="Burnaby">Burnaby</SelectItem>
-                      <SelectItem value="Surrey">Surrey</SelectItem>
-                      <SelectItem value="Langley">Langley</SelectItem>
-                      <SelectItem value="Delta">Delta</SelectItem>
-                      <SelectItem value="Coquitlam">Coquitlam</SelectItem>
-                      <SelectItem value="Abbotsford">Abbotsford</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </section>
-
-            {/* Dates */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarIcon className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Key Dates</h2>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Firm Date</Label>
-                  <DatePicker
-                    value={formData.pending_date}
-                    onChange={(val) => updateField('pending_date', val)}
-                    placeholder="Select firm date"
-                  />
-                </div>
-
-                {isPresale && (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Advance Commission Date</Label>
-                      <DatePicker
-                        value={formData.advance_date}
-                        onChange={(val) => updateField('advance_date', val)}
-                        placeholder="Select advance date"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Completion Date</Label>
-                      <DatePicker
-                        value={formData.completion_date}
-                        onChange={(val) => updateField('completion_date', val)}
-                        placeholder="Select completion date"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {(isResale || !formData.property_type) && (
-                  <div className="space-y-2">
-                    <Label>Closing Date</Label>
-                    <DatePicker
-                      value={formData.close_date_est}
-                      onChange={(val) => updateField('close_date_est', val)}
-                      placeholder="Select closing date"
-                    />
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Financials */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <DollarSign className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Financials</h2>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sale_price">Sale Price</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="sale_price"
-                      className="pl-7"
-                      value={formatCurrencyInput(formData.sale_price)}
-                      onChange={(e) => updateField('sale_price', parseCurrency(e.target.value))}
-                      placeholder="1,250,000"
-                    />
-                  </div>
-                </div>
-
-                {isPresale && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="advance_commission">Advance Commission</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          id="advance_commission"
-                          className="pl-7"
-                          value={formatCurrencyInput(formData.advance_commission)}
-                          onChange={(e) => {
-                            const val = parseCurrency(e.target.value);
-                            updateField('advance_commission', val);
-                            const completion = formData.completion_commission || 0;
-                            updateField('gross_commission_est', (val || 0) + completion);
-                          }}
-                          placeholder="5,000"
-                        />
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm truncate">{name}</p>
+                        <p className="text-xs text-muted-foreground">{roleLabel(p.participantRole)}</p>
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="completion_commission">Completion Commission</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                        <Input
-                          id="completion_commission"
-                          className="pl-7"
-                          value={formatCurrencyInput(formData.completion_commission)}
-                          onChange={(e) => {
-                            const val = parseCurrency(e.target.value);
-                            updateField('completion_commission', val);
-                            const advance = formData.advance_commission || 0;
-                            updateField('gross_commission_est', advance + (val || 0));
-                          }}
-                          placeholder="26,250"
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="gross_commission_est">
-                    Gross Commission {isPresale && <span className="text-xs text-muted-foreground">(auto-calculated)</span>}
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="gross_commission_est"
-                      className="pl-7"
-                      value={formatCurrencyInput(
-                        (formData.advance_commission && formData.completion_commission)
-                          ? formData.advance_commission + formData.completion_commission
-                          : formData.gross_commission_est
+                      {pct && (
+                        <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md shrink-0">
+                          {pct}
+                        </span>
                       )}
-                      onChange={(e) => updateField('gross_commission_est', parseCurrency(e.target.value))}
-                      placeholder="31,250"
-                      readOnly={isPresale}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="net_commission_est">
-                    Net Commission <span className="text-xs text-muted-foreground">(auto-calculated)</span>
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                    <Input
-                      id="net_commission_est"
-                      className="pl-7 bg-muted/50"
-                      value={formatCurrencyInput(formData.net_commission_est)}
-                      readOnly
-                      placeholder="Auto-calculated"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Commission breakdown */}
-              {(() => {
-                const calculatedGross = (formData.advance_commission && formData.completion_commission)
-                  ? formData.advance_commission + formData.completion_commission
-                  : formData.gross_commission_est;
-                const userPortion = isTeamDeal && formData.team_member_portion 
-                  ? (100 - formData.team_member_portion) / 100 
-                  : 1;
-                const userGross = calculatedGross ? calculatedGross * userPortion : 0;
-                
-                return calculatedGross && calculatedGross > 0 && (
-                  <div className="flex items-start gap-2 p-3 mt-4 bg-muted/40 rounded-lg">
-                    <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>
-                        <span className="font-medium text-foreground">Deal Gross:</span> ${formatCurrencyInput(calculatedGross)}
-                        {isTeamDeal && formData.team_member_portion && (
-                          <> → <span className="text-primary font-medium">Your {100 - formData.team_member_portion}%: ${formatCurrencyInput(userGross)}</span></>
-                        )}
-                        {netCommissionResult.brokeragePortion > 0 && (
-                          <> → <span className="text-destructive">-${formatCurrencyInput(netCommissionResult.brokeragePortion)}</span> brokerage ({netCommissionResult.splitPercent}%)</>
-                        )}
-                        {' '}= <span className="font-semibold text-success">${formatCurrencyInput(netCommissionResult.netAmount)}</span> net
-                      </p>
-                      {netCommissionResult.capReached && (
-                        <p className="text-success font-medium">✓ Brokerage cap reached - keeping 100%!</p>
+                    </div>
+                    {p.company && p.company !== name && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                        <Briefcase className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{p.company}</span>
+                      </div>
+                    )}
+                    {p.emailAddress && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <a href={`mailto:${p.emailAddress}`} className="truncate hover:text-primary transition-colors">
+                          {p.emailAddress}
+                        </a>
+                      </div>
+                    )}
+                    {p.phoneNumber && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <a href={`tel:${p.phoneNumber}`} className="hover:text-primary transition-colors">
+                          {p.phoneNumber}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/30">
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                        p.external ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"
+                      )}>
+                        {p.external ? 'External' : 'Internal'}
+                      </span>
+                      {p.paidByReal && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-medium">
+                          Paid by Real
+                        </span>
                       )}
                     </div>
                   </div>
                 );
-              })()}
-            </section>
+              })}
+            </div>
+          )}
+        </motion.div>
 
-            {/* Team Split */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Team Split</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Switch 
-                    id="is_team_deal"
-                    checked={isTeamDeal}
-                    onCheckedChange={(checked) => {
-                      setIsTeamDeal(checked);
-                      if (!checked) {
-                        updateField('team_member', undefined);
-                        updateField('team_member_portion', undefined);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="is_team_deal">Is this a team deal?</Label>
-                </div>
-
-                {isTeamDeal && (
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="team_member">Team Member</Label>
-                      <Select
-                        value={formData.team_member || ''}
-                        onValueChange={(v) => updateField('team_member', v)}
+        {/* Journey info (for presale grouping) */}
+        {raw.journeyId && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...spring, delay: 0.25 }}
+            className="rounded-2xl border border-border/50 bg-card/80 p-5"
+          >
+            <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+              <ExternalLink className="h-4 w-4 text-primary" /> Related Transactions
+            </h3>
+            {(() => {
+              const related = syncedTransactions.filter(
+                tx => tx.raw_data?.journeyId === raw.journeyId && tx.id !== id
+              );
+              if (related.length === 0) {
+                return <p className="text-sm text-muted-foreground">No related transactions found.</p>;
+              }
+              return (
+                <div className="space-y-2">
+                  {related.map(tx => {
+                    const partInfo = tx.property_address?.match(/Part (\d+\/\d+)/);
+                    return (
+                      <Link
+                        key={tx.id}
+                        to={`/deals/${tx.id}`}
+                        className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-muted/20 hover:bg-muted/40 transition-colors"
                       >
-                        <SelectTrigger id="team_member">
-                          <SelectValue placeholder="Select member" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Sarb">Sarb</SelectItem>
-                          <SelectItem value="Ravish">Ravish</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="team_member_portion">Their Portion (%)</Label>
-                      <Input
-                        id="team_member_portion"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={formData.team_member_portion || ''}
-                        onChange={(e) => updateField('team_member_portion', parseFloat(e.target.value) || null)}
-                        placeholder="50"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Notes */}
-            <section className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <FileText className="w-5 h-5 text-accent" />
-                <h2 className="font-semibold">Notes</h2>
-              </div>
-              
-              <Textarea
-                value={formData.notes || ''}
-                onChange={(e) => updateField('notes', e.target.value)}
-                rows={4}
-              />
-            </section>
-
-            {/* Delete */}
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Deal
-              </Button>
-            </div>
-          </div>
-
-          {/* Payouts Sidebar */}
-          <div className="space-y-4">
-            <div className="bg-card border border-border rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold">Payouts</h2>
-                <Button size="sm" onClick={handleAddPayout} className="btn-premium">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-
-              {/* Payout Summary */}
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="font-semibold">{formatCurrencyDisplay(totalPayouts)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Paid</p>
-                  <p className="font-semibold text-success">{formatCurrencyDisplay(paidPayouts)}</p>
-                </div>
-              </div>
-
-              {/* Recalculate button for team deals */}
-              {isTeamDeal && payouts.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mb-4 text-xs"
-                  onClick={() => {
-                    if (!id) return;
-                    recalculatePayouts.mutate({
-                      dealId: id,
-                      advanceCommission: formData.advance_commission || 0,
-                      completionCommission: formData.completion_commission || 0,
-                      grossCommission: formData.gross_commission_est || 0,
-                      teamMemberPortion: formData.team_member_portion || 0,
-                      propertyType: formData.property_type || null,
-                    });
-                  }}
-                  disabled={recalculatePayouts.isPending}
-                >
-                  <RefreshCw className={`w-3 h-3 mr-1.5 ${recalculatePayouts.isPending ? 'animate-spin' : ''}`} />
-                  Recalculate for {100 - (formData.team_member_portion || 0)}% split
-                </Button>
-              )}
-
-              {/* Payouts List */}
-              {payouts.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No payouts yet
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {payouts.map((payout) => (
-                    <div
-                      key={payout.id}
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">
-                            {payout.payout_type === 'Custom' 
-                              ? payout.custom_type_name || 'Custom' 
-                              : payout.payout_type}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">
+                            {partInfo ? `Part ${partInfo[1]}` : tx.property_address || 'Related Deal'}
                           </p>
-                          <StatusBadge status={payout.status} />
+                          <p className="text-xs text-muted-foreground">
+                            {tx.status === 'closed' ? 'Settled' : 'Active'}
+                            {tx.close_date && ` · ${format(parseISO(tx.close_date), 'MMM d, yyyy')}`}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(payout.due_date)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm">
-                          {formatCurrencyDisplay(payout.amount)}
+                        <span className="text-sm font-bold text-foreground ml-3">
+                          {formatCurrency(extractNetPayout(tx.raw_data))}
                         </span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {payout.status !== 'PAID' && (
-                              <DropdownMenuItem onClick={() => markPaid.mutate(payout.id)}>
-                                <Check className="w-4 h-4 mr-2" />
-                                Mark Paid
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => handleEditPayout(payout.id)}>
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => deletePayout.mutate({ id: payout.id, dealId: id! })}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
+                      </Link>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+              );
+            })()}
+          </motion.div>
+        )}
       </div>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Deal</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this deal and all associated payouts. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Unsaved Changes Dialog */}
-      <AlertDialog open={!!pendingNavigation} onOpenChange={(open) => !open && setPendingNavigation(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Stay</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmNavigation}>
-              Leave
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Payout Dialog */}
-      <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingPayout ? 'Edit Payout' : 'Add Payout'}</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Type</Label>
-                <Select
-                  value={payoutForm.payout_type}
-                  onValueChange={(v) => setPayoutForm((p) => ({ ...p, payout_type: v as PayoutType }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {payoutTypes.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select
-                  value={payoutForm.status}
-                  onValueChange={(v) => setPayoutForm((p) => ({ ...p, status: v as PayoutStatus }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PROJECTED">Projected</SelectItem>
-                    <SelectItem value="INVOICED">Invoiced</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {payoutForm.payout_type === 'Custom' && (
-              <div className="space-y-2">
-                <Label>Custom Name</Label>
-                <Input
-                  value={payoutForm.custom_type_name || ''}
-                  onChange={(e) => setPayoutForm((p) => ({ ...p, custom_type_name: e.target.value }))}
-                  placeholder="e.g., Deposit Release"
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Input
-                  className="pl-7"
-                  value={formatCurrencyInput(payoutForm.amount)}
-                  onChange={(e) => setPayoutForm((p) => ({ ...p, amount: parseCurrency(e.target.value) || 0 }))}
-                  placeholder="10,000"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Input
-                  type="date"
-                  value={payoutForm.due_date || ''}
-                  onChange={(e) => setPayoutForm((p) => ({ ...p, due_date: e.target.value }))}
-                />
-              </div>
-
-              {payoutForm.status === 'PAID' && (
-                <div className="space-y-2">
-                  <Label>Paid Date</Label>
-                  <Input
-                    type="date"
-                    value={payoutForm.paid_date || ''}
-                    onChange={(e) => setPayoutForm((p) => ({ ...p, paid_date: e.target.value }))}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={payoutForm.notes || ''}
-                onChange={(e) => setPayoutForm((p) => ({ ...p, notes: e.target.value }))}
-                rows={2}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPayoutDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSavePayout} className="btn-premium">
-              {editingPayout ? 'Save' : 'Add Payout'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AppLayout>
+  );
+}
+
+/* Sub-components */
+
+function StatCard({ label, value, icon: Icon, color, iconBg, subtitle }: {
+  label: string; value: string; icon: any; color: string; iconBg: string; subtitle?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/50 bg-card/80 p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", iconBg)}>
+          <Icon className={cn("h-4 w-4", color)} />
+        </div>
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+      </div>
+      <p className={cn("text-lg font-bold", color)}>{value}</p>
+      {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
+
+function DateRow({ label, date, highlight }: { label: string; date: string | null; highlight?: boolean }) {
+  if (!date) return null;
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-medium", highlight ? "text-amber-600" : "text-foreground")}>
+        {format(parseISO(date), 'MMM d, yyyy')}
+      </span>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium text-foreground text-right max-w-[60%] truncate">{value}</span>
+    </div>
   );
 }
