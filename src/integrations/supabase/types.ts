@@ -214,6 +214,117 @@ export type Database = {
           },
         ]
       }
+      network_agents: {
+        Row: {
+          agent_name: string
+          agent_yenta_id: string
+          created_at: string
+          days_with_brokerage: number | null
+          departure_date: string | null
+          email: string | null
+          id: string
+          join_date: string | null
+          phone: string | null
+          platform: string
+          raw_data: Json | null
+          sponsor_name: string | null
+          status: string | null
+          synced_at: string
+          tier: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_name?: string
+          agent_yenta_id: string
+          created_at?: string
+          days_with_brokerage?: number | null
+          departure_date?: string | null
+          email?: string | null
+          id?: string
+          join_date?: string | null
+          phone?: string | null
+          platform?: string
+          raw_data?: Json | null
+          sponsor_name?: string | null
+          status?: string | null
+          synced_at?: string
+          tier?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_name?: string
+          agent_yenta_id?: string
+          created_at?: string
+          days_with_brokerage?: number | null
+          departure_date?: string | null
+          email?: string | null
+          id?: string
+          join_date?: string | null
+          phone?: string | null
+          platform?: string
+          raw_data?: Json | null
+          sponsor_name?: string | null
+          status?: string | null
+          synced_at?: string
+          tier?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      network_summary: {
+        Row: {
+          agent_cap_info: Json | null
+          co_sponsored_agents: number | null
+          created_at: string
+          id: string
+          network_size_by_tier: Json | null
+          platform: string
+          raw_data: Json | null
+          revshare_by_tier: Json | null
+          revshare_performance: Json | null
+          synced_at: string
+          total_network_agents: number | null
+          total_revshare_income: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_cap_info?: Json | null
+          co_sponsored_agents?: number | null
+          created_at?: string
+          id?: string
+          network_size_by_tier?: Json | null
+          platform?: string
+          raw_data?: Json | null
+          revshare_by_tier?: Json | null
+          revshare_performance?: Json | null
+          synced_at?: string
+          total_network_agents?: number | null
+          total_revshare_income?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_cap_info?: Json | null
+          co_sponsored_agents?: number | null
+          created_at?: string
+          id?: string
+          network_size_by_tier?: Json | null
+          platform?: string
+          raw_data?: Json | null
+          revshare_by_tier?: Json | null
+          revshare_performance?: Json | null
+          synced_at?: string
+          total_network_agents?: number | null
+          total_revshare_income?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       other_income: {
         Row: {
           amount: number

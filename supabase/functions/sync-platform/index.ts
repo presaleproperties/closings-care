@@ -5,24 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-// ─── ReZen (Real Broker) helpers ──────────────────────────────────────────────
+// ─── ReZen API Base URLs ──────────────────────────────────────────────────────
+const ARRAKIS = 'https://arrakis.therealbrokerage.com/api/v1'
+const YENTA   = 'https://yenta.therealbrokerage.com/api/v1'
 
-const REZEN_ARRAKIS = 'https://arrakis.therealbrokerage.com/api/v1'
-const REZEN_YENTA   = 'https://yenta.therealbrokerage.com/api/v1'
+async function rezenGet(baseUrl: string, path: string, apiKey: string, params?: Record<string, string>) {
+  const url = new URL(`${baseUrl}/${path}`)
+  if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
 
-async function rezenFetch(url: string, apiKey: string) {
-  const res = await fetch(url, {
+  console.log(`[ReZen] GET ${url.pathname}${url.search}`)
+  const res = await fetch(url.toString(), {
     headers: { 'X-API-KEY': apiKey, 'Accept': 'application/json' },
   })
   if (!res.ok) {
     const text = await res.text()
+    console.error(`[ReZen] Error ${res.status}: ${text.slice(0, 500)}`)
     throw new Error(`ReZen API [${res.status}]: ${text.slice(0, 300)}`)
   }
   return res.json()
 }
 
+// ─── Sync Real Broker ─────────────────────────────────────────────────────────
+
 async function syncRealBroker(supabase: any, userId: string, apiKey: string, connectionId: string) {
-  // Update status
   await supabase.from('platform_connections').update({
     sync_status: 'syncing', sync_error: null,
   }).eq('id', connectionId)
@@ -32,130 +37,374 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
   }).select().single()
 
   try {
-    // 1. Get current user's yenta ID
-    const me = await rezenFetch(`${REZEN_YENTA}/users/me`, apiKey)
+    // 1. Get current user identity
+    console.log('[ReZen] Fetching current user...')
+    const me = await rezenGet(YENTA, 'users/me', apiKey)
     const yentaId = me.id || me.agentId
     if (!yentaId) throw new Error('Could not determine your ReZen agent ID')
+    const agentName = me.firstName ? `${me.firstName} ${me.lastName || ''}`.trim() : ''
+    console.log(`[ReZen] User: ${agentName} (${yentaId})`)
 
     let recordsSynced = 0
 
-    // 2. Sync transactions
-    try {
-      const txData = await rezenFetch(
-        `${REZEN_ARRAKIS}/transactions/participant/${yentaId}/current`,
-        apiKey,
-      )
-      const transactions = txData?.data || txData?.results || (Array.isArray(txData) ? txData : [])
+    // 2. Sync transactions - multiple lifecycle groups
+    for (const group of ['OPEN', 'CLOSED']) {
+      try {
+        console.log(`[ReZen] Fetching ${group} transactions...`)
+        const txData = await rezenGet(ARRAKIS,
+          `transactions/participant/${yentaId}/transactions/${group}`,
+          apiKey,
+          { pageNumber: '0', pageSize: '200' }
+        )
 
-      for (const tx of transactions) {
-        const externalId = String(tx.id || tx.transactionId || tx.code || '')
-        if (!externalId) continue
+        // Handle paginated response
+        const transactions = txData?.data || txData?.transactions || txData?.content || (Array.isArray(txData) ? txData : [])
+        console.log(`[ReZen] Found ${Array.isArray(transactions) ? transactions.length : 0} ${group} transactions`)
 
-        const address = tx.address || {}
-        const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
-        const fullAddress = [streetParts, address.city, address.state, address.zip].filter(Boolean).join(', ')
+        if (Array.isArray(transactions)) {
+          for (const tx of transactions) {
+            const externalId = String(tx.id || tx.transactionId || tx.code || '')
+            if (!externalId) continue
 
-        // Determine commission
-        let commission: number | null = null
-        if (tx.grossCommission?.amount) commission = tx.grossCommission.amount / 100
-        else if (tx.totalGci) commission = tx.totalGci / 100
-        else if (tx.commission) commission = typeof tx.commission === 'number' ? tx.commission : null
+            const address = tx.address || {}
+            const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
+            const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
 
-        // Determine sale price
-        let salePrice: number | null = null
-        if (tx.price?.amount) salePrice = tx.price.amount / 100
-        else if (tx.salePrice) salePrice = tx.salePrice
-        else if (tx.purchasePrice) salePrice = tx.purchasePrice
+            // Commission
+            let commission: number | null = null
+            if (tx.grossCommission?.amount) commission = tx.grossCommission.amount / 100
+            else if (tx.totalGci) commission = tx.totalGci / 100
+            else if (tx.grossCommission && typeof tx.grossCommission === 'number') commission = tx.grossCommission
+            else if (tx.commission && typeof tx.commission === 'number') commission = tx.commission
 
-        // Determine status
-        const rawStatus = String(tx.status || tx.lifecycleState || '').toLowerCase()
-        let status = rawStatus
-        if (rawStatus.includes('closed') || tx.closedAt) status = 'closed'
-        else if (rawStatus.includes('terminat')) status = 'terminated'
-        else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
+            // Sale price
+            let salePrice: number | null = null
+            if (tx.price?.amount) salePrice = tx.price.amount / 100
+            else if (tx.salePrice) salePrice = tx.salePrice
+            else if (tx.purchasePrice) salePrice = tx.purchasePrice
+            else if (tx.price && typeof tx.price === 'number') salePrice = tx.price
 
-        // Determine close date
-        const closeDate = tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate || null
+            // Status
+            const rawStatus = String(tx.status || tx.lifecycleState || '').toLowerCase()
+            let status = rawStatus
+            if (rawStatus.includes('closed') || tx.closedAt || tx.rezenClosedAt) status = 'closed'
+            else if (rawStatus.includes('terminat')) status = 'terminated'
+            else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
 
-        // Determine listing date
-        const listingDate = tx.listingDate || tx.contractAcceptanceDate || null
+            // Dates
+            const closeDate = tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate || null
+            const listingDate = tx.listingDate || tx.contractAcceptanceDate || null
 
-        // Get client/buyer names from participants if available
-        let clientName = ''
-        if (tx.participants && Array.isArray(tx.participants)) {
-          const buyers = tx.participants.filter((p: any) => p.role === 'BUYER' || p.role === 'SELLER')
-          clientName = buyers.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
+            // Client name from participants
+            let clientName = ''
+            if (tx.participants && Array.isArray(tx.participants)) {
+              const clients = tx.participants.filter((p: any) =>
+                p.role === 'BUYER' || p.role === 'SELLER' || p.role === 'CLIENT'
+              )
+              clientName = clients.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
+            }
+            if (!clientName) clientName = tx.representedParty || tx.clientName || ''
+
+            await supabase.from('synced_transactions').upsert({
+              user_id: userId,
+              platform: 'real_broker',
+              external_id: externalId,
+              transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
+              client_name: clientName,
+              property_address: fullAddress || '',
+              city: address.city || '',
+              sale_price: salePrice,
+              commission_amount: commission,
+              close_date: closeDate,
+              listing_date: listingDate,
+              status,
+              agent_name: agentName,
+              raw_data: tx,
+              synced_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,platform,external_id' })
+
+            recordsSynced++
+          }
         }
-        if (!clientName) clientName = tx.representedParty || tx.clientName || ''
-
-        await supabase.from('synced_transactions').upsert({
-          user_id: userId,
-          platform: 'real_broker',
-          external_id: externalId,
-          transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
-          client_name: clientName,
-          property_address: fullAddress || '',
-          city: address.city || '',
-          sale_price: salePrice,
-          commission_amount: commission,
-          close_date: closeDate,
-          listing_date: listingDate,
-          status,
-          agent_name: me.firstName ? `${me.firstName} ${me.lastName || ''}`.trim() : '',
-          raw_data: tx,
-          synced_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,platform,external_id' })
-
-        recordsSynced++
+      } catch (txErr) {
+        console.warn(`[ReZen] ${group} transaction sync error:`, txErr)
       }
-    } catch (txErr) {
-      console.warn('Transaction sync partial error:', txErr)
+    }
+
+    // Also try the /current endpoint as a fallback
+    try {
+      console.log('[ReZen] Fetching current transactions...')
+      const currentData = await rezenGet(ARRAKIS,
+        `transactions/participant/${yentaId}/current`,
+        apiKey
+      )
+      const currentTxs = Array.isArray(currentData) ? currentData : (currentData?.data || currentData?.transactions || [])
+      console.log(`[ReZen] Found ${Array.isArray(currentTxs) ? currentTxs.length : 0} current transactions`)
+
+      if (Array.isArray(currentTxs)) {
+        for (const tx of currentTxs) {
+          const externalId = String(tx.id || tx.transactionId || tx.code || '')
+          if (!externalId) continue
+
+          const address = tx.address || {}
+          const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
+          const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
+
+          let commission: number | null = null
+          if (tx.grossCommission?.amount) commission = tx.grossCommission.amount / 100
+          else if (tx.totalGci) commission = tx.totalGci / 100
+          else if (typeof tx.grossCommission === 'number') commission = tx.grossCommission
+          else if (typeof tx.commission === 'number') commission = tx.commission
+
+          let salePrice: number | null = null
+          if (tx.price?.amount) salePrice = tx.price.amount / 100
+          else if (tx.salePrice) salePrice = tx.salePrice
+          else if (tx.purchasePrice) salePrice = tx.purchasePrice
+          else if (typeof tx.price === 'number') salePrice = tx.price
+
+          const rawStatus = String(tx.status || tx.lifecycleState || '').toLowerCase()
+          let status = rawStatus
+          if (rawStatus.includes('closed') || tx.closedAt) status = 'closed'
+          else if (rawStatus.includes('terminat')) status = 'terminated'
+          else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
+
+          let clientName = ''
+          if (tx.participants && Array.isArray(tx.participants)) {
+            const clients = tx.participants.filter((p: any) =>
+              ['BUYER', 'SELLER', 'CLIENT'].includes(p.role)
+            )
+            clientName = clients.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
+          }
+          if (!clientName) clientName = tx.representedParty || tx.clientName || ''
+
+          await supabase.from('synced_transactions').upsert({
+            user_id: userId,
+            platform: 'real_broker',
+            external_id: externalId,
+            transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
+            client_name: clientName,
+            property_address: fullAddress || '',
+            city: (address.city || ''),
+            sale_price: salePrice,
+            commission_amount: commission,
+            close_date: tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || null,
+            listing_date: tx.listingDate || tx.contractAcceptanceDate || null,
+            status,
+            agent_name: agentName,
+            raw_data: tx,
+            synced_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,platform,external_id' })
+
+          recordsSynced++
+        }
+      }
+    } catch (err) {
+      console.warn('[ReZen] Current transactions fallback error:', err)
     }
 
     // 3. Sync revenue share payments
     try {
-      const rsData = await rezenFetch(
-        `${REZEN_ARRAKIS}/revshares/${yentaId}/payments?pageSize=100`,
+      console.log('[ReZen] Fetching revshare payments...')
+      const rsData = await rezenGet(ARRAKIS,
+        `revshares/${yentaId}/payments`,
         apiKey,
+        { pageSize: '200' }
       )
-      const payments = rsData?.data || rsData?.results || rsData?.content || (Array.isArray(rsData) ? rsData : [])
+      const payments = rsData?.data || rsData?.results || rsData?.content || rsData?.payments || (Array.isArray(rsData) ? rsData : [])
+      console.log(`[ReZen] Found ${Array.isArray(payments) ? payments.length : 0} revshare payments`)
 
-      for (const payment of payments) {
-        const paymentId = String(payment.id || payment.outgoingPaymentId || '')
-        if (!paymentId) continue
+      if (Array.isArray(payments)) {
+        for (const payment of payments) {
+          const paymentId = String(payment.id || payment.outgoingPaymentId || '')
+          if (!paymentId) continue
 
-        // Extract period from payment date
-        const paidAt = payment.paidAt || payment.createdAt || payment.paymentDate || ''
-        let period = ''
-        if (paidAt) {
-          const d = new Date(typeof paidAt === 'number' ? (paidAt > 1e12 ? paidAt : paidAt * 1000) : paidAt)
-          if (!isNaN(d.getTime())) period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          const paidAt = payment.paidAt || payment.createdAt || payment.paymentDate || ''
+          let period = ''
+          if (paidAt) {
+            const d = new Date(typeof paidAt === 'number' ? (paidAt > 1e12 ? paidAt : paidAt * 1000) : paidAt)
+            if (!isNaN(d.getTime())) period = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          }
+
+          const amount = payment.amount?.amount
+            ? payment.amount.amount / 100
+            : (typeof payment.amount === 'number' ? payment.amount : 0)
+
+          await supabase.from('revenue_share').upsert({
+            user_id: userId,
+            platform: 'real_broker',
+            agent_name: payment.agentName || payment.contributorName || agentName,
+            tier: payment.tier || 1,
+            amount,
+            period: period || 'unknown',
+            cap_contribution: payment.capContribution || null,
+            status: payment.status || 'paid',
+            notes: `ReZen Payment ID: ${paymentId}`,
+            raw_data: payment,
+          }, { onConflict: 'user_id,platform,agent_name,period' })
+
+          recordsSynced++
         }
-
-        const amount = payment.amount?.amount
-          ? payment.amount.amount / 100
-          : (typeof payment.amount === 'number' ? payment.amount : 0)
-
-        await supabase.from('revenue_share').upsert({
-          user_id: userId,
-          platform: 'real_broker',
-          agent_name: payment.agentName || payment.contributorName || `${me.firstName || ''} ${me.lastName || ''}`.trim(),
-          tier: payment.tier || 1,
-          amount,
-          period: period || 'unknown',
-          cap_contribution: payment.capContribution || null,
-          status: payment.status || 'paid',
-          notes: `ReZen Payment ID: ${paymentId}`,
-          raw_data: payment,
-        }, { onConflict: 'user_id,platform,agent_name,period' })
-
-        recordsSynced++
       }
     } catch (rsErr) {
-      console.warn('Revenue share sync partial error:', rsErr)
+      console.warn('[ReZen] RevShare sync error:', rsErr)
     }
 
-    // Update connection and sync log
+    // 4. Sync revshare performance & by-tier data
+    try {
+      console.log('[ReZen] Fetching revshare performance...')
+      const [perfData, byTierData] = await Promise.allSettled([
+        rezenGet(ARRAKIS, `revshares/performance/${yentaId}/revenue-share/current`, apiKey),
+        rezenGet(ARRAKIS, `revshares/${yentaId}/by-tier`, apiKey),
+      ])
+
+      const performance = perfData.status === 'fulfilled' ? perfData.value : null
+      const byTier = byTierData.status === 'fulfilled' ? byTierData.value : null
+
+      if (performance || byTier) {
+        console.log('[ReZen] Got revshare performance/by-tier data')
+      }
+
+      // 5. Agent cap info + network size
+      console.log('[ReZen] Fetching agent details...')
+      const [capData, networkSizeData] = await Promise.allSettled([
+        rezenGet(YENTA, `agents/${yentaId}/cap-info`, apiKey),
+        rezenGet(YENTA, `agents/${yentaId}/network-size-by-tier`, apiKey),
+      ])
+
+      const capInfo = capData.status === 'fulfilled' ? capData.value : null
+      const networkSize = networkSizeData.status === 'fulfilled' ? networkSizeData.value : null
+
+      // Calculate total network agents from network size data
+      let totalAgents = 0
+      if (networkSize && typeof networkSize === 'object') {
+        // networkSize is typically { tier1: count, tier2: count, ... } or array
+        if (Array.isArray(networkSize)) {
+          totalAgents = networkSize.reduce((sum: number, t: any) => sum + (t.count || t.size || 0), 0)
+        } else {
+          Object.values(networkSize).forEach((v: any) => {
+            if (typeof v === 'number') totalAgents += v
+          })
+        }
+      }
+
+      console.log(`[ReZen] Network size: ${totalAgents} agents`)
+
+      await supabase.from('network_summary').upsert({
+        user_id: userId,
+        platform: 'real_broker',
+        total_network_agents: totalAgents,
+        network_size_by_tier: networkSize,
+        revshare_by_tier: byTier,
+        revshare_performance: performance,
+        agent_cap_info: capInfo,
+        synced_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,platform' })
+
+      recordsSynced++
+    } catch (err) {
+      console.warn('[ReZen] Performance/network sync error:', err)
+    }
+
+    // 6. Sync front-line agents (Tier 1 network)
+    try {
+      console.log('[ReZen] Fetching frontline agents...')
+      const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
+      const agents = Array.isArray(frontLine) ? frontLine : (frontLine?.agents || frontLine?.data || [])
+      console.log(`[ReZen] Found ${Array.isArray(agents) ? agents.length : 0} frontline agents`)
+
+      if (Array.isArray(agents)) {
+        for (const agent of agents) {
+          const agentId = String(agent.id || agent.agentId || '')
+          if (!agentId) continue
+
+          const name = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || agent.fullName || '')
+          const joinDate = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+          
+          // Calculate days with brokerage
+          let daysWithBrokerage: number | null = null
+          if (joinDate) {
+            const jd = new Date(typeof joinDate === 'number' ? (joinDate > 1e12 ? joinDate : joinDate * 1000) : joinDate)
+            if (!isNaN(jd.getTime())) {
+              daysWithBrokerage = Math.floor((Date.now() - jd.getTime()) / (1000 * 60 * 60 * 24))
+            }
+          }
+
+          await supabase.from('network_agents').upsert({
+            user_id: userId,
+            platform: 'real_broker',
+            agent_yenta_id: agentId,
+            agent_name: name,
+            email: agent.emailAddress || agent.email || null,
+            phone: agent.phoneNumber || agent.phone || null,
+            tier: agent.tier || 1,
+            status: agent.status || 'ACTIVE',
+            sponsor_name: agent.sponsorName || null,
+            join_date: joinDate,
+            days_with_brokerage: daysWithBrokerage,
+            raw_data: agent,
+            synced_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,platform,agent_yenta_id' })
+
+          recordsSynced++
+        }
+      }
+    } catch (err) {
+      console.warn('[ReZen] Frontline agents sync error:', err)
+    }
+
+    // 7. Sync downline agents (Tiers 1-5)
+    for (let tier = 1; tier <= 5; tier++) {
+      try {
+        const downline = await rezenGet(YENTA,
+          `agents/${yentaId}/down-line/${tier}`,
+          apiKey,
+          { pageSize: '100', pageNumber: '0' }
+        )
+        const dlAgents = downline?.data || downline?.content || downline?.agents || (Array.isArray(downline) ? downline : [])
+
+        if (Array.isArray(dlAgents) && dlAgents.length > 0) {
+          console.log(`[ReZen] Tier ${tier}: ${dlAgents.length} agents`)
+          for (const agent of dlAgents) {
+            const agentId = String(agent.id || agent.agentId || '')
+            if (!agentId) continue
+
+            const name = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || '')
+            const joinDate = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+
+            let daysWithBrokerage: number | null = null
+            if (joinDate) {
+              const jd = new Date(typeof joinDate === 'number' ? (joinDate > 1e12 ? joinDate : joinDate * 1000) : joinDate)
+              if (!isNaN(jd.getTime())) {
+                daysWithBrokerage = Math.floor((Date.now() - jd.getTime()) / (1000 * 60 * 60 * 24))
+              }
+            }
+
+            await supabase.from('network_agents').upsert({
+              user_id: userId,
+              platform: 'real_broker',
+              agent_yenta_id: agentId,
+              agent_name: name,
+              email: agent.emailAddress || agent.email || null,
+              phone: agent.phoneNumber || agent.phone || null,
+              tier,
+              status: agent.status || 'ACTIVE',
+              sponsor_name: agent.sponsorName || null,
+              join_date: joinDate,
+              days_with_brokerage: daysWithBrokerage,
+              raw_data: agent,
+              synced_at: new Date().toISOString(),
+            }, { onConflict: 'user_id,platform,agent_yenta_id' })
+
+            recordsSynced++
+          }
+        }
+      } catch (err) {
+        // Tier may not exist, that's ok
+        console.log(`[ReZen] Tier ${tier} downline: no data or error`)
+      }
+    }
+
+    // Update connection status
     await supabase.from('platform_connections').update({
       sync_status: 'success',
       last_synced_at: new Date().toISOString(),
@@ -170,9 +419,11 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       }).eq('id', syncLog.id)
     }
 
+    console.log(`[ReZen] Sync complete: ${recordsSynced} records`)
     return { success: true, records_synced: recordsSynced }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[ReZen] Sync failed:', errorMessage)
 
     await supabase.from('platform_connections').update({
       sync_status: 'error', sync_error: errorMessage,
@@ -302,7 +553,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get connection and verify ownership
     const { data: connection, error: connError } = await supabase
       .from('platform_connections')
       .select('*')
