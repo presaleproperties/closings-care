@@ -5,22 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Download, 
-  Check, 
   DollarSign,
   Clock,
   AlertCircle,
-  MapPin,
   Building2,
   Home,
   TrendingUp,
   Calendar,
   CheckCircle2,
-  ArrowRight,
-  Banknote,
-  Sparkles,
   ArrowUpRight,
   Timer,
-  Wallet
+  Wallet,
+  Banknote,
+  Sparkles,
+  AlertTriangle,
+  MapPin,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -33,15 +32,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
+import { useSyncedPayouts, SyncedPayoutItem } from '@/hooks/useSyncedPayouts';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
-import { PayoutType, Payout } from '@/lib/types';
 import { triggerHaptic, springConfigs } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 
-const payoutTypes: PayoutType[] = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion', 'Custom'];
+type PayoutTypeFilter = 'Advance' | 'Completion' | 'Commission' | 'ALL';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,220 +53,190 @@ const itemVariants = {
 };
 
 interface PayoutCardProps {
-  payout: Payout;
-  onMarkPaid: (id: string) => void;
-  isPending: boolean;
+  payout: SyncedPayoutItem;
 }
 
-function PayoutCard({ payout, onMarkPaid, isPending }: PayoutCardProps) {
+function PayoutCard({ payout }: PayoutCardProps) {
   const now = new Date();
-  const deal = payout.deal;
-  const isPresale = deal?.property_type === 'PRESALE';
-  const DealIcon = isPresale ? Building2 : Home;
+  const DealIcon = payout.isPresale ? Building2 : Home;
 
-  const getDueBadge = (dueDate: string | null) => {
-    if (!dueDate) return { label: 'No date', color: 'bg-muted/60 text-muted-foreground', urgent: false, days: null, barColor: 'bg-muted-foreground/30' };
-    const days = differenceInDays(parseISO(dueDate), now);
-    if (days < 0) return { label: `${Math.abs(days)}d overdue`, color: 'bg-destructive/15 text-destructive', urgent: true, days, barColor: 'bg-destructive' };
-    if (days === 0) return { label: 'Due today', color: 'bg-destructive/15 text-destructive', urgent: true, days, barColor: 'bg-destructive' };
-    if (days <= 7) return { label: `${days}d left`, color: 'bg-amber-500/15 text-amber-600', urgent: true, days, barColor: 'bg-amber-500' };
-    if (days <= 30) return { label: `${days} days`, color: 'bg-muted/60 text-muted-foreground', urgent: false, days, barColor: 'bg-primary/40' };
-    return { label: format(parseISO(dueDate), 'MMM d'), color: 'bg-muted/60 text-muted-foreground', urgent: false, days, barColor: 'bg-primary/30' };
+  const getDueBadge = (closeDate: string | null, status: string) => {
+    if (status === 'closed') return { label: '✓ Received', color: 'bg-emerald-500/15 text-emerald-600', urgent: false, barColor: 'bg-gradient-to-b from-emerald-400 to-emerald-600' };
+    if (status === 'flagged') return { label: 'Needs Review', color: 'bg-amber-500/15 text-amber-600', urgent: true, barColor: 'bg-amber-500' };
+    if (!closeDate) return { label: 'No date', color: 'bg-muted/60 text-muted-foreground', urgent: false, barColor: 'bg-muted-foreground/30' };
+    
+    const days = differenceInDays(parseISO(closeDate), now);
+    if (days < 0) return { label: `${Math.abs(days)}d overdue`, color: 'bg-destructive/15 text-destructive', urgent: true, barColor: 'bg-destructive' };
+    if (days === 0) return { label: 'Due today', color: 'bg-destructive/15 text-destructive', urgent: true, barColor: 'bg-destructive' };
+    if (days <= 7) return { label: `${days}d left`, color: 'bg-amber-500/15 text-amber-600', urgent: true, barColor: 'bg-amber-500' };
+    if (days <= 30) return { label: `${days} days`, color: 'bg-muted/60 text-muted-foreground', urgent: false, barColor: 'bg-primary/40' };
+    return { label: format(parseISO(closeDate), 'MMM d, yyyy'), color: 'bg-muted/60 text-muted-foreground', urgent: false, barColor: 'bg-primary/30' };
   };
 
-  const badge = getDueBadge(payout.due_date);
-  const isPaid = payout.status === 'PAID';
+  const badge = getDueBadge(payout.close_date, payout.status);
+  const isReceived = payout.status === 'closed';
+  const isFlagged = payout.status === 'flagged';
 
   const payoutTypeConfig: Record<string, { bg: string; text: string }> = {
     'Advance': { bg: 'bg-blue-500/10', text: 'text-blue-600' },
     'Completion': { bg: 'bg-emerald-500/10', text: 'text-emerald-600' },
-    '2nd Payment': { bg: 'bg-violet-500/10', text: 'text-violet-600' },
-    '3rd Deposit': { bg: 'bg-orange-500/10', text: 'text-orange-600' },
-    '4th Deposit': { bg: 'bg-pink-500/10', text: 'text-pink-600' },
-    'Custom': { bg: 'bg-muted/50', text: 'text-muted-foreground' },
+    'Commission': { bg: 'bg-violet-500/10', text: 'text-violet-600' },
   };
 
-  const typeStyle = payoutTypeConfig[payout.payout_type] || payoutTypeConfig['Custom'];
+  const typeStyle = payoutTypeConfig[payout.payoutType] || payoutTypeConfig['Commission'];
+  const displayName = payout.projectName || payout.client_name || 'Transaction';
+  const displayCity = payout.city || '';
 
   return (
-    <Link to={`/deals/${payout.deal_id}`} onClick={() => triggerHaptic('light')}>
-      <motion.div
-        className={cn(
-          "relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all group",
-          isPaid 
-            ? "bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/20" 
+    <motion.div
+      className={cn(
+        "relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all group",
+        isReceived 
+          ? "bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/20" 
+          : isFlagged
+            ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30"
             : badge.urgent 
               ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30" 
               : "bg-card/80 border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-        )}
-        whileTap={{ scale: 0.985 }}
-        whileHover={{ y: -3, transition: { duration: 0.2 } }}
-        transition={springConfigs.snappy}
-      >
-        {/* Premium Status Bar */}
-        <div className={cn(
-          "absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl",
-          isPaid ? "bg-gradient-to-b from-emerald-400 to-emerald-600" : badge.barColor
-        )} />
-        
-        <div className="p-4 pl-5">
-          {/* Header Row */}
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                  isPresale ? "bg-violet-500/10" : "bg-blue-500/10"
-                )}>
-                  <DealIcon className={cn("h-4 w-4", isPresale ? "text-violet-500" : "text-blue-500")} />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-bold text-sm truncate">{deal?.client_name || 'Unknown'}</h4>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="truncate">{isPresale ? deal?.project_name || 'Presale' : 'Resale'}</span>
-                    {deal?.city && (
-                      <>
-                        <span className="text-border">•</span>
-                        <span className="truncate">{deal.city}</span>
-                      </>
-                    )}
-                  </div>
+      )}
+      whileTap={{ scale: 0.985 }}
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      transition={springConfigs.snappy}
+    >
+      {/* Status Bar */}
+      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl", badge.barColor)} />
+      
+      <div className="p-4 pl-5">
+        {/* Header Row */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                payout.isPresale ? "bg-violet-500/10" : "bg-blue-500/10"
+              )}>
+                <DealIcon className={cn("h-4 w-4", payout.isPresale ? "text-violet-500" : "text-blue-500")} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="font-bold text-sm truncate">{displayName}</h4>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="truncate">{payout.isPresale ? 'Presale' : 'Resale'}</span>
+                  {displayCity && (
+                    <>
+                      <span className="text-border">•</span>
+                      <span className="truncate">{displayCity}</span>
+                    </>
+                  )}
+                  {payout.agent_name && (
+                    <>
+                      <span className="text-border">•</span>
+                      <span className="truncate">{payout.agent_name}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            
-            <div className="text-right shrink-0">
-              <p className={cn(
-                "font-bold text-xl tracking-tight",
-                isPaid ? "text-emerald-600" : "text-foreground"
-              )}>
-                {formatCurrency(payout.amount)}
-              </p>
-              <span className={cn(
-                "text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block mt-1",
-                isPaid ? "bg-emerald-500/15 text-emerald-600" : badge.color
-              )}>
-                {isPaid ? '✓ Received' : badge.label}
-              </span>
-            </div>
           </div>
           
-          {/* Footer Row */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/40">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={cn(
-                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium",
-                typeStyle.bg, typeStyle.text
-              )}>
-                <TrendingUp className="h-3 w-3" />
-                {payout.payout_type === 'Custom' ? payout.custom_type_name || 'Custom' : payout.payout_type}
-              </span>
-              
-              {payout.due_date && !isPaid && (
-                <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 bg-muted/40 px-2 py-1 rounded-lg">
-                  <Calendar className="h-3 w-3" />
-                  {format(parseISO(payout.due_date), 'MMM d, yyyy')}
-                </span>
-              )}
-              
-              {payout.paid_date && (
-                <span className="text-xs text-emerald-600 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-lg">
-                  <CheckCircle2 className="h-3 w-3" />
-                  {format(parseISO(payout.paid_date), 'MMM d')}
-                </span>
-              )}
-            </div>
-            
-            {!isPaid && (
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm shadow-emerald-500/25"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  triggerHaptic('success');
-                  onMarkPaid(payout.id);
-                }}
-                disabled={isPending}
-              >
-                <Check className="w-3.5 h-3.5" />
-                Mark Paid
-              </Button>
-            )}
+          <div className="text-right shrink-0">
+            <p className={cn(
+              "font-bold text-xl tracking-tight",
+              isReceived ? "text-emerald-600" : "text-foreground"
+            )}>
+              {formatCurrency(payout.netAmount)}
+            </p>
+            <span className={cn(
+              "text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block mt-1",
+              badge.color
+            )}>
+              {badge.label}
+            </span>
           </div>
         </div>
-      </motion.div>
-    </Link>
+        
+        {/* Footer Row */}
+        <div className="flex items-center justify-between pt-3 border-t border-border/40">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium",
+              typeStyle.bg, typeStyle.text
+            )}>
+              <TrendingUp className="h-3 w-3" />
+              {payout.payoutType}
+            </span>
+            
+            {payout.close_date && !isReceived && (
+              <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 bg-muted/40 px-2 py-1 rounded-lg">
+                <Calendar className="h-3 w-3" />
+                {format(parseISO(payout.close_date), 'MMM d, yyyy')}
+              </span>
+            )}
+
+            {isReceived && payout.close_date && (
+              <span className="text-xs text-emerald-600 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-lg">
+                <CheckCircle2 className="h-3 w-3" />
+                {format(parseISO(payout.close_date), 'MMM d, yyyy')}
+              </span>
+            )}
+
+            {isFlagged && (
+              <span className="text-xs text-amber-600 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
+                <AlertTriangle className="h-3 w-3" />
+                Past close date, still active in ReZen
+              </span>
+            )}
+          </div>
+          
+          {payout.grossAmount !== payout.netAmount && (
+            <span className="text-xs text-muted-foreground">
+              Gross: {formatCurrency(payout.grossAmount)}
+            </span>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 export default function PayoutsPage() {
-  const { data: payouts = [], isLoading } = usePayouts();
-  const markPaid = useMarkPayoutPaid();
+  const { data: syncedTransactions = [], isLoading } = useSyncedTransactions();
+  const { payoutItems, stats } = useSyncedPayouts(syncedTransactions);
   const refreshData = useRefreshData();
 
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'thisMonth' | 'paid'>('all');
-  const [typeFilter, setTypeFilter] = useState<PayoutType | 'ALL'>('ALL');
-
-  const now = new Date();
-  const thisMonthStart = startOfMonth(now);
-  const thisMonthEnd = endOfMonth(now);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const pending = payouts.filter(p => p.status !== 'PAID');
-    const thisMonth = payouts.filter(p => 
-      p.due_date && isWithinInterval(parseISO(p.due_date), { start: thisMonthStart, end: thisMonthEnd }) && p.status !== 'PAID'
-    );
-    const paid = payouts.filter(p => p.status === 'PAID');
-    const overdue = payouts.filter(p => 
-      p.status !== 'PAID' && p.due_date && differenceInDays(parseISO(p.due_date), now) < 0
-    );
-
-    return {
-      all: { count: payouts.length, total: payouts.reduce((sum, p) => sum + Number(p.amount), 0) },
-      pending: { count: pending.length, total: pending.reduce((sum, p) => sum + Number(p.amount), 0) },
-      thisMonth: { count: thisMonth.length, total: thisMonth.reduce((sum, p) => sum + Number(p.amount), 0) },
-      paid: { count: paid.length, total: paid.reduce((sum, p) => sum + Number(p.amount), 0) },
-      overdue: { count: overdue.length, total: overdue.reduce((sum, p) => sum + Number(p.amount), 0) }
-    };
-  }, [payouts, thisMonthStart, thisMonthEnd, now]);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'flagged' | 'thisMonth' | 'received'>('all');
+  const [typeFilter, setTypeFilter] = useState<PayoutTypeFilter>('ALL');
 
   const filteredPayouts = useMemo(() => {
-    return payouts.filter((payout) => {
-      const clientName = payout.deal?.client_name?.toLowerCase() || '';
-      const matchesSearch = clientName.includes(search.toLowerCase());
-      const matchesType = typeFilter === 'ALL' || payout.payout_type === typeFilter;
+    return payoutItems.filter((payout) => {
+      const name = (payout.projectName || payout.client_name || payout.property_address || '').toLowerCase();
+      const matchesSearch = !search || name.includes(search.toLowerCase());
+      const matchesType = typeFilter === 'ALL' || payout.payoutType === typeFilter;
       
       let matchesFilter = true;
-      if (activeFilter === 'pending') matchesFilter = payout.status !== 'PAID';
+      if (activeFilter === 'pending') matchesFilter = payout.status === 'active';
+      else if (activeFilter === 'flagged') matchesFilter = payout.status === 'flagged';
       else if (activeFilter === 'thisMonth') {
-        matchesFilter = payout.due_date 
-          ? isWithinInterval(parseISO(payout.due_date), { start: thisMonthStart, end: thisMonthEnd }) && payout.status !== 'PAID'
-          : false;
-      } else if (activeFilter === 'paid') matchesFilter = payout.status === 'PAID';
+        const thisMonth = new Date().toISOString().substring(0, 7);
+        matchesFilter = payout.status !== 'closed' && (payout.close_date?.startsWith(thisMonth) || false);
+      } else if (activeFilter === 'received') matchesFilter = payout.status === 'closed';
 
       return matchesSearch && matchesType && matchesFilter;
-    }).sort((a, b) => {
-      if (a.status === 'PAID' && b.status !== 'PAID') return 1;
-      if (a.status !== 'PAID' && b.status === 'PAID') return -1;
-      if (a.due_date && b.due_date) return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      if (a.due_date) return -1;
-      if (b.due_date) return 1;
-      return 0;
     });
-  }, [payouts, search, typeFilter, activeFilter, thisMonthStart, thisMonthEnd]);
+  }, [payoutItems, search, typeFilter, activeFilter]);
 
   const handleExportCSV = () => {
-    const headers = ['Client', 'Deal Type', 'Payout Type', 'Amount', 'Due Date', 'Status', 'Paid Date'];
+    const headers = ['Property', 'Type', 'Payout Type', 'Net Amount', 'Gross Amount', 'Close Date', 'Status', 'City', 'Agent'];
     const rows = filteredPayouts.map((p) => [
-      p.deal?.client_name || '',
-      p.payout_type,
-      p.amount,
-      p.due_date || '',
+      p.projectName || p.property_address || '',
+      p.isPresale ? 'Presale' : 'Resale',
+      p.payoutType,
+      p.netAmount,
+      p.grossAmount,
+      p.close_date || '',
       p.status,
-      p.paid_date || '',
+      p.city || '',
+      p.agent_name || '',
     ]);
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -280,11 +249,12 @@ export default function PayoutsPage() {
   };
 
   const filterConfig = [
-    { id: 'all', label: 'All', count: stats.all.count, icon: Wallet },
-    { id: 'pending', label: 'Pending', count: stats.pending.count, icon: Clock },
-    { id: 'thisMonth', label: 'Due Soon', count: stats.thisMonth.count, icon: Timer },
-    { id: 'paid', label: 'Received', count: stats.paid.count, icon: CheckCircle2 },
-  ] as const;
+    { id: 'all' as const, label: 'All', count: stats.all.count, icon: Wallet },
+    { id: 'pending' as const, label: 'Pending', count: stats.pending.count, icon: Clock },
+    { id: 'flagged' as const, label: 'Review', count: stats.flagged.count, icon: AlertTriangle },
+    { id: 'thisMonth' as const, label: 'Due Soon', count: stats.dueThisMonth.count, icon: Timer },
+    { id: 'received' as const, label: 'Received', count: stats.received.count, icon: CheckCircle2 },
+  ];
 
   const statCards = [
     { 
@@ -298,10 +268,10 @@ export default function PayoutsPage() {
       valueColor: 'text-primary'
     },
     { 
-      label: 'Due This Month', 
-      value: stats.thisMonth.total, 
-      count: stats.thisMonth.count,
-      icon: Calendar,
+      label: 'Needs Review', 
+      value: stats.flagged.total, 
+      count: stats.flagged.count,
+      icon: AlertTriangle,
       gradient: 'from-amber-500/20 via-amber-500/10 to-transparent',
       iconBg: 'bg-amber-500/15',
       iconColor: 'text-amber-600',
@@ -309,8 +279,8 @@ export default function PayoutsPage() {
     },
     { 
       label: 'Received', 
-      value: stats.paid.total, 
-      count: stats.paid.count,
+      value: stats.received.total, 
+      count: stats.received.count,
       icon: CheckCircle2,
       gradient: 'from-emerald-500/20 via-emerald-500/10 to-transparent',
       iconBg: 'bg-emerald-500/15',
@@ -333,7 +303,7 @@ export default function PayoutsPage() {
     <AppLayout>
       <Header 
         title="Payouts" 
-        subtitle="Track your commission payments"
+        subtitle="Commission payments from synced transactions"
         action={
           <Button variant="outline" onClick={handleExportCSV} className="gap-2 rounded-xl border-border/60 hover:border-primary/40">
             <Download className="w-4 h-4" />
@@ -349,7 +319,7 @@ export default function PayoutsPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Premium Stats Grid */}
+          {/* Stats Grid */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {statCards.map((stat, index) => (
               <motion.div
@@ -363,9 +333,7 @@ export default function PayoutsPage() {
                 transition={{ delay: index * 0.08 }}
                 whileHover={{ y: -2 }}
               >
-                {/* Gradient Background */}
                 <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", stat.gradient)} />
-                
                 <div className="relative">
                   <div className="flex items-center justify-between mb-3">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.iconBg)}>
@@ -386,36 +354,38 @@ export default function PayoutsPage() {
             ))}
           </motion.div>
 
-          {/* Overdue Alert */}
+          {/* Flagged Alert */}
           <AnimatePresence>
-            {stats.overdue.count > 0 && activeFilter !== 'paid' && (
+            {stats.flagged.count > 0 && activeFilter !== 'received' && (
               <motion.div
-                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                animate={{ opacity: 1, height: 'auto', marginTop: 20 }}
-                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
                 variants={itemVariants}
               >
-                <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-destructive/15 via-destructive/10 to-transparent border border-destructive/25 backdrop-blur-sm">
-                  <div className="p-3 rounded-xl bg-destructive/20 shrink-0">
-                    <AlertCircle className="h-5 w-5 text-destructive" />
+                <button
+                  onClick={() => { triggerHaptic('light'); setActiveFilter('flagged'); }}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/25 backdrop-blur-sm text-left"
+                >
+                  <div className="p-3 rounded-xl bg-amber-500/20 shrink-0">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-destructive text-sm">
-                      {stats.overdue.count} Overdue Payout{stats.overdue.count > 1 ? 's' : ''}
+                    <p className="font-bold text-amber-600 text-sm">
+                      {stats.flagged.count} Payout{stats.flagged.count > 1 ? 's' : ''} Need Review
                     </p>
-                    <p className="text-xs text-destructive/80 truncate">
-                      {formatCurrency(stats.overdue.total)} needs immediate attention
+                    <p className="text-xs text-amber-600/80 truncate">
+                      {formatCurrency(stats.flagged.total)} — Close date passed but still active in ReZen
                     </p>
                   </div>
-                  <ArrowUpRight className="w-5 h-5 text-destructive shrink-0" />
-                </div>
+                  <ArrowUpRight className="w-5 h-5 text-amber-600 shrink-0" />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Filter Pills & Search */}
           <motion.div variants={itemVariants} className="space-y-4">
-            {/* Filter Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {filterConfig.map(filter => (
                 <motion.button
@@ -444,12 +414,11 @@ export default function PayoutsPage() {
               ))}
             </div>
 
-            {/* Search & Type Filter */}
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by client name..."
+                  placeholder="Search by property or client..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10 h-12 rounded-xl bg-card/80 border-border/50 focus-visible:ring-primary/30 focus-visible:border-primary/50"
@@ -466,7 +435,7 @@ export default function PayoutsPage() {
                   <DropdownMenuItem onClick={() => setTypeFilter('ALL')} className="rounded-lg">
                     All Types
                   </DropdownMenuItem>
-                  {payoutTypes.map((type) => (
+                  {(['Advance', 'Completion', 'Commission'] as const).map((type) => (
                     <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)} className="rounded-lg">
                       {type}
                     </DropdownMenuItem>
@@ -499,29 +468,20 @@ export default function PayoutsPage() {
               </div>
               <p className="text-xl font-bold text-foreground mb-2">No payouts found</p>
               <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
-                {search ? 'Try adjusting your search or filters' : 'Create your first deal to start tracking payouts'}
+                {search ? 'Try adjusting your search or filters' : 'Sync your platform to see commission payouts here'}
               </p>
-              {!search && (
-                <Link to="/deals/new">
-                  <Button className="btn-premium rounded-xl gap-2 px-6">
-                    <DollarSign className="w-4 h-4" />
-                    Create Deal
-                  </Button>
-                </Link>
-              )}
             </motion.div>
           ) : (
             <motion.div 
               className="space-y-3"
               variants={containerVariants}
             >
-              {/* Results Header */}
               <motion.div variants={itemVariants} className="flex items-center justify-between px-1">
                 <p className="text-sm text-muted-foreground font-medium">
                   Showing <span className="text-foreground font-semibold">{filteredPayouts.length}</span> payout{filteredPayouts.length !== 1 ? 's' : ''}
                 </p>
                 <p className="text-sm font-semibold">
-                  {formatCurrency(filteredPayouts.reduce((s, p) => s + Number(p.amount), 0))}
+                  {formatCurrency(filteredPayouts.reduce((s, p) => s + p.netAmount, 0))}
                 </p>
               </motion.div>
 
@@ -534,11 +494,7 @@ export default function PayoutsPage() {
                     exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
                     custom={index}
                   >
-                    <PayoutCard
-                      payout={payout}
-                      onMarkPaid={(id) => markPaid.mutate(id)}
-                      isPending={markPaid.isPending}
-                    />
+                    <PayoutCard payout={payout} />
                   </motion.div>
                 ))}
               </AnimatePresence>
