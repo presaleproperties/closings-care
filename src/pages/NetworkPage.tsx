@@ -5,6 +5,7 @@ import { formatCurrency } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { AgentDirectory } from '@/components/network/AgentDirectory';
 import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network } from 'lucide-react';
 import { useMemo } from 'react';
 import {
@@ -416,60 +417,18 @@ export default function NetworkPage() {
             )}
           </TabsContent>
 
-          {/* Agents Tab */}
+          {/* Agents Tab - Searchable Directory */}
           <TabsContent value="agents" className="space-y-4">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Network Agents ({agents.length})</CardTitle>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Agent Directory ({agents.length})
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Search, filter, and explore your network agents with their avatars and network sizes</p>
               </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Agent</th>
-                        <th>Tier</th>
-                        <th>Status</th>
-                        <th>Join Date</th>
-                        <th>Days</th>
-                        <th>Sponsor</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {agents.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="text-center text-muted-foreground py-8">
-                            No agents synced yet. Connect your Real Broker account in Settings → Integrations.
-                          </td>
-                        </tr>
-                      ) : (
-                        agents.slice(0, 100).map(agent => (
-                          <tr key={agent.id}>
-                            <td>
-                              <div>
-                                <span className="font-medium text-foreground">{agent.agent_name || 'Unknown'}</span>
-                                {agent.email && <p className="text-xs text-muted-foreground">{agent.email}</p>}
-                              </div>
-                            </td>
-                            <td>
-                              <Badge variant="outline" className="text-xs" style={{ borderColor: TIER_COLORS[(agent.tier - 1) % TIER_COLORS.length], color: TIER_COLORS[(agent.tier - 1) % TIER_COLORS.length] }}>
-                                Tier {agent.tier}
-                              </Badge>
-                            </td>
-                            <td>
-                              <Badge variant={agent.departure_date ? 'destructive' : 'default'} className="text-xs">
-                                {agent.departure_date ? 'Departed' : 'Active'}
-                              </Badge>
-                            </td>
-                            <td className="text-sm text-muted-foreground">{agent.join_date || '—'}</td>
-                            <td className="text-sm text-muted-foreground">{agent.days_with_brokerage ?? '—'}</td>
-                            <td className="text-sm text-muted-foreground">{agent.sponsor_name || '—'}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+              <CardContent>
+                <AgentDirectory agents={agents} />
               </CardContent>
             </Card>
           </TabsContent>
