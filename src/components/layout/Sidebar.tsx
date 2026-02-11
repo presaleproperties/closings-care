@@ -10,7 +10,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  Network
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +26,7 @@ const navItems = [
   { icon: Receipt, label: 'Expenses', path: '/expenses' },
   { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+  { icon: Network, label: 'Network', path: '/network' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
