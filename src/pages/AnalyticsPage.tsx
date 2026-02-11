@@ -271,6 +271,35 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.count - a.count);
   }, [filteredDeals]);
 
+  // Presale vs Resale Breakdown
+  const presaleResaleBreakdown = useMemo(() => {
+    const presale = filteredDeals.filter(d => d.property_type === 'PRESALE');
+    const resale = filteredDeals.filter(d => d.property_type === 'RESALE');
+    
+    const presaleGci = presale.reduce((sum, d) => sum + (d.gross_commission_actual || d.gross_commission_est || 0), 0);
+    const resaleGci = resale.reduce((sum, d) => sum + (d.gross_commission_actual || d.gross_commission_est || 0), 0);
+    
+    const presaleAvg = presale.length > 0 ? presaleGci / presale.length : 0;
+    const resaleAvg = resale.length > 0 ? resaleGci / resale.length : 0;
+    
+    return {
+      presale: {
+        count: presale.length,
+        gci: presaleGci,
+        avgCommission: presaleAvg,
+      },
+      resale: {
+        count: resale.length,
+        gci: resaleGci,
+        avgCommission: resaleAvg,
+      },
+      comparisonData: [
+        { name: 'Presale', count: presale.length, gci: presaleGci, avg: presaleAvg },
+        { name: 'Resale', count: resale.length, gci: resaleGci, avg: resaleAvg },
+      ],
+    };
+  }, [filteredDeals]);
+
   // Deal Types Analytics
   const dealTypeData = useMemo(() => {
     const presale = filteredDeals.filter(d => d.property_type === 'PRESALE');
@@ -774,7 +803,104 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* City Distribution */}
+
+            {/* Presale vs Resale Breakdown */}
+            <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Presale vs Resale Breakdown
+                </CardTitle>
+                <CardDescription>GCI comparison and deal performance metrics</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Comparison Stats Cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {presaleResaleBreakdown.comparisonData.map((type) => (
+                      <div 
+                        key={type.name}
+                        className="p-4 rounded-lg bg-background/50 border border-border/50 cursor-pointer hover:bg-background/70 hover:border-primary/50 transition-all"
+                        onClick={() => setDealTypeFilter(type.name.toLowerCase() as 'presale' | 'resale')}
+                      >
+                        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase">{type.name}</p>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Deals</p>
+                            <p className="text-2xl font-bold text-foreground">{type.count}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Total GCI</p>
+                            <p className="text-lg font-semibold text-primary">{formatCurrency(type.gci)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Avg Deal</p>
+                            <p className="text-lg font-semibold text-accent">{formatCurrency(type.avg)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* GCI Comparison Chart */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-3">GCI Comparison</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart 
+                        data={presaleResaleBreakdown.comparisonData}
+                        onClick={(state: any) => {
+                          if (state?.activeTooltipIndex !== undefined && presaleResaleBreakdown.comparisonData[state.activeTooltipIndex]) {
+                            const type = presaleResaleBreakdown.comparisonData[state.activeTooltipIndex].name;
+                            setDealTypeFilter(type.toLowerCase() as 'presale' | 'resale');
+                          }
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                          formatter={(value) => formatCurrency(value as number)}
+                        />
+                        <Bar 
+                          dataKey="gci" 
+                          name="Total GCI"
+                          fill="hsl(217 91% 60%)"
+                          radius={[4, 4, 0, 0]}
+                          onClick={(entry: any) => {
+                            setDealTypeFilter(entry.name.toLowerCase() as 'presale' | 'resale');
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Average Commission Comparison */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground mb-3">Average Commission per Deal</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={presaleResaleBreakdown.comparisonData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                          formatter={(value) => formatCurrency(value as number)}
+                        />
+                        <Bar 
+                          dataKey="avg" 
+                          name="Avg Commission"
+                          fill="hsl(142 71% 45%)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-card/60 backdrop-blur-xl border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
