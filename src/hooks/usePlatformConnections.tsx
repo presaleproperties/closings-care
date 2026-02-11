@@ -31,11 +31,23 @@ export interface SyncedTransaction {
   commission_amount: number | null;
   close_date: string | null;
   listing_date: string | null;
+  firm_date: string | null;
   status: string | null;
   agent_name: string | null;
+  lifecycle_state: string | null;
+  compliance_status: string | null;
+  is_listing: boolean | null;
+  journey_id: string | null;
+  mls_number: string | null;
+  my_net_payout: number | null;
+  my_split_percent: number | null;
+  lead_source: string | null;
+  transaction_code: string | null;
+  currency: string | null;
   raw_data: any;
   synced_at: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface RevenueShare {

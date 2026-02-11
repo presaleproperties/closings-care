@@ -12,6 +12,7 @@ import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { BusinessPulse } from '@/components/dashboard/BusinessPulse';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -365,12 +366,13 @@ export default function DashboardPage() {
 
                 {/* Insights Tab */}
                 <TabsContent value="insights" className="mt-0 space-y-6">
+                  {/* Business Pulse - Main Widget */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.2 }}
                   >
-                    <ThisWeekFocus deals={deals} payouts={payouts} />
+                    <BusinessPulse />
                   </motion.div>
 
                   <motion.div
