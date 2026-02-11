@@ -165,32 +165,51 @@ export default function DealsPage() {
             <div className="p-4 lg:p-6 space-y-4 max-w-4xl mx-auto pb-24 lg:pb-6">
 
               {/* Hero Stats */}
-              <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-lg lg:text-xl font-bold text-foreground">{stats.active + stats.closed}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Deals</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-lg lg:text-xl font-bold text-foreground">{formatCurrency(stats.totalNet)}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Net Income</p>
-                </div>
-                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-lg lg:text-xl font-bold text-foreground">{formatCurrency(stats.totalVolume)}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Volume</p>
-                </div>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                className="grid grid-cols-3 gap-2.5 lg:gap-4"
+              >
+                {[
+                  { value: stats.active + stats.closed, label: 'Deals', gradient: 'from-primary/10 via-primary/5 to-transparent', iconColor: 'text-primary' },
+                  { value: formatCurrency(stats.totalNet), label: 'Net Income', gradient: 'from-emerald-500/10 via-emerald-500/5 to-transparent', iconColor: 'text-emerald-600' },
+                  { value: formatCurrency(stats.totalVolume), label: 'Volume', gradient: 'from-accent/10 via-accent/5 to-transparent', iconColor: 'text-accent' },
+                ].map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.06 }}
+                    className={cn(
+                      "relative overflow-hidden rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm p-3.5 lg:p-4 text-center",
+                      "hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300"
+                    )}
+                  >
+                    <div className={cn("absolute inset-0 bg-gradient-to-br opacity-70", stat.gradient)} />
+                    <div className="relative">
+                      <p className={cn("text-lg lg:text-2xl font-extrabold tracking-tight", stat.iconColor)}>
+                        {stat.value}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-semibold">
+                        {stat.label}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
 
               {/* Search + Sort + Filter Row */}
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="flex gap-2">
                   {/* Search */}
                   <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search address, client, MLS..."
+                      placeholder="Search by address, client, MLS..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 h-10"
+                      className="pl-10 h-11 lg:h-10 rounded-xl bg-card/80 border-border/50 focus-visible:ring-primary/30 focus-visible:border-primary/40 text-sm"
                     />
                     {search && (
                       <button
@@ -204,13 +223,13 @@ export default function DealsPage() {
 
                   {/* Sort */}
                   <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-                    <SelectTrigger className="w-[140px] lg:w-[170px] h-10">
+                    <SelectTrigger className="w-[140px] lg:w-[170px] h-11 lg:h-10 rounded-xl bg-card/80 border-border/50">
                       <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl">
                       {SORT_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>
+                        <SelectItem key={opt.value} value={opt.value} className="rounded-lg">
                           {opt.label}
                         </SelectItem>
                       ))}
@@ -222,8 +241,8 @@ export default function DealsPage() {
                     variant={showFilters || hasActiveFilters ? 'default' : 'outline'}
                     size="icon"
                     className={cn(
-                      'h-10 w-10 rounded-xl shrink-0 touch-manipulation',
-                      hasActiveFilters && !showFilters && 'bg-primary text-primary-foreground'
+                      'h-11 w-11 lg:h-10 lg:w-10 rounded-xl shrink-0 touch-manipulation border-border/50 bg-card/80',
+                      hasActiveFilters && !showFilters && 'bg-primary text-primary-foreground border-primary'
                     )}
                     onClick={() => {
                       triggerHaptic('light');
@@ -237,7 +256,7 @@ export default function DealsPage() {
                   <Link to="/deals/new">
                     <Button
                       size="icon"
-                      className="rounded-xl h-10 w-10 touch-manipulation"
+                      className="rounded-xl h-11 w-11 lg:h-10 lg:w-10 touch-manipulation btn-premium shadow-lg shadow-primary/20"
                       onClick={() => triggerHaptic('light')}
                     >
                       <Plus className="h-5 w-5" />
@@ -320,22 +339,22 @@ export default function DealsPage() {
 
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="active" className="gap-1.5">
+                <TabsList className="grid w-full grid-cols-3 h-12 lg:h-11 rounded-2xl bg-muted/50 border border-border/40 p-1">
+                  <TabsTrigger value="active" className="gap-1.5 rounded-xl data-[state=active]:shadow-md data-[state=active]:bg-card text-sm font-semibold">
                     <Building2 className="h-3.5 w-3.5" />
                     <span>Active</span>
                     <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">
                       {stats.active}
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="closed" className="gap-1.5">
+                  <TabsTrigger value="closed" className="gap-1.5 rounded-xl data-[state=active]:shadow-md data-[state=active]:bg-card text-sm font-semibold">
                     <Home className="h-3.5 w-3.5" />
                     <span>Closed</span>
-                    <span className="text-[10px] bg-success/15 text-success px-1.5 py-0.5 rounded-full font-bold">
+                    <span className="text-[10px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full font-bold">
                       {stats.closed}
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="listings" className="gap-1.5">
+                  <TabsTrigger value="listings" className="gap-1.5 rounded-xl data-[state=active]:shadow-md data-[state=active]:bg-card text-sm font-semibold">
                     <MapPin className="h-3.5 w-3.5" />
                     <span>Listings</span>
                     <span className="text-[10px] bg-blue-500/15 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-bold">
