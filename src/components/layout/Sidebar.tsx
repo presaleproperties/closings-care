@@ -10,6 +10,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Shield,
   Network
 } from 'lucide-react';
@@ -19,18 +20,38 @@ import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Building2, label: 'Deals', path: '/deals' },
-  { icon: Wallet, label: 'Payouts', path: '/payouts' },
-  { icon: Receipt, label: 'Expenses', path: '/expenses' },
-  { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
-  { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-  { icon: Network, label: 'Network', path: '/network' },
+interface NavSection {
+  label: string;
+  items: { icon: any; label: string; path: string }[];
+}
+
+const navSections: NavSection[] = [
+  {
+    label: 'Production',
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+      { icon: Building2, label: 'Deals', path: '/deals' },
+      { icon: Wallet, label: 'Payouts', path: '/payouts' },
+      { icon: Receipt, label: 'Expenses', path: '/expenses' },
+      { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
+      { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    ],
+  },
+  {
+    label: 'Network',
+    items: [
+      { icon: Network, label: 'Network', path: '/network' },
+    ],
+  },
+];
+
+const standaloneItems = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
+
+const SECTION_COLLAPSED_KEY = 'sidebar-sections';
 
 export function Sidebar() {
   const location = useLocation();
@@ -40,10 +61,24 @@ export function Sidebar() {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem(SECTION_COLLAPSED_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
   }, [isCollapsed]);
+
+  useEffect(() => {
+    localStorage.setItem(SECTION_COLLAPSED_KEY, JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const toggleSection = (label: string) => {
+    setCollapsedSections(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
@@ -118,11 +153,98 @@ export function Sidebar() {
       </button>
 
       {/* Navigation */}
-      <nav className="relative flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path || 
-            (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
-          
+      <nav className="relative flex-1 p-3 space-y-1 overflow-y-auto">
+        {navSections.map((section) => {
+          const isSectionCollapsed = collapsedSections[section.label] ?? false;
+          const hasActiveItem = section.items.some(item => 
+            location.pathname === item.path || 
+            (item.path !== '/dashboard' && location.pathname.startsWith(item.path))
+          );
+
+          return (
+            <div key={section.label}>
+              {/* Section header */}
+              {!isCollapsed ? (
+                <button
+                  onClick={() => toggleSection(section.label)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors duration-200",
+                    hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/40 hover:text-sidebar-foreground/60"
+                  )}
+                >
+                  {section.label}
+                  <ChevronDown className={cn(
+                    "w-3 h-3 transition-transform duration-200",
+                    isSectionCollapsed && "-rotate-90"
+                  )} />
+                </button>
+              ) : (
+                <div className="border-t border-sidebar-border/20 my-1.5 mx-2" />
+              )}
+
+              {/* Section items */}
+              <div className={cn(
+                "space-y-0.5 overflow-hidden transition-all duration-200",
+                !isCollapsed && isSectionCollapsed && "max-h-0 opacity-0",
+                !isCollapsed && !isSectionCollapsed && "max-h-[500px] opacity-100",
+                isCollapsed && "max-h-[500px] opacity-100"
+              )}>
+                {section.items.map((item) => {
+                  const isActive = location.pathname === item.path || 
+                    (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                  
+                  const linkContent = (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                        isCollapsed && 'justify-center px-0',
+                        isActive 
+                          ? 'bg-sidebar-accent text-sidebar-foreground' 
+                          : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                      )}
+                    >
+                      <item.icon className={cn(
+                        "w-[18px] h-[18px] transition-all duration-200 flex-shrink-0",
+                        isActive && "text-sidebar-primary"
+                      )} />
+                      <span className={cn(
+                        "transition-all duration-300 whitespace-nowrap",
+                        isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100"
+                      )}>
+                        {item.label}
+                      </span>
+                      {isActive && !isCollapsed && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary" />
+                      )}
+                    </Link>
+                  );
+
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.path} delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          {linkContent}
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="font-medium">
+                          {item.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return linkContent;
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Standalone items (Settings) */}
+        <div className="border-t border-sidebar-border/20 my-1.5 mx-0" />
+        {standaloneItems.map((item) => {
+          const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
           const linkContent = (
             <Link
               key={item.path}
@@ -150,20 +272,14 @@ export function Sidebar() {
               )}
             </Link>
           );
-
           if (isCollapsed) {
             return (
               <Tooltip key={item.path} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  {linkContent}
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
-                  {item.label}
-                </TooltipContent>
+                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">{item.label}</TooltipContent>
               </Tooltip>
             );
           }
-
           return linkContent;
         })}
 
