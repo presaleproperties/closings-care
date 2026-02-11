@@ -228,7 +228,7 @@ export default function NetworkPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-primary" />
-                    Top 10 Network Revenue
+                    Top 10 Agents Revenue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
