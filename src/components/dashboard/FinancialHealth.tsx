@@ -11,17 +11,16 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { Deal, Payout, Expense, OtherIncome } from '@/lib/types';
+import { Deal, Payout, Expense } from '@/lib/types';
 import { getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { Property } from '@/hooks/useProperties';
-import { parseISO, isBefore, isAfter } from 'date-fns';
 
 interface FinancialHealthProps {
   deals: Deal[];
   payouts: Payout[];
   expenses: Expense[];
   properties: Property[];
-  otherIncome: OtherIncome[];
+  revShareMonthlyAvg: number;
   monthlyExpenses: number;
   annualExpenses: number;
   receivedYTD?: number;
@@ -30,7 +29,7 @@ interface FinancialHealthProps {
 
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 
-export function FinancialHealth({ deals, payouts, expenses, properties, otherIncome, monthlyExpenses, annualExpenses, receivedYTD: syncedReceived, comingIn: syncedComingIn }: FinancialHealthProps) {
+export function FinancialHealth({ deals, payouts, expenses, properties, revShareMonthlyAvg, monthlyExpenses, annualExpenses, receivedYTD: syncedReceived, comingIn: syncedComingIn }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
@@ -56,31 +55,9 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
         .reduce((sum, p) => sum + Number(p.amount), 0);
     }
 
-    let otherIncomeYTD = 0;
-    for (let month = 1; month <= currentMonth; month++) {
-      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
-      const monthDate = parseISO(`${monthStr}-01`);
-      
-      for (const income of otherIncome) {
-        const startDate = parseISO(`${income.start_month}-01`);
-        const endDate = income.end_month ? parseISO(`${income.end_month}-01`) : null;
-        
-        const hasStarted = !isAfter(startDate, monthDate);
-        const hasNotEnded = !endDate || !isBefore(endDate, monthDate);
-        
-        if (hasStarted && hasNotEnded) {
-          if (income.recurrence === 'monthly') {
-            otherIncomeYTD += Number(income.amount);
-          } else if (income.recurrence === 'weekly') {
-            otherIncomeYTD += Number(income.amount) * 4.33;
-          } else if (income.recurrence === 'one-time' && income.start_month === monthStr) {
-            otherIncomeYTD += Number(income.amount);
-          }
-        }
-      }
-    }
-
-    const moneyReceived = paidPayouts + otherIncomeYTD;
+    // RevShare YTD = monthly avg * months elapsed
+    const revShareYTD = revShareMonthlyAvg * currentMonth;
+    const moneyReceived = paidPayouts + revShareYTD;
 
     let moneySpent = 0;
     const propertyCosts = getPropertyCostsForMonth(properties);
@@ -94,7 +71,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
 
     // Use synced data for total year commissions if available
     const totalYearCommissions = (syncedReceived !== undefined)
-      ? paidPayouts + moneyComing  // Already using synced values
+      ? paidPayouts + moneyComing
       : payouts
         .filter(p => {
           const dueDate = p.due_date ? new Date(p.due_date) : null;
@@ -105,31 +82,8 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
         })
         .reduce((sum, p) => sum + Number(p.amount), 0);
 
-    let annualOtherIncome = 0;
-    for (let month = 1; month <= 12; month++) {
-      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
-      const monthDate = parseISO(`${monthStr}-01`);
-      
-      for (const income of otherIncome) {
-        const startDate = parseISO(`${income.start_month}-01`);
-        const endDate = income.end_month ? parseISO(`${income.end_month}-01`) : null;
-        
-        const hasStarted = !isAfter(startDate, monthDate);
-        const hasNotEnded = !endDate || !isBefore(endDate, monthDate);
-        
-        if (hasStarted && hasNotEnded) {
-          if (income.recurrence === 'monthly') {
-            annualOtherIncome += Number(income.amount);
-          } else if (income.recurrence === 'weekly') {
-            annualOtherIncome += Number(income.amount) * 4.33;
-          } else if (income.recurrence === 'one-time' && income.start_month === monthStr) {
-            annualOtherIncome += Number(income.amount);
-          }
-        }
-      }
-    }
-
-    const totalYearIncome = totalYearCommissions + annualOtherIncome;
+    const annualRevShare = revShareMonthlyAvg * 12;
+    const totalYearIncome = totalYearCommissions + annualRevShare;
 
     let annualExpensesCalc = 0;
     for (let month = 1; month <= 12; month++) {
@@ -160,7 +114,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       totalYearIncome,
       annualExpenses: annualExpensesCalc,
     };
-  }, [payouts, expenses, properties, otherIncome, monthlyExpenses, syncedReceived, syncedComingIn]);
+  }, [payouts, expenses, properties, revShareMonthlyAvg, monthlyExpenses, syncedReceived, syncedComingIn]);
 
   const getStatusConfig = () => {
     switch (metrics.healthStatus) {

@@ -7,7 +7,6 @@ import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { useDeals } from '@/hooks/useDeals';
 import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
-import { useOtherIncome } from '@/hooks/useOtherIncome';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
@@ -45,7 +44,7 @@ import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
-// Dashboard v2.1 - Updated Feb 2026
+// Dashboard v2.2 - RevShare replaces Other Income
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -59,7 +58,6 @@ export default function DashboardPage() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
-  const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
   const { data: syncedTransactions = [] } = useSyncedTransactions();
@@ -84,6 +82,30 @@ export default function DashboardPage() {
   const gstRegistered = (settings as any)?.gst_registered || false;
   const gstRate = (settings as any)?.gst_rate || 0.05;
 
+  // Calculate average monthly RevShare from past 12 months
+  const revShareMonthlyAvg = useMemo(() => {
+    if (revenueShare.length === 0) return 0;
+    
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const cutoff = format(twelveMonthsAgo, 'yyyy-MM');
+    
+    const recentRevShare = revenueShare.filter((r: any) => r.period >= cutoff);
+    if (recentRevShare.length === 0) {
+      // Fallback: use all available data
+      const total = revenueShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+      // Get unique months
+      const uniqueMonths = new Set(revenueShare.map((r: any) => r.period));
+      return uniqueMonths.size > 0 ? total / uniqueMonths.size : 0;
+    }
+    
+    const total = recentRevShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+    // Divide by 12 (or fewer if less data available)
+    const uniqueMonths = new Set(recentRevShare.map((r: any) => r.period));
+    const monthCount = Math.min(uniqueMonths.size, 12);
+    return monthCount > 0 ? total / monthCount : 0;
+  }, [revenueShare]);
+
   const expenseTotals = useMemo(() => {
     const monthly = getMonthlyRecurringExpenses(expenses, properties);
     const annual = getAnnualExpenses(expenses, properties);
@@ -96,7 +118,6 @@ export default function DashboardPage() {
   }, [expenses, properties]);
 
   const incomeTotals = useMemo(() => {
-    // Use synced transaction data (myNetPayout = user's actual split)
     const paid = receivedYTD;
     const projected = comingIn;
     return { paid, projected };
@@ -152,7 +173,6 @@ export default function DashboardPage() {
       
       <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
       
-      {/* Premium Header */}
       <Header
         title="Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
@@ -193,7 +213,7 @@ export default function DashboardPage() {
               <QuickStats 
                 deals={deals} 
                 payouts={payouts} 
-                otherIncome={otherIncome}
+                revShareMonthlyAvg={revShareMonthlyAvg}
                 monthlyExpenses={expenseTotals.monthly}
                 onAutoMarkPaid={handleAutoMarkPaid}
                 syncedReceived={receivedYTD}
@@ -235,7 +255,7 @@ export default function DashboardPage() {
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <PipelineProspects />
-                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} syncedPayouts={syncedPayouts} />
+                <IncomeProjection payouts={payouts} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                 <UpcomingPayouts 
                   payouts={payouts} 
                   onMarkPaid={(id) => markPaid.mutate(id)}
@@ -246,7 +266,7 @@ export default function DashboardPage() {
                   payouts={payouts}
                   expenses={expenses}
                   properties={properties}
-                  otherIncome={otherIncome}
+                  revShareMonthlyAvg={revShareMonthlyAvg}
                   monthlyExpenses={expenseTotals.monthly}
                   annualExpenses={expenseTotals.annual}
                   receivedYTD={receivedYTD}
@@ -281,14 +301,13 @@ export default function DashboardPage() {
             </Tabs>
           </div>
 
-          {/* Desktop Layout - Premium Redesign */}
+          {/* Desktop Layout */}
           <motion.div 
             className="hidden sm:block"
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
           >
-            {/* Spacing Container */}
             <div className="p-5 lg:p-6 xl:p-8 space-y-6">
               
               {/* Overdue Alert */}
@@ -308,7 +327,7 @@ export default function DashboardPage() {
                 <QuickStats 
                   deals={deals} 
                   payouts={payouts} 
-                  otherIncome={otherIncome}
+                  revShareMonthlyAvg={revShareMonthlyAvg}
                   monthlyExpenses={expenseTotals.monthly}
                   onAutoMarkPaid={handleAutoMarkPaid}
                   syncedReceived={receivedYTD}
@@ -366,7 +385,6 @@ export default function DashboardPage() {
 
                 {/* Insights Tab */}
                 <TabsContent value="insights" className="mt-0 space-y-6">
-                  {/* Business Pulse - Main Widget */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -436,19 +454,17 @@ export default function DashboardPage() {
                   </motion.div>
                 </TabsContent>
 
-                {/* Cashflow Tab - Primary Focus */}
+                {/* Cashflow Tab */}
                 <TabsContent value="cashflow" className="mt-0 space-y-6">
-                  {/* 3-Year Projection - Hero Component */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} syncedPayouts={syncedPayouts} />
+                    <IncomeProjection payouts={payouts} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                   </motion.div>
 
                   <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
-                    {/* Main Column */}
                     <div className="lg:col-span-2 space-y-5 lg:space-y-6">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -460,7 +476,7 @@ export default function DashboardPage() {
                           payouts={payouts}
                           expenses={expenses}
                           properties={properties}
-                          otherIncome={otherIncome}
+                          revShareMonthlyAvg={revShareMonthlyAvg}
                           monthlyExpenses={expenseTotals.monthly}
                           annualExpenses={expenseTotals.annual}
                           receivedYTD={receivedYTD}
@@ -482,7 +498,6 @@ export default function DashboardPage() {
                       </motion.div>
                     </div>
                     
-                    {/* Sidebar */}
                     <div className="space-y-5 lg:space-y-6">
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}

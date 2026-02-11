@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat } from 'lucide-react';
-import { Deal, Payout, OtherIncome } from '@/lib/types';
+import { Deal, Payout } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
@@ -19,7 +19,7 @@ import {
 interface QuickStatsProps {
   deals: Deal[];
   payouts: Payout[];
-  otherIncome?: OtherIncome[];
+  revShareMonthlyAvg?: number;
   monthlyExpenses: number;
   onAutoMarkPaid?: (payoutIds: string[]) => void;
   syncedReceived?: number;
@@ -28,7 +28,7 @@ interface QuickStatsProps {
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid, syncedReceived, syncedComingIn }: QuickStatsProps) {
+export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpenses, onAutoMarkPaid, syncedReceived, syncedComingIn }: QuickStatsProps) {
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -53,53 +53,25 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   }, [payouts, onAutoMarkPaid, today]);
 
   const breakdown = useMemo(() => {
-    // Use synced data if available
     const totalCommissions = syncedComingIn !== undefined
       ? syncedComingIn
       : payoutsWithCap
         .filter(p => p.status !== 'PAID')
         .reduce((sum, p) => sum + p.netAmount, 0);
 
-    let totalOtherIncome = 0;
-    const currentMonth = new Date().getMonth() + 1;
-    
-    for (let i = 0; i < 48; i++) {
-      const monthOffset = currentMonth + i;
-      const year = thisYear + Math.floor((monthOffset - 1) / 12);
-      const month = ((monthOffset - 1) % 12) + 1;
-      const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
-      
-      otherIncome.forEach(income => {
-        const startMonth = income.start_month;
-        const endMonth = income.end_month;
-        
-        const hasStarted = monthStr >= startMonth;
-        const hasNotEnded = !endMonth || monthStr <= endMonth;
-        
-        if (hasStarted && hasNotEnded) {
-          if (income.recurrence === 'monthly') {
-            totalOtherIncome += Number(income.amount);
-          } else if (income.recurrence === 'weekly') {
-            totalOtherIncome += Number(income.amount) * 4.33;
-          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
-            totalOtherIncome += Number(income.amount);
-          }
-        }
-      });
-    }
+    // RevShare projected over 48 months
+    const totalRevShare = revShareMonthlyAvg * 48;
 
     return {
       commissions: totalCommissions,
-      otherIncome: totalOtherIncome,
-      total: totalCommissions + totalOtherIncome,
+      revShare: totalRevShare,
+      total: totalCommissions + totalRevShare,
       unpaidPayoutsCount: payouts.filter(p => p.status !== 'PAID').length,
-      otherIncomeItems: otherIncome,
       monthsProjected: 48,
     };
-  }, [payoutsWithCap, payouts, otherIncome, thisYear, syncedComingIn]);
+  }, [payoutsWithCap, payouts, revShareMonthlyAvg, syncedComingIn]);
 
   const stats = useMemo(() => {
-    // Use synced data if available
     const totalCommissions = syncedComingIn !== undefined
       ? syncedComingIn
       : payoutsWithCap
@@ -113,66 +85,18 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
         .reduce((sum, p) => sum + p.netAmount, 0);
 
     const thisYearCommissions = syncedComingIn !== undefined
-      ? syncedComingIn // Already filtered for active transactions
+      ? syncedComingIn
       : payoutsWithCap
         .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
         .reduce((sum, p) => sum + p.netAmount, 0);
     
-    let totalOtherIncome = 0;
-    const currentMonth = new Date().getMonth() + 1;
-    for (let i = 0; i < 48; i++) {
-      const monthOffset = currentMonth + i;
-      const year = thisYear + Math.floor((monthOffset - 1) / 12);
-      const month = ((monthOffset - 1) % 12) + 1;
-      const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
-      
-      otherIncome.forEach(income => {
-        const startMonth = income.start_month;
-        const endMonth = income.end_month;
-        
-        const hasStarted = monthStr >= startMonth;
-        const hasNotEnded = !endMonth || monthStr <= endMonth;
-        
-        if (hasStarted && hasNotEnded) {
-          if (income.recurrence === 'monthly') {
-            totalOtherIncome += Number(income.amount);
-          } else if (income.recurrence === 'weekly') {
-            totalOtherIncome += Number(income.amount) * 4.33;
-          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
-            totalOtherIncome += Number(income.amount);
-          }
-        }
-      });
-    }
+    // RevShare projected over 48 months for total, 12 months for this year
+    const totalRevShare = revShareMonthlyAvg * 48;
+    const thisYearRevShare = revShareMonthlyAvg * 12;
     
-    const totalProjected = totalCommissions + totalOtherIncome;
+    const totalProjected = totalCommissions + totalRevShare;
+    const thisYearProjected = thisYearCommissions + thisYearRevShare;
 
-    let thisYearOtherIncome = 0;
-    for (let month = 1; month <= 12; month++) {
-      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
-      
-      otherIncome.forEach(income => {
-        const startMonth = income.start_month;
-        const endMonth = income.end_month;
-        
-        const hasStarted = monthStr >= startMonth;
-        const hasNotEnded = !endMonth || monthStr <= endMonth;
-        
-        if (hasStarted && hasNotEnded) {
-          if (income.recurrence === 'monthly') {
-            thisYearOtherIncome += Number(income.amount);
-          } else if (income.recurrence === 'weekly') {
-            thisYearOtherIncome += Number(income.amount) * 4.33;
-          } else if (income.recurrence === 'one-time' && monthStr === startMonth) {
-            thisYearOtherIncome += Number(income.amount);
-          }
-        }
-      });
-    }
-
-    const thisYearProjected = thisYearCommissions + thisYearOtherIncome;
-
-    // Calculate average using ALL deals (not just those with commission entered)
     const totalGrossCommission = deals.reduce((sum, d) => {
       const grossCommission = d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
@@ -192,7 +116,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       activeDeals,
       monthlyExpenses,
     };
-  }, [deals, payouts, payoutsWithCap, otherIncome, monthlyExpenses, thisYear, syncedComingIn, syncedReceived]);
+  }, [deals, payouts, payoutsWithCap, revShareMonthlyAvg, monthlyExpenses, thisYear, syncedComingIn, syncedReceived]);
 
   return (
     <div className="space-y-4">
@@ -216,7 +140,6 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               boxShadow: '0 8px 32px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
             }}
           >
-            {/* Decorative circles */}
             <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
             <div className="absolute -right-4 top-12 w-20 h-20 rounded-full bg-white/5" />
             
@@ -470,34 +393,19 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
               </p>
             </div>
 
-            {/* Other Income */}
-            <div className="p-5 rounded-2xl bg-sky-500/10 border border-sky-500/20">
+            {/* RevShare Income */}
+            <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Repeat className="h-4 w-4 text-sky-500" />
-                  <span className="font-semibold">Other Income</span>
+                  <Repeat className="h-4 w-4 text-emerald-500" />
+                  <span className="font-semibold">RevShare Income</span>
                 </div>
-                <span className="font-bold text-xl text-sky-500">{formatCurrency(breakdown.otherIncome)}</span>
+                <span className="font-bold text-xl text-emerald-500">{formatCurrency(breakdown.revShare)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Revenue share, rentals, etc. over {breakdown.monthsProjected} months
+                {formatCurrency(revShareMonthlyAvg)}/mo avg over {breakdown.monthsProjected} months
               </p>
             </div>
-
-            {/* Income Sources */}
-            {breakdown.otherIncomeItems.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Income Sources</p>
-                <div className="max-h-32 overflow-y-auto space-y-1.5">
-                  {breakdown.otherIncomeItems.map((income) => (
-                    <div key={income.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/50">
-                      <span className="text-sm font-medium">{income.name}</span>
-                      <span className="text-sm font-bold">{formatCurrency(income.amount)}/{income.recurrence === 'monthly' ? 'mo' : income.recurrence}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>

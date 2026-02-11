@@ -5,9 +5,8 @@ import { ArrowRight, TrendingUp, Wallet, Home, Plus, BarChart3, Sparkles } from 
 import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
-import { Payout, OtherIncome, Expense } from '@/lib/types';
+import { Payout, Expense } from '@/lib/types';
 import { Property } from '@/hooks/useProperties';
-import { getOtherIncomeForMonth } from '@/hooks/useOtherIncome';
 import { getTotalExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { SyncedPayout } from '@/hooks/useSyncedIncome';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -33,7 +32,7 @@ import {
 interface IncomeProjectionProps {
   payouts: Payout[];
   expenses: Expense[];
-  otherIncome?: OtherIncome[];
+  revShareMonthlyAvg?: number;
   properties?: Property[];
   syncedPayouts?: SyncedPayout[];
 }
@@ -44,7 +43,7 @@ interface MonthData {
   monthStr: string;
   monthIndex: number;
   income: number;
-  otherIncome: number;
+  revShareIncome: number;
   propertyNet: number;
   totalIncome: number;
   expenses: number;
@@ -69,11 +68,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <span className="font-medium">{formatCurrency(data?.income || 0)}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="text-sky-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-sky-400" />
-              Other Income
+            <span className="text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              RevShare
             </span>
-            <span className="font-medium">{formatCurrency(data?.otherIncome || 0)}</span>
+            <span className="font-medium">{formatCurrency(data?.revShareIncome || 0)}</span>
           </div>
           {data?.propertyNet !== 0 && (
             <div className="flex justify-between gap-4">
@@ -108,7 +107,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function IncomeProjection({ payouts, expenses, otherIncome = [], properties = [], syncedPayouts = [] }: IncomeProjectionProps) {
+export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, properties = [], syncedPayouts = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
   const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(36);
@@ -137,13 +136,13 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
 
       // User's net income from synced transactions (already includes team split & brokerage)
       const income = monthSyncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
-      const monthOtherIncome = getOtherIncomeForMonth(otherIncome, monthStr);
+      const revShareIncome = revShareMonthlyAvg;
       
       // Property net: positive if rental income > costs, negative if costs > income
       const propertyNet = propertyCosts.totalNet;
       
-      // Total income = commissions (user's net) + other income
-      const totalIncome = income + monthOtherIncome;
+      // Total income = commissions (user's net) + revshare
+      const totalIncome = income + revShareIncome;
       
       // Calculate expenses for this month (includes property costs properly)
       const monthExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
@@ -157,7 +156,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
         monthStr,
         monthIndex: i,
         income,
-        otherIncome: monthOtherIncome,
+        revShareIncome,
         propertyNet,
         totalIncome,
         expenses: monthExpenses,
@@ -167,15 +166,15 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
       });
     }
     return months;
-  }, [syncedPayouts, expenses, otherIncome, properties, propertyCosts, projectionMonths]);
+  }, [syncedPayouts, expenses, revShareMonthlyAvg, properties, propertyCosts, projectionMonths]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
-  const totalOtherIncome = chartData.reduce((sum, m) => sum + m.otherIncome, 0);
-  const totalPropertyNet = propertyCosts.totalNet * projectionMonths; // Property impact (informational only)
-  const totalProjectedIncome = totalCommissions + totalOtherIncome;
+  const totalRevShare = chartData.reduce((sum, m) => sum + m.revShareIncome, 0);
+  const totalPropertyNet = propertyCosts.totalNet * projectionMonths;
+  const totalProjectedIncome = totalCommissions + totalRevShare;
   const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
   const netProjection = chartData.reduce((sum, m) => sum + m.net, 0);
-  const hasNoCommissions = totalCommissions === 0 && totalOtherIncome === 0;
+  const hasNoCommissions = totalCommissions === 0 && totalRevShare === 0;
 
   const handleBarClick = (data: any) => {
     if (data?.activePayload?.[0]?.payload) {
@@ -312,14 +311,14 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Commissions</p>
             <p className="text-lg font-bold text-success">{formatCurrency(totalCommissions)}</p>
           </div>
-          <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20">
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
             <div className="flex items-center gap-1 mb-0.5">
-              <Wallet className="h-3 w-3 text-sky-400" />
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Other Income</p>
+              <Wallet className="h-3 w-3 text-emerald-400" />
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">RevShare</p>
             </div>
-            <p className="text-lg font-bold text-sky-400">{formatCurrency(totalOtherIncome)}</p>
+            <p className="text-lg font-bold text-emerald-400">{formatCurrency(totalRevShare)}</p>
           </div>
-          <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-sky-500/10 border border-primary/20">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-emerald-500/10 border border-primary/20">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Income</p>
             <p className="text-lg font-bold text-primary">{formatCurrency(totalProjectedIncome)}</p>
           </div>
@@ -349,9 +348,9 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
                 <stop offset="0%" stopColor="hsl(160, 84%, 45%)" stopOpacity={1} />
                 <stop offset="100%" stopColor="hsl(160, 84%, 35%)" stopOpacity={1} />
               </linearGradient>
-              <linearGradient id="otherIncomeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(187, 92%, 50%)" stopOpacity={1} />
-                <stop offset="100%" stopColor="hsl(187, 92%, 40%)" stopOpacity={1} />
+              <linearGradient id="revShareGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(155, 72%, 50%)" stopOpacity={1} />
+                <stop offset="100%" stopColor="hsl(155, 72%, 40%)" stopOpacity={1} />
               </linearGradient>
               <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(0, 84%, 65%)" stopOpacity={0.9} />
@@ -380,7 +379,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
               height={36}
               formatter={(value) => {
                 if (value === 'income') return <span className="text-xs">Commissions</span>;
-                if (value === 'otherIncome') return <span className="text-xs">Other Income</span>;
+                if (value === 'revShareIncome') return <span className="text-xs">RevShare</span>;
                 if (value === 'expenses') return <span className="text-xs">Expenses</span>;
                 return value;
               }}
@@ -396,8 +395,8 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
               stackId="income"
             />
             <Bar
-              dataKey="otherIncome"
-              fill="url(#otherIncomeGradient)"
+              dataKey="revShareIncome"
+              fill="url(#revShareGradient)"
               radius={[4, 4, 0, 0]}
               maxBarSize={32}
               stackId="income"
@@ -448,9 +447,9 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
                     <p className="text-xs text-muted-foreground">Commissions</p>
                     <p className="font-bold text-success">{formatCurrency(selectedMonth.income)}</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
-                    <p className="text-xs text-muted-foreground">Other Income</p>
-                    <p className="font-bold text-sky-400">{formatCurrency(selectedMonth.otherIncome)}</p>
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <p className="text-xs text-muted-foreground">RevShare</p>
+                    <p className="font-bold text-emerald-400">{formatCurrency(selectedMonth.revShareIncome)}</p>
                   </div>
                 </div>
                 {selectedMonth.propertyNet !== 0 && (
@@ -465,7 +464,7 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
                     </div>
                   </div>
                 )}
-                <div className="p-3 rounded-lg bg-gradient-to-r from-success/5 to-sky-500/5 border border-primary/20">
+                <div className="p-3 rounded-lg bg-gradient-to-r from-success/5 to-emerald-500/5 border border-primary/20">
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-muted-foreground">Total Income</p>
                     <p className="font-bold text-primary">{formatCurrency(selectedMonth.totalIncome)}</p>
@@ -485,47 +484,12 @@ export function IncomeProjection({ payouts, expenses, otherIncome = [], properti
                 </div>
               </div>
 
-              {/* Payouts List */}
-              <div>
-                <h4 className="text-sm font-medium mb-2">
-                  Expected Payouts ({selectedMonth.payouts.length})
-                </h4>
-                {selectedMonth.payouts.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {selectedMonth.payouts.map((payout) => (
-                      <Link
-                        key={payout.id}
-                        to={`/deals/${payout.deal_id}`}
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                        onClick={() => setSelectedMonth(null)}
-                      >
-                        <div>
-                          <p className="font-medium text-sm">
-                            {payout.deal?.client_name || 'Unknown Client'}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {payout.payout_type} • {payout.due_date ? format(parseISO(payout.due_date), 'MMM d') : 'No date'}
-                          </p>
-                        </div>
-                        <span className="font-semibold text-success">
-                          {formatCurrency(payout.amount)}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No commission payouts this month
-                  </p>
-                )}
-              </div>
-
-              {/* Other income note */}
-              {selectedMonth.otherIncome > 0 && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-sky-500/5 border border-sky-500/20">
-                  <Wallet className="h-4 w-4 text-sky-400" />
-                  <p className="text-sm text-sky-400">
-                    +{formatCurrency(selectedMonth.otherIncome)} from other income sources
+              {/* RevShare note */}
+              {selectedMonth.revShareIncome > 0 && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <Wallet className="h-4 w-4 text-emerald-400" />
+                  <p className="text-sm text-emerald-400">
+                    +{formatCurrency(selectedMonth.revShareIncome)} projected RevShare (12-mo avg)
                   </p>
                 </div>
               )}

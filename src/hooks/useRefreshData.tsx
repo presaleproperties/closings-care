@@ -14,7 +14,7 @@ export function useRefreshData() {
       queryClient.invalidateQueries({ queryKey: ['deals', user.id] }),
       queryClient.invalidateQueries({ queryKey: ['payouts', user.id] }),
       queryClient.invalidateQueries({ queryKey: ['expenses'] }),
-      queryClient.invalidateQueries({ queryKey: ['other_income'] }),
+      queryClient.invalidateQueries({ queryKey: ['revenue-share'] }),
       queryClient.invalidateQueries({ queryKey: ['properties'] }),
       queryClient.invalidateQueries({ queryKey: ['settings'] }),
     ]);
