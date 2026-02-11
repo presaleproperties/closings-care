@@ -29,10 +29,17 @@ import { PipelineProspects } from '@/components/dashboard/PipelineProspects';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
+import { InsightsGreeting } from '@/components/dashboard/InsightsGreeting';
+import { LatestActivity } from '@/components/dashboard/LatestActivity';
+import { UpcomingRevenue } from '@/components/dashboard/UpcomingRevenue';
+import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
+import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
+import { Calculator, TrendingUp, BarChart3, Sparkles, Lightbulb } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
+import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
+import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
 // Dashboard v2.1 - Updated Feb 2026
@@ -52,6 +59,9 @@ export default function DashboardPage() {
   const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
+  const { data: syncedTransactions = [] } = useSyncedTransactions();
+  const { data: revenueShare = [] } = useRevenueShare();
+  const { data: networkAgents = [] } = useNetworkAgents();
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
@@ -59,6 +69,7 @@ export default function DashboardPage() {
   const refreshData = useRefreshData();
   
   const autoMarkedRef = useRef<Set<string>>(new Set());
+  const userName = (settings as any)?.full_name?.split(' ')[0] || undefined;
 
   const now = new Date();
   const thisYear = now.getFullYear();
@@ -195,22 +206,30 @@ export default function DashboardPage() {
             </div>
 
             {/* Mobile Tabs */}
-            <Tabs defaultValue="cashflow" className="pb-8">
+            <Tabs defaultValue="insights" className="pb-8">
               <div className="px-5 mb-5">
                 <div className="bg-muted/50 backdrop-blur-xl rounded-2xl p-1.5 border border-border/30">
-                  <TabsList className="w-full grid grid-cols-3 h-11 bg-transparent p-0 gap-1">
-                    {['cashflow', 'taxes', 'analytics'].map((tab) => (
+                  <TabsList className="w-full grid grid-cols-4 h-11 bg-transparent p-0 gap-1">
+                    {['insights', 'cashflow', 'taxes', 'analytics'].map((tab) => (
                       <TabsTrigger 
                         key={tab}
                         value={tab}
-                        className="text-[13px] font-semibold rounded-xl h-full capitalize data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 data-[state=inactive]:text-muted-foreground transition-all duration-200"
+                        className="text-[11px] sm:text-[13px] font-semibold rounded-xl h-full capitalize data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 data-[state=inactive]:text-muted-foreground transition-all duration-200"
                       >
-                        {tab === 'cashflow' ? 'Cashflow' : tab === 'taxes' ? 'Taxes' : 'Analytics'}
+                        {tab === 'insights' ? 'Insights' : tab === 'cashflow' ? 'Cashflow' : tab === 'taxes' ? 'Taxes' : 'Analytics'}
                       </TabsTrigger>
                     ))}
                   </TabsList>
                 </div>
               </div>
+
+              <TabsContent value="insights" className="px-5 space-y-4 mt-0">
+                <ThisWeekFocus deals={deals} payouts={payouts} />
+                <InsightsGreeting deals={deals} payouts={payouts} syncedTransactions={syncedTransactions} userName={userName} />
+                <LatestActivity deals={deals} syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
+                <UpcomingRevenue payouts={payouts} deals={deals} syncedTransactions={syncedTransactions} />
+                <NeedsAttention deals={deals} payouts={payouts} syncedTransactions={syncedTransactions} />
+              </TabsContent>
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <PipelineProspects />
@@ -301,13 +320,20 @@ export default function DashboardPage() {
               </motion.section>
 
               {/* Premium Tabs */}
-              <Tabs defaultValue="cashflow" className="space-y-6">
+              <Tabs defaultValue="insights" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...springConfig, delay: 0.2 }}
                 >
                   <TabsList className="w-auto inline-flex h-12 p-1.5 bg-muted/40 backdrop-blur-xl rounded-2xl border border-border/30 shadow-sm">
+                    <TabsTrigger 
+                      value="insights" 
+                      className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
+                    >
+                      <Lightbulb className="h-4 w-4" />
+                      Insights
+                    </TabsTrigger>
                     <TabsTrigger 
                       value="cashflow" 
                       className="text-sm font-semibold gap-2 px-5 rounded-xl data-[state=active]:bg-card data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/50 transition-all duration-200"
@@ -331,6 +357,69 @@ export default function DashboardPage() {
                     </TabsTrigger>
                   </TabsList>
                 </motion.div>
+
+                {/* Insights Tab */}
+                <TabsContent value="insights" className="mt-0 space-y-6">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.2 }}
+                  >
+                    <ThisWeekFocus deals={deals} payouts={payouts} />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.25 }}
+                  >
+                    <InsightsGreeting 
+                      deals={deals} 
+                      payouts={payouts} 
+                      syncedTransactions={syncedTransactions}
+                      userName={userName}
+                    />
+                  </motion.div>
+
+                  <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...springConfig, delay: 0.3 }}
+                    >
+                      <LatestActivity 
+                        deals={deals}
+                        syncedTransactions={syncedTransactions}
+                        revenueShare={revenueShare}
+                        networkAgents={networkAgents}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...springConfig, delay: 0.35 }}
+                    >
+                      <UpcomingRevenue 
+                        payouts={payouts}
+                        deals={deals}
+                        syncedTransactions={syncedTransactions}
+                      />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ ...springConfig, delay: 0.4 }}
+                    >
+                      <NeedsAttention 
+                        deals={deals}
+                        payouts={payouts}
+                        syncedTransactions={syncedTransactions}
+                      />
+                    </motion.div>
+                  </div>
+                </TabsContent>
 
                 {/* Cashflow Tab - Primary Focus */}
                 <TabsContent value="cashflow" className="mt-0 space-y-6">
