@@ -9,6 +9,22 @@ const corsHeaders = {
 const ARRAKIS = 'https://arrakis.therealbrokerage.com/api/v1'
 const YENTA   = 'https://yenta.therealbrokerage.com/api/v1'
 
+// Convert ReZen timestamps (epoch ms, epoch s, or ISO string) to ISO date string
+function toISODate(val: any): string | null {
+  if (!val) return null
+  if (typeof val === 'number') {
+    const ms = val > 1e12 ? val : val * 1000
+    const d = new Date(ms)
+    return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]
+  }
+  if (typeof val === 'string') {
+    // Already ISO-ish
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]
+  }
+  return null
+}
+
 async function rezenGet(baseUrl: string, path: string, apiKey: string, params?: Record<string, string>) {
   const url = new URL(`${baseUrl}/${path}`)
   if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
@@ -92,8 +108,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
 
             // Dates
-            const closeDate = tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate || null
-            const listingDate = tx.listingDate || tx.contractAcceptanceDate || null
+            const closeDate = toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate)
+            const listingDate = toISODate(tx.listingDate || tx.contractAcceptanceDate)
 
             // Client name from participants
             let clientName = ''
@@ -187,8 +203,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             city: (address.city || ''),
             sale_price: salePrice,
             commission_amount: commission,
-            close_date: tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || null,
-            listing_date: tx.listingDate || tx.contractAcceptanceDate || null,
+            close_date: toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated),
+            listing_date: toISODate(tx.listingDate || tx.contractAcceptanceDate),
             status,
             agent_name: agentName,
             raw_data: tx,
@@ -309,31 +325,33 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     try {
       console.log('[ReZen] Fetching frontline agents...')
       const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
-      const agents = Array.isArray(frontLine) ? frontLine : (frontLine?.agents || frontLine?.data || [])
+      console.log(`[ReZen] Frontline response keys: ${JSON.stringify(Object.keys(frontLine || {})).slice(0, 200)}`)
+      const agents = Array.isArray(frontLine) ? frontLine : (frontLine?.frontLineAgentInfos || frontLine?.agents || frontLine?.data || frontLine?.content || [])
       console.log(`[ReZen] Found ${Array.isArray(agents) ? agents.length : 0} frontline agents`)
 
       if (Array.isArray(agents)) {
         for (const agent of agents) {
-          const agentId = String(agent.id || agent.agentId || '')
+          const agentId = String(agent.id || agent.agentId || agent.yentaId || '')
           if (!agentId) continue
+          const agentFullName = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || agent.fullName || '')
 
-          const name = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || agent.fullName || '')
-          const joinDate = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
-          
-          // Calculate days with brokerage
-          let daysWithBrokerage: number | null = null
-          if (joinDate) {
-            const jd = new Date(typeof joinDate === 'number' ? (joinDate > 1e12 ? joinDate : joinDate * 1000) : joinDate)
-            if (!isNaN(jd.getTime())) {
-              daysWithBrokerage = Math.floor((Date.now() - jd.getTime()) / (1000 * 60 * 60 * 24))
+            const joinDateRaw = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+            const joinDate = toISODate(joinDateRaw)
+            
+            // Calculate days with brokerage
+            let daysWithBrokerage: number | null = null
+            if (joinDateRaw) {
+              const ms = typeof joinDateRaw === 'number' ? (joinDateRaw > 1e12 ? joinDateRaw : joinDateRaw * 1000) : new Date(joinDateRaw).getTime()
+              if (!isNaN(ms)) {
+                daysWithBrokerage = Math.floor((Date.now() - ms) / (1000 * 60 * 60 * 24))
+              }
             }
-          }
 
           await supabase.from('network_agents').upsert({
             user_id: userId,
             platform: 'real_broker',
             agent_yenta_id: agentId,
-            agent_name: name,
+            agent_name: agentFullName,
             email: agent.emailAddress || agent.email || null,
             phone: agent.phoneNumber || agent.phone || null,
             tier: agent.tier || 1,
@@ -360,22 +378,24 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           apiKey,
           { pageSize: '100', pageNumber: '0' }
         )
-        const dlAgents = downline?.data || downline?.content || downline?.agents || (Array.isArray(downline) ? downline : [])
+        const dlAgents = downline?.downLineAgents || downline?.data || downline?.content || downline?.agents || (Array.isArray(downline) ? downline : [])
+        console.log(`[ReZen] Tier ${tier} downline response keys: ${JSON.stringify(Object.keys(downline || {})).slice(0, 200)}`)
+        console.log(`[ReZen] Tier ${tier} dlAgents count: ${Array.isArray(dlAgents) ? dlAgents.length : 'not array'}`)
 
         if (Array.isArray(dlAgents) && dlAgents.length > 0) {
-          console.log(`[ReZen] Tier ${tier}: ${dlAgents.length} agents`)
           for (const agent of dlAgents) {
-            const agentId = String(agent.id || agent.agentId || '')
+            const agentId = String(agent.id || agent.agentId || agent.yentaId || '')
             if (!agentId) continue
+            const dlAgentName = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || agent.fullName || '')
 
-            const name = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || '')
-            const joinDate = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+            const joinDateRaw = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+            const joinDate = toISODate(joinDateRaw)
 
             let daysWithBrokerage: number | null = null
-            if (joinDate) {
-              const jd = new Date(typeof joinDate === 'number' ? (joinDate > 1e12 ? joinDate : joinDate * 1000) : joinDate)
-              if (!isNaN(jd.getTime())) {
-                daysWithBrokerage = Math.floor((Date.now() - jd.getTime()) / (1000 * 60 * 60 * 24))
+            if (joinDateRaw) {
+              const ms = typeof joinDateRaw === 'number' ? (joinDateRaw > 1e12 ? joinDateRaw : joinDateRaw * 1000) : new Date(joinDateRaw).getTime()
+              if (!isNaN(ms)) {
+                daysWithBrokerage = Math.floor((Date.now() - ms) / (1000 * 60 * 60 * 24))
               }
             }
 
@@ -383,7 +403,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
               user_id: userId,
               platform: 'real_broker',
               agent_yenta_id: agentId,
-              agent_name: name,
+              agent_name: dlAgentName,
               email: agent.emailAddress || agent.email || null,
               phone: agent.phoneNumber || agent.phone || null,
               tier,
