@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval } from 'date-fns';
+import { useRevenueShare } from '@/hooks/usePlatformConnections';
+import { useNetworkSummary } from '@/hooks/useNetworkData';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -62,6 +64,8 @@ const PIE_COLORS = [
 export default function AnalyticsPage() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
+  const { data: revenueShares = [] } = useRevenueShare();
+  const { data: networkSummary } = useNetworkSummary();
   const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all'>('12m');
 
   // Stable date reference
@@ -332,6 +336,49 @@ export default function AnalyticsPage() {
     });
   }, [filteredDeals, now, monthsToShow]);
 
+  // RevShare by Month (grouped by year for comparison)
+  const revShareMonthly = useMemo(() => {
+    const byYearMonth: Record<string, Record<number, number>> = {};
+    revenueShares.forEach(rs => {
+      if (!rs.period || rs.period === 'unknown') return;
+      const [yearStr, monthStr] = rs.period.split('-');
+      const year = yearStr;
+      const month = parseInt(monthStr);
+      if (!byYearMonth[year]) byYearMonth[year] = {};
+      byYearMonth[year][month] = (byYearMonth[year][month] || 0) + Number(rs.amount);
+    });
+
+    const years = Object.keys(byYearMonth).sort();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    return {
+      chartData: monthNames.map((name, i) => {
+        const entry: Record<string, any> = { month: name };
+        years.forEach(y => { entry[y] = byYearMonth[y]?.[i + 1] || 0; });
+        return entry;
+      }),
+      years,
+      yearlyTotals: years.map(y => ({
+        year: y,
+        total: Object.values(byYearMonth[y] || {}).reduce((s, v) => s + v, 0),
+      })),
+    };
+  }, [revenueShares]);
+
+  // RevShare by tier from network_summary
+  const revShareByTier = useMemo(() => {
+    const tiers = networkSummary?.revshare_by_tier as any;
+    if (!tiers?.tierRevshareResponses) return [];
+    return (tiers.tierRevshareResponses as any[]).map((t: any) => ({
+      tier: `Tier ${t.tier}`,
+      earned: t.earnedRevshareAmount?.amount || 0,
+      missed: t.missedRevshareAmount?.amount || 0,
+      contributors: t.numberOfContributors || 0,
+    })).filter((t: any) => t.earned > 0 || t.missed > 0 || t.contributors > 0);
+  }, [networkSummary]);
+
+  const YEAR_COLORS = ['hsl(158 64% 42%)', 'hsl(38 92% 50%)', 'hsl(217 91% 60%)', 'hsl(280 68% 58%)'];
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -420,6 +467,7 @@ export default function AnalyticsPage() {
             <TabsTrigger value="leads" className="text-sm font-semibold px-4 rounded-lg">Lead Sources</TabsTrigger>
             <TabsTrigger value="deals" className="text-sm font-semibold px-4 rounded-lg">Deal Flow</TabsTrigger>
             <TabsTrigger value="team" className="text-sm font-semibold px-4 rounded-lg">Team</TabsTrigger>
+            <TabsTrigger value="revshare" className="text-sm font-semibold px-4 rounded-lg">RevShare</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -788,6 +836,139 @@ export default function AnalyticsPage() {
                   <p className="text-sm text-muted-foreground/70 mt-1">Add team members to your deals to see performance analytics</p>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* RevShare Tab */}
+          <TabsContent value="revshare" className="space-y-6">
+            {revenueShares.length === 0 ? (
+              <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+                <CardContent className="py-12 text-center">
+                  <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">No revenue share data yet</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">Sync your Real Broker account to see RevShare analytics</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Yearly Totals Summary */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {revShareMonthly.yearlyTotals.map((yt, i) => (
+                    <motion.div
+                      key={yt.year}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, ...springConfig }}
+                    >
+                      <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+                        <CardContent className="p-4">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{yt.year} Total</p>
+                          <p className="text-xl font-bold text-foreground mt-1">{formatCurrency(yt.total)}</p>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* RevShare by Month - Year Over Year Comparison */}
+                <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                      RevShare by Month
+                    </CardTitle>
+                    <CardDescription>Year-over-year monthly comparison</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={revShareMonthly.chartData} barGap={2}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                        <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v.toFixed(0)}`} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        {revShareMonthly.years.map((year, i) => (
+                          <Bar key={year} dataKey={year} name={year} fill={YEAR_COLORS[i % YEAR_COLORS.length]} radius={[3, 3, 0, 0]} />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  {/* Cumulative RevShare Trend */}
+                  <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        RevShare Trend
+                      </CardTitle>
+                      <CardDescription>Cumulative revenue share over time</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {(() => {
+                        const sorted = [...revenueShares]
+                          .filter(r => r.period && r.period !== 'unknown')
+                          .sort((a, b) => a.period.localeCompare(b.period));
+                        let cum = 0;
+                        const trendData = sorted.map(r => {
+                          cum += Number(r.amount);
+                          const [y, m] = r.period.split('-');
+                          return { period: `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y.slice(2)}`, amount: Number(r.amount), cumulative: cum };
+                        });
+                        return (
+                          <ResponsiveContainer width="100%" height={280}>
+                            <AreaChart data={trendData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                              <XAxis dataKey="period" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" interval={Math.max(0, Math.floor(trendData.length / 8))} />
+                              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${v.toFixed(0)}`} />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Area type="monotone" dataKey="cumulative" name="Cumulative RevShare" stroke="hsl(158 64% 42%)" fill="hsl(158 64% 42% / 0.15)" strokeWidth={2} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* RevShare by Tier */}
+                  {revShareByTier.length > 0 && (
+                    <Card className="bg-card/60 backdrop-blur-xl border-border/50">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-primary" />
+                          RevShare by Tier
+                        </CardTitle>
+                        <CardDescription>Earned vs missed by network tier</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={revShareByTier} layout="vertical" barGap={2}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
+                            <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                            <YAxis type="category" dataKey="tier" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" width={50} />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Bar dataKey="earned" name="Earned" fill="hsl(158 64% 42%)" radius={[0, 4, 4, 0]} />
+                            <Bar dataKey="missed" name="Missed" fill="hsl(0 84% 60% / 0.6)" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                        <div className="mt-4 space-y-1.5">
+                          {revShareByTier.map((t: any) => (
+                            <div key={t.tier} className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">{t.tier}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">{t.contributors} contributors</span>
+                                <span className="font-semibold text-foreground">{formatCurrency(t.earned)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
