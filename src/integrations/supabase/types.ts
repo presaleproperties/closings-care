@@ -218,12 +218,14 @@ export type Database = {
         Row: {
           agent_name: string
           agent_yenta_id: string
+          avatar_url: string | null
           created_at: string
           days_with_brokerage: number | null
           departure_date: string | null
           email: string | null
           id: string
           join_date: string | null
+          network_size: number | null
           phone: string | null
           platform: string
           raw_data: Json | null
@@ -237,12 +239,14 @@ export type Database = {
         Insert: {
           agent_name?: string
           agent_yenta_id: string
+          avatar_url?: string | null
           created_at?: string
           days_with_brokerage?: number | null
           departure_date?: string | null
           email?: string | null
           id?: string
           join_date?: string | null
+          network_size?: number | null
           phone?: string | null
           platform?: string
           raw_data?: Json | null
@@ -256,12 +260,14 @@ export type Database = {
         Update: {
           agent_name?: string
           agent_yenta_id?: string
+          avatar_url?: string | null
           created_at?: string
           days_with_brokerage?: number | null
           departure_date?: string | null
           email?: string | null
           id?: string
           join_date?: string | null
+          network_size?: number | null
           phone?: string | null
           platform?: string
           raw_data?: Json | null
@@ -754,16 +760,27 @@ export type Database = {
           client_name: string | null
           close_date: string | null
           commission_amount: number | null
+          compliance_status: string | null
           created_at: string
+          currency: string | null
           external_id: string | null
+          firm_date: string | null
           id: string
+          is_listing: boolean | null
+          journey_id: string | null
+          lead_source: string | null
+          lifecycle_state: string | null
           listing_date: string | null
+          mls_number: string | null
+          my_net_payout: number | null
+          my_split_percent: number | null
           platform: string
           property_address: string | null
           raw_data: Json | null
           sale_price: number | null
           status: string | null
           synced_at: string
+          transaction_code: string | null
           transaction_type: string | null
           updated_at: string
           user_id: string
@@ -774,16 +791,27 @@ export type Database = {
           client_name?: string | null
           close_date?: string | null
           commission_amount?: number | null
+          compliance_status?: string | null
           created_at?: string
+          currency?: string | null
           external_id?: string | null
+          firm_date?: string | null
           id?: string
+          is_listing?: boolean | null
+          journey_id?: string | null
+          lead_source?: string | null
+          lifecycle_state?: string | null
           listing_date?: string | null
+          mls_number?: string | null
+          my_net_payout?: number | null
+          my_split_percent?: number | null
           platform: string
           property_address?: string | null
           raw_data?: Json | null
           sale_price?: number | null
           status?: string | null
           synced_at?: string
+          transaction_code?: string | null
           transaction_type?: string | null
           updated_at?: string
           user_id: string
@@ -794,16 +822,27 @@ export type Database = {
           client_name?: string | null
           close_date?: string | null
           commission_amount?: number | null
+          compliance_status?: string | null
           created_at?: string
+          currency?: string | null
           external_id?: string | null
+          firm_date?: string | null
           id?: string
+          is_listing?: boolean | null
+          journey_id?: string | null
+          lead_source?: string | null
+          lifecycle_state?: string | null
           listing_date?: string | null
+          mls_number?: string | null
+          my_net_payout?: number | null
+          my_split_percent?: number | null
           platform?: string
           property_address?: string | null
           raw_data?: Json | null
           sale_price?: number | null
           status?: string | null
           synced_at?: string
+          transaction_code?: string | null
           transaction_type?: string | null
           updated_at?: string
           user_id?: string

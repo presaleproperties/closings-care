@@ -18,7 +18,6 @@ function toISODate(val: any): string | null {
     return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]
   }
   if (typeof val === 'string') {
-    // Already ISO-ish
     const d = new Date(val)
     return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0]
   }
@@ -39,6 +38,139 @@ async function rezenGet(baseUrl: string, path: string, apiKey: string, params?: 
     throw new Error(`ReZen API [${res.status}]: ${text.slice(0, 300)}`)
   }
   return res.json()
+}
+
+/**
+ * Extract all enriched fields from a ReZen transaction object.
+ * Returns a flat object with the new column values.
+ */
+function extractTransactionFields(tx: any, yentaId: string) {
+  // Firm date
+  const firmDate = toISODate(tx.firmDate)
+
+  // Journey ID (groups presale Part 1/2 + Part 2/2)
+  const journeyId = tx.journeyId || null
+
+  // MLS number
+  const mlsNumber = tx.mlsNum || tx.mlsNumber || null
+
+  // Listing flag
+  const isListing = tx.listing === true
+
+  // Lifecycle state (detailed ReZen state)
+  const lifecycleState = tx.lifecycleState?.state || (typeof tx.lifecycleState === 'string' ? tx.lifecycleState : null)
+
+  // Compliance status
+  const complianceStatus = tx.complianceStatus || null
+
+  // Lead source
+  const leadSource = tx.leadSource || null
+
+  // Transaction code
+  const transactionCode = tx.code || null
+
+  // Currency
+  const currency = tx.currency || 'CAD'
+
+  // My net payout (actual take-home)
+  let myNetPayout: number | null = null
+  if (tx.myNetPayout?.amount !== null && tx.myNetPayout?.amount !== undefined) {
+    myNetPayout = Number(tx.myNetPayout.amount)
+  }
+
+  // My split percent — find the participant matching the user's yentaId
+  let mySplitPercent: number | null = null
+  if (tx.participants && Array.isArray(tx.participants)) {
+    const myParticipant = tx.participants.find((p: any) => p.yentaUserId === yentaId)
+    if (myParticipant?.payment?.percent !== null && myParticipant?.payment?.percent !== undefined) {
+      mySplitPercent = Number(myParticipant.payment.percent)
+    }
+  }
+
+  return {
+    firm_date: firmDate,
+    journey_id: journeyId,
+    mls_number: mlsNumber,
+    is_listing: isListing,
+    lifecycle_state: lifecycleState,
+    compliance_status: complianceStatus,
+    lead_source: leadSource,
+    transaction_code: transactionCode,
+    currency,
+    my_net_payout: myNetPayout,
+    my_split_percent: mySplitPercent,
+  }
+}
+
+/**
+ * Build a full synced_transaction upsert record from a ReZen transaction.
+ */
+function buildTransactionRecord(tx: any, userId: string, agentName: string, yentaId: string) {
+  const externalId = String(tx.id || tx.transactionId || tx.code || '')
+  if (!externalId) return null
+
+  const address = tx.address || {}
+  const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
+  const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
+
+  // Commission
+  let commission: number | null = null
+  if (tx.grossCommission?.amount) commission = tx.grossCommission.amount
+  else if (tx.totalGci) commission = tx.totalGci
+  else if (tx.grossCommission && typeof tx.grossCommission === 'number') commission = tx.grossCommission
+  else if (tx.commission && typeof tx.commission === 'number') commission = tx.commission
+
+  // Sale price
+  let salePrice: number | null = null
+  if (tx.price?.amount) salePrice = tx.price.amount
+  else if (tx.salePrice) salePrice = tx.salePrice
+  else if (tx.purchasePrice) salePrice = tx.purchasePrice
+  else if (tx.price && typeof tx.price === 'number') salePrice = tx.price
+
+  // Status
+  const lifecycleStateVal = tx.lifecycleState?.state || tx.lifecycleState || ''
+  const rawStatus = String(tx.status || lifecycleStateVal || '').toLowerCase()
+  let status = rawStatus
+  if (rawStatus.includes('closed') || rawStatus.includes('settled') || tx.closedAt || tx.rezenClosedAt) status = 'closed'
+  else if (rawStatus.includes('terminat') || rawStatus.includes('cancel')) status = 'terminated'
+  else if (rawStatus.includes('active') || rawStatus.includes('approved') || rawStatus.includes('commission') || rawStatus.includes('ready')) status = 'active'
+  else status = 'pending'
+
+  // Dates
+  const closeDate = toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate)
+  const listingDate = toISODate(tx.listingDate || tx.contractAcceptanceDate)
+
+  // Client name from participants
+  let clientName = ''
+  if (tx.participants && Array.isArray(tx.participants)) {
+    const clients = tx.participants.filter((p: any) =>
+      p.role === 'BUYER' || p.role === 'SELLER' || p.role === 'CLIENT'
+    )
+    clientName = clients.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
+  }
+  if (!clientName) clientName = tx.representedParty || tx.clientName || ''
+
+  // Extract new enriched fields
+  const enriched = extractTransactionFields(tx, yentaId)
+
+  return {
+    user_id: userId,
+    platform: 'real_broker',
+    external_id: externalId,
+    transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
+    client_name: clientName,
+    property_address: fullAddress || '',
+    city: address.city || '',
+    sale_price: salePrice,
+    commission_amount: commission,
+    close_date: closeDate,
+    listing_date: listingDate,
+    status,
+    agent_name: agentName,
+    raw_data: tx,
+    synced_at: new Date().toISOString(),
+    ...enriched,
+  }
 }
 
 // ─── Sync Real Broker ─────────────────────────────────────────────────────────
@@ -73,75 +205,15 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           { pageNumber: '0', pageSize: '200' }
         )
 
-        // Handle paginated response
         const transactions = txData?.data || txData?.transactions || txData?.content || (Array.isArray(txData) ? txData : [])
         console.log(`[ReZen] Found ${Array.isArray(transactions) ? transactions.length : 0} ${group} transactions`)
 
         if (Array.isArray(transactions)) {
           for (const tx of transactions) {
-            const externalId = String(tx.id || tx.transactionId || tx.code || '')
-            if (!externalId) continue
+            const record = buildTransactionRecord(tx, userId, agentName, yentaId)
+            if (!record) continue
 
-            const address = tx.address || {}
-            const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
-            const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
-
-            // Commission
-            // ReZen returns monetary amounts in dollars (not cents)
-            let commission: number | null = null
-            if (tx.grossCommission?.amount) commission = tx.grossCommission.amount
-            else if (tx.totalGci) commission = tx.totalGci
-            else if (tx.grossCommission && typeof tx.grossCommission === 'number') commission = tx.grossCommission
-            else if (tx.commission && typeof tx.commission === 'number') commission = tx.commission
-
-            // Sale price
-            let salePrice: number | null = null
-            if (tx.price?.amount) salePrice = tx.price.amount
-            else if (tx.salePrice) salePrice = tx.salePrice
-            else if (tx.purchasePrice) salePrice = tx.purchasePrice
-            else if (tx.price && typeof tx.price === 'number') salePrice = tx.price
-
-            // Status - lifecycleState is an object {state: "SETTLED", ...}, extract .state
-            const lifecycleState = tx.lifecycleState?.state || tx.lifecycleState || ''
-            const rawStatus = String(tx.status || lifecycleState || '').toLowerCase()
-            let status = rawStatus
-            if (rawStatus.includes('closed') || rawStatus.includes('settled') || tx.closedAt || tx.rezenClosedAt) status = 'closed'
-            else if (rawStatus.includes('terminat') || rawStatus.includes('cancel')) status = 'terminated'
-            else if (rawStatus.includes('active') || rawStatus.includes('approved') || rawStatus.includes('commission') || rawStatus.includes('ready')) status = 'active'
-            else status = 'pending'
-
-            // Dates
-            const closeDate = toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate)
-            const listingDate = toISODate(tx.listingDate || tx.contractAcceptanceDate)
-
-            // Client name from participants
-            let clientName = ''
-            if (tx.participants && Array.isArray(tx.participants)) {
-              const clients = tx.participants.filter((p: any) =>
-                p.role === 'BUYER' || p.role === 'SELLER' || p.role === 'CLIENT'
-              )
-              clientName = clients.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
-            }
-            if (!clientName) clientName = tx.representedParty || tx.clientName || ''
-
-            await supabase.from('synced_transactions').upsert({
-              user_id: userId,
-              platform: 'real_broker',
-              external_id: externalId,
-              transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
-              client_name: clientName,
-              property_address: fullAddress || '',
-              city: address.city || '',
-              sale_price: salePrice,
-              commission_amount: commission,
-              close_date: closeDate,
-              listing_date: listingDate,
-              status,
-              agent_name: agentName,
-              raw_data: tx,
-              synced_at: new Date().toISOString(),
-            }, { onConflict: 'user_id,platform,external_id' })
-
+            await supabase.from('synced_transactions').upsert(record, { onConflict: 'user_id,platform,external_id' })
             recordsSynced++
           }
         }
@@ -162,60 +234,10 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
 
       if (Array.isArray(currentTxs)) {
         for (const tx of currentTxs) {
-          const externalId = String(tx.id || tx.transactionId || tx.code || '')
-          if (!externalId) continue
+          const record = buildTransactionRecord(tx, userId, agentName, yentaId)
+          if (!record) continue
 
-          const address = tx.address || {}
-          const streetParts = [address.street, address.street2].filter(Boolean).join(', ')
-          const fullAddress = [streetParts, address.city, address.state, address.zip || address.zipCode].filter(Boolean).join(', ')
-
-          let commission: number | null = null
-          if (tx.grossCommission?.amount) commission = tx.grossCommission.amount
-          else if (tx.totalGci) commission = tx.totalGci
-          else if (typeof tx.grossCommission === 'number') commission = tx.grossCommission
-          else if (typeof tx.commission === 'number') commission = tx.commission
-
-          let salePrice: number | null = null
-          if (tx.price?.amount) salePrice = tx.price.amount
-          else if (tx.salePrice) salePrice = tx.salePrice
-          else if (tx.purchasePrice) salePrice = tx.purchasePrice
-          else if (typeof tx.price === 'number') salePrice = tx.price
-
-          const lifecycleState = tx.lifecycleState?.state || tx.lifecycleState || ''
-          const rawStatus = String(tx.status || lifecycleState || '').toLowerCase()
-          let status = rawStatus
-          if (rawStatus.includes('closed') || rawStatus.includes('settled') || tx.closedAt) status = 'closed'
-          else if (rawStatus.includes('terminat') || rawStatus.includes('cancel')) status = 'terminated'
-          else if (rawStatus.includes('active') || rawStatus.includes('approved') || rawStatus.includes('commission') || rawStatus.includes('ready')) status = 'active'
-          else status = 'pending'
-
-          let clientName = ''
-          if (tx.participants && Array.isArray(tx.participants)) {
-            const clients = tx.participants.filter((p: any) =>
-              ['BUYER', 'SELLER', 'CLIENT'].includes(p.role)
-            )
-            clientName = clients.map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim()).join(', ')
-          }
-          if (!clientName) clientName = tx.representedParty || tx.clientName || ''
-
-          await supabase.from('synced_transactions').upsert({
-            user_id: userId,
-            platform: 'real_broker',
-            external_id: externalId,
-            transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
-            client_name: clientName,
-            property_address: fullAddress || '',
-            city: (address.city || ''),
-            sale_price: salePrice,
-            commission_amount: commission,
-            close_date: toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated),
-            listing_date: toISODate(tx.listingDate || tx.contractAcceptanceDate),
-            status,
-            agent_name: agentName,
-            raw_data: tx,
-            synced_at: new Date().toISOString(),
-          }, { onConflict: 'user_id,platform,external_id' })
-
+          await supabase.from('synced_transactions').upsert(record, { onConflict: 'user_id,platform,external_id' })
           recordsSynced++
         }
       }
@@ -270,11 +292,10 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       console.warn('[ReZen] RevShare sync error:', rsErr)
     }
 
-    // 3b. Sync per-agent revshare contributions (breakdown by contributing agent)
+    // 3b. Sync per-agent revshare contributions
     try {
       console.log('[ReZen] Fetching per-agent revshare contributions...')
       
-      // Try fetching contributions for each payment we already synced
       const { data: existingPayments } = await supabase
         .from('revenue_share')
         .select('raw_data, period')
@@ -288,7 +309,6 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           if (!paymentId) continue
           
           try {
-            // Try to get contributions for this specific payment
             const contribData = await rezenGet(ARRAKIS,
               `revshares/payments/${paymentId}/contributions`,
               apiKey,
@@ -328,7 +348,6 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
               }
             }
           } catch (contribErr) {
-            // Try alternate endpoint format
             console.log(`[ReZen] Payment contributions endpoint failed for ${paymentId}, trying alternate...`)
           }
         }
@@ -414,10 +433,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       const capInfo = capData.status === 'fulfilled' ? capData.value : null
       const networkSize = networkSizeData.status === 'fulfilled' ? networkSizeData.value : null
 
-      // Calculate total network agents from network size data
       let totalAgents = 0
       if (networkSize && typeof networkSize === 'object') {
-        // networkSize is typically { tier1: count, tier2: count, ... } or array
         if (Array.isArray(networkSize)) {
           totalAgents = networkSize.reduce((sum: number, t: any) => sum + (t.count || t.size || 0), 0)
         } else {
@@ -445,7 +462,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       console.warn('[ReZen] Performance/network sync error:', err)
     }
 
-    // 6. Sync front-line agents (Tier 1 network)
+    // 6. Sync front-line agents (Tier 1 network) — now with avatar + network_size
     try {
       console.log('[ReZen] Fetching frontline agents...')
       const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
@@ -459,17 +476,22 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           if (!agentId) continue
           const agentFullName = agent.firstName ? `${agent.firstName} ${agent.lastName || ''}`.trim() : (agent.name || agent.fullName || '')
 
-            const joinDateRaw = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
-            const joinDate = toISODate(joinDateRaw)
-            
-            // Calculate days with brokerage
-            let daysWithBrokerage: number | null = null
-            if (joinDateRaw) {
-              const ms = typeof joinDateRaw === 'number' ? (joinDateRaw > 1e12 ? joinDateRaw : joinDateRaw * 1000) : new Date(joinDateRaw).getTime()
-              if (!isNaN(ms)) {
-                daysWithBrokerage = Math.floor((Date.now() - ms) / (1000 * 60 * 60 * 24))
-              }
+          const joinDateRaw = agent.createdAt || agent.anniversaryDate || agent.joinDate || null
+          const joinDate = toISODate(joinDateRaw)
+          
+          let daysWithBrokerage: number | null = null
+          if (joinDateRaw) {
+            const ms = typeof joinDateRaw === 'number' ? (joinDateRaw > 1e12 ? joinDateRaw : joinDateRaw * 1000) : new Date(joinDateRaw).getTime()
+            if (!isNaN(ms)) {
+              daysWithBrokerage = Math.floor((Date.now() - ms) / (1000 * 60 * 60 * 24))
             }
+          }
+
+          // Extract avatar URL
+          const avatarUrl = agent.avatar || agent.avatarUrl || agent.profileImageUrl || null
+
+          // Extract network size
+          const networkSizeVal = agent.sizeOfNetwork || agent.networkSize || 0
 
           await supabase.from('network_agents').upsert({
             user_id: userId,
@@ -483,6 +505,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             sponsor_name: agent.sponsorName || null,
             join_date: joinDate,
             days_with_brokerage: daysWithBrokerage,
+            avatar_url: avatarUrl,
+            network_size: networkSizeVal,
             raw_data: agent,
             synced_at: new Date().toISOString(),
           }, { onConflict: 'user_id,platform,agent_yenta_id' })
@@ -494,7 +518,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       console.warn('[ReZen] Frontline agents sync error:', err)
     }
 
-    // 7. Sync downline agents (Tiers 1-5)
+    // 7. Sync downline agents (Tiers 1-5) — now with avatar + network_size
     for (let tier = 1; tier <= 5; tier++) {
       try {
         const downline = await rezenGet(YENTA,
@@ -523,6 +547,9 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
               }
             }
 
+            const avatarUrl = agent.avatar || agent.avatarUrl || agent.profileImageUrl || null
+            const networkSizeVal = agent.sizeOfNetwork || agent.networkSize || 0
+
             await supabase.from('network_agents').upsert({
               user_id: userId,
               platform: 'real_broker',
@@ -535,6 +562,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
               sponsor_name: agent.sponsorName || null,
               join_date: joinDate,
               days_with_brokerage: daysWithBrokerage,
+              avatar_url: avatarUrl,
+              network_size: networkSizeVal,
               raw_data: agent,
               synced_at: new Date().toISOString(),
             }, { onConflict: 'user_id,platform,agent_yenta_id' })
@@ -543,7 +572,6 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           }
         }
       } catch (err) {
-        // Tier may not exist, that's ok
         console.log(`[ReZen] Tier ${tier} downline: no data or error`)
       }
     }
