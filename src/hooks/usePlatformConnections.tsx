@@ -65,7 +65,7 @@ export interface SyncLog {
 
 const PLATFORMS = [
   { id: 'lofty', name: 'Lofty (Chime)', description: 'CRM - transactions, listings', hasApi: true },
-  { id: 'real_broker', name: 'Real Broker', description: 'Revenue share, cap tracking', hasApi: false },
+  { id: 'real_broker', name: 'Real Broker (ReZen)', description: 'Transactions, revenue share, cap tracking', hasApi: true },
   { id: 'follow_up_boss', name: 'Follow Up Boss', description: 'CRM - contacts, deals', hasApi: true },
   { id: 'skyslope', name: 'SkySlope', description: 'Transaction management', hasApi: true },
 ];
