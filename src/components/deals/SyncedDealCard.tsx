@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Users, MapPin, FileText, Percent, Calendar, DollarSign, Building2 } from 'lucide-react';
+import { Users, MapPin, FileText, Calendar, DollarSign, Building2, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
@@ -12,134 +12,147 @@ interface SyncedDealCardProps {
 }
 
 export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps) {
-  const springConfig = { type: 'spring' as const, stiffness: 100, damping: 20 };
-  
   // Extract part info (e.g., "Part 1/2")
   const partMatch = deal.propertyAddress?.match(/Part (\d+\/\d+)/);
   const isPresale = !!partMatch;
-  
-  const statusColor = deal.status === 'closed' 
-    ? 'from-success/20 to-success/5 border-success/30'
-    : deal.status === 'active'
-      ? 'from-primary/20 to-primary/5 border-primary/30'
-      : 'from-warning/20 to-warning/5 border-warning/30';
 
-  const lifecycleDisplay = deal.lifecycleState?.split('_').map(w => 
-    w.charAt(0) + w.slice(1).toLowerCase()
-  ).join(' ') || 'Unknown';
+  // Clean address: strip "Part X/Y - " prefix
+  const cleanAddress = deal.propertyAddress
+    ? deal.propertyAddress.replace(/Part \d+\/\d+\s*-\s*/, '').trim()
+    : null;
+  const displayAddress = cleanAddress || 'Unknown';
+
+  const lifecycleDisplay = deal.lifecycleState
+    ?.split('_')
+    .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+    .join(' ') || null;
+
+  // Status indicator color
+  const statusIndicator =
+    deal.status === 'closed'
+      ? 'bg-success'
+      : deal.status === 'active'
+        ? 'bg-primary'
+        : 'bg-amber-500';
+
+  // Visible participants (filter out REAL / REAL_ADMIN)
+  const visibleParticipants = deal.participants.filter(
+    p => p.participantRole !== 'REAL' && p.participantRole !== 'REAL_ADMIN' && !(p as any).hidden
+  );
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ ...springConfig, delay: index * 0.05 }}
+      transition={{ type: 'spring', stiffness: 120, damping: 22, delay: index * 0.03 }}
       onClick={onClick}
-      className="cursor-pointer"
+      className="cursor-pointer group"
     >
-      <div className={cn(
-        'rounded-2xl border p-4 transition-all duration-300',
-        'bg-gradient-to-br hover:shadow-lg hover:scale-[1.02]',
-        statusColor
-      )}>
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-base truncate">
-              {deal.clientName}
-            </h3>
-            {deal.propertyAddress && (
-              <p className="text-sm text-muted-foreground truncate mt-1">
-                {deal.propertyAddress.replace(/Part \d+\/\d+\s*-\s*/, '')}
-              </p>
-            )}
-          </div>
-          
-          {/* Amount badge */}
-          <div className="text-right shrink-0">
-            <p className="text-lg font-bold text-foreground">
-              {formatCurrency(deal.myNetPayout || 0)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {deal.status === 'closed' ? 'Received' : 'Pending'}
-            </p>
-          </div>
-        </div>
+      <div className="relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-4 transition-all duration-200 hover:bg-card/90 hover:shadow-md hover:border-border/80">
+        {/* Status indicator bar */}
+        <div className={cn('absolute left-0 top-4 bottom-4 w-1 rounded-full', statusIndicator)} />
 
-        {/* Status & Type Badges */}
-        <div className="flex flex-wrap gap-2 mb-3">
-          {isPresale && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-building2/10 text-building2">
-              <Building2 className="h-3 w-3" />
-              {partMatch?.[1] || 'Presale'}
-            </span>
-          )}
-          {deal.isListing && (
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-blue-500/10 text-blue-600">
-              <MapPin className="h-3 w-3" />
-              Listing
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-muted text-muted-foreground">
-            <FileText className="h-3 w-3" />
-            {lifecycleDisplay}
-          </span>
-        </div>
-
-        {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-2 text-sm mb-3 pb-3 border-t border-border/30">
-          {deal.firmDate && (
-            <div className="flex items-center gap-2 mt-3 text-muted-foreground">
-              <Calendar className="h-4 w-4 shrink-0" />
-              <span className="text-xs">{format(parseISO(deal.firmDate), 'MMM d')}</span>
-            </div>
-          )}
-          {deal.mlsNumber && deal.mlsNumber !== 'N/A' && (
-            <div className="flex items-center gap-2 mt-3 text-muted-foreground">
-              <FileText className="h-4 w-4 shrink-0" />
-              <span className="text-xs font-mono">{deal.mlsNumber}</span>
-            </div>
-          )}
-          {deal.salePrice && (
-            <div className="flex items-center gap-2 mt-3 text-muted-foreground">
-              <DollarSign className="h-4 w-4 shrink-0" />
-              <span className="text-xs">{formatCurrency(deal.salePrice)}</span>
-            </div>
-          )}
-          {deal.commissionAmount && (
-            <div className="flex items-center gap-2 mt-3 text-muted-foreground">
-              <Percent className="h-4 w-4 shrink-0" />
-              <span className="text-xs">{formatCurrency(deal.commissionAmount)} GCI</span>
-            </div>
-          )}
-        </div>
-
-        {/* Participants */}
-        {deal.participants.length > 0 && (
-          <div className="pt-2 border-t border-border/30">
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground">
-                {deal.participants.length} Participant{deal.participants.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div className="space-y-1 text-xs">
-              {deal.participants
-                .filter(p => p.participantRole !== 'REAL' && p.participantRole !== 'REAL_ADMIN' && !(p as any).hidden)
-                .slice(0, 3)
-                .map(p => (
-                  <div key={p.id} className="flex items-center justify-between text-muted-foreground">
-                    <span>{p.firstName && p.lastName ? `${p.firstName} ${p.lastName}` : (p.company || 'Unknown')}</span>
-                    {p.payment?.percent && (
-                      <span className="font-semibold text-foreground">{p.payment.percent}%</span>
-                    )}
-                  </div>
-                ))}
-              {deal.participants.length > 3 && (
-                <div className="text-muted-foreground pt-1">+{deal.participants.length - 3} more</div>
+        <div className="pl-3">
+          {/* Row 1: Address + Amount */}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                <h3 className="font-bold text-sm text-foreground truncate">
+                  {displayAddress}
+                </h3>
+              </div>
+              {deal.clientName && deal.clientName !== 'Unknown' && (
+                <p className="text-xs text-muted-foreground mt-0.5 ml-6 truncate">
+                  {deal.clientName}
+                </p>
               )}
             </div>
+
+            <div className="text-right shrink-0">
+              <p className="text-base font-bold text-foreground">
+                {formatCurrency(deal.myNetPayout || 0)}
+              </p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                {deal.status === 'closed' ? 'Received' : 'Net'}
+              </p>
+            </div>
           </div>
-        )}
+
+          {/* Row 2: Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+            {lifecycleDisplay && (
+              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-muted/60 text-muted-foreground font-medium">
+                {lifecycleDisplay}
+              </span>
+            )}
+            {isPresale && (
+              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 font-medium">
+                <Building2 className="h-2.5 w-2.5" />
+                {partMatch?.[1]}
+              </span>
+            )}
+            {deal.isListing && (
+              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+                Listing
+              </span>
+            )}
+            {deal.mlsNumber && deal.mlsNumber !== 'N/A' && (
+              <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-muted/40 text-muted-foreground font-mono">
+                MLS {deal.mlsNumber}
+              </span>
+            )}
+          </div>
+
+          {/* Row 3: Metrics */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            {deal.salePrice != null && deal.salePrice > 0 && (
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3 shrink-0" />
+                <span>{formatCurrency(deal.salePrice)}</span>
+              </div>
+            )}
+            {deal.commissionAmount != null && deal.commissionAmount > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="font-semibold text-foreground">
+                  {formatCurrency(deal.commissionAmount)}
+                </span>
+                <span>GCI</span>
+              </div>
+            )}
+            {deal.firmDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3 shrink-0" />
+                <span>{format(parseISO(deal.firmDate), 'MMM d, yyyy')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Row 4: Participants (compact) */}
+          {visibleParticipants.length > 0 && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/30">
+              <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <div className="flex-1 text-xs text-muted-foreground truncate">
+                {visibleParticipants.slice(0, 2).map(p => {
+                  const name = p.firstName && p.lastName
+                    ? `${p.firstName} ${p.lastName}`
+                    : p.company || 'Unknown';
+                  const pct = p.payment?.percent ? ` (${p.payment.percent}%)` : '';
+                  return name + pct;
+                }).join(' · ')}
+                {visibleParticipants.length > 2 && ` +${visibleParticipants.length - 2}`}
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0 group-hover:text-foreground transition-colors" />
+            </div>
+          )}
+
+          {/* No participants - still show chevron */}
+          {visibleParticipants.length === 0 && (
+            <div className="flex justify-end mt-2">
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground/60 transition-colors" />
+            </div>
+          )}
+        </div>
       </div>
     </motion.div>
   );

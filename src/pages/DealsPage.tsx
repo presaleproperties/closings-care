@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Building2, Home, MapPin } from 'lucide-react';
+import { Plus, Search, Building2, Home, MapPin, DollarSign, TrendingUp } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -11,11 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSyncedDeals } from '@/hooks/useSyncedDeals';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
-
-const springConfig = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 export default function DealsPage() {
   const { activeDeals, closedDeals, listings } = useSyncedDeals();
@@ -30,14 +27,13 @@ export default function DealsPage() {
     if (search) {
       const searchLower = search.toLowerCase();
       dealsToFilter = dealsToFilter.filter(deal =>
+        (deal.propertyAddress || 'unknown').toLowerCase().includes(searchLower) ||
         deal.clientName.toLowerCase().includes(searchLower) ||
-        deal.propertyAddress?.toLowerCase().includes(searchLower) ||
         deal.mlsNumber?.toLowerCase().includes(searchLower)
       );
     }
     
     return dealsToFilter.sort((a, b) => {
-      // Sort by firm date (newest first)
       if (a.firmDate && b.firmDate) {
         return new Date(b.firmDate).getTime() - new Date(a.firmDate).getTime();
       }
@@ -46,11 +42,14 @@ export default function DealsPage() {
   }, [activeTab, activeDeals, closedDeals, listings, search]);
 
   const stats = useMemo(() => {
+    const allDeals = [...activeDeals, ...closedDeals];
     return {
       active: activeDeals.length,
       closed: closedDeals.length,
       listings: listings.length,
-      totalCommission: [...activeDeals, ...closedDeals].reduce((sum, d) => sum + (d.commissionAmount || 0), 0),
+      totalCommission: allDeals.reduce((sum, d) => sum + (d.commissionAmount || 0), 0),
+      totalNet: allDeals.reduce((sum, d) => sum + (d.myNetPayout || 0), 0),
+      totalVolume: allDeals.reduce((sum, d) => sum + (d.salePrice || 0), 0),
     };
   }, [activeDeals, closedDeals, listings]);
 
@@ -59,6 +58,21 @@ export default function DealsPage() {
     setActiveTab(tab as 'active' | 'closed' | 'listings');
   };
 
+  const EmptyState = ({ icon: Icon, label }: { icon: typeof Building2; label: string }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center py-16"
+    >
+      <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+        <Icon className="h-7 w-7 text-muted-foreground/50" />
+      </div>
+      <p className="text-muted-foreground text-sm">
+        {search ? `No ${label} matching "${search}"` : `No ${label} yet`}
+      </p>
+    </motion.div>
+  );
+
   return (
     <AppLayout>
       <div className="flex flex-col h-full">
@@ -66,13 +80,30 @@ export default function DealsPage() {
         
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {/* Search bar */}
+            <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
+
+              {/* Hero Stats */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
+                  <p className="text-xl font-bold text-foreground">{stats.active + stats.closed}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Deals</p>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
+                  <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalNet)}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Net Income</p>
+                </div>
+                <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
+                  <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalVolume)}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Volume</p>
+                </div>
+              </div>
+
+              {/* Search */}
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search deals, MLS..."
+                    placeholder="Search by address, client, MLS..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9"
@@ -92,33 +123,32 @@ export default function DealsPage() {
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={handleTabChange}>
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="active" className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
+                  <TabsTrigger value="active" className="gap-1.5">
+                    <Building2 className="h-3.5 w-3.5" />
                     <span>Active</span>
-                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">
                       {stats.active}
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="closed" className="flex items-center gap-2">
-                    <Home className="h-4 w-4" />
+                  <TabsTrigger value="closed" className="gap-1.5">
+                    <Home className="h-3.5 w-3.5" />
                     <span>Closed</span>
-                    <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-[10px] bg-success/15 text-success px-1.5 py-0.5 rounded-full font-bold">
                       {stats.closed}
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="listings" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
+                  <TabsTrigger value="listings" className="gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
                     <span>Listings</span>
-                    <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">
+                    <span className="text-[10px] bg-blue-500/15 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-bold">
                       {stats.listings}
                     </span>
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Active Deals Tab */}
-                <TabsContent value="active" className="mt-4 space-y-3">
+                <TabsContent value="active" className="mt-4 space-y-2">
                   {filteredDeals.length > 0 ? (
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       {filteredDeals.map((deal, idx) => (
                         <Link key={deal.id} to={`/deals/${deal.id}`}>
                           <SyncedDealCard deal={deal} index={idx} />
@@ -126,23 +156,13 @@ export default function DealsPage() {
                       ))}
                     </div>
                   ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center py-12"
-                    >
-                      <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                      <p className="text-muted-foreground">
-                        {search ? 'No active deals matching your search' : 'No active deals yet'}
-                      </p>
-                    </motion.div>
+                    <EmptyState icon={Building2} label="active deals" />
                   )}
                 </TabsContent>
 
-                {/* Closed Deals Tab */}
-                <TabsContent value="closed" className="mt-4 space-y-3">
+                <TabsContent value="closed" className="mt-4 space-y-2">
                   {filteredDeals.length > 0 ? (
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       {filteredDeals.map((deal, idx) => (
                         <Link key={deal.id} to={`/deals/${deal.id}`}>
                           <SyncedDealCard deal={deal} index={idx} />
@@ -150,23 +170,13 @@ export default function DealsPage() {
                       ))}
                     </div>
                   ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center py-12"
-                    >
-                      <Home className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                      <p className="text-muted-foreground">
-                        {search ? 'No closed deals matching your search' : 'No closed deals yet'}
-                      </p>
-                    </motion.div>
+                    <EmptyState icon={Home} label="closed deals" />
                   )}
                 </TabsContent>
 
-                {/* Listings Tab */}
-                <TabsContent value="listings" className="mt-4 space-y-3">
+                <TabsContent value="listings" className="mt-4 space-y-2">
                   {filteredDeals.length > 0 ? (
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       {filteredDeals.map((deal, idx) => (
                         <Link key={deal.id} to={`/deals/${deal.id}`}>
                           <SyncedDealCard deal={deal} index={idx} />
@@ -174,33 +184,10 @@ export default function DealsPage() {
                       ))}
                     </div>
                   ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center py-12"
-                    >
-                      <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-                      <p className="text-muted-foreground">
-                        {search ? 'No listings matching your search' : 'No listings yet'}
-                      </p>
-                    </motion.div>
+                    <EmptyState icon={MapPin} label="listings" />
                   )}
                 </TabsContent>
               </Tabs>
-
-              {/* Summary stats */}
-              <div className="mt-6 pt-6 border-t border-border/30">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-muted-foreground text-xs">Total Commission</p>
-                    <p className="font-bold text-lg">{formatCurrency(stats.totalCommission)}</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-muted-foreground text-xs">All Deals</p>
-                    <p className="font-bold text-lg">{stats.active + stats.closed + stats.listings}</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </PullToRefresh>
