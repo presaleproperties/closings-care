@@ -41,6 +41,7 @@ import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNot
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
+import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
 // Dashboard v2.1 - Updated Feb 2026
@@ -63,6 +64,7 @@ export default function DashboardPage() {
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { data: revenueShare = [] } = useRevenueShare();
   const { data: networkAgents = [] } = useNetworkAgents();
+  const { syncedPayouts, receivedYTD, comingIn } = useSyncedIncome(syncedTransactions);
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const markPaid = useMarkPayoutPaid();
   const autoMarkPaid = useAutoMarkPayoutsPaid();
@@ -93,16 +95,11 @@ export default function DashboardPage() {
   }, [expenses, properties]);
 
   const incomeTotals = useMemo(() => {
-    const paid = payouts
-      .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    const projected = payouts
-      .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
+    // Use synced transaction data (myNetPayout = user's actual split)
+    const paid = receivedYTD;
+    const projected = comingIn;
     return { paid, projected };
-  }, [payouts, thisYear]);
+  }, [receivedYTD, comingIn]);
 
   const taxSetAsideRequired = useMemo(() => {
     const totalIncome = incomeTotals.paid + incomeTotals.projected;
@@ -198,6 +195,8 @@ export default function DashboardPage() {
                 otherIncome={otherIncome}
                 monthlyExpenses={expenseTotals.monthly}
                 onAutoMarkPaid={handleAutoMarkPaid}
+                syncedReceived={receivedYTD}
+                syncedComingIn={comingIn}
               />
             </div>
 
@@ -235,7 +234,7 @@ export default function DashboardPage() {
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <PipelineProspects />
-                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} syncedPayouts={syncedPayouts} />
                 <UpcomingPayouts 
                   payouts={payouts} 
                   onMarkPaid={(id) => markPaid.mutate(id)}
@@ -249,6 +248,8 @@ export default function DashboardPage() {
                   otherIncome={otherIncome}
                   monthlyExpenses={expenseTotals.monthly}
                   annualExpenses={expenseTotals.annual}
+                  receivedYTD={receivedYTD}
+                  comingIn={comingIn}
                 />
                 <BrokerageCapCard />
               </TabsContent>
@@ -309,6 +310,8 @@ export default function DashboardPage() {
                   otherIncome={otherIncome}
                   monthlyExpenses={expenseTotals.monthly}
                   onAutoMarkPaid={handleAutoMarkPaid}
+                  syncedReceived={receivedYTD}
+                  syncedComingIn={comingIn}
                 />
               </motion.section>
 
@@ -439,7 +442,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} />
+                    <IncomeProjection payouts={payouts} expenses={expenses} otherIncome={otherIncome} properties={properties} syncedPayouts={syncedPayouts} />
                   </motion.div>
 
                   <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
@@ -458,6 +461,8 @@ export default function DashboardPage() {
                           otherIncome={otherIncome}
                           monthlyExpenses={expenseTotals.monthly}
                           annualExpenses={expenseTotals.annual}
+                          receivedYTD={receivedYTD}
+                          comingIn={comingIn}
                         />
                       </motion.div>
                       

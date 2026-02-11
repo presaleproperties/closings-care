@@ -33,6 +33,7 @@ export interface SyncedTransaction {
   listing_date: string | null;
   status: string | null;
   agent_name: string | null;
+  raw_data: any;
   synced_at: string;
   created_at: string;
 }

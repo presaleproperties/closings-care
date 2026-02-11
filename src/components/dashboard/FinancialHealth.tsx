@@ -24,19 +24,37 @@ interface FinancialHealthProps {
   otherIncome: OtherIncome[];
   monthlyExpenses: number;
   annualExpenses: number;
+  receivedYTD?: number;
+  comingIn?: number;
 }
 
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 
-export function FinancialHealth({ deals, payouts, expenses, properties, otherIncome, monthlyExpenses, annualExpenses }: FinancialHealthProps) {
+export function FinancialHealth({ deals, payouts, expenses, properties, otherIncome, monthlyExpenses, annualExpenses, receivedYTD: syncedReceived, comingIn: syncedComingIn }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    const paidPayouts = payouts
-      .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+    // Use synced data if available, otherwise fall back to payouts
+    let paidPayouts: number;
+    let moneyComing: number;
+
+    if (syncedReceived !== undefined) {
+      paidPayouts = syncedReceived;
+    } else {
+      paidPayouts = payouts
+        .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+    }
+
+    if (syncedComingIn !== undefined) {
+      moneyComing = syncedComingIn;
+    } else {
+      moneyComing = payouts
+        .filter(p => p.status !== 'PAID')
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+    }
 
     let otherIncomeYTD = 0;
     for (let month = 1; month <= currentMonth; month++) {
@@ -64,10 +82,6 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
 
     const moneyReceived = paidPayouts + otherIncomeYTD;
 
-    const moneyComing = payouts
-      .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
     let moneySpent = 0;
     const propertyCosts = getPropertyCostsForMonth(properties);
     const monthlyPropertyNet = propertyCosts.personalCost - propertyCosts.rentalNet;
@@ -78,15 +92,18 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       moneySpent += monthExpenses + monthlyPropertyNet;
     }
 
-    const totalYearCommissions = payouts
-      .filter(p => {
-        const dueDate = p.due_date ? new Date(p.due_date) : null;
-        const paidDate = p.paid_date ? new Date(p.paid_date) : null;
-        const paidThisYear = p.status === 'PAID' && paidDate && paidDate.getFullYear() === thisYear;
-        const dueThisYear = dueDate && dueDate.getFullYear() === thisYear;
-        return paidThisYear || dueThisYear;
-      })
-      .reduce((sum, p) => sum + Number(p.amount), 0);
+    // Use synced data for total year commissions if available
+    const totalYearCommissions = (syncedReceived !== undefined)
+      ? paidPayouts + moneyComing  // Already using synced values
+      : payouts
+        .filter(p => {
+          const dueDate = p.due_date ? new Date(p.due_date) : null;
+          const paidDate = p.paid_date ? new Date(p.paid_date) : null;
+          const paidThisYear = p.status === 'PAID' && paidDate && paidDate.getFullYear() === thisYear;
+          const dueThisYear = dueDate && dueDate.getFullYear() === thisYear;
+          return paidThisYear || dueThisYear;
+        })
+        .reduce((sum, p) => sum + Number(p.amount), 0);
 
     let annualOtherIncome = 0;
     for (let month = 1; month <= 12; month++) {
@@ -143,7 +160,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, otherInc
       totalYearIncome,
       annualExpenses: annualExpensesCalc,
     };
-  }, [payouts, expenses, properties, otherIncome, monthlyExpenses]);
+  }, [payouts, expenses, properties, otherIncome, monthlyExpenses, syncedReceived, syncedComingIn]);
 
   const getStatusConfig = () => {
     switch (metrics.healthStatus) {

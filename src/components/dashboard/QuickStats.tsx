@@ -22,11 +22,13 @@ interface QuickStatsProps {
   otherIncome?: OtherIncome[];
   monthlyExpenses: number;
   onAutoMarkPaid?: (payoutIds: string[]) => void;
+  syncedReceived?: number;
+  syncedComingIn?: number;
 }
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid }: QuickStatsProps) {
+export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, onAutoMarkPaid, syncedReceived, syncedComingIn }: QuickStatsProps) {
   const today = startOfDay(new Date());
   const thisYear = new Date().getFullYear();
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -51,9 +53,12 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
   }, [payouts, onAutoMarkPaid, today]);
 
   const breakdown = useMemo(() => {
-    const totalCommissions = payoutsWithCap
-      .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + p.netAmount, 0);
+    // Use synced data if available
+    const totalCommissions = syncedComingIn !== undefined
+      ? syncedComingIn
+      : payoutsWithCap
+        .filter(p => p.status !== 'PAID')
+        .reduce((sum, p) => sum + p.netAmount, 0);
 
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
@@ -91,20 +96,27 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       otherIncomeItems: otherIncome,
       monthsProjected: 48,
     };
-  }, [payoutsWithCap, payouts, otherIncome, thisYear]);
+  }, [payoutsWithCap, payouts, otherIncome, thisYear, syncedComingIn]);
 
   const stats = useMemo(() => {
-    const totalCommissions = payoutsWithCap
-      .filter(p => p.status !== 'PAID')
-      .reduce((sum, p) => sum + p.netAmount, 0);
+    // Use synced data if available
+    const totalCommissions = syncedComingIn !== undefined
+      ? syncedComingIn
+      : payoutsWithCap
+        .filter(p => p.status !== 'PAID')
+        .reduce((sum, p) => sum + p.netAmount, 0);
 
-    const totalEarned = payoutsWithCap
-      .filter(p => p.status === 'PAID')
-      .reduce((sum, p) => sum + p.netAmount, 0);
+    const totalEarned = syncedReceived !== undefined
+      ? syncedReceived
+      : payoutsWithCap
+        .filter(p => p.status === 'PAID')
+        .reduce((sum, p) => sum + p.netAmount, 0);
 
-    const thisYearCommissions = payoutsWithCap
-      .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
-      .reduce((sum, p) => sum + p.netAmount, 0);
+    const thisYearCommissions = syncedComingIn !== undefined
+      ? syncedComingIn // Already filtered for active transactions
+      : payoutsWithCap
+        .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
+        .reduce((sum, p) => sum + p.netAmount, 0);
     
     let totalOtherIncome = 0;
     const currentMonth = new Date().getMonth() + 1;
@@ -180,7 +192,7 @@ export function QuickStats({ deals, payouts, otherIncome = [], monthlyExpenses, 
       activeDeals,
       monthlyExpenses,
     };
-  }, [deals, payouts, payoutsWithCap, otherIncome, monthlyExpenses, thisYear]);
+  }, [deals, payouts, payoutsWithCap, otherIncome, monthlyExpenses, thisYear, syncedComingIn, syncedReceived]);
 
   return (
     <div className="space-y-4">
