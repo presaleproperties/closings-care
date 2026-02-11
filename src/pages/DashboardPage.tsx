@@ -146,7 +146,7 @@ export default function DashboardPage() {
     );
   }
 
-  const isEmpty = deals.length === 0;
+  const isEmpty = deals.length === 0 && syncedTransactions.length === 0;
 
   return (
     <AppLayout>
