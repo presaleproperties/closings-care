@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.elevenlabs-stt]
 verify_jwt = false
+
+[functions.sync-platform]
+verify_jwt = false
+
+[functions.scheduled-sync]
+verify_jwt = false

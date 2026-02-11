@@ -4,7 +4,7 @@ import {
   Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
   Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles, 
   Target, Palette, FileText, CreditCard, Database, Settings2, 
-  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet
+  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +30,7 @@ import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
 import { PROVINCES, PROVINCE_NAMES, Province, TaxType, getTaxBrackets } from '@/lib/taxCalculator';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
+import { PlatformConnectionsManager } from '@/components/settings/PlatformConnectionsManager';
 
 const defaultPresale = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion'];
 const defaultResale = ['Completion'];
@@ -225,6 +226,10 @@ export default function SettingsPage() {
             <TabsTrigger value="data" className="flex items-center gap-2">
               <Database className="w-4 h-4" />
               <span className="hidden sm:inline">Data</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="flex items-center gap-2">
+              <Plug className="w-4 h-4" />
+              <span className="hidden sm:inline">Integrations</span>
             </TabsTrigger>
           </TabsList>
 
@@ -767,6 +772,19 @@ export default function SettingsPage() {
           <TabsContent value="data" className="space-y-6">
             <DataExportSection />
             <DeleteAccountSection />
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations" className="space-y-6">
+            <SettingsCard
+              icon={Plug}
+              title="Platform Integrations"
+              description="Connect your CRM, brokerage, and transaction management platforms"
+              iconColor="text-primary"
+              gradient="from-primary/10 to-primary/5"
+            >
+              <PlatformConnectionsManager />
+            </SettingsCard>
           </TabsContent>
         </Tabs>
       </motion.div>

@@ -342,6 +342,51 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_connections: {
+        Row: {
+          api_key: string | null
+          api_secret: string | null
+          base_url: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          last_synced_at: string | null
+          platform: string
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          api_secret?: string | null
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          platform: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          api_secret?: string | null
+          base_url?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          platform?: string
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -417,6 +462,54 @@ export type Database = {
           updated_at?: string
           user_id?: string
           yearly_taxes?: number | null
+        }
+        Relationships: []
+      }
+      revenue_share: {
+        Row: {
+          agent_name: string
+          amount: number
+          cap_contribution: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          period: string
+          platform: string
+          raw_data: Json | null
+          status: string | null
+          tier: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_name: string
+          amount?: number
+          cap_contribution?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period: string
+          platform?: string
+          raw_data?: Json | null
+          status?: string | null
+          tier?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_name?: string
+          amount?: number
+          cap_contribution?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          period?: string
+          platform?: string
+          raw_data?: Json | null
+          status?: string | null
+          tier?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -502,6 +595,105 @@ export type Database = {
           tax_saved_amount?: number | null
           tax_set_aside_percent?: number | null
           tax_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          platform: string
+          records_synced: number | null
+          started_at: string
+          status: string
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          platform: string
+          records_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          platform?: string
+          records_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      synced_transactions: {
+        Row: {
+          agent_name: string | null
+          city: string | null
+          client_name: string | null
+          close_date: string | null
+          commission_amount: number | null
+          created_at: string
+          external_id: string | null
+          id: string
+          listing_date: string | null
+          platform: string
+          property_address: string | null
+          raw_data: Json | null
+          sale_price: number | null
+          status: string | null
+          synced_at: string
+          transaction_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_name?: string | null
+          city?: string | null
+          client_name?: string | null
+          close_date?: string | null
+          commission_amount?: number | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          listing_date?: string | null
+          platform: string
+          property_address?: string | null
+          raw_data?: Json | null
+          sale_price?: number | null
+          status?: string | null
+          synced_at?: string
+          transaction_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_name?: string | null
+          city?: string | null
+          client_name?: string | null
+          close_date?: string | null
+          commission_amount?: number | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          listing_date?: string | null
+          platform?: string
+          property_address?: string | null
+          raw_data?: Json | null
+          sale_price?: number | null
+          status?: string | null
+          synced_at?: string
+          transaction_type?: string | null
           updated_at?: string
           user_id?: string
         }
