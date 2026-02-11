@@ -1,749 +1,210 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
-  Calendar, 
-  DollarSign, 
-  CheckCircle2, 
-  Clock, 
-  Building2,
-  Home,
-  MapPin,
-  Users,
-  TrendingUp,
-  ArrowUpRight,
-  Percent,
-  Sparkles,
-  ChevronDown
-} from 'lucide-react';
-import { format, parseISO, startOfMonth, endOfMonth, addMonths, isBefore, getYear, getMonth, differenceInDays } from 'date-fns';
+import { motion } from 'framer-motion';
+import { Plus, Search, Building2, Home, MapPin } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
-import { useDeals } from '@/hooks/useDeals';
-import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
+import { useSyncedDeals } from '@/hooks/useSyncedDeals';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
-import { SyncedTransactionsList } from '@/components/deals/SyncedTransactionsList';
+import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
 
-type TimeFilter = 'upcoming' | 'this-month' | 'next-month' | 'paid';
-
-const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
+const springConfig = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 export default function DealsPage() {
-  const { data: payouts = [], isLoading: payoutsLoading } = usePayouts();
-  const { data: deals = [], isLoading: dealsLoading } = useDeals();
-  const { data: syncedTransactions = [], isLoading: syncedLoading } = useSyncedTransactions();
+  const { activeDeals, closedDeals, listings } = useSyncedDeals();
   const refreshData = useRefreshData();
-  const markPaid = useMarkPayoutPaid();
 
   const [search, setSearch] = useState('');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('upcoming');
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<'active' | 'closed' | 'listings'>('active');
 
-  const isLoading = payoutsLoading || dealsLoading;
-
-  const filteredPayouts = useMemo(() => {
-    const now = new Date();
-    const thisMonthStart = startOfMonth(now);
-    const thisMonthEnd = endOfMonth(now);
-    const nextMonthStart = startOfMonth(addMonths(now, 1));
-    const nextMonthEnd = endOfMonth(addMonths(now, 1));
-
-    return payouts
-      .filter((payout) => {
-        if (search) {
-          const searchLower = search.toLowerCase();
-          const matchesClient = payout.deal?.client_name?.toLowerCase().includes(searchLower);
-          const matchesAddress = payout.deal?.address?.toLowerCase().includes(searchLower);
-          const matchesProject = payout.deal?.project_name?.toLowerCase().includes(searchLower);
-          const matchesCity = payout.deal?.city?.toLowerCase().includes(searchLower);
-          if (!matchesClient && !matchesAddress && !matchesProject && !matchesCity) return false;
-        }
-
-        if (timeFilter === 'paid') {
-          return payout.status === 'PAID';
-        }
-
-        if (payout.status === 'PAID') return false;
-
-        if (timeFilter === 'upcoming') {
-          return true;
-        }
-
-        if (!payout.due_date) return false;
-
-        const dueDate = parseISO(payout.due_date);
-
-        if (timeFilter === 'this-month') {
-          return dueDate >= thisMonthStart && dueDate <= thisMonthEnd;
-        }
-
-        if (timeFilter === 'next-month') {
-          return dueDate >= nextMonthStart && dueDate <= nextMonthEnd;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.status === 'PAID' && b.status === 'PAID') {
-          return new Date(b.paid_date || 0).getTime() - new Date(a.paid_date || 0).getTime();
-        }
-        const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-        const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-        return dateA - dateB;
-      });
-  }, [payouts, search, timeFilter]);
-
-  const groupedPayouts = useMemo(() => {
-    const groups: Map<number, Map<number, typeof filteredPayouts>> = new Map();
+  const filteredDeals = useMemo(() => {
+    let dealsToFilter = activeTab === 'active' ? activeDeals : activeTab === 'closed' ? closedDeals : listings;
     
-    filteredPayouts.forEach((payout) => {
-      const date = payout.status === 'PAID' && payout.paid_date 
-        ? parseISO(payout.paid_date)
-        : payout.due_date 
-          ? parseISO(payout.due_date) 
-          : new Date();
-      
-      const year = getYear(date);
-      const month = getMonth(date);
-      
-      if (!groups.has(year)) {
-        groups.set(year, new Map());
+    if (search) {
+      const searchLower = search.toLowerCase();
+      dealsToFilter = dealsToFilter.filter(deal =>
+        deal.clientName.toLowerCase().includes(searchLower) ||
+        deal.propertyAddress?.toLowerCase().includes(searchLower) ||
+        deal.mlsNumber?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return dealsToFilter.sort((a, b) => {
+      // Sort by firm date (newest first)
+      if (a.firmDate && b.firmDate) {
+        return new Date(b.firmDate).getTime() - new Date(a.firmDate).getTime();
       }
-      
-      const yearGroup = groups.get(year)!;
-      if (!yearGroup.has(month)) {
-        yearGroup.set(month, []);
-      }
-      
-      yearGroup.get(month)!.push(payout);
+      return 0;
     });
-
-    const result: { year: number; months: { month: number; monthName: string; payouts: typeof filteredPayouts; total: number }[] }[] = [];
-    
-    const sortedYears = Array.from(groups.keys()).sort((a, b) => a - b);
-    
-    sortedYears.forEach((year) => {
-      const yearGroup = groups.get(year)!;
-      const months = Array.from(yearGroup.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(([month, monthPayouts]) => ({
-          month,
-          monthName: format(new Date(year, month), 'MMMM'),
-          payouts: monthPayouts,
-          total: monthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
-        }));
-      
-      result.push({ year, months });
-    });
-
-    return result;
-  }, [filteredPayouts]);
+  }, [activeTab, activeDeals, closedDeals, listings, search]);
 
   const stats = useMemo(() => {
-    const unpaid = payouts.filter(p => p.status !== 'PAID');
-    const paid = payouts.filter(p => p.status === 'PAID');
-    
-    const now = new Date();
-    const thisMonthStart = startOfMonth(now);
-    const thisMonthEnd = endOfMonth(now);
-    const nextMonthStart = startOfMonth(addMonths(now, 1));
-    const nextMonthEnd = endOfMonth(addMonths(now, 1));
-    
-    const thisMonthPayouts = payouts.filter(p => {
-      if (p.status === 'PAID' || !p.due_date) return false;
-      const d = parseISO(p.due_date);
-      return d >= thisMonthStart && d <= thisMonthEnd;
-    });
-    
-    const nextMonthPayouts = payouts.filter(p => {
-      if (p.status === 'PAID' || !p.due_date) return false;
-      const d = parseISO(p.due_date);
-      return d >= nextMonthStart && d <= nextMonthEnd;
-    });
-    
     return {
-      upcomingCount: unpaid.length,
-      upcomingAmount: unpaid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
-      paidCount: paid.length,
-      paidAmount: paid.reduce((sum, p) => sum + Number(p.amount || 0), 0),
-      totalDeals: deals.length,
-      thisMonthAmount: thisMonthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
-      thisMonthCount: thisMonthPayouts.length,
-      nextMonthAmount: nextMonthPayouts.reduce((sum, p) => sum + Number(p.amount || 0), 0),
-      nextMonthCount: nextMonthPayouts.length,
+      active: activeDeals.length,
+      closed: closedDeals.length,
+      listings: listings.length,
+      totalCommission: [...activeDeals, ...closedDeals].reduce((sum, d) => sum + (d.commissionAmount || 0), 0),
     };
-  }, [payouts, deals]);
+  }, [activeDeals, closedDeals, listings]);
 
-  const handleMarkPaid = (id: string) => {
-    triggerHaptic('success');
-    markPaid.mutate(id);
-  };
-
-  const getPayoutTypeStyles = (type: string) => {
-    switch (type) {
-      case 'Advance': return { bg: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-400', icon: TrendingUp };
-      case 'Completion': return { bg: 'bg-success/15', text: 'text-success', icon: CheckCircle2 };
-      case '2nd Payment': return { bg: 'bg-purple-500/15', text: 'text-purple-600 dark:text-purple-400', icon: DollarSign };
-      case '3rd Deposit': return { bg: 'bg-warning/15', text: 'text-warning', icon: DollarSign };
-      case '4th Deposit': return { bg: 'bg-orange-500/15', text: 'text-orange-600 dark:text-orange-400', icon: DollarSign };
-      default: return { bg: 'bg-muted', text: 'text-muted-foreground', icon: DollarSign };
-    }
-  };
-
-  const getDueBadge = (dueDate: string | null, status: string) => {
-    if (status === 'PAID') return null;
-    if (!dueDate) return { label: 'No date', variant: 'muted' };
-    const days = differenceInDays(parseISO(dueDate), new Date());
-    if (days < 0) return { label: 'Overdue', variant: 'destructive' };
-    if (days === 0) return { label: 'Due today', variant: 'destructive' };
-    if (days <= 7) return { label: `${days}d left`, variant: 'warning' };
-    return null;
-  };
-
-  const isOverdue = (dueDate: string | null) => {
-    if (!dueDate) return false;
-    return isBefore(parseISO(dueDate), new Date());
-  };
-
-  const filterButtons = [
-    { key: 'upcoming' as TimeFilter, label: 'Pending', icon: Clock, count: stats.upcomingCount, amount: stats.upcomingAmount },
-    { key: 'this-month' as TimeFilter, label: format(new Date(), 'MMM'), icon: Calendar, count: stats.thisMonthCount, amount: stats.thisMonthAmount },
-    { key: 'next-month' as TimeFilter, label: format(addMonths(new Date(), 1), 'MMM'), icon: Calendar, count: stats.nextMonthCount, amount: stats.nextMonthAmount },
-    { key: 'paid' as TimeFilter, label: 'Received', icon: CheckCircle2, count: stats.paidCount, amount: stats.paidAmount, success: true },
-  ];
-
-  const currentYear = new Date().getFullYear();
-
-  const renderPayoutCard = (payout: typeof payouts[0], index: number) => {
-    const overdue = payout.status !== 'PAID' && isOverdue(payout.due_date);
-    const deal = payout.deal;
-    const isPresale = deal?.property_type === 'PRESALE';
-    const isTeamDeal = !!deal?.team_member;
-    const typeStyles = getPayoutTypeStyles(payout.payout_type);
-    const TypeIcon = typeStyles.icon;
-    const dueBadge = getDueBadge(payout.due_date, payout.status);
-    const DealIcon = isPresale ? Building2 : Home;
-
-    return (
-      <motion.div
-        key={payout.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...springConfig, delay: index * 0.03 }}
-      >
-        <Link
-          to={`/deals/${payout.deal_id}`}
-          onClick={() => triggerHaptic('light')}
-        >
-          <motion.div
-            className={cn(
-              "relative overflow-hidden rounded-3xl border transition-all duration-300 group",
-              payout.status === 'PAID' 
-                ? isTeamDeal
-                  ? "bg-violet-50/50 dark:bg-violet-500/10 border-violet-200/50 dark:border-violet-500/30"
-                  : "bg-card/50 border-border/30"
-                : overdue 
-                  ? "bg-destructive/5 border-destructive/40"
-                  : isTeamDeal
-                    ? "bg-violet-50/30 dark:bg-violet-500/5 border-violet-200/50 dark:border-violet-500/30 hover:border-violet-400/60 hover:shadow-xl hover:shadow-violet-500/10"
-                    : "bg-card/95 border-border/50 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
-            )}
-            whileHover={{ y: -4, scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            transition={springConfig}
-          >
-              {/* Status indicator bar */}
-              <div className={cn(
-                "absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 rounded-l-xl sm:rounded-l-2xl",
-                payout.status === 'PAID' 
-                  ? "bg-success/60"
-                  : overdue 
-                    ? "bg-destructive"
-                    : dueBadge?.variant === 'warning'
-                      ? "bg-warning"
-                      : isTeamDeal
-                        ? "bg-violet-400"
-                        : "bg-primary/40"
-              )} />
-              
-              {/* Paid gradient overlay */}
-              {payout.status === 'PAID' && (
-                <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent pointer-events-none" />
-              )}
-
-              <div className="p-3 sm:p-4 pl-4 sm:pl-5">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5 flex-wrap">
-                      <h3 className="font-bold text-sm sm:text-base truncate">
-                        {deal?.client_name || 'Unknown Client'}
-                      </h3>
-                      {dueBadge && (
-                        <span className={cn(
-                          "shrink-0 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wide",
-                          dueBadge.variant === 'destructive' && "bg-destructive/15 text-destructive",
-                          dueBadge.variant === 'warning' && "bg-warning/15 text-warning",
-                          dueBadge.variant === 'muted' && "bg-muted text-muted-foreground"
-                        )}>
-                          {dueBadge.label}
-                        </span>
-                      )}
-                      {payout.status === 'PAID' && (
-                        <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wide bg-success/15 text-success">
-                          <CheckCircle2 className="h-2.5 w-2.5" />
-                          Paid
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Property info */}
-                    <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <DealIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        {isPresale ? (deal?.project_name || 'Presale') : 'Resale'}
-                      </span>
-                      {deal?.city && (
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          {deal.city}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Amount */}
-                  <div className="text-right shrink-0">
-                    <p className={cn(
-                      "text-lg sm:text-xl lg:text-2xl font-bold",
-                      payout.status === 'PAID' 
-                        ? "text-success" 
-                        : overdue 
-                          ? "text-destructive"
-                          : "text-primary"
-                    )}>
-                      {formatCurrency(payout.amount)}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      {payout.status === 'PAID' && payout.paid_date
-                        ? format(parseISO(payout.paid_date), 'MMM d')
-                        : payout.due_date
-                          ? format(parseISO(payout.due_date), 'MMM d, yyyy')
-                          : 'No date'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Details row */}
-                <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/30">
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    {/* Payout type badge */}
-                    <span className={cn(
-                      "inline-flex items-center gap-1 text-[10px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-lg font-semibold",
-                      typeStyles.bg, typeStyles.text
-                    )}>
-                      <TypeIcon className="h-3 w-3" />
-                      {payout.payout_type}
-                    </span>
-
-                    {/* Deal type badge */}
-                    <span className={cn(
-                      "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg font-semibold",
-                      deal?.deal_type === 'BUY' 
-                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                        : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                    )}>
-                      {deal?.deal_type === 'BUY' ? 'Buyer' : 'Seller'}
-                    </span>
-
-                    {/* Team member indicator */}
-                    {deal?.team_member && (
-                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-semibold">
-                        <Users className="h-2.5 w-2.5" />
-                        {deal.team_member_portion}%
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Action button */}
-                  {payout.status !== 'PAID' ? (
-                    <motion.div whileTap={{ scale: 0.9 }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 sm:h-8 text-[10px] sm:text-xs font-semibold text-success hover:text-success hover:bg-success/10 rounded-lg gap-1 px-2 sm:px-3"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleMarkPaid(payout.id);
-                        }}
-                      >
-                        <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <span className="hidden sm:inline">Mark</span> Paid
-                      </Button>
-                    </motion.div>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-medium">
-                      View
-                      <ArrowUpRight className="h-3 w-3" />
-                    </span>
-                  )}
-                </div>
-
-              {/* Sale price info */}
-              {deal?.sale_price && (
-                <div className="hidden sm:flex items-center gap-5 mt-4 pt-4 border-t border-border/30 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Home className="h-3.5 w-3.5" />
-                    Sale: {formatCurrency(deal.sale_price)}
-                  </span>
-                  {deal?.gross_commission_est && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Percent className="h-3.5 w-3.5" />
-                      GCI: {formatCurrency(
-                        deal.team_member_portion && deal.team_member_portion > 0
-                          ? deal.gross_commission_est * (100 - deal.team_member_portion) / 100
-                          : deal.gross_commission_est
-                      )}
-                      {deal.team_member_portion && deal.team_member_portion > 0 && (
-                        <span className="text-muted-foreground/50 ml-0.5">
-                          ({100 - deal.team_member_portion}%)
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </Link>
-      </motion.div>
-    );
+  const handleTabChange = (tab: string) => {
+    triggerHaptic('light');
+    setActiveTab(tab as 'active' | 'closed' | 'listings');
   };
 
   return (
     <AppLayout>
-      <Header 
-        title="Deals" 
-        subtitle={`${stats.upcomingCount} pending · ${formatCurrency(stats.upcomingAmount)}`}
-        showAddDeal={false}
-        action={
-          <Link 
-            to="/deals/new"
-            className="sm:hidden text-primary font-semibold active:opacity-50 transition-opacity"
-          >
-            <Plus className="h-6 w-6" strokeWidth={2.5} />
-          </Link>
-        }
-      />
-
-      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-        <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
-          
-          <Tabs defaultValue="synced" className="space-y-4">
-            <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/40 backdrop-blur-xl rounded-xl border border-border/30">
-              <TabsTrigger value="my-deals" className="text-sm font-semibold px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md">
-                My Deals
-              </TabsTrigger>
-              <TabsTrigger value="synced" className="text-sm font-semibold px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md gap-1.5">
-                Synced
-                {syncedTransactions.length > 0 && (
-                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
-                    {syncedTransactions.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="my-deals" className="mt-0 space-y-3 sm:space-y-4 lg:space-y-6">
-          {/* Premium Stats Cards - Compact on mobile */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            {filterButtons.map((btn, i) => (
-              <motion.button
-                key={btn.key}
-                onClick={() => {
-                  triggerHaptic('light');
-                  setTimeFilter(btn.key);
-                }}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...springConfig, delay: i * 0.05 }}
-                className={cn(
-                  "relative p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all duration-300 overflow-hidden",
-                  timeFilter === btn.key 
-                    ? btn.success 
-                      ? "border-success/50 shadow-lg shadow-success/15" 
-                      : "border-primary/50 shadow-lg shadow-primary/15"
-                    : "bg-card/95 border-border/40 hover:border-primary/30 hover:shadow-lg"
-                )}
-                style={timeFilter === btn.key ? {
-                  background: btn.success 
-                    ? 'linear-gradient(145deg, hsl(var(--success)/0.15) 0%, hsl(var(--success)/0.05) 100%)'
-                    : 'linear-gradient(145deg, hsl(var(--primary)/0.15) 0%, hsl(var(--primary)/0.05) 100%)'
-                } : undefined}
-              >
-                {/* Active indicator */}
-                {timeFilter === btn.key && (
-                  <div className={cn(
-                    "absolute top-2 right-2 w-2 h-2 rounded-full",
-                    btn.success ? "bg-success" : "bg-primary"
-                  )} />
-                )}
-                
-                {/* Decorative circle - hidden on mobile */}
-                <div className={cn(
-                  "absolute -right-6 -top-6 w-16 h-16 rounded-full transition-opacity hidden sm:block",
-                  timeFilter === btn.key 
-                    ? btn.success ? "bg-success/10" : "bg-primary/10"
-                    : "bg-muted/30 opacity-0 group-hover:opacity-100"
-                )} />
-                
-                <div className="relative">
-                  <div className={cn(
-                    "flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2",
-                    timeFilter === btn.key 
-                      ? btn.success ? "text-success" : "text-primary"
-                      : "text-muted-foreground"
-                  )}>
-                    <div className={cn(
-                      "w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center",
-                      timeFilter === btn.key 
-                        ? btn.success ? "bg-success/20" : "bg-primary/20"
-                        : "bg-muted/50"
-                    )}>
-                      <btn.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                    </div>
-                    <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">{btn.label}</span>
-                  </div>
-                  <p className={cn(
-                    "text-lg sm:text-xl lg:text-2xl font-bold",
-                    timeFilter === btn.key 
-                      ? btn.success ? "text-success" : "text-primary"
-                      : "text-foreground"
-                  )}>
-                    {formatCurrency(btn.amount)}
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 font-medium">
-                    {btn.count} payout{btn.count !== 1 ? 's' : ''}
-                  </p>
+      <div className="flex flex-col h-full">
+        <Header title="Deals" />
+        
+        <PullToRefresh onRefresh={refreshData}>
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 space-y-4">
+              {/* Search bar */}
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search deals, MLS..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Search and Add - Compact on mobile */}
-          <motion.div 
-            className="flex gap-2 sm:gap-3 items-center"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...springConfig, delay: 0.2 }}
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search clients..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 sm:pl-11 h-10 sm:h-12 bg-card/95 border-border/50 rounded-xl text-sm placeholder:text-muted-foreground focus:border-primary/50 focus:ring-primary/20 shadow-sm"
-              />
-            </div>
-            <Link to="/deals/new">
-              <Button className="btn-premium h-10 sm:h-12 px-3 sm:px-5 gap-1.5 sm:gap-2 rounded-xl whitespace-nowrap shadow-lg">
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline text-sm font-semibold">Add Deal</span>
-              </Button>
-            </Link>
-          </motion.div>
-
-          {/* Payouts List */}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-24">
-              <motion.div 
-                className="flex flex-col items-center gap-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center animate-pulse">
-                  <Sparkles className="h-6 w-6 text-primary-foreground" />
-                </div>
-                <p className="text-sm text-muted-foreground font-medium">Loading your deals...</p>
-              </motion.div>
-            </div>
-          ) : filteredPayouts.length === 0 ? (
-            <motion.div 
-              className="text-center py-24"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={springConfig}
-            >
-              <motion.div 
-                className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center shadow-inner border border-primary/20"
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <DollarSign className="w-12 h-12 text-primary/60" />
-              </motion.div>
-              <p className="text-xl font-bold mb-2">
-                {timeFilter === 'paid' ? 'No paid payouts yet' : 'No pending payouts'}
-              </p>
-              <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
-                {timeFilter === 'paid' ? 'Complete some deals to see your earnings' : 'Add a deal to start tracking your income'}
-              </p>
-              <Button asChild className="btn-premium h-14 px-8 rounded-2xl shadow-lg">
                 <Link to="/deals/new">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Your First Deal
+                  <Button
+                    size="icon"
+                    className="rounded-xl"
+                    onClick={() => triggerHaptic('light')}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
                 </Link>
-              </Button>
-            </motion.div>
-          ) : (
-            <div className="space-y-10">
-              {groupedPayouts.map((yearGroup) => {
-                const isYearExpanded = !expandedYears.has(yearGroup.year);
-                const yearTotal = yearGroup.months.reduce((sum, m) => sum + m.total, 0);
-                const yearPayoutCount = yearGroup.months.reduce((sum, m) => sum + m.payouts.length, 0);
-                
-                const toggleYear = () => {
-                  triggerHaptic('light');
-                  setExpandedYears(prev => {
-                    const next = new Set(prev);
-                    if (next.has(yearGroup.year)) {
-                      next.delete(yearGroup.year);
-                    } else {
-                      next.add(yearGroup.year);
-                    }
-                    return next;
-                  });
-                };
-                
-                return (
-                <div key={yearGroup.year} className="space-y-8">
-                  {/* Year Header - Always clickable */}
-                  {(yearGroup.year !== currentYear || groupedPayouts.length > 1) && (
-                    <motion.button
-                      onClick={toggleYear}
-                      className="w-full flex items-center gap-4 group cursor-pointer"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
+              </div>
+
+              {/* Tabs */}
+              <Tabs value={activeTab} onValueChange={handleTabChange}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="active" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    <span>Active</span>
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-semibold">
+                      {stats.active}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="closed" className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    <span>Closed</span>
+                    <span className="text-xs bg-success/20 text-success px-2 py-0.5 rounded-full font-semibold">
+                      {stats.closed}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="listings" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>Listings</span>
+                    <span className="text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">
+                      {stats.listings}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Active Deals Tab */}
+                <TabsContent value="active" className="mt-4 space-y-3">
+                  {filteredDeals.length > 0 ? (
+                    <div className="grid gap-3">
+                      {filteredDeals.map((deal, idx) => (
+                        <Link key={deal.id} to={`/deals/${deal.id}`}>
+                          <SyncedDealCard deal={deal} index={idx} />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-12"
                     >
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                      <div className="flex items-center gap-3 px-5 py-2.5 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-sm hover:border-primary/30 hover:shadow-md transition-all">
-                        <span className="text-base font-bold">{yearGroup.year}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {formatCurrency(yearTotal)} · {yearPayoutCount} payouts
-                        </span>
-                        <motion.div
-                          animate={{ rotate: isYearExpanded ? 0 : -90 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <ChevronDown className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </motion.div>
-                      </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-                    </motion.button>
+                      <Building2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">
+                        {search ? 'No active deals matching your search' : 'No active deals yet'}
+                      </p>
+                    </motion.div>
                   )}
+                </TabsContent>
 
-                  <AnimatePresence initial={false}>
-                    {isYearExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden space-y-8"
-                      >
-                        {yearGroup.months.map((monthGroup) => (
-                          <div key={`${yearGroup.year}-${monthGroup.month}`} className="space-y-5">
-                            {/* Month Header */}
-                            <motion.div 
-                              className="flex items-center justify-between"
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={springConfig}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-sm border border-primary/20">
-                                  <Calendar className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                  <h3 className="font-bold text-xl">{monthGroup.monthName}</h3>
-                                  <p className="text-sm text-muted-foreground">
-                                    {monthGroup.payouts.length} payout{monthGroup.payouts.length !== 1 ? 's' : ''}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-2xl font-bold text-primary">
-                                  {formatCurrency(monthGroup.total)}
-                                </p>
-                                <p className="text-xs text-muted-foreground font-medium">
-                                  {timeFilter === 'paid' ? 'received' : 'expected'}
-                                </p>
-                              </div>
-                            </motion.div>
+                {/* Closed Deals Tab */}
+                <TabsContent value="closed" className="mt-4 space-y-3">
+                  {filteredDeals.length > 0 ? (
+                    <div className="grid gap-3">
+                      {filteredDeals.map((deal, idx) => (
+                        <Link key={deal.id} to={`/deals/${deal.id}`}>
+                          <SyncedDealCard deal={deal} index={idx} />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-12"
+                    >
+                      <Home className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">
+                        {search ? 'No closed deals matching your search' : 'No closed deals yet'}
+                      </p>
+                    </motion.div>
+                  )}
+                </TabsContent>
 
-                            {/* Payout Cards */}
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {monthGroup.payouts.map((payout, idx) => renderPayoutCard(payout, idx))}
-                            </div>
-                          </div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                {/* Listings Tab */}
+                <TabsContent value="listings" className="mt-4 space-y-3">
+                  {filteredDeals.length > 0 ? (
+                    <div className="grid gap-3">
+                      {filteredDeals.map((deal, idx) => (
+                        <Link key={deal.id} to={`/deals/${deal.id}`}>
+                          <SyncedDealCard deal={deal} index={idx} />
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-12"
+                    >
+                      <MapPin className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">
+                        {search ? 'No listings matching your search' : 'No listings yet'}
+                      </p>
+                    </motion.div>
+                  )}
+                </TabsContent>
+              </Tabs>
+
+              {/* Summary stats */}
+              <div className="mt-6 pt-6 border-t border-border/30">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-muted-foreground text-xs">Total Commission</p>
+                    <p className="font-bold text-lg">{formatCurrency(stats.totalCommission)}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-muted-foreground text-xs">All Deals</p>
+                    <p className="font-bold text-lg">{stats.active + stats.closed + stats.listings}</p>
+                  </div>
                 </div>
-              )})}
+              </div>
             </div>
-          )}
-
-          {/* Quick link */}
-          {filteredPayouts.length > 0 && (
-            <motion.div 
-              className="text-center pt-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Link 
-                to="/payouts" 
-                className="inline-flex items-center gap-2 text-sm text-primary font-semibold hover:underline"
-                onClick={() => triggerHaptic('light')}
-              >
-                View full payout schedule
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </motion.div>
-          )}
-
-          {/* Desktop Add button */}
-          <div className="hidden sm:flex justify-center pt-6">
-            <Button asChild size="lg" className="btn-premium h-14 px-10 rounded-2xl shadow-lg">
-              <Link to="/deals/new">
-                <Plus className="w-5 h-5 mr-2" />
-                New Deal
-              </Link>
-            </Button>
           </div>
-            </TabsContent>
-
-            <TabsContent value="synced" className="mt-0">
-              <SyncedTransactionsList transactions={syncedTransactions} isLoading={syncedLoading} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </PullToRefresh>
+        </PullToRefresh>
+      </div>
     </AppLayout>
   );
 }
