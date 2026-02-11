@@ -5,6 +5,7 @@ import {
   BarChart3,
   TrendingUp,
   Settings,
+  Network,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
@@ -12,8 +13,8 @@ import { triggerHaptic } from '@/lib/haptics';
 const navItems = [
   { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
   { icon: Building2, label: 'Deals', path: '/deals' },
+  { icon: Network, label: 'Network', path: '/network' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-  { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
