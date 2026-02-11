@@ -24,12 +24,15 @@ import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePayouts, useMarkPayoutPaid } from '@/hooks/usePayouts';
 import { useDeals } from '@/hooks/useDeals';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
+import { SyncedTransactionsList } from '@/components/deals/SyncedTransactionsList';
 
 type TimeFilter = 'upcoming' | 'this-month' | 'next-month' | 'paid';
 
@@ -38,6 +41,7 @@ const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 export default function DealsPage() {
   const { data: payouts = [], isLoading: payoutsLoading } = usePayouts();
   const { data: deals = [], isLoading: dealsLoading } = useDeals();
+  const { data: syncedTransactions = [], isLoading: syncedLoading } = useSyncedTransactions();
   const refreshData = useRefreshData();
   const markPaid = useMarkPayoutPaid();
 
@@ -446,6 +450,22 @@ export default function DealsPage() {
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <div className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 lg:space-y-6">
           
+          <Tabs defaultValue="my-deals" className="space-y-4">
+            <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/40 backdrop-blur-xl rounded-xl border border-border/30">
+              <TabsTrigger value="my-deals" className="text-sm font-semibold px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md">
+                My Deals
+              </TabsTrigger>
+              <TabsTrigger value="synced" className="text-sm font-semibold px-4 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md gap-1.5">
+                Synced
+                {syncedTransactions.length > 0 && (
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                    {syncedTransactions.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="my-deals" className="mt-0 space-y-3 sm:space-y-4 lg:space-y-6">
           {/* Premium Stats Cards - Compact on mobile */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             {filterButtons.map((btn, i) => (
@@ -716,6 +736,12 @@ export default function DealsPage() {
               </Link>
             </Button>
           </div>
+            </TabsContent>
+
+            <TabsContent value="synced" className="mt-0">
+              <SyncedTransactionsList transactions={syncedTransactions} isLoading={syncedLoading} />
+            </TabsContent>
+          </Tabs>
         </div>
       </PullToRefresh>
     </AppLayout>
