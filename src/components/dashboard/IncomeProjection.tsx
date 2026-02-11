@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, TrendingUp, Wallet, Home, Plus, BarChart3, Sparkles } from 'lucide-react';
@@ -110,7 +110,38 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, properties = [], syncedPayouts = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
-  const [projectionMonths, setProjectionMonths] = useState<12 | 24 | 36>(36);
+  // Calculate how many months to cover based on the furthest close date
+  const maxMonthsNeeded = useMemo(() => {
+    if (syncedPayouts.length === 0) return 12;
+    const now = new Date();
+    let maxDate = now;
+    syncedPayouts.forEach(p => {
+      const d = parseISO(p.close_date);
+      if (d > maxDate) maxDate = d;
+    });
+    const months = Math.ceil((maxDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
+    return Math.max(12, months);
+  }, [syncedPayouts]);
+
+  const projectionOptions = useMemo(() => {
+    const opts: number[] = [12];
+    if (maxMonthsNeeded > 12) opts.push(24);
+    if (maxMonthsNeeded > 24) opts.push(36);
+    if (maxMonthsNeeded > 36) opts.push(48);
+    if (maxMonthsNeeded > 48) opts.push(Math.ceil(maxMonthsNeeded / 12) * 12);
+    // Deduplicate
+    return [...new Set(opts)];
+  }, [maxMonthsNeeded]);
+
+  // Default to the max needed range
+  const [projectionMonths, setProjectionMonths] = useState<number>(maxMonthsNeeded);
+
+  // Update when maxMonthsNeeded changes (data loads)
+  useEffect(() => {
+    if (maxMonthsNeeded > projectionMonths) {
+      setProjectionMonths(maxMonthsNeeded);
+    }
+  }, [maxMonthsNeeded]);
   const { limits, isFree } = useSubscription();
   const { data: settings } = useSettings();
 
@@ -260,38 +291,21 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Toggle for 12/24/36 months */}
+          {/* Dynamic toggle based on how far deals extend */}
           <div className="flex bg-muted rounded-lg p-0.5">
-            <button
-              onClick={() => setProjectionMonths(12)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                projectionMonths === 12
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              12mo
-            </button>
-            <button
-              onClick={() => setProjectionMonths(24)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                projectionMonths === 24
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              24mo
-            </button>
-            <button
-              onClick={() => setProjectionMonths(36)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                projectionMonths === 36
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              36mo
-            </button>
+            {projectionOptions.map(months => (
+              <button
+                key={months}
+                onClick={() => setProjectionMonths(months)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                  projectionMonths === months
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {months}mo
+              </button>
+            ))}
           </div>
           <Link to="/forecast">
             <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-accent hover:bg-emerald-50 dark:hover:bg-accent/10">

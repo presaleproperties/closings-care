@@ -58,9 +58,22 @@ export default function ForecastPage() {
 
   const [selectedYear, setSelectedYear] = useState<string>('2026');
 
-  // Generate forecast data from Jan 2026 through end of 2030
+  // Calculate months needed to cover all close dates
+  const monthsNeeded = useMemo(() => {
+    if (syncedPayouts.length === 0) return 48;
+    const now = new Date();
+    let maxDate = now;
+    syncedPayouts.forEach(p => {
+      const d = parseISO(p.close_date);
+      if (d > maxDate) maxDate = d;
+    });
+    const months = Math.ceil((maxDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
+    return Math.max(48, months);
+  }, [syncedPayouts]);
+
+  // Generate forecast data from Jan 2025 through end of projection
   const forecastData = useMemo(() => {
-    const months = getExtendedMonthRange(48);
+    const months = getExtendedMonthRange(monthsNeeded);
 
     // Pre-compute RevShare by month (period format is YYYY-MM)
     const revShareByMonth: Record<string, number> = {};
