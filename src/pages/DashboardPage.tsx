@@ -275,7 +275,7 @@ export default function DashboardPage() {
               <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights deals={deals} />
-                <BusinessAnalytics deals={deals} payouts={payouts} />
+                <BusinessAnalytics deals={deals} payouts={payouts} syncedPayouts={syncedPayouts} />
               </TabsContent>
             </Tabs>
           </div>
@@ -572,7 +572,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.3 }}
                   >
-                    <BusinessAnalytics deals={deals} payouts={payouts} />
+                    <BusinessAnalytics deals={deals} payouts={payouts} syncedPayouts={syncedPayouts} />
                   </motion.div>
                 </TabsContent>
               </Tabs>
