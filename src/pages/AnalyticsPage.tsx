@@ -700,7 +700,12 @@ export default function AnalyticsPage() {
                     <div>
                       <p className="text-xs font-semibold text-muted-foreground mb-2 text-center">Property Type</p>
                       <ResponsiveContainer width="100%" height={150}>
-                        <RechartsPieChart>
+                        <RechartsPieChart onClick={(state: any) => {
+                          if (state?.activeTooltipIndex !== undefined && dealTypeData.propertyTypes[state.activeTooltipIndex]) {
+                            const type = dealTypeData.propertyTypes[state.activeTooltipIndex].name;
+                            setDealTypeFilter(type.toLowerCase() as 'presale' | 'resale');
+                          }
+                        }}>
                           <Pie
                             data={dealTypeData.propertyTypes}
                             cx="50%"
@@ -709,6 +714,11 @@ export default function AnalyticsPage() {
                             outerRadius={55}
                             paddingAngle={4}
                             dataKey="value"
+                            onClick={(entry: any) => {
+                              const type = entry.name;
+                              setDealTypeFilter(type.toLowerCase() as 'presale' | 'resale');
+                            }}
+                            style={{ cursor: 'pointer' }}
                           >
                             {dealTypeData.propertyTypes.map((_, index) => (
                               <Cell key={`cell-${index}`} fill={PIE_COLORS[index]} />
@@ -719,7 +729,11 @@ export default function AnalyticsPage() {
                       </ResponsiveContainer>
                       <div className="flex justify-center gap-4 mt-2">
                         {dealTypeData.propertyTypes.map((item, i) => (
-                          <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                          <div 
+                            key={item.name} 
+                            className="flex items-center gap-1.5 text-xs cursor-pointer hover:opacity-70 transition-opacity"
+                            onClick={() => setDealTypeFilter(item.name.toLowerCase() as 'presale' | 'resale')}
+                          >
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
                             <span>{item.name} ({item.value})</span>
                           </div>
@@ -767,16 +781,33 @@ export default function AnalyticsPage() {
                   <Building2 className="h-5 w-5 text-primary" />
                   Deals by City
                 </CardTitle>
-                <CardDescription>Geographic distribution of your deals</CardDescription>
+                <CardDescription>Click a bar to filter by city</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={cityData} layout="vertical">
+                  <BarChart 
+                    data={cityData} 
+                    layout="vertical"
+                    onClick={(state: any) => {
+                      if (state?.activeTooltipIndex !== undefined && cityData[state.activeTooltipIndex]) {
+                        setCityFilter(cityData[state.activeTooltipIndex].name);
+                      }
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
                     <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                     <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" name="Deals" fill="hsl(217 91% 60%)" radius={[0, 4, 4, 0]} />
+                    <Bar 
+                      dataKey="value" 
+                      name="Deals" 
+                      fill="hsl(217 91% 60%)" 
+                      radius={[0, 4, 4, 0]}
+                      onClick={(entry: any) => {
+                        setCityFilter(entry.name);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
