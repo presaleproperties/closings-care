@@ -13,6 +13,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { usePayouts } from '@/hooks/usePayouts';
+import { useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
@@ -48,6 +49,7 @@ const itemVariants = {
 
 export default function ForecastPage() {
   const { data: payouts = [] } = usePayouts();
+  const { data: revenueShare = [] } = useRevenueShare();
   const { data: expenses = [] } = useExpenses();
   const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
@@ -63,6 +65,13 @@ export default function ForecastPage() {
   // Generate forecast data from Jan 2026 through end of 2030
   const forecastData = useMemo(() => {
     const months = getExtendedMonthRange(48);
+
+    // Pre-compute RevShare by month (period format is YYYY-MM)
+    const revShareByMonth: Record<string, number> = {};
+    revenueShare.forEach((r: any) => {
+      const period = r.period; // "YYYY-MM"
+      revShareByMonth[period] = (revShareByMonth[period] || 0) + Number(r.amount);
+    });
     
     return months.map((monthStr) => {
       const monthPayoutsWithCap = payoutsWithCap.filter((p) => {
@@ -78,7 +87,8 @@ export default function ForecastPage() {
         .filter((p) => p.status === 'PAID')
         .reduce((sum, p) => sum + p.netAmount, 0);
 
-      const totalIncome = income + paid;
+      const revShareIncome = revShareByMonth[monthStr] || 0;
+      const totalIncome = income + paid + revShareIncome;
       const totalExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
 
       let adjustedIncome = totalIncome;
@@ -96,13 +106,14 @@ export default function ForecastPage() {
         shortYear: format(parseISO(`${monthStr}-01`), 'yy'),
         fullLabel: format(parseISO(`${monthStr}-01`), 'MMMM yyyy'),
         income: totalIncome,
+        revShare: revShareIncome,
         expenses: totalExpenses,
         net,
         isSlowMonth,
         isWarningMonth,
       };
     });
-  }, [payoutsWithCap, expenses, properties, settings]);
+  }, [payoutsWithCap, revenueShare, expenses, properties, settings]);
 
   // Running totals
   const runningTotals = useMemo(() => {
@@ -194,7 +205,7 @@ export default function ForecastPage() {
                 duration={1.2}
               />
               <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
-                {filteredData.length} months
+                Commissions + RevShare
               </p>
             </div>
 
@@ -337,9 +348,14 @@ export default function ForecastPage() {
                     }}
                     formatter={(value: number, name: string) => [
                       formatCurrency(value),
-                      name === 'income' ? 'Income' : 'Expenses',
+                      name === 'income' ? 'Income (Commissions + RevShare)' : 'Expenses',
                     ]}
-                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullLabel}
+                    labelFormatter={(_, payload) => {
+                      const d = payload?.[0]?.payload;
+                      if (!d) return '';
+                      const revNote = d.revShare > 0 ? ` (incl. ${formatCurrency(d.revShare)} RevShare)` : '';
+                      return `${d.fullLabel}${revNote}`;
+                    }}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--border))" />
                   <Area 
@@ -364,7 +380,7 @@ export default function ForecastPage() {
             <div className="flex items-center justify-center gap-4 sm:gap-6 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500" />
-                <span className="text-[10px] sm:text-xs text-muted-foreground">Income</span>
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Income (Commissions + RevShare)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500" />
