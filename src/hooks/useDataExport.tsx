@@ -1,7 +1,6 @@
 import { useDeals } from './useDeals';
 import { usePayouts } from './usePayouts';
 import { useExpenses } from './useExpenses';
-import { useOtherIncome } from './useOtherIncome';
 import { useProperties } from './useProperties';
 import { format } from 'date-fns';
 
@@ -9,7 +8,6 @@ export function useDataExport() {
   const { data: deals = [] } = useDeals();
   const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
-  const { data: otherIncome = [] } = useOtherIncome();
   const { data: properties = [] } = useProperties();
 
   const downloadCSV = (data: any[], filename: string) => {
@@ -21,7 +19,6 @@ export function useDataExport() {
       ...data.map(row => 
         headers.map(h => {
           const val = row[h];
-          // Handle values with commas, quotes, or newlines
           if (val === null || val === undefined) return '';
           const str = String(val);
           if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -93,19 +90,6 @@ export function useDataExport() {
     downloadCSV(exportData, 'expenses');
   };
 
-  const exportOtherIncome = () => {
-    const exportData = otherIncome.map(i => ({
-      name: i.name,
-      amount: i.amount,
-      recurrence: i.recurrence,
-      start_month: i.start_month,
-      end_month: i.end_month || '',
-      notes: i.notes || '',
-      created_at: i.created_at,
-    }));
-    downloadCSV(exportData, 'other_income');
-  };
-
   const exportProperties = () => {
     const exportData = properties.map(p => ({
       name: p.name,
@@ -127,22 +111,19 @@ export function useDataExport() {
     exportDeals();
     setTimeout(() => exportPayouts(), 100);
     setTimeout(() => exportExpenses(), 200);
-    setTimeout(() => exportOtherIncome(), 300);
-    setTimeout(() => exportProperties(), 400);
+    setTimeout(() => exportProperties(), 300);
   };
 
   return {
     exportDeals,
     exportPayouts,
     exportExpenses,
-    exportOtherIncome,
     exportProperties,
     exportAll,
     counts: {
       deals: deals.length,
       payouts: payouts.length,
       expenses: expenses.length,
-      otherIncome: otherIncome.length,
       properties: properties.length,
     },
   };
