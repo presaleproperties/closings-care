@@ -30,11 +30,13 @@ import {
   AreaChart
 } from 'recharts';
 import { cn } from '@/lib/utils';
-import { format, parseISO, startOfMonth, subMonths, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfMonth, subMonths, isWithinInterval, endOfMonth } from 'date-fns';
+import { SyncedPayout } from '@/hooks/useSyncedIncome';
 
 interface BusinessAnalyticsProps {
   deals: Deal[];
   payouts: Payout[];
+  syncedPayouts?: SyncedPayout[];
 }
 
 const EMERALD_PALETTE = [
@@ -55,7 +57,7 @@ const CHART_COLORS = {
 
 type TimeFilter = 'all' | 'ytd' | '12m' | '6m' | '3m';
 
-export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
+export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: BusinessAnalyticsProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
   const filteredDeals = useMemo(() => {
@@ -105,13 +107,20 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
     const projectedPayouts = relevantPayouts.filter(p => p.status !== 'PAID');
     const projectedRevenue = projectedPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
     
-    // Calculate total expected commission from deals (use gross_commission_est)
-    const totalExpectedCommission = filteredDeals.reduce((sum, deal) => {
+    // Synced transaction totals
+    const syncedReceived = syncedPayouts.filter(p => p.status === 'closed').reduce((sum, p) => sum + p.netAmount, 0);
+    const syncedProjected = syncedPayouts.filter(p => p.status === 'active').reduce((sum, p) => sum + p.netAmount, 0);
+    const syncedTotal = syncedReceived + syncedProjected;
+    
+    // Calculate total expected commission from deals + synced
+    const manualExpectedCommission = filteredDeals.reduce((sum, deal) => {
       return sum + Number(deal.gross_commission_est || 0);
     }, 0);
+    const totalExpectedCommission = manualExpectedCommission + syncedTotal;
     
-    // Average commission based on all deals (expected)
-    const avgCommission = totalDeals > 0 ? totalExpectedCommission / totalDeals : 0;
+    // Average commission based on all deals
+    const totalDealCount = totalDeals + syncedPayouts.length;
+    const avgCommission = totalDealCount > 0 ? totalExpectedCommission / totalDealCount : 0;
 
     // Helper to get deal's total value (user's portion for team deals)
     const getDealValue = (deal: Deal) => {
@@ -230,38 +239,45 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.count - a.count);
 
-    // Monthly trend data (last 12 months) - use pending_date or completion_date for presales
+    // Monthly trend data (last 12 months) - manual deals + synced transactions
     const monthlyData: { month: string; deals: number; revenue: number }[] = [];
     for (let i = 11; i >= 0; i--) {
       const monthDate = subMonths(new Date(), i);
       const monthStart = startOfMonth(monthDate);
-      const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+      const monthEnd = endOfMonth(monthDate);
       
       const monthDeals = filteredDeals.filter(deal => {
-        // Use the most relevant date for each deal
         const dealDate = deal.close_date_actual || deal.completion_date || deal.close_date_est || deal.pending_date;
         if (!dealDate) return false;
         return isWithinInterval(new Date(dealDate), { start: monthStart, end: monthEnd });
       });
       
-      const monthRevenue = monthDeals.reduce((sum, deal) => {
+      const manualRevenue = monthDeals.reduce((sum, deal) => {
         return sum + getDealValue(deal);
       }, 0);
+
+      // Synced transaction income for this month
+      const syncedRevenue = syncedPayouts
+        .filter(p => {
+          const date = parseISO(p.close_date);
+          return isWithinInterval(date, { start: monthStart, end: monthEnd });
+        })
+        .reduce((sum, p) => sum + p.netAmount, 0);
       
       monthlyData.push({
         month: format(monthDate, 'MMM'),
         deals: monthDeals.length,
-        revenue: monthRevenue,
+        revenue: manualRevenue + syncedRevenue,
       });
     }
 
     return { 
-      totalDeals, 
+      totalDeals: totalDealCount, 
       closedDeals, 
       pendingDeals,
-      totalRevenue, 
+      totalRevenue: totalRevenue + syncedReceived, 
       avgCommission,
-      projectedRevenue,
+      projectedRevenue: projectedRevenue + syncedProjected,
       totalExpectedCommission,
       leadSources, 
       propertyTypes, 
@@ -271,7 +287,7 @@ export function BusinessAnalytics({ deals, payouts }: BusinessAnalyticsProps) {
       teamBreakdown,
       monthlyData,
     };
-  }, [filteredDeals, payouts]);
+  }, [filteredDeals, payouts, syncedPayouts]);
 
   const renderCustomLabel = ({ name, percent }: { name: string; percent: number }) => {
     return percent > 0.08 ? `${(percent * 100).toFixed(0)}%` : '';

@@ -20,6 +20,8 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { useDeals } from '@/hooks/useDeals';
 import { usePayouts } from '@/hooks/usePayouts';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
+import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -66,6 +68,8 @@ export default function AnalyticsPage() {
   const { data: payouts = [] } = usePayouts();
   const { data: revenueShares = [] } = useRevenueShare();
   const { data: networkSummary } = useNetworkSummary();
+  const { data: syncedTransactions = [] } = useSyncedTransactions();
+  const { syncedPayouts, receivedYTD: syncedReceivedYTD, comingIn: syncedComingIn } = useSyncedIncome(syncedTransactions);
   const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all'>('12m');
 
   // Stable date reference
@@ -105,13 +109,18 @@ export default function AnalyticsPage() {
     });
   }, [deals, timeRange, thisYear, now]);
 
-  // Key Metrics
+  // Key Metrics - blending manual deals + synced transactions
   const metrics = useMemo(() => {
-    const totalGCI = filteredDeals.reduce((sum, d) => {
+    // Manual deals GCI
+    const manualGCI = filteredDeals.reduce((sum, d) => {
       const gci = d.gross_commission_actual || d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
       return sum + gci;
     }, 0);
+
+    // Synced transaction GCI (user's net split)
+    const syncedGCI = syncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
+    const totalGCI = manualGCI + syncedGCI;
 
     const closedDeals = filteredDeals.filter(d => d.status === 'CLOSED');
     const pendingDeals = filteredDeals.filter(d => d.status === 'PENDING');
@@ -120,12 +129,13 @@ export default function AnalyticsPage() {
       const gci = d.gross_commission_actual || d.gross_commission_est || 
         ((d.advance_commission || 0) + (d.completion_commission || 0));
       return sum + gci;
-    }, 0);
+    }, 0) + syncedReceivedYTD;
 
-    const avgDealSize = filteredDeals.length > 0 ? totalGCI / filteredDeals.length : 0;
+    const totalDealCount = filteredDeals.length + syncedPayouts.length;
+    const avgDealSize = totalDealCount > 0 ? totalGCI / totalDealCount : 0;
     
     const paidPayouts = payouts.filter(p => p.status === 'PAID');
-    const totalReceived = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
+    const totalReceived = paidPayouts.reduce((sum, p) => sum + Number(p.amount), 0) + syncedReceivedYTD;
 
     // Team deals
     const teamDeals = filteredDeals.filter(d => d.team_member);
@@ -135,14 +145,15 @@ export default function AnalyticsPage() {
       totalGCI,
       closedGCI,
       avgDealSize,
-      totalDeals: filteredDeals.length,
+      totalDeals: totalDealCount,
       closedDeals: closedDeals.length,
       pendingDeals: pendingDeals.length,
       totalReceived,
       teamDeals: teamDeals.length,
       soloDeals: soloDeals.length,
+      syncedComingIn,
     };
-  }, [filteredDeals, payouts]);
+  }, [filteredDeals, payouts, syncedPayouts, syncedReceivedYTD, syncedComingIn]);
 
   // Lead Source Analytics
   const leadSourceData = useMemo(() => {
@@ -303,7 +314,7 @@ export default function AnalyticsPage() {
       .slice(0, 8);
   }, [filteredDeals]);
 
-  // GCI Trends
+  // GCI Trends - blending manual deals + synced transactions
   const gciTrends = useMemo(() => {
     const months = eachMonthOfInterval({
       start: subMonths(now, monthsToShow - 1),
@@ -315,17 +326,26 @@ export default function AnalyticsPage() {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       
+      // Manual deals GCI
       const monthDeals = filteredDeals.filter(deal => {
         const closeDate = deal.close_date_actual;
         if (!closeDate) return false;
         const parsedDate = parseISO(closeDate);
         return isWithinInterval(parsedDate, { start: monthStart, end: monthEnd });
       });
-
-      const monthGCI = monthDeals.reduce((sum, d) => 
+      const manualGCI = monthDeals.reduce((sum, d) => 
         sum + (d.gross_commission_actual || d.gross_commission_est || 
           ((d.advance_commission || 0) + (d.completion_commission || 0))), 0);
 
+      // Synced transaction GCI for this month
+      const syncedGCI = syncedPayouts
+        .filter(p => {
+          const date = parseISO(p.close_date);
+          return isWithinInterval(date, { start: monthStart, end: monthEnd });
+        })
+        .reduce((sum, p) => sum + p.netAmount, 0);
+
+      const monthGCI = manualGCI + syncedGCI;
       cumulative += monthGCI;
 
       return {
@@ -334,7 +354,7 @@ export default function AnalyticsPage() {
         cumulative,
       };
     });
-  }, [filteredDeals, now, monthsToShow]);
+  }, [filteredDeals, syncedPayouts, now, monthsToShow]);
 
   // RevShare by Month (grouped by year for comparison)
   const revShareMonthly = useMemo(() => {
