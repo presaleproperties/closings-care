@@ -16,9 +16,12 @@ export interface NetworkAgent {
   join_date: string | null;
   departure_date: string | null;
   days_with_brokerage: number | null;
+  avatar_url: string | null;
+  network_size: number | null;
   raw_data: any;
   synced_at: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface NetworkSummary {
