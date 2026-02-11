@@ -101,12 +101,14 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             else if (tx.purchasePrice) salePrice = tx.purchasePrice
             else if (tx.price && typeof tx.price === 'number') salePrice = tx.price
 
-            // Status
-            const rawStatus = String(tx.status || tx.lifecycleState || '').toLowerCase()
+            // Status - lifecycleState is an object {state: "SETTLED", ...}, extract .state
+            const lifecycleState = tx.lifecycleState?.state || tx.lifecycleState || ''
+            const rawStatus = String(tx.status || lifecycleState || '').toLowerCase()
             let status = rawStatus
-            if (rawStatus.includes('closed') || tx.closedAt || tx.rezenClosedAt) status = 'closed'
-            else if (rawStatus.includes('terminat')) status = 'terminated'
-            else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
+            if (rawStatus.includes('closed') || rawStatus.includes('settled') || tx.closedAt || tx.rezenClosedAt) status = 'closed'
+            else if (rawStatus.includes('terminat') || rawStatus.includes('cancel')) status = 'terminated'
+            else if (rawStatus.includes('active') || rawStatus.includes('approved') || rawStatus.includes('commission') || rawStatus.includes('ready')) status = 'active'
+            else status = 'pending'
 
             // Dates
             const closeDate = toISODate(tx.closedAt || tx.rezenClosedAt || tx.closingDateActual || tx.closingDateEstimated || tx.closingDate)
@@ -179,11 +181,13 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
           else if (tx.purchasePrice) salePrice = tx.purchasePrice
           else if (typeof tx.price === 'number') salePrice = tx.price
 
-          const rawStatus = String(tx.status || tx.lifecycleState || '').toLowerCase()
+          const lifecycleState = tx.lifecycleState?.state || tx.lifecycleState || ''
+          const rawStatus = String(tx.status || lifecycleState || '').toLowerCase()
           let status = rawStatus
-          if (rawStatus.includes('closed') || tx.closedAt) status = 'closed'
-          else if (rawStatus.includes('terminat')) status = 'terminated'
-          else if (rawStatus.includes('active') || rawStatus.includes('approved')) status = 'active'
+          if (rawStatus.includes('closed') || rawStatus.includes('settled') || tx.closedAt) status = 'closed'
+          else if (rawStatus.includes('terminat') || rawStatus.includes('cancel')) status = 'terminated'
+          else if (rawStatus.includes('active') || rawStatus.includes('approved') || rawStatus.includes('commission') || rawStatus.includes('ready')) status = 'active'
+          else status = 'pending'
 
           let clientName = ''
           if (tx.participants && Array.isArray(tx.participants)) {
