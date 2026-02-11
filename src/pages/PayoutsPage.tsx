@@ -39,6 +39,7 @@ import { formatCurrency } from '@/lib/format';
 import { triggerHaptic, springConfigs } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { CollapsibleSection } from '@/components/deals/CollapsibleSection';
 
 type PayoutTypeFilter = 'Advance' | 'Completion' | 'Commission' | 'ALL';
 
@@ -319,40 +320,42 @@ export default function PayoutsPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Stats Grid */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {statCards.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                className={cn(
-                  "relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4",
-                  "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-                )}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.08 }}
-                whileHover={{ y: -2 }}
-              >
-                <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", stat.gradient)} />
-                <div className="relative">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.iconBg)}>
-                      <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
+          {/* Stats Grid - Collapsible */}
+          <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {statCards.map((stat, index) => (
+                <motion.div
+                  key={stat.label}
+                  className={cn(
+                    "relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4",
+                    "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                  )}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.08 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", stat.gradient)} />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.iconBg)}>
+                        <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                        {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
+                      </span>
                     </div>
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                      {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
-                    </span>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">{stat.label}</p>
+                    <AnimatedNumber
+                      value={stat.value}
+                      className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                      duration={0.8}
+                    />
                   </div>
-                  <p className="text-xs text-muted-foreground font-medium mb-1">{stat.label}</p>
-                  <AnimatedNumber
-                    value={stat.value}
-                    className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
-                    duration={0.8}
-                  />
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+                </motion.div>
+              ))}
+            </div>
+          </CollapsibleSection>
 
           {/* Flagged Alert */}
           <AnimatePresence>
@@ -384,66 +387,68 @@ export default function PayoutsPage() {
             )}
           </AnimatePresence>
 
-          {/* Filter Pills & Search */}
-          <motion.div variants={itemVariants} className="space-y-4">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {filterConfig.map(filter => (
-                <motion.button
-                  key={filter.id}
-                  onClick={() => {
-                    triggerHaptic('light');
-                    setActiveFilter(filter.id);
-                  }}
-                  className={cn(
-                    "px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 border",
-                    activeFilter === filter.id
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
-                      : "bg-card/80 text-muted-foreground border-border/50 hover:bg-muted/50 hover:border-primary/30"
-                  )}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <filter.icon className="w-4 h-4" />
-                  {filter.label}
-                  <span className={cn(
-                    "text-xs px-2 py-0.5 rounded-lg font-semibold",
-                    activeFilter === filter.id ? "bg-white/20" : "bg-muted"
-                  )}>
-                    {filter.count}
-                  </span>
-                </motion.button>
-              ))}
-            </div>
-
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by property or client..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 h-12 rounded-xl bg-card/80 border-border/50 focus-visible:ring-primary/30 focus-visible:border-primary/50"
-                />
+          {/* Filter Pills & Search - Collapsible */}
+          <CollapsibleSection icon={Search} title="Filters" badge={search || typeFilter !== 'ALL' ? 'Active' : undefined} defaultOpen={true}>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {filterConfig.map(filter => (
+                  <motion.button
+                    key={filter.id}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setActiveFilter(filter.id);
+                    }}
+                    className={cn(
+                      "px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 border",
+                      activeFilter === filter.id
+                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
+                        : "bg-card/80 text-muted-foreground border-border/50 hover:bg-muted/50 hover:border-primary/30"
+                    )}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <filter.icon className="w-4 h-4" />
+                    {filter.label}
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded-lg font-semibold",
+                      activeFilter === filter.id ? "bg-white/20" : "bg-muted"
+                    )}>
+                      {filter.count}
+                    </span>
+                  </motion.button>
+                ))}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-12 px-4 rounded-xl gap-2 border-border/50 hover:border-primary/40 bg-card/80">
-                    <TrendingUp className="w-4 h-4" />
-                    <span className="hidden sm:inline">{typeFilter === 'ALL' ? 'All Types' : typeFilter}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                  <DropdownMenuItem onClick={() => setTypeFilter('ALL')} className="rounded-lg">
-                    All Types
-                  </DropdownMenuItem>
-                  {(['Advance', 'Completion', 'Commission'] as const).map((type) => (
-                    <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)} className="rounded-lg">
-                      {type}
+
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by property or client..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-10 h-12 rounded-xl bg-card/80 border-border/50 focus-visible:ring-primary/30 focus-visible:border-primary/50"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-12 px-4 rounded-xl gap-2 border-border/50 hover:border-primary/40 bg-card/80">
+                      <TrendingUp className="w-4 h-4" />
+                      <span className="hidden sm:inline">{typeFilter === 'ALL' ? 'All Types' : typeFilter}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                    <DropdownMenuItem onClick={() => setTypeFilter('ALL')} className="rounded-lg">
+                      All Types
                     </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    {(['Advance', 'Completion', 'Commission'] as const).map((type) => (
+                      <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)} className="rounded-lg">
+                        {type}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          </motion.div>
+          </CollapsibleSection>
 
           {/* Payouts List */}
           {isLoading ? (

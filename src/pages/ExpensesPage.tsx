@@ -44,6 +44,9 @@ import { formatCurrency, getCurrentMonth } from '@/lib/format';
 import { ExpenseFormData } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { ExpenseGroupSection } from '@/components/expenses/ExpenseGroupSection';
+import { ExpenseRow } from '@/components/expenses/ExpenseRow';
+import { PropertyCostsSection } from '@/components/expenses/PropertyCostsSection';
 
 // Use shared expense categories
 import { expenseCategories, getCategoryType, getAllCategoriesFlat, ExpenseType } from '@/lib/expenseCategories';
@@ -366,35 +369,33 @@ export default function ExpensesPage() {
               exit={{ opacity: 0, height: 0 }}
               variants={itemVariants}
             >
-              <div className="landing-card overflow-hidden">
-                <div className="px-4 py-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-b border-blue-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Home className="w-4 h-4 text-blue-500" />
-                    <span className="font-semibold text-sm">Personal Property</span>
-                  </div>
-                  <span className="font-bold text-blue-500">{formatCurrency(propertyCarryingCosts.personalCost)}</span>
-                </div>
-                <div className="divide-y divide-border/50">
-                  {properties.filter(p => p.property_type === 'personal').map(property => {
-                    const expenses = getPropertyMonthlyExpenses(property);
-                    return (
-                      <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                        <div>
-                          <p className="font-medium text-sm">{property.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {[
-                              property.monthly_mortgage && `Mortgage`,
-                              property.monthly_strata && `Strata`,
-                              property.yearly_taxes && `Taxes`
-                            ].filter(Boolean).join(' • ')}
-                          </p>
-                        </div>
-                        <span className="font-semibold">{formatCurrency(expenses)}</span>
+              <PropertyCostsSection
+                icon={Home}
+                label="Personal Property"
+                total={propertyCarryingCosts.personalCost}
+                totalColor="text-blue-500"
+                gradientFrom="from-blue-500/10 to-indigo-500/5"
+                borderColor="border-blue-500/20"
+              >
+                {properties.filter(p => p.property_type === 'personal').map(property => {
+                  const expenses = getPropertyMonthlyExpenses(property);
+                  return (
+                    <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="font-medium text-sm">{property.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[
+                            property.monthly_mortgage && `Mortgage`,
+                            property.monthly_strata && `Strata`,
+                            property.yearly_taxes && `Taxes`
+                          ].filter(Boolean).join(' • ')}
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <span className="font-semibold">{formatCurrency(expenses)}</span>
+                    </div>
+                  );
+                })}
+              </PropertyCostsSection>
             </motion.div>
           )}
 
@@ -405,49 +406,42 @@ export default function ExpensesPage() {
               exit={{ opacity: 0, height: 0 }}
               variants={itemVariants}
             >
-              <div className="landing-card overflow-hidden">
-                <div className="px-4 py-3 bg-gradient-to-r from-teal-500/10 to-emerald-500/5 border-b border-teal-500/20 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-teal-500" />
-                    <span className="font-semibold text-sm">Rental Properties</span>
-                  </div>
-                  <span className={cn(
-                    "font-bold",
-                    propertyCarryingCosts.rentalNet >= 0 ? "text-emerald-500" : "text-rose-500"
-                  )}>
-                    {propertyCarryingCosts.rentalNet >= 0 ? '+' : ''}{formatCurrency(propertyCarryingCosts.rentalNet)}
-                  </span>
-                </div>
-                <div className="divide-y divide-border/50">
-                  {properties.filter(p => p.property_type === 'rental').map(property => {
-                    const cashflow = calculatePropertyCashflow(property, 0);
-                    return (
-                      <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                        <div>
-                          <p className="font-medium text-sm">{property.name}</p>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="flex items-center gap-1 text-emerald-500">
-                              <ArrowUpRight className="w-3 h-3" />
-                              {formatCurrency(property.monthly_rent || 0)}
-                            </span>
-                            <span className="text-muted-foreground">−</span>
-                            <span className="flex items-center gap-1 text-rose-500">
-                              <ArrowDownRight className="w-3 h-3" />
-                              {formatCurrency(cashflow.expenses)}
-                            </span>
-                          </div>
+              <PropertyCostsSection
+                icon={Building2}
+                label="Rental Properties"
+                total={propertyCarryingCosts.rentalNet}
+                totalColor={propertyCarryingCosts.rentalNet >= 0 ? "text-emerald-500" : "text-rose-500"}
+                gradientFrom="from-teal-500/10 to-emerald-500/5"
+                borderColor="border-teal-500/20"
+              >
+                {properties.filter(p => p.property_type === 'rental').map(property => {
+                  const cashflow = calculatePropertyCashflow(property, 0);
+                  return (
+                    <div key={property.id} className="px-4 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="font-medium text-sm">{property.name}</p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="flex items-center gap-1 text-emerald-500">
+                            <ArrowUpRight className="w-3 h-3" />
+                            {formatCurrency(property.monthly_rent || 0)}
+                          </span>
+                          <span className="text-muted-foreground">−</span>
+                          <span className="flex items-center gap-1 text-rose-500">
+                            <ArrowDownRight className="w-3 h-3" />
+                            {formatCurrency(cashflow.expenses)}
+                          </span>
                         </div>
-                        <span className={cn(
-                          "font-semibold",
-                          cashflow.net >= 0 ? "text-emerald-500" : "text-rose-500"
-                        )}>
-                          {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}
-                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <span className={cn(
+                        "font-semibold",
+                        cashflow.net >= 0 ? "text-emerald-500" : "text-rose-500"
+                      )}>
+                        {cashflow.net >= 0 ? '+' : ''}{formatCurrency(cashflow.net)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </PropertyCostsSection>
             </motion.div>
           )}
         </AnimatePresence>
@@ -487,250 +481,66 @@ export default function ExpensesPage() {
             </div>
           ) : activeFilter === 'all' ? (
             // Grouped view for "All" filter - separate Personal, Business, etc.
-            <div className="space-y-4">
-              {/* Personal Expenses Section */}
-              {groupedExpenses.personal.length > 0 && (
-                <div className="landing-card overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border-b border-blue-500/20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Home className="w-4 h-4 text-blue-500" />
-                      <span className="font-semibold text-sm">Personal Expenses</span>
-                    </div>
-                    <span className="font-bold text-blue-500">
-                      {formatCurrency(groupedExpenses.personal.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border/50">
-                    {groupedExpenses.personal.map((expense) => {
-                      const config = typeConfig.personal;
-                      const recurrence = (expense as any).recurrence || 'monthly';
-                      const displayAmount = getDisplayAmount(expense);
-                      return (
-                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
-                            <config.icon className={cn("w-5 h-5", config.text)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{expense.category}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {recurrence !== 'monthly' && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {recurrence}
-                                </span>
-                              )}
-                              {(expense as any).is_tax_deductible && (
-                                <span className="text-emerald-500">Tax Ded.</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
-                            {recurrence === 'weekly' && (
-                              <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
-                            )}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className="space-y-3">
+              <ExpenseGroupSection
+                icon={Home}
+                label="Personal Expenses"
+                total={groupedExpenses.personal.reduce((sum, e) => sum + getDisplayAmount(e), 0)}
+                gradientFrom="from-blue-500/10 to-indigo-500/5"
+                borderColor="border-blue-500/20"
+                totalColor="text-blue-500"
+                expenses={groupedExpenses.personal}
+                iconBg="bg-blue-500/10"
+                iconColor="text-blue-500"
+                getDisplayAmount={getDisplayAmount}
+                onEdit={handleOpenEdit}
+                onDelete={handleDelete}
+              />
 
-              {/* Business Expenses Section */}
-              {groupedExpenses.business.length > 0 && (
-                <div className="landing-card overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r from-violet-500/10 to-purple-500/5 border-b border-violet-500/20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-violet-500" />
-                      <span className="font-semibold text-sm">Business Expenses</span>
-                    </div>
-                    <span className="font-bold text-violet-500">
-                      {formatCurrency(groupedExpenses.business.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border/50">
-                    {groupedExpenses.business.map((expense) => {
-                      const config = typeConfig.business;
-                      const recurrence = (expense as any).recurrence || 'monthly';
-                      const displayAmount = getDisplayAmount(expense);
-                      return (
-                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
-                            <config.icon className={cn("w-5 h-5", config.text)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{expense.category}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {recurrence !== 'monthly' && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {recurrence}
-                                </span>
-                              )}
-                              {(expense as any).is_tax_deductible && (
-                                <span className="text-emerald-500">Tax Ded.</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
-                            {recurrence === 'weekly' && (
-                              <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
-                            )}
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ExpenseGroupSection
+                icon={Briefcase}
+                label="Business Expenses"
+                total={groupedExpenses.business.reduce((sum, e) => sum + getDisplayAmount(e), 0)}
+                gradientFrom="from-violet-500/10 to-purple-500/5"
+                borderColor="border-violet-500/20"
+                totalColor="text-violet-500"
+                expenses={groupedExpenses.business}
+                iconBg="bg-violet-500/10"
+                iconColor="text-violet-500"
+                getDisplayAmount={getDisplayAmount}
+                onEdit={handleOpenEdit}
+                onDelete={handleDelete}
+              />
 
-              {/* Taxes Expenses Section */}
-              {groupedExpenses.taxes.length > 0 && (
-                <div className="landing-card overflow-hidden">
-                  <div className="px-4 py-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b border-amber-500/20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <PiggyBank className="w-4 h-4 text-amber-500" />
-                      <span className="font-semibold text-sm">Taxes & Savings</span>
-                    </div>
-                    <span className="font-bold text-amber-500">
-                      {formatCurrency(groupedExpenses.taxes.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border/50">
-                    {groupedExpenses.taxes.map((expense) => {
-                      const config = typeConfig.taxes;
-                      const recurrence = (expense as any).recurrence || 'monthly';
-                      const displayAmount = getDisplayAmount(expense);
-                      return (
-                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
-                            <config.icon className={cn("w-5 h-5", config.text)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{expense.category}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {recurrence !== 'monthly' && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {recurrence}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ExpenseGroupSection
+                icon={PiggyBank}
+                label="Taxes & Savings"
+                total={groupedExpenses.taxes.reduce((sum, e) => sum + getDisplayAmount(e), 0)}
+                gradientFrom="from-amber-500/10 to-orange-500/5"
+                borderColor="border-amber-500/20"
+                totalColor="text-amber-500"
+                expenses={groupedExpenses.taxes}
+                iconBg="bg-amber-500/10"
+                iconColor="text-amber-500"
+                getDisplayAmount={getDisplayAmount}
+                onEdit={handleOpenEdit}
+                onDelete={handleDelete}
+              />
 
-              {/* Other Expenses Section */}
-              {groupedExpenses.other.length > 0 && (
-                <div className="landing-card overflow-hidden">
-                  <div className="px-4 py-3 bg-muted/30 border-b border-border/50 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Receipt className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-semibold text-sm">Other</span>
-                    </div>
-                    <span className="font-bold text-muted-foreground">
-                      {formatCurrency(groupedExpenses.other.reduce((sum, e) => sum + getDisplayAmount(e), 0))}
-                    </span>
-                  </div>
-                  <div className="divide-y divide-border/50">
-                    {groupedExpenses.other.map((expense) => {
-                      const config = typeConfig.other;
-                      const recurrence = (expense as any).recurrence || 'monthly';
-                      const displayAmount = getDisplayAmount(expense);
-                      return (
-                        <div key={expense.id} className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group">
-                          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
-                            <config.icon className={cn("w-5 h-5", config.text)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{expense.category}</p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold">{formatCurrency(displayAmount)}</p>
-                          </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
-                                <Pencil className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(expense.id)} className="text-destructive">
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ExpenseGroupSection
+                icon={Receipt}
+                label="Other"
+                total={groupedExpenses.other.reduce((sum, e) => sum + getDisplayAmount(e), 0)}
+                gradientFrom="from-muted/30 to-muted/10"
+                borderColor="border-border/50"
+                totalColor="text-muted-foreground"
+                expenses={groupedExpenses.other}
+                iconBg="bg-muted/50"
+                iconColor="text-muted-foreground"
+                getDisplayAmount={getDisplayAmount}
+                onEdit={handleOpenEdit}
+                onDelete={handleDelete}
+              />
             </div>
           ) : (
             // Single category view
@@ -747,65 +557,17 @@ export default function ExpensesPage() {
                 {filteredExpenses.map((expense) => {
                   const type = getCategoryType(expense.category);
                   const config = typeConfig[type];
-                  const recurrence = (expense as any).recurrence || 'monthly';
-                  const displayAmount = getDisplayAmount(expense);
-                  
                   return (
-                    <div 
+                    <ExpenseRow
                       key={expense.id}
-                      className="px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors group"
-                    >
-                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", config.bg)}>
-                        <config.icon className={cn("w-5 h-5", config.text)} />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{expense.category}</p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          {recurrence !== 'monthly' && (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" />
-                              {recurrence}
-                            </span>
-                          )}
-                          {(expense as any).is_tax_deductible && (
-                            <span className="text-emerald-500">Tax Ded.</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="text-right flex-shrink-0">
-                        <p className="font-bold">{formatCurrency(displayAmount)}</p>
-                        {recurrence === 'weekly' && (
-                          <p className="text-[10px] text-muted-foreground">${expense.amount}/wk</p>
-                        )}
-                      </div>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEdit(expense)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(expense.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                      expense={expense}
+                      icon={config.icon}
+                      iconBg={config.bg}
+                      iconColor={config.text}
+                      getDisplayAmount={getDisplayAmount}
+                      onEdit={handleOpenEdit}
+                      onDelete={handleDelete}
+                    />
                   );
                 })}
               </div>
