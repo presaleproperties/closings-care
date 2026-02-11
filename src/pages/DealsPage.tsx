@@ -1,18 +1,67 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Building2, Home, MapPin, DollarSign, TrendingUp } from 'lucide-react';
+import {
+  Plus, Search, Building2, Home, MapPin,
+  ArrowUpDown, ArrowDownAZ, ArrowUpAZ,
+  CalendarArrowDown, CalendarArrowUp,
+  SlidersHorizontal, X,
+} from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSyncedDeals } from '@/hooks/useSyncedDeals';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useSyncedDeals, SyncedDeal } from '@/hooks/useSyncedDeals';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency } from '@/lib/format';
 import { triggerHaptic } from '@/lib/haptics';
 import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
+import { cn } from '@/lib/utils';
+
+type SortKey = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'date-desc', label: 'Newest First' },
+  { value: 'date-asc', label: 'Oldest First' },
+  { value: 'amount-desc', label: 'Highest Amount' },
+  { value: 'amount-asc', label: 'Lowest Amount' },
+  { value: 'address-asc', label: 'Address A–Z' },
+  { value: 'address-desc', label: 'Address Z–A' },
+];
+
+function getSortFn(key: SortKey) {
+  return (a: SyncedDeal, b: SyncedDeal) => {
+    switch (key) {
+      case 'date-desc': {
+        const dA = a.closeDate || a.firmDate || '';
+        const dB = b.closeDate || b.firmDate || '';
+        return dB.localeCompare(dA);
+      }
+      case 'date-asc': {
+        const dA = a.closeDate || a.firmDate || '';
+        const dB = b.closeDate || b.firmDate || '';
+        return dA.localeCompare(dB);
+      }
+      case 'amount-desc':
+        return (b.myNetPayout || 0) - (a.myNetPayout || 0);
+      case 'amount-asc':
+        return (a.myNetPayout || 0) - (b.myNetPayout || 0);
+      case 'address-asc':
+        return (a.propertyAddress || '').localeCompare(b.propertyAddress || '');
+      case 'address-desc':
+        return (b.propertyAddress || '').localeCompare(a.propertyAddress || '');
+    }
+  };
+}
 
 export default function DealsPage() {
   const { activeDeals, closedDeals, listings } = useSyncedDeals();
@@ -20,26 +69,35 @@ export default function DealsPage() {
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'active' | 'closed' | 'listings'>('active');
+  const [sortKey, setSortKey] = useState<SortKey>('date-desc');
+  const [showFilters, setShowFilters] = useState(false);
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
+
+  const hasActiveFilters = !!minAmount || !!maxAmount;
 
   const filteredDeals = useMemo(() => {
-    let dealsToFilter = activeTab === 'active' ? activeDeals : activeTab === 'closed' ? closedDeals : listings;
-    
+    let deals = activeTab === 'active' ? activeDeals : activeTab === 'closed' ? closedDeals : listings;
+
+    // Search
     if (search) {
-      const searchLower = search.toLowerCase();
-      dealsToFilter = dealsToFilter.filter(deal =>
-        (deal.propertyAddress || 'unknown').toLowerCase().includes(searchLower) ||
-        deal.clientName.toLowerCase().includes(searchLower) ||
-        deal.mlsNumber?.toLowerCase().includes(searchLower)
+      const q = search.toLowerCase();
+      deals = deals.filter(d =>
+        (d.propertyAddress || '').toLowerCase().includes(q) ||
+        d.clientName.toLowerCase().includes(q) ||
+        d.mlsNumber?.toLowerCase().includes(q)
       );
     }
-    
-    return dealsToFilter.sort((a, b) => {
-      if (a.firmDate && b.firmDate) {
-        return new Date(b.firmDate).getTime() - new Date(a.firmDate).getTime();
-      }
-      return 0;
-    });
-  }, [activeTab, activeDeals, closedDeals, listings, search]);
+
+    // Amount range filter
+    const min = minAmount ? Number(minAmount) : null;
+    const max = maxAmount ? Number(maxAmount) : null;
+    if (min !== null) deals = deals.filter(d => (d.myNetPayout || 0) >= min);
+    if (max !== null) deals = deals.filter(d => (d.myNetPayout || 0) <= max);
+
+    // Sort
+    return [...deals].sort(getSortFn(sortKey));
+  }, [activeTab, activeDeals, closedDeals, listings, search, sortKey, minAmount, maxAmount]);
 
   const stats = useMemo(() => {
     const allDeals = [...activeDeals, ...closedDeals];
@@ -47,7 +105,6 @@ export default function DealsPage() {
       active: activeDeals.length,
       closed: closedDeals.length,
       listings: listings.length,
-      totalCommission: allDeals.reduce((sum, d) => sum + (d.commissionAmount || 0), 0),
       totalNet: allDeals.reduce((sum, d) => sum + (d.myNetPayout || 0), 0),
       totalVolume: allDeals.reduce((sum, d) => sum + (d.salePrice || 0), 0),
     };
@@ -56,6 +113,12 @@ export default function DealsPage() {
   const handleTabChange = (tab: string) => {
     triggerHaptic('light');
     setActiveTab(tab as 'active' | 'closed' | 'listings');
+  };
+
+  const clearFilters = () => {
+    setMinAmount('');
+    setMaxAmount('');
+    setShowFilters(false);
   };
 
   const EmptyState = ({ icon: Icon, label }: { icon: typeof Building2; label: string }) => (
@@ -68,56 +131,191 @@ export default function DealsPage() {
         <Icon className="h-7 w-7 text-muted-foreground/50" />
       </div>
       <p className="text-muted-foreground text-sm">
-        {search ? `No ${label} matching "${search}"` : `No ${label} yet`}
+        {search || hasActiveFilters ? `No ${label} matching your filters` : `No ${label} yet`}
       </p>
+      {hasActiveFilters && (
+        <Button variant="ghost" size="sm" className="mt-2 text-primary" onClick={clearFilters}>
+          Clear filters
+        </Button>
+      )}
     </motion.div>
+  );
+
+  const DealList = ({ deals, emptyIcon, emptyLabel }: { deals: SyncedDeal[]; emptyIcon: typeof Building2; emptyLabel: string }) => (
+    deals.length > 0 ? (
+      <div className="grid gap-2">
+        {deals.map((deal, idx) => (
+          <Link key={deal.id} to={`/deals/${deal.id}`}>
+            <SyncedDealCard deal={deal} index={idx} />
+          </Link>
+        ))}
+      </div>
+    ) : (
+      <EmptyState icon={emptyIcon} label={emptyLabel} />
+    )
   );
 
   return (
     <AppLayout>
       <div className="flex flex-col h-full">
         <Header title="Deals" />
-        
+
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
+            <div className="p-4 lg:p-6 space-y-4 max-w-4xl mx-auto pb-24 lg:pb-6">
 
               {/* Hero Stats */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 lg:gap-3">
                 <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-xl font-bold text-foreground">{stats.active + stats.closed}</p>
+                  <p className="text-lg lg:text-xl font-bold text-foreground">{stats.active + stats.closed}</p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Deals</p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalNet)}</p>
+                  <p className="text-lg lg:text-xl font-bold text-foreground">{formatCurrency(stats.totalNet)}</p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Net Income</p>
                 </div>
                 <div className="rounded-xl border border-border/50 bg-card/50 p-3 text-center">
-                  <p className="text-xl font-bold text-foreground">{formatCurrency(stats.totalVolume)}</p>
+                  <p className="text-lg lg:text-xl font-bold text-foreground">{formatCurrency(stats.totalVolume)}</p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Volume</p>
                 </div>
               </div>
 
-              {/* Search */}
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by address, client, MLS..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Link to="/deals/new">
+              {/* Search + Sort + Filter Row */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  {/* Search */}
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search address, client, MLS..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-9 h-10"
+                    />
+                    {search && (
+                      <button
+                        onClick={() => setSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground touch-manipulation"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Sort */}
+                  <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
+                    <SelectTrigger className="w-[140px] lg:w-[170px] h-10">
+                      <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Filter Toggle */}
                   <Button
+                    variant={showFilters || hasActiveFilters ? 'default' : 'outline'}
                     size="icon"
-                    className="rounded-xl"
-                    onClick={() => triggerHaptic('light')}
+                    className={cn(
+                      'h-10 w-10 rounded-xl shrink-0 touch-manipulation',
+                      hasActiveFilters && !showFilters && 'bg-primary text-primary-foreground'
+                    )}
+                    onClick={() => {
+                      triggerHaptic('light');
+                      setShowFilters(!showFilters);
+                    }}
                   >
-                    <Plus className="h-5 w-5" />
+                    <SlidersHorizontal className="h-4 w-4" />
                   </Button>
-                </Link>
+
+                  {/* Add Deal */}
+                  <Link to="/deals/new">
+                    <Button
+                      size="icon"
+                      className="rounded-xl h-10 w-10 touch-manipulation"
+                      onClick={() => triggerHaptic('light')}
+                    >
+                      <Plus className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Filter Panel - Collapsible */}
+                {showFilters && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="rounded-xl border border-border/50 bg-card/60 p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Amount Range</span>
+                        {hasActiveFilters && (
+                          <button onClick={clearFilters} className="text-[10px] text-primary font-medium touch-manipulation">
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            placeholder="Min"
+                            value={minAmount}
+                            onChange={(e) => setMinAmount(e.target.value)}
+                            className="pl-7 h-9 text-sm"
+                          />
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input
+                            type="number"
+                            placeholder="Max"
+                            value={maxAmount}
+                            onChange={(e) => setMaxAmount(e.target.value)}
+                            className="pl-7 h-9 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Active filter chips */}
+                {hasActiveFilters && !showFilters && (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {minAmount && (
+                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-primary/10 text-primary font-medium">
+                        Min: {formatCurrency(Number(minAmount))}
+                        <button onClick={() => setMinAmount('')} className="touch-manipulation">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                    {maxAmount && (
+                      <span className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-primary/10 text-primary font-medium">
+                        Max: {formatCurrency(Number(maxAmount))}
+                        <button onClick={() => setMaxAmount('')} className="touch-manipulation">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Results count */}
+                <p className="text-[10px] text-muted-foreground">
+                  {filteredDeals.length} {filteredDeals.length === 1 ? 'deal' : 'deals'}
+                  {(search || hasActiveFilters) && ' matching'}
+                </p>
               </div>
 
               {/* Tabs */}
@@ -146,46 +344,14 @@ export default function DealsPage() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="active" className="mt-4 space-y-2">
-                  {filteredDeals.length > 0 ? (
-                    <div className="grid gap-2">
-                      {filteredDeals.map((deal, idx) => (
-                        <Link key={deal.id} to={`/deals/${deal.id}`}>
-                          <SyncedDealCard deal={deal} index={idx} />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState icon={Building2} label="active deals" />
-                  )}
+                <TabsContent value="active" className="mt-4">
+                  <DealList deals={filteredDeals} emptyIcon={Building2} emptyLabel="active deals" />
                 </TabsContent>
-
-                <TabsContent value="closed" className="mt-4 space-y-2">
-                  {filteredDeals.length > 0 ? (
-                    <div className="grid gap-2">
-                      {filteredDeals.map((deal, idx) => (
-                        <Link key={deal.id} to={`/deals/${deal.id}`}>
-                          <SyncedDealCard deal={deal} index={idx} />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState icon={Home} label="closed deals" />
-                  )}
+                <TabsContent value="closed" className="mt-4">
+                  <DealList deals={filteredDeals} emptyIcon={Home} emptyLabel="closed deals" />
                 </TabsContent>
-
-                <TabsContent value="listings" className="mt-4 space-y-2">
-                  {filteredDeals.length > 0 ? (
-                    <div className="grid gap-2">
-                      {filteredDeals.map((deal, idx) => (
-                        <Link key={deal.id} to={`/deals/${deal.id}`}>
-                          <SyncedDealCard deal={deal} index={idx} />
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState icon={MapPin} label="listings" />
-                  )}
+                <TabsContent value="listings" className="mt-4">
+                  <DealList deals={filteredDeals} emptyIcon={MapPin} emptyLabel="listings" />
                 </TabsContent>
               </Tabs>
             </div>
