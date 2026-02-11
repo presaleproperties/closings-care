@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { AgentDirectory } from '@/components/network/AgentDirectory';
+import { SponsorTree } from '@/components/network/SponsorTree';
 import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network } from 'lucide-react';
 import { useMemo } from 'react';
 import {
@@ -212,6 +213,7 @@ export default function NetworkPage() {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="tree">Tree</TabsTrigger>
             <TabsTrigger value="revshare">RevShare</TabsTrigger>
             <TabsTrigger value="agents">Agents</TabsTrigger>
           </TabsList>
@@ -340,6 +342,24 @@ export default function NetworkPage() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Tree Tab - Sponsor Relationships */}
+          <TabsContent value="tree" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Network className="w-4 h-4 text-primary" />
+                  Sponsor Relationship Tree
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Visualize how agents are connected through sponsor relationships in your network
+                </p>
+              </CardHeader>
+              <CardContent>
+                <SponsorTree agents={agents} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* RevShare Tab */}
