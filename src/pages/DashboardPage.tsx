@@ -34,6 +34,7 @@ import { LatestActivity } from '@/components/dashboard/LatestActivity';
 import { UpcomingRevenue } from '@/components/dashboard/UpcomingRevenue';
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
+import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, BarChart3, Sparkles, Lightbulb } from 'lucide-react';
 import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
@@ -229,6 +230,7 @@ export default function DashboardPage() {
                 <LatestActivity deals={deals} syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
                 <UpcomingRevenue payouts={payouts} deals={deals} syncedTransactions={syncedTransactions} />
                 <NeedsAttention deals={deals} payouts={payouts} syncedTransactions={syncedTransactions} />
+                <RevShareSummaryCard revenueShare={revenueShare} />
               </TabsContent>
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
@@ -419,6 +421,14 @@ export default function DashboardPage() {
                       />
                     </motion.div>
                   </div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ ...springConfig, delay: 0.45 }}
+                  >
+                    <RevShareSummaryCard revenueShare={revenueShare} />
+                  </motion.div>
                 </TabsContent>
 
                 {/* Cashflow Tab - Primary Focus */}
