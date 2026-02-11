@@ -253,80 +253,85 @@ export default function ExpensesPage() {
         initial="hidden"
         animate="visible"
       >
-        {/* Month Navigator & Total */}
-        <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-lg">
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div className="text-center">
-              <h2 className="text-base sm:text-lg font-bold">
-                {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
-              </h2>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-lg">
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+         {/* Month Navigator & Total */}
+         <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border backdrop-blur-sm p-4 sm:p-6 bg-gradient-to-br from-card/60 to-card/40 border-border/50">
+           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5 opacity-60" />
+           <div className="relative z-10">
+             <div className="flex items-center justify-between mb-4 sm:mb-6">
+               <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
+                 <ChevronLeft className="w-4 h-4" />
+               </Button>
+               <h2 className="text-base sm:text-lg font-bold">
+                 {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
+               </h2>
+               <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
+                 <ChevronRight className="w-4 h-4" />
+               </Button>
+             </div>
 
-          {/* Total Display */}
-          <div className="text-center py-3 sm:py-4 px-4 sm:px-6 rounded-xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20">
-            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 uppercase tracking-wide">Total Monthly</p>
-            <AnimatedNumber
-              value={grandTotalExpenses}
-              className="text-2xl sm:text-3xl lg:text-4xl font-bold text-rose-500"
-              duration={1}
-            />
-          </div>
-        </motion.div>
+             {/* Total Display */}
+             <div className="py-4 sm:py-6 px-4 sm:px-6 rounded-xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20 backdrop-blur-sm">
+               <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 uppercase tracking-widest font-semibold">Total Monthly</p>
+               <AnimatedNumber
+                 value={grandTotalExpenses}
+                 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-rose-500"
+                 duration={1}
+               />
+             </div>
+           </div>
+         </motion.div>
 
-        {/* Category Cards */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map(type => {
-            const config = typeConfig[type];
-            const total = getTypeTotal(type);
-            const count = groupedExpenses[type].length;
-            const isActive = activeFilter === type;
-            
-            return (
-              <button
-                key={type}
-                onClick={() => setActiveFilter(isActive ? 'all' : type)}
-                className={cn(
-                  "relative p-3 sm:p-4 rounded-xl border-2 transition-all text-left overflow-hidden group",
-                  isActive 
-                    ? `${config.border} ${config.bg} shadow-lg` 
-                    : "border-border/50 hover:border-border bg-card"
-                )}
-              >
-                {/* Gradient overlay on hover/active */}
-                <div className={cn(
-                  "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
-                  config.gradient,
-                  isActive ? "opacity-10" : "group-hover:opacity-5"
-                )} />
-                
-                <div className="relative">
-                  <div className={cn(
-                    "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-2 transition-colors",
-                    isActive ? config.bg : "bg-muted/50"
-                  )}>
-                    <config.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? config.text : "text-muted-foreground")} />
-                  </div>
-                  <p className="font-bold text-base sm:text-lg">{formatCurrency(total)}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">{config.label}</p>
-                </div>
+         {/* Category Cards */}
+         <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+           {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map((type, index) => {
+             const config = typeConfig[type];
+             const total = getTypeTotal(type);
+             const count = groupedExpenses[type].length;
+             const isActive = activeFilter === type;
+             
+             return (
+               <motion.button
+                 key={type}
+                 onClick={() => setActiveFilter(isActive ? 'all' : type)}
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: index * 0.06 }}
+                 whileHover={{ y: -2 }}
+                 className={cn(
+                   "relative p-3 sm:p-4 rounded-xl border backdrop-blur-sm transition-all text-left overflow-hidden group",
+                   isActive 
+                     ? `bg-gradient-to-br ${config.gradient}/20 ${config.border} shadow-lg shadow-primary/10` 
+                     : "border-border/50 bg-gradient-to-br from-card/60 to-card/40 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                 )}
+               >
+                 {/* Gradient overlay on hover/active */}
+                 <div className={cn(
+                   "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
+                   config.gradient,
+                   isActive ? "opacity-20" : "group-hover:opacity-10"
+                 )} />
+                 
+                 <div className="relative z-10">
+                   <div className={cn(
+                     "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-2 backdrop-blur-sm transition-colors",
+                     isActive ? config.bg : "bg-muted/50"
+                   )}>
+                     <config.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? config.text : "text-muted-foreground")} />
+                   </div>
+                   <p className="font-bold text-base sm:text-lg leading-tight">{formatCurrency(total)}</p>
+                   <p className="text-[10px] sm:text-xs text-muted-foreground font-medium mt-1">{config.label}</p>
+                 </div>
 
-                {isActive && (
-                  <motion.div 
-                    layoutId="activeIndicator"
-                    className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", `bg-gradient-to-r ${config.gradient}`)}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </motion.div>
+                 {isActive && (
+                   <motion.div 
+                     layoutId="activeIndicator"
+                     className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", `bg-gradient-to-r ${config.gradient}`)}
+                   />
+                 )}
+               </motion.button>
+             );
+           })}
+         </motion.div>
 
         {/* Filter Pills */}
         <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">

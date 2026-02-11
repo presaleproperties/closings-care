@@ -320,42 +320,43 @@ export default function PayoutsPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Stats Grid - Collapsible */}
-          <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {statCards.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  className={cn(
-                    "relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-4",
-                    "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-                  )}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.08 }}
-                  whileHover={{ y: -2 }}
-                >
-                  <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", stat.gradient)} />
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", stat.iconBg)}>
-                        <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                        {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-medium mb-1">{stat.label}</p>
-                    <AnimatedNumber
-                      value={stat.value}
-                      className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
-                      duration={0.8}
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </CollapsibleSection>
+           {/* Stats Grid - Collapsible */}
+           <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+               {statCards.map((stat, index) => (
+                 <motion.div
+                   key={stat.label}
+                   className={cn(
+                     "relative overflow-hidden rounded-2xl border backdrop-blur-sm p-4 transition-all duration-300",
+                     "bg-gradient-to-br from-card/60 to-card/40 border-border/50",
+                     "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
+                   )}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   transition={{ delay: index * 0.08 }}
+                   whileHover={{ y: -3 }}
+                 >
+                   <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", stat.gradient)} />
+                   <div className="relative z-10">
+                     <div className="flex items-center justify-between mb-3">
+                       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-sm", stat.iconBg)}>
+                         <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
+                       </div>
+                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                         {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
+                       </span>
+                     </div>
+                     <p className="text-xs text-muted-foreground font-semibold mb-1.5">{stat.label}</p>
+                     <AnimatedNumber
+                       value={stat.value}
+                       className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                       duration={0.8}
+                     />
+                   </div>
+                 </motion.div>
+               ))}
+             </div>
+           </CollapsibleSection>
 
           {/* Flagged Alert */}
           <AnimatePresence>
@@ -418,35 +419,35 @@ export default function PayoutsPage() {
                 ))}
               </div>
 
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by property or client..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 h-12 rounded-xl bg-card/80 border-border/50 focus-visible:ring-primary/30 focus-visible:border-primary/50"
-                  />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="h-12 px-4 rounded-xl gap-2 border-border/50 hover:border-primary/40 bg-card/80">
-                      <TrendingUp className="w-4 h-4" />
-                      <span className="hidden sm:inline">{typeFilter === 'ALL' ? 'All Types' : typeFilter}</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44 rounded-xl">
-                    <DropdownMenuItem onClick={() => setTypeFilter('ALL')} className="rounded-lg">
-                      All Types
-                    </DropdownMenuItem>
-                    {(['Advance', 'Completion', 'Commission'] as const).map((type) => (
-                      <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)} className="rounded-lg">
-                        {type}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+               <div className="flex gap-2">
+                 <div className="relative flex-1">
+                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                   <Input
+                     placeholder="Search by property or client..."
+                     value={search}
+                     onChange={(e) => setSearch(e.target.value)}
+                     className="pl-10 h-11 rounded-xl bg-card/80 border-border/50 backdrop-blur-sm focus-visible:ring-primary/40 focus-visible:border-primary/50 transition-all"
+                   />
+                 </div>
+                 <DropdownMenu>
+                   <DropdownMenuTrigger asChild>
+                     <Button variant="outline" className="h-11 px-4 rounded-xl gap-2 border-border/50 hover:border-primary/40 bg-card/80 backdrop-blur-sm hover:bg-card transition-all">
+                       <TrendingUp className="w-4 h-4" />
+                       <span className="hidden sm:inline text-sm font-medium">{typeFilter === 'ALL' ? 'All Types' : typeFilter}</span>
+                     </Button>
+                   </DropdownMenuTrigger>
+                   <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                     <DropdownMenuItem onClick={() => setTypeFilter('ALL')} className="rounded-lg">
+                       All Types
+                     </DropdownMenuItem>
+                     {(['Advance', 'Completion', 'Commission'] as const).map((type) => (
+                       <DropdownMenuItem key={type} onClick={() => setTypeFilter(type)} className="rounded-lg">
+                         {type}
+                       </DropdownMenuItem>
+                     ))}
+                   </DropdownMenuContent>
+                 </DropdownMenu>
+               </div>
             </div>
           </CollapsibleSection>
 
