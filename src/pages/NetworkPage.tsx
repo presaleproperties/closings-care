@@ -118,8 +118,8 @@ export default function NetworkPage() {
       .map(([year, amount]) => ({ year, amount }));
   }, [revenueShare]);
 
-  const activeAgents = agents.filter(a => a.status === 'ACTIVE' || !a.departure_date);
-  const departedAgents = agents.filter(a => a.status === 'DEPARTED' || !!a.departure_date);
+  const activeAgents = agents.filter(a => a.status === 'ACTIVE' && !a.departure_date);
+  const departedAgents = agents.filter(a => a.status !== 'ACTIVE' || !!a.departure_date);
   const totalRevShare = revenueShare.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
 
   const tooltipStyle = {
