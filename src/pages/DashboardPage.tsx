@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
-import { useDeals } from '@/hooks/useDeals';
-import { usePayouts, useMarkPayoutPaid, useAutoMarkPayoutsPaid, useUpdatePayout } from '@/hooks/usePayouts';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
@@ -16,7 +14,6 @@ import { QuickStats } from '@/components/dashboard/QuickStats';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
 import { ExpenseAnalytics } from '@/components/dashboard/ExpenseAnalytics';
-import { UpcomingPayouts } from '@/components/dashboard/UpcomingPayouts';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
@@ -37,14 +34,13 @@ import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, BarChart3, Sparkles, Lightbulb } from 'lucide-react';
-import { OverduePayoutNotification } from '@/components/payouts/OverduePayoutNotification';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 
-// Dashboard v2.2 - RevShare replaces Other Income
+// Dashboard v3.0 - Fully synced data driven
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -55,8 +51,6 @@ const staggerContainer = {
 };
 
 export default function DashboardPage() {
-  const { data: deals = [] } = useDeals();
-  const { data: payouts = [] } = usePayouts();
   const { data: expenses = [] } = useExpenses();
   const { data: properties = [] } = useProperties();
   const { data: settings } = useSettings();
@@ -65,12 +59,8 @@ export default function DashboardPage() {
   const { data: networkAgents = [] } = useNetworkAgents();
   const { syncedPayouts, receivedYTD, comingIn } = useSyncedIncome(syncedTransactions);
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
-  const markPaid = useMarkPayoutPaid();
-  const autoMarkPaid = useAutoMarkPayoutsPaid();
-  const updatePayout = useUpdatePayout();
   const refreshData = useRefreshData();
   
-  const autoMarkedRef = useRef<Set<string>>(new Set());
   const userName = (settings as any)?.full_name?.split(' ')[0] || undefined;
 
   const now = new Date();
@@ -92,15 +82,12 @@ export default function DashboardPage() {
     
     const recentRevShare = revenueShare.filter((r: any) => r.period >= cutoff);
     if (recentRevShare.length === 0) {
-      // Fallback: use all available data
       const total = revenueShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-      // Get unique months
       const uniqueMonths = new Set(revenueShare.map((r: any) => r.period));
       return uniqueMonths.size > 0 ? total / uniqueMonths.size : 0;
     }
     
     const total = recentRevShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
-    // Divide by 12 (or fewer if less data available)
     const uniqueMonths = new Set(recentRevShare.map((r: any) => r.period));
     const monthCount = Math.min(uniqueMonths.size, 12);
     return monthCount > 0 ? total / monthCount : 0;
@@ -134,18 +121,6 @@ export default function DashboardPage() {
     return (taxBreakdown.totalTax + gstOwed) * bufferMultiplier;
   }, [incomeTotals.paid, incomeTotals.projected, expenseTotals.annual, province, taxType, taxBuffer, gstRegistered, gstRate]);
 
-  const handleAutoMarkPaid = useCallback((payoutIds: string[]) => {
-    const newIds = payoutIds.filter(id => !autoMarkedRef.current.has(id));
-    if (newIds.length === 0) return;
-    
-    newIds.forEach(id => autoMarkedRef.current.add(id));
-    autoMarkPaid.mutate(newIds);
-  }, [autoMarkPaid]);
-
-  const handleUpdatePayoutDueDate = useCallback((payoutId: string, newDate: string) => {
-    updatePayout.mutate({ id: payoutId, data: { due_date: newDate } });
-  }, [updatePayout]);
-
   if (isChecking) {
     return (
       <AppLayout>
@@ -165,7 +140,7 @@ export default function DashboardPage() {
     );
   }
 
-  const isEmpty = deals.length === 0 && syncedTransactions.length === 0;
+  const isEmpty = syncedTransactions.length === 0;
 
   return (
     <AppLayout>
@@ -198,26 +173,14 @@ export default function DashboardPage() {
               </h1>
             </motion.div>
 
-            {/* Overdue Notification */}
-            <div className="px-5 mb-4">
-              <OverduePayoutNotification
-                payouts={payouts}
-                onMarkPaid={(id) => markPaid.mutate(id)}
-                onUpdateDueDate={handleUpdatePayoutDueDate}
-                isPending={markPaid.isPending || updatePayout.isPending}
-              />
-            </div>
-
             {/* Stats */}
             <div className="px-5 mb-6">
               <QuickStats 
-                deals={deals} 
-                payouts={payouts} 
                 revShareMonthlyAvg={revShareMonthlyAvg}
                 monthlyExpenses={expenseTotals.monthly}
-                onAutoMarkPaid={handleAutoMarkPaid}
                 syncedReceived={receivedYTD}
                 syncedComingIn={comingIn}
+                syncedTransactions={syncedTransactions}
               />
             </div>
 
@@ -245,25 +208,20 @@ export default function DashboardPage() {
               </div>
 
               <TabsContent value="insights" className="px-5 space-y-4 mt-0">
-                <ThisWeekFocus deals={deals} payouts={payouts} />
-                <InsightsGreeting deals={deals} payouts={payouts} syncedTransactions={syncedTransactions} userName={userName} />
-                <LatestActivity deals={deals} syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
-                <UpcomingRevenue payouts={payouts} deals={deals} syncedTransactions={syncedTransactions} />
-                <NeedsAttention deals={deals} payouts={payouts} syncedTransactions={syncedTransactions} />
+                <ThisWeekFocus syncedTransactions={syncedTransactions} />
+                <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} />
+                <LatestActivity syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
+                <UpcomingRevenue syncedTransactions={syncedTransactions} />
+                <NeedsAttention syncedTransactions={syncedTransactions} />
                 <RevShareSummaryCard revenueShare={revenueShare} />
               </TabsContent>
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <PipelineProspects />
-                <IncomeProjection payouts={payouts} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
-                <UpcomingPayouts 
-                  payouts={payouts} 
-                  onMarkPaid={(id) => markPaid.mutate(id)}
-                  isPending={markPaid.isPending}
-                />
+                <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                 <FinancialHealth 
-                  deals={deals}
-                  payouts={payouts}
+                  deals={[]}
+                  payouts={[]}
                   expenses={expenses}
                   properties={properties}
                   revShareMonthlyAvg={revShareMonthlyAvg}
@@ -295,8 +253,8 @@ export default function DashboardPage() {
 
               <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
                 <ExpenseAnalytics expenses={expenses} />
-                <AIBusinessInsights deals={deals} />
-                <BusinessAnalytics deals={deals} payouts={payouts} syncedPayouts={syncedPayouts} />
+                <AIBusinessInsights syncedTransactions={syncedTransactions} />
+                <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
               </TabsContent>
             </Tabs>
           </div>
@@ -309,14 +267,6 @@ export default function DashboardPage() {
             animate="visible"
           >
             <div className="p-5 lg:p-6 xl:p-8 space-y-6">
-              
-              {/* Overdue Alert */}
-              <OverduePayoutNotification
-                payouts={payouts}
-                onMarkPaid={(id) => markPaid.mutate(id)}
-                onUpdateDueDate={handleUpdatePayoutDueDate}
-                isPending={markPaid.isPending || updatePayout.isPending}
-              />
 
               {/* Stats Section */}
               <motion.section
@@ -325,13 +275,11 @@ export default function DashboardPage() {
                 transition={{ ...springConfig, delay: 0.1 }}
               >
                 <QuickStats 
-                  deals={deals} 
-                  payouts={payouts} 
                   revShareMonthlyAvg={revShareMonthlyAvg}
                   monthlyExpenses={expenseTotals.monthly}
-                  onAutoMarkPaid={handleAutoMarkPaid}
                   syncedReceived={receivedYTD}
                   syncedComingIn={comingIn}
+                  syncedTransactions={syncedTransactions}
                 />
               </motion.section>
 
@@ -399,10 +347,10 @@ export default function DashboardPage() {
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
                     <InsightsGreeting 
-                      deals={deals} 
-                      payouts={payouts} 
                       syncedTransactions={syncedTransactions}
+                      revenueShare={revenueShare}
                       userName={userName}
+                      receivedYTD={receivedYTD}
                     />
                   </motion.div>
 
@@ -413,7 +361,6 @@ export default function DashboardPage() {
                       transition={{ ...springConfig, delay: 0.3 }}
                     >
                       <LatestActivity 
-                        deals={deals}
                         syncedTransactions={syncedTransactions}
                         revenueShare={revenueShare}
                         networkAgents={networkAgents}
@@ -426,8 +373,6 @@ export default function DashboardPage() {
                       transition={{ ...springConfig, delay: 0.35 }}
                     >
                       <UpcomingRevenue 
-                        payouts={payouts}
-                        deals={deals}
                         syncedTransactions={syncedTransactions}
                       />
                     </motion.div>
@@ -438,8 +383,6 @@ export default function DashboardPage() {
                       transition={{ ...springConfig, delay: 0.4 }}
                     >
                       <NeedsAttention 
-                        deals={deals}
-                        payouts={payouts}
                         syncedTransactions={syncedTransactions}
                       />
                     </motion.div>
@@ -461,7 +404,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <IncomeProjection payouts={payouts} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
+                    <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                   </motion.div>
 
                   <div className="grid lg:grid-cols-3 gap-5 lg:gap-6 items-start">
@@ -472,8 +415,8 @@ export default function DashboardPage() {
                         transition={{ ...springConfig, delay: 0.3 }}
                       >
                         <FinancialHealth 
-                          deals={deals}
-                          payouts={payouts}
+                          deals={[]}
+                          payouts={[]}
                           expenses={expenses}
                           properties={properties}
                           revShareMonthlyAvg={revShareMonthlyAvg}
@@ -505,17 +448,6 @@ export default function DashboardPage() {
                         transition={{ ...springConfig, delay: 0.35 }}
                       >
                         <PipelineProspects />
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...springConfig, delay: 0.4 }}
-                      >
-                        <UpcomingPayouts 
-                          payouts={payouts} 
-                          onMarkPaid={(id) => markPaid.mutate(id)}
-                          isPending={markPaid.isPending}
-                        />
                       </motion.div>
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -582,14 +514,14 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <AIBusinessInsights deals={deals} />
+                    <AIBusinessInsights syncedTransactions={syncedTransactions} />
                   </motion.div>
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.3 }}
                   >
-                    <BusinessAnalytics deals={deals} payouts={payouts} syncedPayouts={syncedPayouts} />
+                    <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
                   </motion.div>
                 </TabsContent>
               </Tabs>

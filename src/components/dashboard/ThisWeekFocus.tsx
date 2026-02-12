@@ -5,47 +5,42 @@ import { formatCurrency } from '@/lib/format';
 import { differenceInDays, isBefore, startOfDay } from 'date-fns';
 
 interface ThisWeekFocusProps {
-  deals: any[];
-  payouts: any[];
+  syncedTransactions: any[];
 }
 
-export function ThisWeekFocus({ deals, payouts }: ThisWeekFocusProps) {
+export function ThisWeekFocus({ syncedTransactions }: ThisWeekFocusProps) {
   const [dismissed, setDismissed] = useState(false);
   const now = startOfDay(new Date());
 
   const focus = useMemo(() => {
-    // Find most overdue/stuck deals
-    const overdueDeals = deals
-      .filter(d => {
-        if (d.status !== 'PENDING') return false;
-        const closeDate = d.close_date_est;
-        return closeDate && isBefore(new Date(closeDate), now);
+    // Find active synced transactions past their close date
+    const overdue = syncedTransactions
+      .filter(tx => {
+        if (tx.status !== 'active') return false;
+        return tx.close_date && isBefore(new Date(tx.close_date), now);
       })
-      .map(d => ({
-        ...d,
-        daysOverdue: differenceInDays(now, new Date(d.close_date_est)),
+      .map(tx => ({
+        ...tx,
+        daysOverdue: differenceInDays(now, new Date(tx.close_date)),
       }))
       .sort((a, b) => b.daysOverdue - a.daysOverdue);
 
-    if (overdueDeals.length === 0) return null;
+    if (overdue.length === 0) return null;
 
-    const totalStuckRevenue = overdueDeals.reduce((s, d) => 
-      s + Number(d.gross_commission_est || d.net_commission_est || 0), 0
+    const totalStuckRevenue = overdue.reduce((s: number, tx: any) => 
+      s + Number(tx.raw_data?.myNetPayout?.amount || tx.commission_amount || 0), 0
     );
 
-    // Pick the most overdue deal for the suggested action
-    const topDeal = overdueDeals[0];
-    const agentName = topDeal.team_member || topDeal.client_name;
-    const address = topDeal.address || topDeal.project_name || 'the property';
+    const top = overdue[0];
+    const address = top.property_address || top.client_name || 'the property';
 
     return {
-      overdueCount: overdueDeals.length,
+      overdueCount: overdue.length,
       totalStuckRevenue,
-      agentName,
       address,
-      daysOverdue: topDeal.daysOverdue,
+      daysOverdue: top.daysOverdue,
     };
-  }, [deals, now]);
+  }, [syncedTransactions, now]);
 
   if (!focus || dismissed) return null;
 
@@ -62,14 +57,8 @@ export function ThisWeekFocus({ deals, payouts }: ThisWeekFocusProps) {
               {focus.overdueCount} overdue deal{focus.overdueCount > 1 ? 's' : ''} = {formatCurrency(focus.totalStuckRevenue)} stuck revenue
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Start with {focus.agentName} – they may need help getting these across the line.
+              Most overdue: {focus.address} – {focus.daysOverdue} days past close date.
             </p>
-            <div className="mt-2 p-2.5 rounded-lg border border-border/30 bg-muted/30">
-              <p className="text-[10px] text-muted-foreground mb-0.5">Suggested script:</p>
-              <p className="text-xs italic text-foreground/80">
-                "{focus.agentName}, I noticed {focus.address} is {focus.daysOverdue} days past close – anything I can help with?"
-              </p>
-            </div>
           </div>
         </div>
         <button 

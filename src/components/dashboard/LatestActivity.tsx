@@ -1,27 +1,26 @@
 import { useMemo, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Home, FileText, DollarSign, Users } from 'lucide-react';
+import { Bell, Home, FileText, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-type ActivityFilter = 'all' | 'listings' | 'transactions' | 'revshare' | 'network';
+type ActivityFilter = 'all' | 'listings' | 'transactions' | 'revshare';
 
 interface LatestActivityProps {
-  deals: any[];
   syncedTransactions: any[];
   revenueShare: any[];
   networkAgents: any[];
 }
 
-export function LatestActivity({ deals, syncedTransactions, revenueShare, networkAgents }: LatestActivityProps) {
+export function LatestActivity({ syncedTransactions, revenueShare, networkAgents }: LatestActivityProps) {
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
   const activities = useMemo(() => {
     const items: Array<{
       id: string;
-      type: 'listing' | 'transaction' | 'revshare' | 'network';
+      type: 'listing' | 'transaction' | 'revshare';
       title: string;
       subtitle: string;
       amount: number | null;
@@ -29,24 +28,24 @@ export function LatestActivity({ deals, syncedTransactions, revenueShare, networ
       badge?: string;
     }> = [];
 
-    // Deals as listings/transactions
-    deals.forEach(d => {
-      const date = d.pending_date || d.listing_date || d.created_at;
+    // Synced transactions
+    syncedTransactions.forEach((tx: any) => {
+      const date = tx.close_date || tx.listing_date || tx.synced_at;
       if (!date) return;
-      const isListing = d.deal_type === 'SELL' && d.listing_date;
+      const isListing = tx.is_listing;
       items.push({
-        id: `deal-${d.id}`,
+        id: `tx-${tx.id}`,
         type: isListing ? 'listing' : 'transaction',
-        title: isListing ? 'New Listing' : (d.status === 'PENDING' ? 'Transaction Pending' : 'Transaction Closed'),
-        subtitle: `${d.address || d.client_name}${d.city ? `, ${d.city}` : ''}`,
-        amount: Number(d.sale_price || 0),
+        title: isListing ? 'Listing' : (tx.status === 'closed' ? 'Transaction Closed' : 'Transaction Active'),
+        subtitle: `${tx.property_address || tx.client_name || 'Unknown'}${tx.city ? `, ${tx.city}` : ''}`,
+        amount: Number(tx.sale_price || 0),
         date: new Date(date),
-        badge: d.team_member || undefined,
+        badge: tx.agent_name || undefined,
       });
     });
 
     // RevShare entries
-    revenueShare.forEach(r => {
+    revenueShare.forEach((r: any) => {
       items.push({
         id: `rev-${r.id}`,
         type: 'revshare',
@@ -62,9 +61,9 @@ export function LatestActivity({ deals, syncedTransactions, revenueShare, networ
 
     // Apply filter
     if (filter === 'all') return items.slice(0, 8);
-    const typeMap: Record<string, string> = { listings: 'listing', transactions: 'transaction', revshare: 'revshare', network: 'network' };
+    const typeMap: Record<string, string> = { listings: 'listing', transactions: 'transaction', revshare: 'revshare' };
     return items.filter(i => i.type === typeMap[filter]).slice(0, 8);
-  }, [deals, revenueShare, filter]);
+  }, [syncedTransactions, revenueShare, filter]);
 
   const filterIcons = [
     { key: 'all' as const, icon: Bell, label: 'All' },
@@ -77,7 +76,6 @@ export function LatestActivity({ deals, syncedTransactions, revenueShare, networ
     listing: 'border-l-primary',
     transaction: 'border-l-blue-500',
     revshare: 'border-l-emerald-500',
-    network: 'border-l-amber-500',
   };
 
   return (
