@@ -5,18 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles, Target, TrendingUp, Users, Calendar, Loader2, RefreshCw, ChevronRight } from 'lucide-react';
-import { Deal } from '@/lib/types';
 import { format, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface AIBusinessInsightsProps {
-  deals: Deal[];
+  syncedTransactions: any[];
 }
 
 const YEARLY_TARGET = 100;
 
-export function AIBusinessInsights({ deals }: AIBusinessInsightsProps) {
+export function AIBusinessInsights({ syncedTransactions }: AIBusinessInsightsProps) {
   const navigate = useNavigate();
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,42 +23,41 @@ export function AIBusinessInsights({ deals }: AIBusinessInsightsProps) {
   const now = new Date();
   const thisYear = now.getFullYear();
 
-  // Filter deals written this year (using pending_date as FIRM date)
-  const yearlyDeals = useMemo(() => {
+  // Filter transactions this year (using close_date as primary, fallback to listing_date)
+  const yearlyTx = useMemo(() => {
     const yearStart = startOfYear(now);
     const yearEnd = endOfYear(now);
     
-    return deals.filter(deal => {
-      // Use pending_date (FIRM date) as the written date, fallback to created_at
-      const firmDate = deal.pending_date ? parseISO(deal.pending_date) : parseISO(deal.created_at);
-      return isWithinInterval(firmDate, { start: yearStart, end: yearEnd });
+    return syncedTransactions.filter((tx: any) => {
+      const date = tx.close_date || tx.listing_date || tx.synced_at;
+      if (!date) return false;
+      return isWithinInterval(new Date(date), { start: yearStart, end: yearEnd });
     });
-  }, [deals, now]);
+  }, [syncedTransactions, now]);
 
-  // Deals by month (using FIRM date)
+  // Deals by month
   const dealsByMonth = useMemo(() => {
-    const months: Record<string, { count: number; deals: Deal[] }> = {};
+    const months: Record<string, { count: number; txs: any[] }> = {};
     
-    yearlyDeals.forEach(deal => {
-      const firmDate = deal.pending_date ? parseISO(deal.pending_date) : parseISO(deal.created_at);
-      const monthKey = format(firmDate, 'MMM yyyy');
+    yearlyTx.forEach((tx: any) => {
+      const date = tx.close_date || tx.listing_date || tx.synced_at;
+      const monthKey = format(new Date(date), 'MMM yyyy');
       
       if (!months[monthKey]) {
-        months[monthKey] = { count: 0, deals: [] };
+        months[monthKey] = { count: 0, txs: [] };
       }
       months[monthKey].count++;
-      months[monthKey].deals.push(deal);
+      months[monthKey].txs.push(tx);
     });
     
     return months;
-  }, [yearlyDeals]);
+  }, [yearlyTx]);
 
-  // Get sorted months for display
   const sortedMonths = useMemo(() => {
     return Object.entries(dealsByMonth)
       .sort((a, b) => {
-        const dateA = parseISO(a[1].deals[0].pending_date || a[1].deals[0].created_at);
-        const dateB = parseISO(b[1].deals[0].pending_date || b[1].deals[0].created_at);
+        const dateA = new Date(a[1].txs[0].close_date || a[1].txs[0].listing_date || a[1].txs[0].synced_at);
+        const dateB = new Date(b[1].txs[0].close_date || b[1].txs[0].listing_date || b[1].txs[0].synced_at);
         return dateA.getTime() - dateB.getTime();
       });
   }, [dealsByMonth]);
@@ -67,57 +65,41 @@ export function AIBusinessInsights({ deals }: AIBusinessInsightsProps) {
   // Lead source breakdown
   const leadSourceBreakdown = useMemo(() => {
     const sources: Record<string, number> = {};
-    
-    yearlyDeals.forEach(deal => {
-      const source = deal.lead_source || 'Unknown';
+    yearlyTx.forEach((tx: any) => {
+      const source = tx.lead_source || 'Unknown';
       sources[source] = (sources[source] || 0) + 1;
     });
-    
     return Object.entries(sources)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
-  }, [yearlyDeals]);
+  }, [yearlyTx]);
 
-  // Team member breakdown (who wrote the deals)
-  const teamBreakdown = useMemo(() => {
-    const team: Record<string, { deals: number; solo: number }> = {
-      'You (Solo)': { deals: 0, solo: 0 }
-    };
-    
-    yearlyDeals.forEach(deal => {
-      if (deal.team_member) {
-        if (!team[deal.team_member]) {
-          team[deal.team_member] = { deals: 0, solo: 0 };
-        }
-        team[deal.team_member].deals++;
-      } else {
-        team['You (Solo)'].deals++;
-        team['You (Solo)'].solo++;
-      }
+  // City breakdown
+  const cityBreakdown = useMemo(() => {
+    const cities: Record<string, number> = {};
+    yearlyTx.forEach((tx: any) => {
+      const city = tx.city || 'Unknown';
+      cities[city] = (cities[city] || 0) + 1;
     });
-    
-    return Object.entries(team)
-      .filter(([_, data]) => data.deals > 0)
-      .sort((a, b) => b[1].deals - a[1].deals);
-  }, [yearlyDeals]);
+    return Object.entries(cities)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [yearlyTx]);
 
-  const progressPercent = Math.min((yearlyDeals.length / YEARLY_TARGET) * 100, 100);
-  const dealsRemaining = Math.max(YEARLY_TARGET - yearlyDeals.length, 0);
+  const progressPercent = Math.min((yearlyTx.length / YEARLY_TARGET) * 100, 100);
+  const dealsRemaining = Math.max(YEARLY_TARGET - yearlyTx.length, 0);
   const monthsRemaining = 12 - now.getMonth();
   const dealsPerMonthNeeded = monthsRemaining > 0 ? Math.ceil(dealsRemaining / monthsRemaining) : dealsRemaining;
 
-  // Generate AI insight
   const generateInsight = async () => {
     setIsLoading(true);
     try {
       const topSource = leadSourceBreakdown[0];
-      const topTeamMember = teamBreakdown.find(([name]) => name !== 'You (Solo)');
-      const soloDeals = teamBreakdown.find(([name]) => name === 'You (Solo)');
       
       const prompt = `You are a business coach for a real estate agent. Analyze this data and provide 2-3 actionable insights in a friendly, encouraging tone. Keep it under 150 words.
 
 Data for ${thisYear}:
-- Total deals written: ${yearlyDeals.length}
+- Total transactions: ${yearlyTx.length}
 - Target: ${YEARLY_TARGET} deals
 - Deals remaining: ${dealsRemaining}
 - Months left: ${monthsRemaining}
@@ -126,8 +108,8 @@ Data for ${thisYear}:
 Top lead sources:
 ${leadSourceBreakdown.map(([source, count]) => `- ${source}: ${count} deals`).join('\n')}
 
-Team breakdown:
-${teamBreakdown.map(([name, data]) => `- ${name}: ${data.deals} deals`).join('\n')}
+Top cities:
+${cityBreakdown.map(([city, count]) => `- ${city}: ${count} deals`).join('\n')}
 
 Monthly breakdown:
 ${sortedMonths.map(([month, data]) => `- ${month}: ${data.count} deals`).join('\n')}
@@ -145,9 +127,8 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
       setAiInsight(data.response || data.message || 'Unable to generate insight at this time.');
     } catch (err) {
       console.error('AI insight error:', err);
-      // Fallback to static insight
       const topSource = leadSourceBreakdown[0];
-      setAiInsight(`📊 Your top lead source is ${topSource?.[0] || 'Unknown'} with ${topSource?.[1] || 0} deals. You're at ${yearlyDeals.length}/${YEARLY_TARGET} deals for ${thisYear}. ${dealsRemaining > 0 ? `Need ${dealsPerMonthNeeded} deals/month to hit your target!` : '🎉 You hit your target!'}`);
+      setAiInsight(`📊 Your top lead source is ${topSource?.[0] || 'Unknown'} with ${topSource?.[1] || 0} deals. You're at ${yearlyTx.length}/${YEARLY_TARGET} deals for ${thisYear}. ${dealsRemaining > 0 ? `Need ${dealsPerMonthNeeded} deals/month to hit your target!` : '🎉 You hit your target!'}`);
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +172,7 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
               <span className="font-semibold">{thisYear} Deal Target</span>
             </div>
             <Badge variant={progressPercent >= 100 ? 'default' : progressPercent >= 50 ? 'secondary' : 'outline'}>
-              {yearlyDeals.length} / {YEARLY_TARGET}
+              {yearlyTx.length} / {YEARLY_TARGET}
             </Badge>
           </div>
           <Progress value={progressPercent} className="h-3" />
@@ -221,7 +202,7 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-blue-500" />
-            <span className="font-semibold text-sm">Deals Written by Month (FIRM Date)</span>
+            <span className="font-semibold text-sm">Transactions by Month</span>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
             {sortedMonths.length > 0 ? (
@@ -237,7 +218,7 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
               ))
             ) : (
               <div className="col-span-full text-center text-muted-foreground py-4">
-                No deals written yet this year
+                No transactions yet this year
               </div>
             )}
           </div>
@@ -283,45 +264,37 @@ Focus on: Where should they double down? Any concerning trends? Celebrate wins!`
             </div>
           </div>
 
-          {/* Who Wrote the Deals */}
+          {/* Top Cities */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-orange-500" />
-              <span className="font-semibold text-sm">Who Wrote the Deals</span>
+              <span className="font-semibold text-sm">Top Cities</span>
             </div>
             <div className="space-y-2">
-              {teamBreakdown.length > 0 ? (
-                teamBreakdown.map(([name, data]) => {
-                  const isSolo = name === 'You (Solo)';
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => navigate('/deals')}
-                      className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                          isSolo ? 'bg-primary/20 text-primary' : 'bg-orange-500/20 text-orange-600'
-                        }`}>
-                          {isSolo ? 'You' : name.charAt(0)}
-                        </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm font-medium">{isSolo ? 'Your Solo Deals' : name}</span>
-                          {!isSolo && (
-                            <span className="text-xs text-muted-foreground">Wrote {data.deals} deals • You earn 30%</span>
-                          )}
-                        </div>
+              {cityBreakdown.length > 0 ? (
+                cityBreakdown.map(([city, count], idx) => (
+                  <button
+                    key={city}
+                    onClick={() => navigate('/deals')}
+                    className="w-full flex items-center justify-between p-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                        idx === 0 ? 'bg-primary/20 text-primary' : 'bg-orange-500/20 text-orange-600'
+                      }`}>
+                        {city.charAt(0)}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Badge variant="secondary">{data.deals}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </button>
-                  );
-                })
+                      <span className="text-sm font-medium">{city}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary">{count}</Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))
               ) : (
                 <div className="text-center text-muted-foreground py-4">
-                  No deals recorded
+                  No city data
                 </div>
               )}
             </div>

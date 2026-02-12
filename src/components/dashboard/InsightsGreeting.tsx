@@ -2,18 +2,18 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Sparkles, Home, TrendingUp, DollarSign, X } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { format, subMonths, isAfter, isBefore, startOfMonth } from 'date-fns';
+import { subMonths, isAfter, isBefore } from 'date-fns';
 import { formatCurrency } from '@/lib/format';
 import { useState } from 'react';
 
 interface InsightsGreetingProps {
-  deals: any[];
-  payouts: any[];
   syncedTransactions: any[];
+  revenueShare?: any[];
   userName?: string;
+  receivedYTD?: number;
 }
 
-export function InsightsGreeting({ deals, payouts, syncedTransactions, userName }: InsightsGreetingProps) {
+export function InsightsGreeting({ syncedTransactions, revenueShare = [], userName, receivedYTD = 0 }: InsightsGreetingProps) {
   const [showMilestone, setShowMilestone] = useState(true);
   const now = new Date();
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
@@ -21,41 +21,32 @@ export function InsightsGreeting({ deals, payouts, syncedTransactions, userName 
 
   const stats = useMemo(() => {
     const thisYear = now.getFullYear();
-    const lastYear = thisYear - 1;
 
-    // Current year stats from deals
-    const closedThisYear = deals.filter(d => d.status === 'CLOSED' && d.close_date_actual && new Date(d.close_date_actual).getFullYear() === thisYear);
-    const pendingDeals = deals.filter(d => d.status === 'PENDING');
-    
-    // Paid this year
-    const paidThisYear = payouts
-      .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
-      .reduce((s, p) => s + Number(p.amount), 0);
+    // From synced transactions
+    const closedThisYear = syncedTransactions.filter(t => t.status === 'closed' && t.close_date && new Date(t.close_date).getFullYear() === thisYear);
+    const activeDeals = syncedTransactions.filter(t => t.status === 'active');
+    const listings = syncedTransactions.filter(t => t.is_listing && t.status === 'active');
 
-    // Last 12 months vs prior 12 months from synced transactions
+    // Last 12 months vs prior 12 months
     const twelveMonthsAgo = subMonths(now, 12);
     const twentyFourMonthsAgo = subMonths(now, 24);
     
     const recentTx = syncedTransactions.filter(t => t.close_date && isAfter(new Date(t.close_date), twelveMonthsAgo));
     const priorTx = syncedTransactions.filter(t => t.close_date && isAfter(new Date(t.close_date), twentyFourMonthsAgo) && isBefore(new Date(t.close_date), twelveMonthsAgo));
 
-    const recentRevenue = recentTx.reduce((s, t) => s + Number(t.commission_amount || 0), 0);
-    const priorRevenue = priorTx.reduce((s, t) => s + Number(t.commission_amount || 0), 0);
+    const recentRevenue = recentTx.reduce((s: number, t: any) => s + Number(t.commission_amount || 0), 0);
+    const priorRevenue = priorTx.reduce((s: number, t: any) => s + Number(t.commission_amount || 0), 0);
     
     const txChange = priorTx.length > 0 ? Math.round(((recentTx.length - priorTx.length) / priorTx.length) * 100) : 0;
     const revChange = priorRevenue > 0 ? Math.round(((recentRevenue - priorRevenue) / priorRevenue) * 100) : 0;
 
-    // Active listings
-    const activeListings = deals.filter(d => d.deal_type === 'SELL' && d.status === 'PENDING' && d.listing_date);
-
-    // Total volume
-    const totalVolume = syncedTransactions.reduce((s, t) => s + Number(t.sale_price || 0), 0);
+    const totalVolume = syncedTransactions.reduce((s: number, t: any) => s + Number(t.sale_price || 0), 0);
 
     return {
       closedCount: closedThisYear.length,
-      pendingCount: pendingDeals.length,
-      paidThisYear,
-      activeListings: activeListings.length,
+      activeCount: activeDeals.length,
+      paidThisYear: receivedYTD,
+      activeListings: listings.length,
       recentTxCount: recentTx.length,
       priorTxCount: priorTx.length,
       recentRevenue,
@@ -64,14 +55,13 @@ export function InsightsGreeting({ deals, payouts, syncedTransactions, userName 
       revChange,
       totalVolume,
     };
-  }, [deals, payouts, syncedTransactions, now]);
+  }, [syncedTransactions, now, receivedYTD]);
 
   const milestoneThresholds = [50000000, 25000000, 10000000, 5000000, 1000000];
   const milestone = milestoneThresholds.find(m => stats.totalVolume >= m);
 
   return (
     <div className="space-y-4">
-      {/* Milestone Banner */}
       {milestone && showMilestone && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -101,7 +91,6 @@ export function InsightsGreeting({ deals, payouts, syncedTransactions, userName 
         </motion.div>
       )}
 
-      {/* Greeting Card */}
       <Card className="p-5 border-border/40 bg-card/80 backdrop-blur-sm">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -113,13 +102,12 @@ export function InsightsGreeting({ deals, payouts, syncedTransactions, userName 
                 {greeting}, {displayName}
               </h2>
               <p className="text-sm text-muted-foreground">
-                You have {stats.closedCount} deals closed, {formatCurrency(stats.paidThisYear)} earned, {stats.pendingCount} pending in {now.getFullYear()}.
+                You have {stats.closedCount} deals closed, {formatCurrency(stats.paidThisYear)} earned, {stats.activeCount} active in {now.getFullYear()}.
               </p>
             </div>
           </div>
         </div>
 
-        {/* YoY Comparison Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           <Card className="p-3 border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2 mb-1">

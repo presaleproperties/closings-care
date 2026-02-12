@@ -1,13 +1,11 @@
 import { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat } from 'lucide-react';
-import { Deal, Payout } from '@/lib/types';
 import { parseISO, isBefore, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { formatCurrency } from '@/lib/format';
-import { calculatePayoutsWithBrokerageCap } from '@/lib/brokerageCapProjection';
 import { useSettings } from '@/hooks/useSettings';
 import {
   Dialog,
@@ -17,96 +15,51 @@ import {
 } from '@/components/ui/dialog';
 
 interface QuickStatsProps {
-  deals: Deal[];
-  payouts: Payout[];
   revShareMonthlyAvg?: number;
   monthlyExpenses: number;
-  onAutoMarkPaid?: (payoutIds: string[]) => void;
   syncedReceived?: number;
   syncedComingIn?: number;
+  syncedTransactions?: any[];
 }
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpenses, onAutoMarkPaid, syncedReceived, syncedComingIn }: QuickStatsProps) {
-  const today = startOfDay(new Date());
+export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedReceived = 0, syncedComingIn = 0, syncedTransactions = [] }: QuickStatsProps) {
   const thisYear = new Date().getFullYear();
   const [showBreakdown, setShowBreakdown] = useState(false);
   const { data: settings } = useSettings();
 
-  const payoutsWithCap = useMemo(() => {
-    return calculatePayoutsWithBrokerageCap(payouts, settings);
-  }, [payouts, settings]);
-
-  useEffect(() => {
-    if (!onAutoMarkPaid) return;
-    
-    const overdueUnpaid = payouts.filter(p => {
-      if (p.status === 'PAID' || !p.due_date) return false;
-      const dueDate = parseISO(p.due_date);
-      return isBefore(dueDate, today);
-    });
-
-    if (overdueUnpaid.length > 0) {
-      onAutoMarkPaid(overdueUnpaid.map(p => p.id));
-    }
-  }, [payouts, onAutoMarkPaid, today]);
-
   const breakdown = useMemo(() => {
-    const totalCommissions = syncedComingIn !== undefined
-      ? syncedComingIn
-      : payoutsWithCap
-        .filter(p => p.status !== 'PAID')
-        .reduce((sum, p) => sum + p.netAmount, 0);
-
-    // RevShare projected over 48 months
+    const totalCommissions = syncedComingIn;
     const totalRevShare = revShareMonthlyAvg * 48;
 
     return {
       commissions: totalCommissions,
       revShare: totalRevShare,
       total: totalCommissions + totalRevShare,
-      unpaidPayoutsCount: payouts.filter(p => p.status !== 'PAID').length,
       monthsProjected: 48,
     };
-  }, [payoutsWithCap, payouts, revShareMonthlyAvg, syncedComingIn]);
+  }, [revShareMonthlyAvg, syncedComingIn]);
 
   const stats = useMemo(() => {
-    const totalCommissions = syncedComingIn !== undefined
-      ? syncedComingIn
-      : payoutsWithCap
-        .filter(p => p.status !== 'PAID')
-        .reduce((sum, p) => sum + p.netAmount, 0);
+    const totalCommissions = syncedComingIn;
+    const totalEarned = syncedReceived;
 
-    const totalEarned = syncedReceived !== undefined
-      ? syncedReceived
-      : payoutsWithCap
-        .filter(p => p.status === 'PAID')
-        .reduce((sum, p) => sum + p.netAmount, 0);
-
-    const thisYearCommissions = syncedComingIn !== undefined
-      ? syncedComingIn
-      : payoutsWithCap
-        .filter(p => p.status !== 'PAID' && p.due_date && new Date(p.due_date).getFullYear() === thisYear)
-        .reduce((sum, p) => sum + p.netAmount, 0);
-    
-    // RevShare projected over 48 months for total, 12 months for this year
-    const totalRevShare = revShareMonthlyAvg * 48;
     const thisYearRevShare = revShareMonthlyAvg * 12;
+    const totalRevShare = revShareMonthlyAvg * 48;
     
     const totalProjected = totalCommissions + totalRevShare;
-    const thisYearProjected = thisYearCommissions + thisYearRevShare;
+    const thisYearProjected = totalCommissions + thisYearRevShare;
 
-    const totalGrossCommission = deals.reduce((sum, d) => {
-      const grossCommission = d.gross_commission_est || 
-        ((d.advance_commission || 0) + (d.completion_commission || 0));
-      return sum + grossCommission;
-    }, 0);
-    const avgDealValue = deals.length > 0
-      ? totalGrossCommission / deals.length
-      : 0;
+    // Avg deal value from synced transactions
+    const txWithCommission = syncedTransactions.filter((tx: any) => {
+      const net = tx.raw_data?.myNetPayout?.amount ?? tx.commission_amount;
+      return net && Number(net) > 0;
+    });
+    const totalGross = txWithCommission.reduce((sum: number, tx: any) => sum + Number(tx.commission_amount || 0), 0);
+    const avgDealValue = txWithCommission.length > 0 ? totalGross / txWithCommission.length : 0;
 
-    const activeDeals = deals.filter(d => d.status === 'PENDING').length;
+    const activeDeals = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
 
     return {
       totalProjected,
@@ -115,8 +68,9 @@ export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpe
       avgDealValue,
       activeDeals,
       monthlyExpenses,
+      totalDealCount: syncedTransactions.length,
     };
-  }, [deals, payouts, payoutsWithCap, revShareMonthlyAvg, monthlyExpenses, thisYear, syncedComingIn, syncedReceived]);
+  }, [revShareMonthlyAvg, monthlyExpenses, thisYear, syncedComingIn, syncedReceived, syncedTransactions]);
 
   return (
     <div className="space-y-4">
@@ -239,7 +193,7 @@ export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpe
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Gross commission</p>
-                <p className="text-sm font-semibold">{deals.length} total deals</p>
+                <p className="text-sm font-semibold">{stats.totalDealCount} total deals</p>
               </div>
             </div>
           </motion.div>
@@ -372,14 +326,12 @@ export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpe
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            {/* Total */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
               <p className="text-sm text-muted-foreground mb-1">Total Projected</p>
               <p className="text-3xl font-bold text-primary">{formatCurrency(breakdown.total)}</p>
               <p className="text-xs text-muted-foreground mt-1">Next {breakdown.monthsProjected} months</p>
             </div>
 
-            {/* Commissions */}
             <div className="p-5 rounded-2xl bg-success/10 border border-success/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -389,11 +341,10 @@ export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpe
                 <span className="font-bold text-xl text-success">{formatCurrency(breakdown.commissions)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {breakdown.unpaidPayoutsCount} pending payout{breakdown.unpaidPayoutsCount !== 1 ? 's' : ''} (net of brokerage split)
+                Active deals (net of brokerage split)
               </p>
             </div>
 
-            {/* RevShare Income */}
             <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -403,7 +354,7 @@ export function QuickStats({ deals, payouts, revShareMonthlyAvg = 0, monthlyExpe
                 <span className="font-bold text-xl text-emerald-500">{formatCurrency(breakdown.revShare)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                {formatCurrency(revShareMonthlyAvg)}/mo avg over {breakdown.monthsProjected} months
+                {formatCurrency(revShareMonthlyAvg)}/mo avg × {breakdown.monthsProjected} months
               </p>
             </div>
           </div>

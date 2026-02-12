@@ -3,16 +3,14 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { differenceInDays, addDays, startOfDay, isBefore, isAfter } from 'date-fns';
+import { addDays, startOfDay, isBefore, isAfter } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 interface NeedsAttentionProps {
-  deals: any[];
-  payouts: any[];
   syncedTransactions: any[];
 }
 
-export function NeedsAttention({ deals, payouts, syncedTransactions }: NeedsAttentionProps) {
+export function NeedsAttention({ syncedTransactions }: NeedsAttentionProps) {
   const navigate = useNavigate();
   const now = startOfDay(new Date());
 
@@ -26,50 +24,13 @@ export function NeedsAttention({ deals, payouts, syncedTransactions }: NeedsAtte
       severity: 'error' | 'warning' | 'info';
     }> = [];
 
-    // Overdue deals - past expected close date
-    const overdueDeals = deals.filter(d => {
-      if (d.status !== 'PENDING') return false;
-      const closeDate = d.close_date_est || d.close_date_actual;
-      return closeDate && isBefore(new Date(closeDate), now);
-    });
-    if (overdueDeals.length > 0) {
-      const overdueValue = overdueDeals.reduce((s, d) => s + Number(d.gross_commission_est || d.net_commission_est || 0), 0);
-      items.push({
-        id: 'overdue',
-        title: `You have ${overdueDeals.length} overdue deal${overdueDeals.length > 1 ? 's' : ''}`,
-        subtitle: `${overdueDeals.length} deals past expected close date`,
-        amount: overdueValue,
-        link: '/deals',
-        severity: 'error',
-      });
-    }
-
-    // Closing this week
-    const weekOut = addDays(now, 7);
-    const closingThisWeek = payouts.filter(p => {
-      if (p.status === 'PAID') return false;
-      return p.due_date && isAfter(new Date(p.due_date), now) && isBefore(new Date(p.due_date), weekOut);
-    });
-    if (closingThisWeek.length > 0) {
-      const weekValue = closingThisWeek.reduce((s, p) => s + Number(p.amount), 0);
-      items.push({
-        id: 'this-week',
-        title: `You have ${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing this week`,
-        subtitle: `${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing within 7 days`,
-        amount: weekValue,
-        link: '/payouts',
-        severity: 'warning',
-      });
-    }
-
     // Synced active deals with past close dates (flagged)
     const flaggedSynced = syncedTransactions.filter((tx: any) => {
       if (tx.status !== 'active') return false;
-      const closeDate = tx.close_date;
-      return closeDate && isBefore(new Date(closeDate), now);
+      return tx.close_date && isBefore(new Date(tx.close_date), now);
     });
     if (flaggedSynced.length > 0) {
-      const flaggedValue = flaggedSynced.reduce((s: number, tx: any) => s + Number(tx.my_net_payout || tx.commission_amount || 0), 0);
+      const flaggedValue = flaggedSynced.reduce((s: number, tx: any) => s + Number(tx.raw_data?.myNetPayout?.amount || tx.commission_amount || 0), 0);
       items.push({
         id: 'flagged-synced',
         title: `${flaggedSynced.length} active deal${flaggedSynced.length > 1 ? 's' : ''} past close date`,
@@ -80,44 +41,28 @@ export function NeedsAttention({ deals, payouts, syncedTransactions }: NeedsAtte
       });
     }
 
-    // Aging pipeline - pending > 30 days
-    const agingDeals = deals.filter(d => {
-      if (d.status !== 'PENDING') return false;
-      const pendDate = d.pending_date || d.created_at;
-      return pendDate && differenceInDays(now, new Date(pendDate)) > 30;
+    // Closing this week from synced
+    const weekOut = addDays(now, 7);
+    const closingThisWeek = syncedTransactions.filter((tx: any) => {
+      if (tx.status === 'closed') return false;
+      return tx.close_date && isAfter(new Date(tx.close_date), now) && isBefore(new Date(tx.close_date), weekOut);
     });
-    if (agingDeals.length > 0) {
-      const agingValue = agingDeals.reduce((s, d) => s + Number(d.gross_commission_est || d.net_commission_est || 0), 0);
+    if (closingThisWeek.length > 0) {
+      const weekValue = closingThisWeek.reduce((s: number, tx: any) => s + Number(tx.raw_data?.myNetPayout?.amount || tx.commission_amount || 0), 0);
       items.push({
-        id: 'aging',
-        title: `You have ${agingDeals.length} deals aging in pipeline`,
-        subtitle: `${agingDeals.length} deals pending 30+ days`,
-        amount: agingValue,
+        id: 'this-week',
+        title: `${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing this week`,
+        subtitle: `${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing within 7 days`,
+        amount: weekValue,
         link: '/deals',
-        severity: 'info',
-      });
-    }
-
-    // Overdue payouts
-    const overduePayouts = payouts.filter(p => 
-      p.status !== 'PAID' && p.due_date && isBefore(new Date(p.due_date), now)
-    );
-    if (overduePayouts.length > 0) {
-      const overduePayoutValue = overduePayouts.reduce((s, p) => s + Number(p.amount), 0);
-      items.push({
-        id: 'overdue-payouts',
-        title: `${overduePayouts.length} overdue payout${overduePayouts.length > 1 ? 's' : ''}`,
-        subtitle: 'Payments past their due date',
-        amount: overduePayoutValue,
-        link: '/payouts',
-        severity: 'error',
+        severity: 'warning',
       });
     }
 
     return items;
-  }, [deals, payouts, now]);
+  }, [syncedTransactions, now]);
 
-  const totalItems = alerts.reduce((s, a) => s + 1, 0);
+  const totalItems = alerts.length;
 
   const severityColors = {
     error: 'text-destructive',
@@ -153,7 +98,7 @@ export function NeedsAttention({ deals, payouts, syncedTransactions }: NeedsAtte
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">{alert.subtitle}</p>
                 <button className="text-xs text-primary flex items-center gap-0.5 mt-1 hover:underline">
-                  See {alert.id === 'overdue' ? `${alerts.find(a => a.id === 'overdue') ? 'items' : 'item'}` : 'details'} <ArrowRight className="h-3 w-3" />
+                  See details <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
               <p className="text-sm font-bold text-foreground ml-3">
