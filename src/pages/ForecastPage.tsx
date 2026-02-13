@@ -56,7 +56,7 @@ export default function ForecastPage() {
   const { data: settings } = useSettings();
   const refreshData = useRefreshData();
 
-  const [selectedYear, setSelectedYear] = useState<string>('2026');
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
 
   // Calculate months needed to cover all close dates
   const monthsNeeded = useMemo(() => {

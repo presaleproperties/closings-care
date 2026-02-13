@@ -76,13 +76,13 @@ export function getYearMonths(year: number): string[] {
   return months;
 }
 
-// Get months from Jan 2025 through end of projection period
+// Get months from Jan 2023 through end of projection period
 export function getExtendedMonthRange(projectionMonths: number = 24): string[] {
   const months: string[] = [];
   const now = new Date();
   
-  // Start from Jan 2025 to capture historical transaction data
-  const startDate = new Date(2025, 0, 1);
+  // Start from Jan 2023 to capture all historical transaction data
+  const startDate = new Date(2023, 0, 1);
   // End at current month + projection months
   const endDate = new Date(now.getFullYear(), now.getMonth() + projectionMonths, 1);
   
