@@ -56,8 +56,8 @@ export default function AuthPage() {
         if (password !== confirmPassword) {
           throw new Error('Passwords do not match');
         }
-        if (password.length < 6) {
-          throw new Error('Password must be at least 6 characters');
+        if (password.length < 8) {
+           throw new Error('Password must be at least 8 characters');
         }
         const { error } = await updatePassword(password);
         if (error) throw error;
@@ -207,7 +207,7 @@ export default function AuthPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    minLength={6}
+                    minLength={8}
                     className="h-12 pr-12"
                   />
                   <button
@@ -231,7 +231,7 @@ export default function AuthPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={8}
                   className="h-12"
                 />
               </div>
