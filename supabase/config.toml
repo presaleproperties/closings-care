@@ -17,3 +17,18 @@ verify_jwt = false
 
 [functions.scheduled-sync]
 verify_jwt = false
+
+[functions.admin-analytics]
+verify_jwt = false
+
+[functions.admin-update-subscription]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.create-portal-session]
+verify_jwt = false
