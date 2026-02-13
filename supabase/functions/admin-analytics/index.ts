@@ -20,28 +20,23 @@ serve(async (req) => {
       throw new Error("No authorization header");
     }
 
-    // Create Supabase client with the user's token to check admin status
-    const supabaseClient = createClient(
+    // Create admin Supabase client to verify user and access data
+
+    // Verify user by passing their token to getUser via service role client
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Validate the JWT using getClaims
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) {
       throw new Error("User not authenticated");
     }
 
-    const user = { id: claimsData.claims.sub as string };
-
     // Check if user is admin via user_roles table
-    const { data: adminRole, error: roleError } = await supabaseClient
+    const { data: adminRole, error: roleError } = await supabaseAdmin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
@@ -51,18 +46,6 @@ serve(async (req) => {
     if (roleError || !adminRole) {
       throw new Error("Unauthorized: Admin access required");
     }
-
-    // Create admin Supabase client for full access
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
 
     // Fetch all profiles
     const { data: profiles, error: allProfilesError } = await supabaseAdmin
