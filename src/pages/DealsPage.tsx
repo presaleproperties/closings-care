@@ -140,7 +140,7 @@ export default function DealsPage() {
 
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto pb-24 lg:pb-6">
+            <div className="p-4 lg:p-6 space-y-5 pb-24 lg:pb-6">
 
               {/* ── Stats Row ── */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
