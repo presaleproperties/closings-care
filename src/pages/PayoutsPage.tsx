@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { format, parseISO, differenceInDays, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
@@ -60,6 +61,7 @@ interface PayoutCardProps {
 function PayoutCard({ payout }: PayoutCardProps) {
   const now = new Date();
   const DealIcon = payout.isPresale ? Building2 : Home;
+  const tx = payout.rawTransaction;
 
   const getDueBadge = (closeDate: string | null, status: string) => {
     if (status === 'closed') return { label: '✓ Received', color: 'bg-emerald-500/15 text-emerald-600', urgent: false, barColor: 'bg-gradient-to-b from-emerald-400 to-emerald-600' };
@@ -85,116 +87,271 @@ function PayoutCard({ payout }: PayoutCardProps) {
   };
 
   const typeStyle = payoutTypeConfig[payout.payoutType] || payoutTypeConfig['Commission'];
-  const displayName = payout.projectName || payout.client_name || 'Transaction';
+  
+  // Better deal name: use project name, then client name, then extract from address
+  const displayName = payout.projectName || payout.client_name || payout.property_address?.split(' - ')[0] || 'Transaction';
   const displayCity = payout.city || '';
+  const mls = tx.mls_number && tx.mls_number !== 'N/A Presale' && tx.mls_number !== 'N/A Presale ' ? tx.mls_number : null;
+  const lifecycleState = tx.lifecycle_state ? tx.lifecycle_state.split('_').map((w: string) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ') : null;
 
   return (
-    <motion.div
-      className={cn(
-        "relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all group",
-        isReceived 
-          ? "bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/20" 
-          : isFlagged
-            ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30"
-            : badge.urgent 
-              ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30" 
-              : "bg-card/80 border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-      )}
-      whileTap={{ scale: 0.985 }}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      transition={springConfigs.snappy}
-    >
-      {/* Status Bar */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl", badge.barColor)} />
-      
-      <div className="p-4 pl-5">
-        {/* Header Row */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                payout.isPresale ? "bg-violet-500/10" : "bg-blue-500/10"
-              )}>
-                <DealIcon className={cn("h-4 w-4", payout.isPresale ? "text-violet-500" : "text-blue-500")} />
-              </div>
-              <div className="min-w-0">
-                <h4 className="font-bold text-sm truncate">{displayName}</h4>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="truncate">{payout.isPresale ? 'Presale' : 'Resale'}</span>
-                  {displayCity && (
-                    <>
-                      <span className="text-border">•</span>
-                      <span className="truncate">{displayCity}</span>
-                    </>
-                  )}
-                  {payout.agent_name && (
-                    <>
-                      <span className="text-border">•</span>
-                      <span className="truncate">{payout.agent_name}</span>
-                    </>
-                  )}
+    <Link to={`/deals/${payout.id}`}>
+      <motion.div
+        className={cn(
+          "relative overflow-hidden rounded-2xl border backdrop-blur-sm transition-all group cursor-pointer",
+          isReceived 
+            ? "bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/20" 
+            : isFlagged
+              ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30"
+              : badge.urgent 
+                ? "bg-gradient-to-br from-amber-500/5 via-card to-card border-amber-500/30" 
+                : "bg-card/80 border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+        )}
+        whileTap={{ scale: 0.985 }}
+        whileHover={{ y: -2, transition: { duration: 0.2 } }}
+        transition={springConfigs.snappy}
+      >
+        {/* Status Bar */}
+        <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl", badge.barColor)} />
+        
+        <div className="p-4 pl-5">
+          {/* Header Row */}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={cn(
+                  "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
+                  payout.isPresale ? "bg-violet-500/10" : "bg-blue-500/10"
+                )}>
+                  <DealIcon className={cn("h-4 w-4", payout.isPresale ? "text-violet-500" : "text-blue-500")} />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-sm truncate">{displayName}</h4>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+                    <span>{payout.isPresale ? 'Presale' : 'Resale'}</span>
+                    {displayCity && (
+                      <>
+                        <span className="text-border">·</span>
+                        <span className="truncate">{displayCity}</span>
+                      </>
+                    )}
+                    {payout.agent_name && (
+                      <>
+                        <span className="text-border">·</span>
+                        <span className="truncate">{payout.agent_name}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
+              
+              {/* Deal Details Row */}
+              <div className="flex items-center gap-2 flex-wrap ml-10 mt-1">
+                {payout.sale_price > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground font-medium">
+                    Sale: {formatCurrency(payout.sale_price)}
+                  </span>
+                )}
+                {mls && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground font-medium">
+                    MLS: {mls}
+                  </span>
+                )}
+                {lifecycleState && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                    {lifecycleState}
+                  </span>
+                )}
+              </div>
+            </div>
+            
+            <div className="text-right shrink-0">
+              <p className={cn(
+                "font-bold text-xl tracking-tight",
+                isReceived ? "text-emerald-600" : "text-foreground"
+              )}>
+                {formatCurrency(payout.netAmount)}
+              </p>
+              <span className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block mt-1",
+                badge.color
+              )}>
+                {badge.label}
+              </span>
             </div>
           </div>
           
-          <div className="text-right shrink-0">
-            <p className={cn(
-              "font-bold text-xl tracking-tight",
-              isReceived ? "text-emerald-600" : "text-foreground"
-            )}>
-              {formatCurrency(payout.netAmount)}
-            </p>
-            <span className={cn(
-              "text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block mt-1",
-              badge.color
-            )}>
-              {badge.label}
-            </span>
-          </div>
-        </div>
-        
-        {/* Footer Row */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/40">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn(
-              "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg font-medium",
-              typeStyle.bg, typeStyle.text
-            )}>
-              <TrendingUp className="h-3 w-3" />
-              {payout.payoutType}
-            </span>
+          {/* Footer Row */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={cn(
+                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium",
+                typeStyle.bg, typeStyle.text
+              )}>
+                <TrendingUp className="h-3 w-3" />
+                {payout.payoutType}
+              </span>
+              
+              {payout.close_date && (
+                <span className={cn(
+                  "text-xs flex items-center gap-1 px-2 py-1 rounded-lg",
+                  isReceived ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-muted/40"
+                )}>
+                  {isReceived ? <CheckCircle2 className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+                  {format(parseISO(payout.close_date), 'MMM d, yyyy')}
+                </span>
+              )}
+
+              {isFlagged && (
+                <span className="text-xs text-amber-600 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
+                  <AlertTriangle className="h-3 w-3" />
+                  Past close date, still active
+                </span>
+              )}
+            </div>
             
-            {payout.close_date && !isReceived && (
-              <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1 bg-muted/40 px-2 py-1 rounded-lg">
-                <Calendar className="h-3 w-3" />
-                {format(parseISO(payout.close_date), 'MMM d, yyyy')}
-              </span>
-            )}
-
-            {isReceived && payout.close_date && (
-              <span className="text-xs text-emerald-600 flex items-center gap-1 bg-emerald-500/10 px-2 py-1 rounded-lg">
-                <CheckCircle2 className="h-3 w-3" />
-                {format(parseISO(payout.close_date), 'MMM d, yyyy')}
-              </span>
-            )}
-
-            {isFlagged && (
-              <span className="text-xs text-amber-600 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
-                <AlertTriangle className="h-3 w-3" />
-                Past close date, still active in ReZen
+            {payout.grossAmount !== payout.netAmount && (
+              <span className="text-xs text-muted-foreground">
+                Gross: {formatCurrency(payout.grossAmount)}
               </span>
             )}
           </div>
-          
-          {payout.grossAmount !== payout.netAmount && (
-            <span className="text-xs text-muted-foreground">
-              Gross: {formatCurrency(payout.grossAmount)}
-            </span>
-          )}
         </div>
-      </div>
+      </motion.div>
+    </Link>
+  );
+}
+
+// ── Grouped by Year → Month ──
+function GroupedPayoutsList({ payouts }: { payouts: SyncedPayoutItem[] }) {
+  const [collapsedYears, setCollapsedYears] = useState<Set<string>>(new Set());
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+
+  const grouped = useMemo(() => {
+    const yearMap: Record<string, Record<string, SyncedPayoutItem[]>> = {};
+    
+    payouts.forEach(p => {
+      const date = p.close_date ? parseISO(p.close_date) : new Date();
+      const year = format(date, 'yyyy');
+      const monthKey = format(date, 'yyyy-MM');
+      
+      if (!yearMap[year]) yearMap[year] = {};
+      if (!yearMap[year][monthKey]) yearMap[year][monthKey] = [];
+      yearMap[year][monthKey].push(p);
+    });
+
+    // Sort years descending, months ascending within year
+    return Object.entries(yearMap)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([year, months]) => ({
+        year,
+        months: Object.entries(months)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([monthKey, items]) => ({
+            monthKey,
+            label: format(parseISO(monthKey + '-01'), 'MMMM'),
+            items,
+            total: items.reduce((s, p) => s + p.netAmount, 0),
+          })),
+        total: Object.values(months).flat().reduce((s, p) => s + p.netAmount, 0),
+        count: Object.values(months).flat().length,
+      }));
+  }, [payouts]);
+
+  const toggleYear = (year: string) => {
+    setCollapsedYears(prev => {
+      const next = new Set(prev);
+      next.has(year) ? next.delete(year) : next.add(year);
+      return next;
+    });
+    triggerHaptic('light');
+  };
+
+  const toggleMonth = (monthKey: string) => {
+    setCollapsedMonths(prev => {
+      const next = new Set(prev);
+      next.has(monthKey) ? next.delete(monthKey) : next.add(monthKey);
+      return next;
+    });
+    triggerHaptic('light');
+  };
+
+  return (
+    <motion.div className="space-y-3" variants={containerVariants} initial="hidden" animate="visible">
+      <motion.div variants={itemVariants} className="flex items-center justify-between px-1">
+        <p className="text-sm text-muted-foreground font-medium">
+          Showing <span className="text-foreground font-semibold">{payouts.length}</span> payout{payouts.length !== 1 ? 's' : ''}
+        </p>
+        <p className="text-sm font-semibold">
+          {formatCurrency(payouts.reduce((s, p) => s + p.netAmount, 0))}
+        </p>
+      </motion.div>
+
+      {grouped.map(yearGroup => {
+        const yearCollapsed = collapsedYears.has(yearGroup.year);
+        return (
+          <motion.div key={yearGroup.year} variants={itemVariants} className="space-y-2">
+            {/* Year Header */}
+            <button
+              onClick={() => toggleYear(yearGroup.year)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/40 border border-border/40 hover:border-primary/30 transition-all"
+            >
+              {yearCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              <span className="text-base font-bold">{yearGroup.year}</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {yearGroup.count} payout{yearGroup.count !== 1 ? 's' : ''}
+              </span>
+              <span className="text-sm font-bold text-primary">{formatCurrency(yearGroup.total)}</span>
+            </button>
+
+            <AnimatePresence>
+              {!yearCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2 pl-2"
+                >
+                  {yearGroup.months.map(monthGroup => {
+                    const monthCollapsed = collapsedMonths.has(monthGroup.monthKey);
+                    return (
+                      <div key={monthGroup.monthKey} className="space-y-2">
+                        {/* Month Header */}
+                        <button
+                          onClick={() => toggleMonth(monthGroup.monthKey)}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-card/60 border border-border/30 hover:border-primary/20 transition-all"
+                        >
+                          {monthCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                          <span className="text-sm font-semibold">{monthGroup.label}</span>
+                          <span className="text-[11px] text-muted-foreground ml-auto">
+                            {monthGroup.items.length} payout{monthGroup.items.length !== 1 ? 's' : ''}
+                          </span>
+                          <span className="text-xs font-bold">{formatCurrency(monthGroup.total)}</span>
+                        </button>
+
+                        <AnimatePresence>
+                          {!monthCollapsed && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-2 pl-2"
+                            >
+                              {monthGroup.items.map(payout => (
+                                <PayoutCard key={payout.id} payout={payout} />
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        );
+      })}
     </motion.div>
   );
 }
@@ -451,7 +608,7 @@ export default function PayoutsPage() {
             </div>
           </CollapsibleSection>
 
-          {/* Payouts List */}
+          {/* Payouts List - Grouped by Year/Month */}
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
@@ -478,33 +635,7 @@ export default function PayoutsPage() {
               </p>
             </motion.div>
           ) : (
-            <motion.div 
-              className="space-y-3"
-              variants={containerVariants}
-            >
-              <motion.div variants={itemVariants} className="flex items-center justify-between px-1">
-                <p className="text-sm text-muted-foreground font-medium">
-                  Showing <span className="text-foreground font-semibold">{filteredPayouts.length}</span> payout{filteredPayouts.length !== 1 ? 's' : ''}
-                </p>
-                <p className="text-sm font-semibold">
-                  {formatCurrency(filteredPayouts.reduce((s, p) => s + p.netAmount, 0))}
-                </p>
-              </motion.div>
-
-              <AnimatePresence mode="popLayout">
-                {filteredPayouts.map((payout, index) => (
-                  <motion.div
-                    key={payout.id}
-                    variants={itemVariants}
-                    layout
-                    exit={{ opacity: 0, x: 50, transition: { duration: 0.2 } }}
-                    custom={index}
-                  >
-                    <PayoutCard payout={payout} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
+            <GroupedPayoutsList payouts={filteredPayouts} />
           )}
         </motion.div>
       </PullToRefresh>
