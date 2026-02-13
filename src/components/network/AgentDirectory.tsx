@@ -128,12 +128,12 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
         <div className="text-sm font-semibold text-foreground">Filters:</div>
         
         {/* Tier Filter */}
-        <Select value={filterTier?.toString() || ''} onValueChange={(v) => setFilterTier(v ? parseInt(v) : null)}>
+        <Select value={filterTier?.toString() || 'all'} onValueChange={(v) => setFilterTier(v === 'all' ? null : parseInt(v))}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="All Tiers" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Tiers</SelectItem>
+            <SelectItem value="all">All Tiers</SelectItem>
             {[1, 2, 3, 4, 5].map(tier => (
               <SelectItem key={tier} value={tier.toString()}>
                 {TIER_LABELS[tier as keyof typeof TIER_LABELS]}
@@ -167,12 +167,12 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
         </div>
 
         {/* Tenure Filter */}
-        <Select value={filterTenure || ''} onValueChange={(v) => setFilterTenure((v as any) || null)}>
+        <Select value={filterTenure || 'all'} onValueChange={(v) => setFilterTenure(v === 'all' ? null : (v as any))}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="All Tenure" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Tenure</SelectItem>
+            <SelectItem value="all">All Tenure</SelectItem>
             <SelectItem value="0-6">0-6 months</SelectItem>
             <SelectItem value="6-12">6-12 months</SelectItem>
             <SelectItem value="12-24">1-2 years</SelectItem>
