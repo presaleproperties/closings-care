@@ -27,25 +27,18 @@ serve(async (req) => {
     }
     logStep("Authorization header found");
 
-    // Create Supabase client with the user's token
-    const supabaseClient = createClient(
+    // Create service role client to verify user
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Validate the JWT using getClaims
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) {
       throw new Error("User not authenticated");
     }
-
-    const user = { id: claimsData.claims.sub as string, email: (claimsData.claims as any).email as string };
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Initialize Stripe
