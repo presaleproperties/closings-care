@@ -45,7 +45,7 @@ export default function SettingsPage() {
 
   // All settings state
   const [taxPercent, setTaxPercent] = useState(0);
-  const [brokeragePercent, setBrokeragePercent] = useState(0);
+  
   const [applyTaxToForecasts, setApplyTaxToForecasts] = useState(false);
   const [country, setCountry] = useState('CA');
   const [province, setProvince] = useState<Province>('BC');
@@ -62,10 +62,6 @@ export default function SettingsPage() {
   const [taxCalculationMethod, setTaxCalculationMethod] = useState<'progressive' | 'flat'>('progressive');
   const [taxSavedAmount, setTaxSavedAmount] = useState(0);
   
-  // Brokerage cap settings
-  const [brokerageCapEnabled, setBrokerageCapEnabled] = useState(false);
-  const [brokerageCapAmount, setBrokerageCapAmount] = useState(0);
-  const [brokerageCapStartDate, setBrokerageCapStartDate] = useState('');
   
   // Goals
   const [monthlyIncomeGoal, setMonthlyIncomeGoal] = useState(0);
@@ -73,7 +69,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setTaxPercent(settings.tax_set_aside_percent || 0);
-      setBrokeragePercent(settings.brokerage_split_percent || 0);
+      
       setApplyTaxToForecasts(settings.apply_tax_to_forecasts || false);
       setCountry((settings as any).country || 'CA');
       setProvince(((settings as any).province || 'BC') as Province);
@@ -85,9 +81,6 @@ export default function SettingsPage() {
       setTaxBuffer((settings as any).tax_buffer_percent || 5);
       setTaxCalculationMethod((settings as any).tax_calculation_method || 'progressive');
       setTaxSavedAmount((settings as any).tax_saved_amount || 0);
-      setBrokerageCapEnabled((settings as any).brokerage_cap_enabled || false);
-      setBrokerageCapAmount((settings as any).brokerage_cap_amount || 0);
-      setBrokerageCapStartDate((settings as any).brokerage_cap_start_date || '');
       setMonthlyIncomeGoal((settings as any).monthly_income_goal || 0);
     }
   }, [settings]);
@@ -97,7 +90,7 @@ export default function SettingsPage() {
     if (settings) {
       const changed = 
         taxPercent !== (settings.tax_set_aside_percent || 0) ||
-        brokeragePercent !== (settings.brokerage_split_percent || 0) ||
+        
         applyTaxToForecasts !== (settings.apply_tax_to_forecasts || false) ||
         country !== ((settings as any).country || 'CA') ||
         province !== (((settings as any).province || 'BC') as Province) ||
@@ -107,22 +100,19 @@ export default function SettingsPage() {
         taxBuffer !== ((settings as any).tax_buffer_percent || 5) ||
         taxCalculationMethod !== ((settings as any).tax_calculation_method || 'progressive') ||
         taxSavedAmount !== ((settings as any).tax_saved_amount || 0) ||
-        brokerageCapEnabled !== ((settings as any).brokerage_cap_enabled || false) ||
-        brokerageCapAmount !== ((settings as any).brokerage_cap_amount || 0) ||
-        brokerageCapStartDate !== ((settings as any).brokerage_cap_start_date || '') ||
         monthlyIncomeGoal !== ((settings as any).monthly_income_goal || 0) ||
         JSON.stringify(presaleTemplate) !== JSON.stringify(settings.presale_template || defaultPresale) ||
         JSON.stringify(resaleTemplate) !== JSON.stringify(settings.resale_template || defaultResale);
       setHasChanges(changed);
     }
-  }, [settings, taxPercent, brokeragePercent, applyTaxToForecasts, country, province, taxType, 
-      gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount, brokerageCapEnabled,
-      brokerageCapAmount, brokerageCapStartDate, monthlyIncomeGoal, presaleTemplate, resaleTemplate]);
+  }, [settings, taxPercent, applyTaxToForecasts, country, province, taxType, 
+      gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount,
+      monthlyIncomeGoal, presaleTemplate, resaleTemplate]);
 
   const handleSave = async () => {
     await updateSettings.mutateAsync({
       tax_set_aside_percent: taxPercent,
-      brokerage_split_percent: brokeragePercent,
+      
       apply_tax_to_forecasts: applyTaxToForecasts,
       country,
       province,
@@ -134,9 +124,6 @@ export default function SettingsPage() {
       tax_buffer_percent: taxBuffer,
       tax_calculation_method: taxCalculationMethod,
       tax_saved_amount: taxSavedAmount,
-      brokerage_cap_enabled: brokerageCapEnabled,
-      brokerage_cap_amount: brokerageCapAmount,
-      brokerage_cap_start_date: brokerageCapStartDate || null,
       monthly_income_goal: monthlyIncomeGoal,
     } as any);
     setHasChanges(false);
@@ -210,10 +197,6 @@ export default function SettingsPage() {
             <TabsTrigger value="tax" className="flex items-center gap-2">
               <PiggyBank className="w-4 h-4" />
               <span className="hidden sm:inline">Tax & Finance</span>
-            </TabsTrigger>
-            <TabsTrigger value="brokerage" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Brokerage</span>
             </TabsTrigger>
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -547,110 +530,6 @@ export default function SettingsPage() {
             </SettingsCard>
           </TabsContent>
 
-          {/* Brokerage Tab */}
-          <TabsContent value="brokerage" className="space-y-6">
-            <SettingsCard 
-              icon={Building2} 
-              title="Brokerage Split" 
-              description="Configure your commission split with your brokerage"
-              iconColor="text-primary"
-              gradient="from-primary/10 to-primary/5"
-            >
-              <div className="space-y-6">
-                {/* Split Percentage */}
-                <div className="space-y-3">
-                  <Label>Brokerage Split Percentage</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Percentage of commission that goes to brokerage
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={[brokeragePercent]}
-                      onValueChange={([v]) => setBrokeragePercent(v)}
-                      max={50}
-                      step={0.5}
-                      className="flex-1"
-                    />
-                    <div className="w-24 text-right">
-                      <span className="text-2xl font-bold">{brokeragePercent}</span>
-                      <span className="text-muted-foreground">%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-2">
-                    <span>You keep: {100 - brokeragePercent}%</span>
-                    <span>Brokerage: {brokeragePercent}%</span>
-                  </div>
-                </div>
-              </div>
-            </SettingsCard>
-
-            {/* Brokerage Cap */}
-            <SettingsCard 
-              icon={Target} 
-              title="Brokerage Cap" 
-              description="Track progress toward 100% commission"
-              iconColor="text-success"
-              gradient="from-success/10 to-success/5"
-            >
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Enable Brokerage Cap</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Switch to 100% after reaching cap
-                    </p>
-                  </div>
-                  <Switch checked={brokerageCapEnabled} onCheckedChange={setBrokerageCapEnabled} />
-                </div>
-
-                <AnimatePresence>
-                  {brokerageCapEnabled && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-6 pl-4 border-l-2 border-success/30"
-                    >
-                      <div className="space-y-2">
-                        <Label>Annual Cap Amount</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Total brokerage fees until 100% split
-                        </p>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          value={brokerageCapAmount}
-                          onChange={(e) => setBrokerageCapAmount(parseFloat(e.target.value) || 0)}
-                          className="w-40"
-                          placeholder="25000"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Cap Anniversary Date</Label>
-                        <p className="text-sm text-muted-foreground">
-                          When your cap year resets
-                        </p>
-                        <Input
-                          type="date"
-                          value={brokerageCapStartDate}
-                          onChange={(e) => setBrokerageCapStartDate(e.target.value)}
-                          className="w-48"
-                        />
-                      </div>
-
-                      <div className="p-4 rounded-xl bg-success/10 border border-success/30">
-                        <p className="text-sm">
-                          <strong>How it works:</strong> Once you pay {brokeragePercent}% on enough deals totaling {formatCurrency(brokerageCapAmount)}, you keep 100% until your anniversary.
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </SettingsCard>
-          </TabsContent>
 
           {/* Templates Tab */}
           <TabsContent value="templates" className="space-y-6">
