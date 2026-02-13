@@ -20,20 +20,25 @@ serve(async (req) => {
       throw new Error("No authorization header");
     }
 
-    // Create admin Supabase client to verify user and access data
+    // Create anon client with user's auth to verify identity
+    const supabaseUser = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
-    // Verify user by passing their token to getUser via service role client
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
+      console.error("Auth error:", userError?.message);
+      throw new Error("User not authenticated");
+    }
+
+    // Create admin client for privileged data access
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) {
-      throw new Error("User not authenticated");
-    }
 
     // Check if user is admin via user_roles table
     const { data: adminRole, error: roleError } = await supabaseAdmin
