@@ -245,6 +245,38 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       console.warn('[ReZen] Current transactions fallback error:', err)
     }
 
+    // 2b. Sync Listings (separate endpoint in ReZen)
+    for (const listingGroup of ['ACTIVE', 'CLOSED']) {
+      const listingEndpoints = [
+        `transactions/participant/${yentaId}/listings/${listingGroup}`,
+        `listings/agent/${yentaId}/${listingGroup.toLowerCase()}`,
+        `listings/participant/${yentaId}/${listingGroup.toLowerCase()}`,
+      ]
+      
+      for (const endpoint of listingEndpoints) {
+        try {
+          console.log(`[ReZen] Trying listing endpoint: ${endpoint}`)
+          const listingData = await rezenGet(ARRAKIS, endpoint, apiKey, { pageNumber: '0', pageSize: '200' })
+          const listings = listingData?.data || listingData?.listings || listingData?.content || (Array.isArray(listingData) ? listingData : [])
+          console.log(`[ReZen] Found ${Array.isArray(listings) ? listings.length : 0} ${listingGroup} listings from ${endpoint}`)
+          
+          if (Array.isArray(listings) && listings.length > 0) {
+            for (const tx of listings) {
+              const record = buildTransactionRecord(tx, userId, agentName, yentaId)
+              if (!record) continue
+              // Force is_listing = true for records from listing endpoints
+              record.is_listing = true
+              await supabase.from('synced_transactions').upsert(record, { onConflict: 'user_id,platform,external_id' })
+              recordsSynced++
+            }
+            break // Found a working endpoint, skip others
+          }
+        } catch (listErr) {
+          console.log(`[ReZen] Listing endpoint ${endpoint} not available: ${(listErr as Error).message?.slice(0, 100)}`)
+        }
+      }
+    }
+
     // 3. Sync revenue share payments
     try {
       console.log('[ReZen] Fetching revshare payments...')
