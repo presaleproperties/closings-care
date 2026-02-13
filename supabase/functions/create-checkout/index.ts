@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       throw new Error("No authorization header");
     }
 
@@ -31,11 +31,14 @@ serve(async (req) => {
       }
     );
 
-    // Get the user from the session
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
+    // Validate the JWT using getClaims
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       throw new Error("User not authenticated");
     }
+
+    const user = { id: claimsData.claims.sub as string, email: (claimsData.claims as any).email as string };
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
