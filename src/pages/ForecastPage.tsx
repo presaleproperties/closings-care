@@ -24,8 +24,8 @@ import { cn } from '@/lib/utils';
 import { getTotalExpensesForMonth } from '@/lib/expenseCalculations';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -318,17 +318,7 @@ export default function ForecastPage() {
             
             <div className="h-48 sm:h-60 lg:h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
+                <BarChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis 
                     dataKey="label" 
@@ -366,21 +356,19 @@ export default function ForecastPage() {
                     }}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--border))" />
-                  <Area 
-                    type="monotone"
+                  <Bar 
                     dataKey="income" 
-                    stroke="hsl(160, 84%, 39%)" 
-                    strokeWidth={2}
-                    fill="url(#incomeGradient)"
+                    fill="hsl(160, 84%, 39%)" 
+                    radius={[4, 4, 0, 0]}
+                    opacity={0.85}
                   />
-                  <Area 
-                    type="monotone"
+                  <Bar 
                     dataKey="expenses" 
-                    stroke="hsl(0, 84%, 60%)" 
-                    strokeWidth={2}
-                    fill="url(#expenseGradient)"
+                    fill="hsl(0, 84%, 60%)" 
+                    radius={[4, 4, 0, 0]}
+                    opacity={0.7}
                   />
-                </AreaChart>
+                </BarChart>
               </ResponsiveContainer>
             </div>
 
