@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, Building2, Home, MapPin,
   ArrowUpDown, SlidersHorizontal, X, TrendingUp,
-  DollarSign, BarChart3, Filter,
+  DollarSign, BarChart3, Filter, ChevronDown,
 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -78,6 +79,7 @@ export default function DealsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
+  const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
 
   const hasActiveFilters = !!minAmount || !!maxAmount;
 
@@ -100,6 +102,23 @@ export default function DealsPage() {
 
     return [...deals].sort(getSortFn(sortKey));
   }, [activeTab, activeDeals, closedDeals, listings, search, sortKey, minAmount, maxAmount]);
+
+  const monthGroups = useMemo(() => {
+    const groups = new Map<string, { label: string; deals: SyncedDeal[] }>();
+    filteredDeals.forEach(deal => {
+      const dateStr = deal.closeDate || deal.firmDate || deal.listingDate;
+      const key = dateStr ? format(parseISO(dateStr), 'yyyy-MM') : 'no-date';
+      const label = dateStr ? format(parseISO(dateStr), 'MMMM yyyy') : 'No Date';
+      if (!groups.has(key)) groups.set(key, { label, deals: [] });
+      groups.get(key)!.deals.push(deal);
+    });
+    return Array.from(groups.entries()).map(([key, { label, deals }]) => ({
+      key,
+      label,
+      deals,
+      totalPayout: deals.reduce((s, d) => s + (d.myNetPayout || 0), 0),
+    }));
+  }, [filteredDeals]);
 
   const stats = useMemo(() => {
     const allDeals = [...activeDeals, ...closedDeals];
@@ -359,14 +378,65 @@ export default function DealsPage() {
                 </p>
               </div>
 
-              {/* ── Deal List ── */}
+              {/* ── Deal List grouped by month ── */}
               {filteredDeals.length > 0 ? (
-                <div className="space-y-2">
-                  {filteredDeals.map((deal, idx) => (
-                    <Link key={deal.id} to={`/deals/${deal.id}`}>
-                      <SyncedDealCard deal={deal} index={idx} />
-                    </Link>
-                  ))}
+                <div className="space-y-4">
+                  {monthGroups.map(({ key, label, deals: groupDeals, totalPayout }) => {
+                    const isCollapsed = collapsedMonths.has(key);
+                    return (
+                      <div key={key}>
+                        <button
+                          onClick={() => {
+                            triggerHaptic('light');
+                            setCollapsedMonths(prev => {
+                              const next = new Set(prev);
+                              if (next.has(key)) next.delete(key);
+                              else next.add(key);
+                              return next;
+                            });
+                          }}
+                          className="w-full flex items-center justify-between px-1 py-2 group touch-manipulation"
+                        >
+                          <div className="flex items-center gap-2">
+                            <motion.div
+                              animate={{ rotate: isCollapsed ? -90 : 0 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              <ChevronDown className="h-4 w-4 text-muted-foreground/60" />
+                            </motion.div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              {label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/50 font-medium">
+                              {groupDeals.length} {groupDeals.length === 1 ? 'deal' : 'deals'}
+                            </span>
+                          </div>
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            {formatCurrency(totalPayout)}
+                          </span>
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {!isCollapsed && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2, ease: 'easeInOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-2 pt-1">
+                                {groupDeals.map((deal, idx) => (
+                                  <Link key={deal.id} to={`/deals/${deal.id}`}>
+                                    <SyncedDealCard deal={deal} index={idx} />
+                                  </Link>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <motion.div
