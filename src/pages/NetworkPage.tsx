@@ -4,29 +4,38 @@ import { useRevenueShare } from '@/hooks/usePlatformConnections';
 import { formatCurrency } from '@/lib/format';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { AgentDirectory } from '@/components/network/AgentDirectory';
 import { SponsorTree } from '@/components/network/SponsorTree';
 import { TopPerformers } from '@/components/network/TopPerformers';
-import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network, Trophy } from 'lucide-react';
-import { useMemo } from 'react';
+import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network, Trophy, GitBranch, BarChart3 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend,
+  PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area,
 } from 'recharts';
 
 const TIER_COLORS = [
-  'hsl(158, 64%, 32%)', // emerald
-  'hsl(175, 60%, 38%)', // teal
-  'hsl(38, 75%, 50%)',  // gold
-  'hsl(280, 60%, 50%)', // purple
-  'hsl(200, 70%, 50%)', // blue
+  'hsl(158, 64%, 32%)',
+  'hsl(175, 60%, 38%)',
+  'hsl(38, 75%, 50%)',
+  'hsl(280, 60%, 50%)',
+  'hsl(200, 70%, 50%)',
 ];
+
+const TIER_LABELS: Record<number, string> = {
+  1: 'Tier 1',
+  2: 'Tier 2',
+  3: 'Tier 3',
+  4: 'Tier 4',
+  5: 'Tier 5',
+};
 
 export default function NetworkPage() {
   const { data: agents = [], isLoading: agentsLoading } = useNetworkAgents();
   const { data: summary } = useNetworkSummary();
   const { data: revenueShare = [] } = useRevenueShare();
+  const [activeTab, setActiveTab] = useState('overview');
 
   const fmt = (v: number) => formatCurrency(v);
 
@@ -66,7 +75,6 @@ export default function NetworkPage() {
         if (!months[m]) months[m] = { month: m, additions: 0, departures: 0 };
         months[m].additions++;
       }
-      // Use departure_date if available, otherwise use updated_at for INACTIVE agents
       const departureMonth = a.departure_date
         ? a.departure_date.slice(0, 7)
         : (a.status === 'INACTIVE' && a.updated_at ? a.updated_at.slice(0, 7) : null);
@@ -81,11 +89,11 @@ export default function NetworkPage() {
   // Days with brokerage distribution
   const daysDistribution = useMemo(() => {
     const buckets = [
-      { label: '0-90 days', min: 0, max: 90, count: 0, agents: [] as string[] },
-      { label: '91-180 days', min: 91, max: 180, count: 0, agents: [] as string[] },
+      { label: '0-90d', min: 0, max: 90, count: 0, agents: [] as string[] },
+      { label: '91-180d', min: 91, max: 180, count: 0, agents: [] as string[] },
       { label: '6m-1yr', min: 181, max: 365, count: 0, agents: [] as string[] },
-      { label: '1-2 yrs', min: 366, max: 730, count: 0, agents: [] as string[] },
-      { label: '2+ yrs', min: 731, max: Infinity, count: 0, agents: [] as string[] },
+      { label: '1-2yr', min: 366, max: 730, count: 0, agents: [] as string[] },
+      { label: '2yr+', min: 731, max: Infinity, count: 0, agents: [] as string[] },
     ];
     agents.forEach(a => {
       const days = a.days_with_brokerage;
@@ -100,7 +108,7 @@ export default function NetworkPage() {
     return buckets.map(b => ({ name: b.label, value: b.count, agents: b.agents }));
   }, [agents]);
 
-  // RevShare by month/year
+  // RevShare by month
   const revShareByMonth = useMemo(() => {
     const months: Record<string, number> = {};
     revenueShare.forEach((rs: any) => {
@@ -130,6 +138,7 @@ export default function NetworkPage() {
   const activeAgents = agents.filter(a => a.status === 'ACTIVE' && !a.departure_date);
   const departedAgents = agents.filter(a => a.status !== 'ACTIVE' || !!a.departure_date);
   const totalRevShare = revenueShare.reduce((s: number, r: any) => s + (Number(r.amount) || 0), 0);
+  const retentionRate = agents.length > 0 ? Math.round((activeAgents.length / agents.length) * 100) : 0;
 
   const tooltipStyle = {
     contentStyle: {
@@ -137,15 +146,19 @@ export default function NetworkPage() {
       border: '1px solid hsl(var(--border))',
       borderRadius: '12px',
       fontSize: '12px',
-      boxShadow: '0 8px 24px -8px hsl(220 25% 10% / 0.15)',
+      boxShadow: '0 8px 32px -8px hsl(220 25% 10% / 0.2)',
+      padding: '10px 14px',
     },
   };
 
   if (agentsLoading) {
     return (
       <AppLayout>
-        <div className="p-4 lg:p-8">
-          <div className="text-muted-foreground">Loading network data...</div>
+        <div className="p-4 lg:p-8 flex items-center justify-center min-h-[50vh]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading network data...</p>
+          </div>
         </div>
       </AppLayout>
     );
@@ -154,101 +167,97 @@ export default function NetworkPage() {
   return (
     <AppLayout>
       <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-semibold tracking-tight text-foreground">Network</h1>
-          <p className="text-muted-foreground text-sm mt-1">Your Real Broker network & revenue share overview</p>
-        </div>
+        {/* Hero Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/8 via-background to-accent/5 border border-border/40 p-6 lg:p-8"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+          
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Network className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Network</h1>
+                <p className="text-sm text-muted-foreground">Your agent network & revenue share overview</p>
+              </div>
+            </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-          <Card className="kpi-card">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Total Agents</p>
-                  <p className="text-xl font-bold text-foreground">{agents.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="kpi-card">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-success" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Active</p>
-                  <p className="text-xl font-bold text-foreground">{activeAgents.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="kpi-card">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-                  <UserMinus className="w-5 h-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Departed</p>
-                  <p className="text-xl font-bold text-foreground">{departedAgents.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="kpi-card">
-            <CardContent className="p-4 lg:p-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">Total RevShare</p>
-                  <p className="text-xl font-bold text-foreground">{fmt(totalRevShare)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Hero Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+              {[
+                { label: 'Total Agents', value: agents.length.toString(), icon: Users, color: 'text-primary' },
+                { label: 'Active', value: activeAgents.length.toString(), icon: UserPlus, color: 'text-success' },
+                { label: 'Departed', value: departedAgents.length.toString(), icon: UserMinus, color: 'text-destructive' },
+                { label: 'Retention', value: `${retentionRate}%`, icon: TrendingUp, color: 'text-info' },
+                { label: 'Total RevShare', value: fmt(totalRevShare), icon: DollarSign, color: 'text-accent' },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/30 p-3.5 hover:border-border/60 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+                  </div>
+                  <p className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">{stat.value}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Charts Section */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="top">Top Performers</TabsTrigger>
-            <TabsTrigger value="tree">Tree</TabsTrigger>
-            <TabsTrigger value="revshare">RevShare</TabsTrigger>
-            <TabsTrigger value="agents">Agents</TabsTrigger>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="bg-muted/50 border border-border/30 p-1 h-auto flex-wrap">
+            {[
+              { value: 'overview', label: 'Overview', icon: BarChart3 },
+              { value: 'performers', label: 'Performers', icon: Trophy },
+              { value: 'tree', label: 'Sponsor Tree', icon: GitBranch },
+              { value: 'revshare', label: 'RevShare', icon: DollarSign },
+              { value: 'directory', label: 'Directory', icon: Users },
+            ].map(tab => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2"
+              >
+                <tab.icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Top 10 Revenue */}
-              <Card>
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-primary" />
-                    Top 10 Agents Revenue
+                    Top 10 by Revenue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {top10Revenue.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet. Sync your Real Broker account to see data.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet</p>
                   ) : (
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={top10Revenue} layout="vertical" margin={{ left: 80, right: 20, top: 5, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} horizontal={false} />
                           <XAxis type="number" tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={75} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
-                          <Bar dataKey="total" fill="hsl(158, 64%, 32%)" radius={[0, 6, 6, 0]} />
+                          <Bar dataKey="total" fill="hsl(158, 64%, 32%)" radius={[0, 8, 8, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -257,28 +266,29 @@ export default function NetworkPage() {
               </Card>
 
               {/* Network Size by Tier */}
-              <Card>
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <Layers className="w-4 h-4 text-primary" />
-                    Network Size by Tier
+                    Network by Tier
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {tierData.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No network agent data yet.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No network data yet</p>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center">
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={tierData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={60}
-                            outerRadius={100}
-                            paddingAngle={3}
+                            innerRadius={65}
+                            outerRadius={105}
+                            paddingAngle={4}
                             dataKey="value"
+                            strokeWidth={0}
                             label={({ name, value }) => `${name}: ${value}`}
                           >
                             {tierData.map((_, i) => (
@@ -286,7 +296,11 @@ export default function NetworkPage() {
                             ))}
                           </Pie>
                           <Tooltip {...tooltipStyle} />
-                          <Legend />
+                          <Legend
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: '12px' }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -294,28 +308,28 @@ export default function NetworkPage() {
                 </CardContent>
               </Card>
 
-              {/* Agent Additions & Departures */}
-              <Card>
+              {/* Agent Movement */}
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <Network className="w-4 h-4 text-primary" />
-                    Agent Additions & Departures
+                    Agent Movement
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {movementData.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No agent movement data yet.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No movement data yet</p>
                   ) : (
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={movementData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                           <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                           <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <Tooltip {...tooltipStyle} />
-                          <Legend />
-                          <Bar dataKey="additions" name="Additions" fill="hsl(158, 64%, 32%)" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="departures" name="Departures" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
+                          <Bar dataKey="additions" name="Joined" fill="hsl(158, 64%, 38%)" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="departures" name="Departed" fill="hsl(0, 65%, 55%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -323,23 +337,25 @@ export default function NetworkPage() {
                 </CardContent>
               </Card>
 
-              {/* Days with Brokerage */}
-              <Card>
+              {/* Tenure Distribution */}
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    Tenure Distribution
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground">Hover to see agent names in each group</p>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-primary" />
+                      Tenure Distribution
+                    </CardTitle>
+                    <span className="text-[10px] text-muted-foreground">Hover for details</span>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {daysDistribution.every(b => b.value === 0) ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No tenure data available.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No tenure data available</p>
                   ) : (
-                    <div className="h-[340px]">
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={daysDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
                           <Tooltip
@@ -347,8 +363,8 @@ export default function NetworkPage() {
                               if (!active || !payload?.length) return null;
                               const data = payload[0].payload;
                               return (
-                                <div className="rounded-lg border border-border/50 bg-background px-3 py-2.5 shadow-xl text-xs max-w-[220px]">
-                                  <p className="font-semibold text-foreground mb-1">{data.name} — {data.value} agent{data.value !== 1 ? 's' : ''}</p>
+                                <div className="rounded-xl border border-border/50 bg-card px-3.5 py-3 shadow-xl text-xs max-w-[220px]">
+                                  <p className="font-semibold text-foreground mb-1.5">{data.name} — {data.value} agent{data.value !== 1 ? 's' : ''}</p>
                                   <div className="space-y-0.5">
                                     {data.agents.slice(0, 8).map((name: string, i: number) => (
                                       <p key={i} className="text-muted-foreground truncate">• {name}</p>
@@ -361,9 +377,9 @@ export default function NetworkPage() {
                               );
                             }}
                           />
-                          <Bar dataKey="value" name="Agents" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]}>
+                          <Bar dataKey="value" name="Agents" radius={[6, 6, 0, 0]}>
                             {daysDistribution.map((_, i) => (
-                              <Cell key={i} fill={`hsl(158, ${50 + i * 5}%, ${38 - i * 3}%)`} />
+                              <Cell key={i} fill={`hsl(158, ${50 + i * 5}%, ${42 - i * 4}%)`} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -376,62 +392,50 @@ export default function NetworkPage() {
           </TabsContent>
 
           {/* Top Performers Tab */}
-          <TabsContent value="top" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
-                  Top Performers
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your highest-performing agents ranked by network size and revenue share contributions
-                </p>
-              </CardHeader>
-              <CardContent>
-                <TopPerformers agents={agents} revenueShare={revenueShare} />
-              </CardContent>
-            </Card>
+          <TabsContent value="performers">
+            <TopPerformers agents={agents} revenueShare={revenueShare} />
           </TabsContent>
 
-          {/* Tree Tab - Sponsor Relationships */}
-          <TabsContent value="tree" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Network className="w-4 h-4 text-primary" />
-                  Sponsor Relationship Tree
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Visualize how agents are connected through sponsor relationships in your network
-                </p>
-              </CardHeader>
-              <CardContent>
-                <SponsorTree agents={agents} />
-              </CardContent>
-            </Card>
+          {/* Tree Tab */}
+          <TabsContent value="tree">
+            <SponsorTree agents={agents} />
           </TabsContent>
 
           {/* RevShare Tab */}
           <TabsContent value="revshare" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* RevShare by Month */}
-              <Card>
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">RevShare by Month</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Monthly RevShare</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {revShareByMonth.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet</p>
                   ) : (
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={revShareByMonth} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                        <AreaChart data={revShareByMonth} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                          <defs>
+                            <linearGradient id="revShareGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(158, 64%, 32%)" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="hsl(158, 64%, 32%)" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                           <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
                           <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
-                          <Line type="monotone" dataKey="amount" stroke="hsl(158, 64%, 32%)" strokeWidth={2.5} dot={{ r: 3, fill: 'hsl(158, 64%, 32%)' }} />
-                        </LineChart>
+                          <Area
+                            type="monotone"
+                            dataKey="amount"
+                            stroke="hsl(158, 64%, 32%)"
+                            strokeWidth={2.5}
+                            fill="url(#revShareGrad)"
+                            dot={{ r: 3, fill: 'hsl(158, 64%, 32%)', strokeWidth: 0 }}
+                            activeDot={{ r: 5, fill: 'hsl(158, 64%, 32%)', strokeWidth: 2, stroke: 'white' }}
+                          />
+                        </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   )}
@@ -439,22 +443,22 @@ export default function NetworkPage() {
               </Card>
 
               {/* RevShare by Year */}
-              <Card>
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">RevShare by Year</CardTitle>
+                  <CardTitle className="text-sm font-semibold">Yearly RevShare</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {revShareByYear.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-8 text-center">No yearly data yet.</p>
+                    <p className="text-sm text-muted-foreground py-8 text-center">No yearly data yet</p>
                   ) : (
                     <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={revShareByYear} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                           <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
-                          <Bar dataKey="amount" name="RevShare" fill="hsl(38, 75%, 50%)" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="amount" name="RevShare" fill="hsl(38, 75%, 50%)" radius={[8, 8, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -463,22 +467,33 @@ export default function NetworkPage() {
               </Card>
             </div>
 
-            {/* RevShare by Tier breakdown */}
+            {/* RevShare by Tier */}
             {summary?.revshare_by_tier && (
-              <Card>
+              <Card className="border-border/40 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">RevShare by Tier</CardTitle>
+                  <CardTitle className="text-sm font-semibold">RevShare by Tier</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     {Object.entries(summary.revshare_by_tier).map(([tier, amount], i) => (
-                      <div key={tier} className="rounded-xl border border-border/50 p-4 text-center">
-                        <div className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center" style={{ background: TIER_COLORS[i % TIER_COLORS.length] + '22' }}>
-                          <span className="text-xs font-bold" style={{ color: TIER_COLORS[i % TIER_COLORS.length] }}>{tier}</span>
+                      <motion.div
+                        key={tier}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="rounded-xl border border-border/40 p-4 text-center hover:border-border/60 transition-colors"
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg mx-auto mb-2 flex items-center justify-center"
+                          style={{ background: TIER_COLORS[i % TIER_COLORS.length] + '18' }}
+                        >
+                          <span className="text-xs font-bold" style={{ color: TIER_COLORS[i % TIER_COLORS.length] }}>
+                            T{tier}
+                          </span>
                         </div>
                         <p className="text-lg font-bold text-foreground">{fmt(Number(amount) || 0)}</p>
-                        <p className="text-xs text-muted-foreground">Tier {tier}</p>
-                      </div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Tier {tier}</p>
+                      </motion.div>
                     ))}
                   </div>
                 </CardContent>
@@ -486,20 +501,9 @@ export default function NetworkPage() {
             )}
           </TabsContent>
 
-          {/* Agents Tab - Searchable Directory */}
-          <TabsContent value="agents" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  Agent Directory ({agents.length})
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Search, filter, and explore your network agents with their avatars and network sizes</p>
-              </CardHeader>
-              <CardContent>
-                <AgentDirectory agents={agents} />
-              </CardContent>
-            </Card>
+          {/* Directory Tab */}
+          <TabsContent value="directory">
+            <AgentDirectory agents={agents} />
           </TabsContent>
         </Tabs>
       </div>
