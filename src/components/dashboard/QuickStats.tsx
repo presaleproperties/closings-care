@@ -1,76 +1,27 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Receipt, Target, Calendar, TrendingUp, Repeat } from 'lucide-react';
-import { parseISO, isBefore, startOfDay } from 'date-fns';
+import { Wallet, Receipt, TrendingUp, TrendingDown, Banknote, ArrowUpRight, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { formatCurrency } from '@/lib/format';
-import { useSettings } from '@/hooks/useSettings';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 interface QuickStatsProps {
-  revShareMonthlyAvg?: number;
+  receivedYTD: number;
+  comingIn: number;
   monthlyExpenses: number;
-  syncedReceived?: number;
-  syncedComingIn?: number;
-  syncedTransactions?: any[];
+  spentYTD: number;
+  activeDeals: number;
+  closedDealsYTD: number;
 }
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedReceived = 0, syncedComingIn = 0, syncedTransactions = [] }: QuickStatsProps) {
+export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, activeDeals, closedDealsYTD }: QuickStatsProps) {
   const thisYear = new Date().getFullYear();
-  const [showBreakdown, setShowBreakdown] = useState(false);
-  const { data: settings } = useSettings();
 
-  const breakdown = useMemo(() => {
-    const totalCommissions = syncedComingIn;
-    const totalRevShare = revShareMonthlyAvg * 48;
-
-    return {
-      commissions: totalCommissions,
-      revShare: totalRevShare,
-      total: totalCommissions + totalRevShare,
-      monthsProjected: 48,
-    };
-  }, [revShareMonthlyAvg, syncedComingIn]);
-
-  const stats = useMemo(() => {
-    const totalCommissions = syncedComingIn;
-    const totalEarned = syncedReceived;
-
-    const thisYearRevShare = revShareMonthlyAvg * 12;
-    const totalRevShare = revShareMonthlyAvg * 48;
-    
-    const totalProjected = totalCommissions + totalRevShare;
-    const thisYearProjected = totalCommissions + thisYearRevShare;
-
-    // Avg deal value from synced transactions
-    const txWithCommission = syncedTransactions.filter((tx: any) => {
-      const net = tx.raw_data?.myNetPayout?.amount ?? tx.commission_amount;
-      return net && Number(net) > 0;
-    });
-    const totalGross = txWithCommission.reduce((sum: number, tx: any) => sum + Number(tx.commission_amount || 0), 0);
-    const avgDealValue = txWithCommission.length > 0 ? totalGross / txWithCommission.length : 0;
-
-    const activeDeals = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
-
-    return {
-      totalProjected,
-      totalEarned,
-      thisYearProjected,
-      avgDealValue,
-      activeDeals,
-      monthlyExpenses,
-      totalDealCount: syncedTransactions.length,
-    };
-  }, [revShareMonthlyAvg, monthlyExpenses, thisYear, syncedComingIn, syncedReceived, syncedTransactions]);
+  const netCashflowYTD = receivedYTD - spentYTD;
+  const isPositive = netCashflowYTD >= 0;
 
   return (
     <div className="space-y-4">
@@ -82,75 +33,68 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
         animate="visible"
       >
         <div className="grid grid-cols-2 gap-3">
-          {/* Primary Widget - Projected Income */}
+          {/* Earned YTD */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            onClick={() => setShowBreakdown(true)}
-            className="col-span-2 rounded-3xl p-6 cursor-pointer relative overflow-hidden"
+            className="rounded-3xl p-5 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
-              boxShadow: '0 8px 32px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
-            }}
-          >
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
-            <div className="absolute -right-4 top-12 w-20 h-20 rounded-full bg-white/5" />
-            
-            <div className="relative">
-              <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Wallet className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <span className="text-sm font-semibold text-primary-foreground/80 uppercase tracking-wider">
-                  Projected Income
-                </span>
-              </div>
-              <AnimatedCurrency 
-                value={stats.totalProjected}
-                className="text-4xl font-bold text-primary-foreground tracking-tight block"
-                duration={1.5}
-              />
-              <p className="text-sm text-primary-foreground/60 mt-2">
-                Tap to see breakdown →
-              </p>
-            </div>
-          </motion.div>
-
-          {/* This Year Widget */}
-          <motion.div 
-            variants={fadeInUp}
-            whileTap={tapScale}
-            onTapStart={() => triggerHaptic('light')}
-            className="rounded-3xl p-5 cursor-pointer relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(145deg, hsl(38 92% 50%) 0%, hsl(25 95% 45%) 100%)',
-              boxShadow: '0 8px 24px -8px hsl(38 92% 50%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+              background: 'linear-gradient(145deg, hsl(160 84% 39%) 0%, hsl(160 84% 30%) 100%)',
+              boxShadow: '0 8px 24px -8px hsl(160 84% 39%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
             }}
           >
             <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-white/10" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="h-4 w-4 text-white/80" />
+                <Banknote className="h-4 w-4 text-white/80" />
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
-                  {thisYear}
+                  Earned YTD
                 </span>
               </div>
               <AnimatedCurrency 
-                value={stats.thisYearProjected}
+                value={receivedYTD}
                 className="text-2xl font-bold text-white tracking-tight block"
                 duration={1.3}
               />
-              <p className="text-[11px] text-white/60 mt-1">Commissions + RevShare</p>
+              <p className="text-[11px] text-white/60 mt-1">{closedDealsYTD} deals closed</p>
             </div>
           </motion.div>
 
-          {/* Monthly Expenses Widget */}
+          {/* Coming In */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-5 shadow-lg cursor-pointer"
+            className="rounded-3xl p-5 relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
+              boxShadow: '0 8px 24px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+            }}
+          >
+            <div className="absolute -right-4 -top-4 w-16 h-16 rounded-full bg-white/10" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <ArrowUpRight className="h-4 w-4 text-primary-foreground/80" />
+                <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">
+                  Coming In
+                </span>
+              </div>
+              <AnimatedCurrency 
+                value={comingIn}
+                className="text-2xl font-bold text-primary-foreground tracking-tight block"
+                duration={1.3}
+              />
+              <p className="text-[11px] text-primary-foreground/60 mt-1">{activeDeals} active deals</p>
+            </div>
+          </motion.div>
+
+          {/* Monthly Expenses */}
+          <motion.div 
+            variants={fadeInUp}
+            whileTap={tapScale}
+            onTapStart={() => triggerHaptic('light')}
+            className="rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-5 shadow-lg"
           >
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-xl bg-destructive/15 flex items-center justify-center">
@@ -161,54 +105,52 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
               </span>
             </div>
             <AnimatedCurrency 
-              value={stats.monthlyExpenses}
+              value={monthlyExpenses}
               className="text-2xl font-bold text-destructive tracking-tight block"
               duration={1.1}
             />
             <p className="text-[11px] text-muted-foreground mt-1">Monthly recurring</p>
           </motion.div>
 
-          {/* Avg Per Deal Widget */}
+          {/* Net Cashflow YTD */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className="col-span-2 rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-5 shadow-lg cursor-pointer"
+            className={cn(
+              "rounded-3xl bg-card/95 backdrop-blur-xl border p-5 shadow-lg",
+              isPositive ? "border-emerald-500/30" : "border-destructive/30"
+            )}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center">
-                    <Target className="h-4 w-4 text-accent" />
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Avg Per Deal
-                  </span>
-                </div>
-                <AnimatedCurrency 
-                  value={stats.avgDealValue}
-                  className="text-2xl font-bold text-accent tracking-tight block"
-                  duration={1.4}
-                />
+            <div className="flex items-center gap-2 mb-2">
+              <div className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center",
+                isPositive ? "bg-emerald-500/15" : "bg-destructive/15"
+              )}>
+                {isPositive ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Gross commission</p>
-                <p className="text-sm font-semibold">{stats.totalDealCount} total deals</p>
-              </div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Net YTD
+              </span>
             </div>
+            <AnimatedCurrency 
+              value={Math.abs(netCashflowYTD)}
+              className={cn("text-2xl font-bold tracking-tight block", isPositive ? "text-emerald-500" : "text-destructive")}
+              duration={1.1}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">{isPositive ? 'Positive cashflow' : 'Negative cashflow'}</p>
           </motion.div>
         </div>
       </motion.div>
 
       {/* Desktop Layout */}
       <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* Projected Income */}
+        {/* Earned YTD */}
         <motion.div
-          onClick={() => setShowBreakdown(true)}
-          className="relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+          className="relative overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
           style={{
-            background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
-            boxShadow: '0 8px 32px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+            background: 'linear-gradient(145deg, hsl(160 84% 39%) 0%, hsl(160 84% 30%) 100%)',
+            boxShadow: '0 8px 32px -8px hsl(160 84% 39%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
           }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -216,49 +158,47 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
         >
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
           <div className="absolute -right-4 top-16 w-20 h-20 rounded-full bg-white/5" />
-          
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-primary-foreground" />
+                <Banknote className="h-4 w-4 text-white" />
               </div>
-              <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">Projected Income</span>
+              <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Earned YTD</span>
             </div>
             <AnimatedCurrency 
-              value={stats.totalProjected}
-              className="text-3xl font-bold text-primary-foreground tracking-tight block"
+              value={receivedYTD}
+              className="text-3xl font-bold text-white tracking-tight block"
               duration={1.2}
             />
-            <p className="text-xs text-primary-foreground/60 mt-2">Click for breakdown</p>
+            <p className="text-xs text-white/60 mt-2">{closedDealsYTD} deals closed in {thisYear}</p>
           </div>
         </motion.div>
 
-        {/* This Year */}
+        {/* Coming In */}
         <motion.div
-          className="relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
+          className="relative overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1"
           style={{
-            background: 'linear-gradient(145deg, hsl(38 92% 50%) 0%, hsl(25 95% 45%) 100%)',
-            boxShadow: '0 8px 24px -8px hsl(38 92% 50%/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
+            background: 'linear-gradient(145deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.85) 100%)',
+            boxShadow: '0 8px 24px -8px hsl(var(--primary)/0.4), inset 0 1px 0 0 rgba(255,255,255,0.15)'
           }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springConfig, delay: 0.05 }}
         >
           <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/10" />
-          
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-white" />
+                <ArrowUpRight className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">{thisYear} Projected</span>
+              <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wider">Coming In</span>
             </div>
             <AnimatedCurrency 
-              value={stats.thisYearProjected}
-              className="text-3xl font-bold text-white tracking-tight block"
+              value={comingIn}
+              className="text-3xl font-bold text-primary-foreground tracking-tight block"
               duration={1.2}
             />
-            <p className="text-xs text-white/60 mt-2">Commissions + RevShare</p>
+            <p className="text-xs text-primary-foreground/60 mt-2">{activeDeals} active deals pending</p>
           </div>
         </motion.div>
 
@@ -270,7 +210,6 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
           transition={{ ...springConfig, delay: 0.1 }}
         >
           <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-destructive/5" />
-          
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center">
@@ -279,7 +218,7 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Monthly Expenses</span>
             </div>
             <AnimatedCurrency 
-              value={stats.monthlyExpenses}
+              value={monthlyExpenses}
               className="text-3xl font-bold text-destructive tracking-tight block"
               duration={1.2}
             />
@@ -287,79 +226,35 @@ export function QuickStats({ revShareMonthlyAvg = 0, monthlyExpenses, syncedRece
           </div>
         </motion.div>
 
-        {/* Avg Per Deal */}
+        {/* Net Cashflow YTD */}
         <motion.div
-          className="relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border border-border/40 p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-accent/30"
+          className={cn(
+            "relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1",
+            isPositive ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-destructive/30 hover:border-destructive/50"
+          )}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springConfig, delay: 0.15 }}
         >
-          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-accent/5" />
-          
+          <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full", isPositive ? "bg-emerald-500/5" : "bg-destructive/5")} />
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-accent/15 flex items-center justify-center">
-                <Target className="h-4 w-4 text-accent" />
+              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", isPositive ? "bg-emerald-500/15" : "bg-destructive/15")}>
+                {isPositive ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
               </div>
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avg Per Deal</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Cashflow YTD</span>
             </div>
             <AnimatedCurrency 
-              value={stats.avgDealValue}
-              className="text-3xl font-bold text-accent tracking-tight block"
+              value={Math.abs(netCashflowYTD)}
+              className={cn("text-3xl font-bold tracking-tight block", isPositive ? "text-emerald-500" : "text-destructive")}
               duration={1.2}
             />
-            <p className="text-xs text-muted-foreground mt-2">Gross commission</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {isPositive ? 'Earned minus spent' : 'Expenses exceed income'}
+            </p>
           </div>
         </motion.div>
       </div>
-
-      {/* Breakdown Dialog */}
-      <Dialog open={showBreakdown} onOpenChange={setShowBreakdown}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-primary" />
-              </div>
-              Projected Income Breakdown
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-              <p className="text-sm text-muted-foreground mb-1">Total Projected</p>
-              <p className="text-3xl font-bold text-primary">{formatCurrency(breakdown.total)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Next {breakdown.monthsProjected} months</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-success/10 border border-success/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <span className="font-semibold">Deal Commissions</span>
-                </div>
-                <span className="font-bold text-xl text-success">{formatCurrency(breakdown.commissions)}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Active deals (net of brokerage split)
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Repeat className="h-4 w-4 text-emerald-500" />
-                  <span className="font-semibold">RevShare Income</span>
-                </div>
-                <span className="font-bold text-xl text-emerald-500">{formatCurrency(breakdown.revShare)}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {formatCurrency(revShareMonthlyAvg)}/mo avg × {breakdown.monthsProjected} months
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
