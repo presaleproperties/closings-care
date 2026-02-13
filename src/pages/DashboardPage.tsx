@@ -57,7 +57,7 @@ export default function DashboardPage() {
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { data: revenueShare = [] } = useRevenueShare();
   const { data: networkAgents = [] } = useNetworkAgents();
-  const { syncedPayouts, receivedYTD, comingIn } = useSyncedIncome(syncedTransactions);
+  const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const refreshData = useRefreshData();
   
@@ -159,6 +159,8 @@ export default function DashboardPage() {
     spentYTD,
     activeDeals: dealCounts.active,
     closedDealsYTD: dealCounts.closedYTD,
+    projectedRevenue2026,
+    revShareMonthlyAvg,
   };
 
   return (
