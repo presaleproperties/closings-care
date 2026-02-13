@@ -74,6 +74,8 @@ export default function ForecastPage() {
   // Generate forecast data from Jan 2025 through end of projection
   const forecastData = useMemo(() => {
     const months = getExtendedMonthRange(monthsNeeded);
+    const now = new Date();
+    const currentMonth = format(now, 'yyyy-MM');
 
     // Pre-compute RevShare by month (period format is YYYY-MM)
     const revShareByMonth: Record<string, number> = {};
@@ -81,6 +83,13 @@ export default function ForecastPage() {
       const period = r.period; // "YYYY-MM"
       revShareByMonth[period] = (revShareByMonth[period] || 0) + Number(r.amount);
     });
+
+    // Calculate trailing 12-month average for RevShare projection
+    const revShareMonths = Object.keys(revShareByMonth).sort();
+    const recentMonths = revShareMonths.filter(m => m <= currentMonth).slice(-12);
+    const trailingRevShareAvg = recentMonths.length > 0
+      ? recentMonths.reduce((sum, m) => sum + (revShareByMonth[m] || 0), 0) / recentMonths.length
+      : 0;
     
     return months.map((monthStr) => {
       // Get synced transactions for this month by close_date
@@ -95,7 +104,9 @@ export default function ForecastPage() {
         .filter(p => p.status === 'active')
         .reduce((sum, p) => sum + p.netAmount, 0);
 
-      const revShareIncome = revShareByMonth[monthStr] || 0;
+      // Use actual RevShare if available, otherwise project the trailing average for future months
+      const actualRevShare = revShareByMonth[monthStr];
+      const revShareIncome = actualRevShare !== undefined ? actualRevShare : (monthStr > currentMonth ? trailingRevShareAvg : 0);
       const totalIncome = received + projected + revShareIncome;
       const totalExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
 
