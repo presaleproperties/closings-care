@@ -11,13 +11,11 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
-import { Deal, Payout, Expense } from '@/lib/types';
+import { Expense } from '@/lib/types';
 import { getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { Property } from '@/hooks/useProperties';
 
 interface FinancialHealthProps {
-  deals: Deal[];
-  payouts: Payout[];
   expenses: Expense[];
   properties: Property[];
   revShareMonthlyAvg: number;
@@ -29,31 +27,15 @@ interface FinancialHealthProps {
 
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 
-export function FinancialHealth({ deals, payouts, expenses, properties, revShareMonthlyAvg, monthlyExpenses, annualExpenses, receivedYTD: syncedReceived, comingIn: syncedComingIn }: FinancialHealthProps) {
+export function FinancialHealth({ expenses, properties, revShareMonthlyAvg, monthlyExpenses, annualExpenses, receivedYTD: syncedReceived, comingIn: syncedComingIn }: FinancialHealthProps) {
   const metrics = useMemo(() => {
     const now = new Date();
     const thisYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Use synced data if available, otherwise fall back to payouts
-    let paidPayouts: number;
-    let moneyComing: number;
-
-    if (syncedReceived !== undefined) {
-      paidPayouts = syncedReceived;
-    } else {
-      paidPayouts = payouts
-        .filter(p => p.status === 'PAID' && p.paid_date && new Date(p.paid_date).getFullYear() === thisYear)
-        .reduce((sum, p) => sum + Number(p.amount), 0);
-    }
-
-    if (syncedComingIn !== undefined) {
-      moneyComing = syncedComingIn;
-    } else {
-      moneyComing = payouts
-        .filter(p => p.status !== 'PAID')
-        .reduce((sum, p) => sum + Number(p.amount), 0);
-    }
+    // Use synced data directly (no more legacy payout fallback)
+    const paidPayouts = syncedReceived ?? 0;
+    const moneyComing = syncedComingIn ?? 0;
 
     // RevShare YTD = monthly avg * months elapsed
     const revShareYTD = revShareMonthlyAvg * currentMonth;
@@ -69,18 +51,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, revShare
       moneySpent += monthExpenses + monthlyPropertyNet;
     }
 
-    // Use synced data for total year commissions if available
-    const totalYearCommissions = (syncedReceived !== undefined)
-      ? paidPayouts + moneyComing
-      : payouts
-        .filter(p => {
-          const dueDate = p.due_date ? new Date(p.due_date) : null;
-          const paidDate = p.paid_date ? new Date(p.paid_date) : null;
-          const paidThisYear = p.status === 'PAID' && paidDate && paidDate.getFullYear() === thisYear;
-          const dueThisYear = dueDate && dueDate.getFullYear() === thisYear;
-          return paidThisYear || dueThisYear;
-        })
-        .reduce((sum, p) => sum + Number(p.amount), 0);
+    const totalYearCommissions = paidPayouts + moneyComing;
 
     const annualRevShare = revShareMonthlyAvg * 12;
     const totalYearIncome = totalYearCommissions + annualRevShare;
@@ -114,7 +85,7 @@ export function FinancialHealth({ deals, payouts, expenses, properties, revShare
       totalYearIncome,
       annualExpenses: annualExpensesCalc,
     };
-  }, [payouts, expenses, properties, revShareMonthlyAvg, monthlyExpenses, syncedReceived, syncedComingIn]);
+  }, [expenses, properties, revShareMonthlyAvg, monthlyExpenses, syncedReceived, syncedComingIn]);
 
   const getStatusConfig = () => {
     switch (metrics.healthStatus) {

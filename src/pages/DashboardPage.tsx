@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from 'react';
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -33,14 +33,14 @@ import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Sparkles, Lightbulb } from 'lucide-react';
-import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
+import { Calculator, TrendingUp, BarChart3, Lightbulb } from 'lucide-react';
+import { getMonthlyRecurringExpenses, getAnnualExpenses, getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
+import { Sparkles } from 'lucide-react';
 
-// Dashboard v3.0 - Fully synced data driven
 const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -72,49 +72,59 @@ export default function DashboardPage() {
   const gstRegistered = (settings as any)?.gst_registered || false;
   const gstRate = (settings as any)?.gst_rate || 0.05;
 
-  // Calculate average monthly RevShare from past 12 months
+  // RevShare monthly average (for projection components)
   const revShareMonthlyAvg = useMemo(() => {
     if (revenueShare.length === 0) return 0;
-    
     const now = new Date();
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
     const cutoff = format(twelveMonthsAgo, 'yyyy-MM');
-    
     const recentRevShare = revenueShare.filter((r: any) => r.period >= cutoff);
     if (recentRevShare.length === 0) {
       const total = revenueShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
       const uniqueMonths = new Set(revenueShare.map((r: any) => r.period));
       return uniqueMonths.size > 0 ? total / uniqueMonths.size : 0;
     }
-    
     const total = recentRevShare.reduce((sum: number, r: any) => sum + Number(r.amount), 0);
     const uniqueMonths = new Set(recentRevShare.map((r: any) => r.period));
-    const monthCount = Math.min(uniqueMonths.size, 12);
-    return monthCount > 0 ? total / monthCount : 0;
+    return uniqueMonths.size > 0 ? total / uniqueMonths.size : 0;
   }, [revenueShare]);
 
   const expenseTotals = useMemo(() => {
     const monthly = getMonthlyRecurringExpenses(expenses, properties);
     const annual = getAnnualExpenses(expenses, properties);
-    
-    const oneTime = expenses
-      .filter(e => e.recurrence === 'one-time')
-      .reduce((sum, e) => sum + Number(e.amount), 0);
-
-    return { monthly, annual, oneTime };
+    return { monthly, annual };
   }, [expenses, properties]);
 
+  // Accurate YTD spent: sum of tracked expenses Jan → current month
+  const spentYTD = useMemo(() => {
+    const currentMonth = now.getMonth() + 1;
+    const propertyCosts = getPropertyCostsForMonth(properties);
+    const monthlyPropertyNet = propertyCosts.personalCost - propertyCosts.rentalNet;
+    let total = 0;
+    for (let month = 1; month <= currentMonth; month++) {
+      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
+      total += getTrackedExpensesForMonth(expenses, monthStr) + monthlyPropertyNet;
+    }
+    return total;
+  }, [expenses, properties, thisYear, now]);
+
+  // Deal counts from synced data
+  const dealCounts = useMemo(() => {
+    const active = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
+    const closedYTD = syncedTransactions.filter((tx: any) => 
+      tx.status === 'closed' && tx.close_date && new Date(tx.close_date).getFullYear() === thisYear
+    ).length;
+    return { active, closedYTD };
+  }, [syncedTransactions, thisYear]);
+
   const incomeTotals = useMemo(() => {
-    const paid = receivedYTD;
-    const projected = comingIn;
-    return { paid, projected };
+    return { paid: receivedYTD, projected: comingIn };
   }, [receivedYTD, comingIn]);
 
   const taxSetAsideRequired = useMemo(() => {
     const totalIncome = incomeTotals.paid + incomeTotals.projected;
     const deductibleRatio = totalIncome > 0 ? incomeTotals.projected / totalIncome : 0;
     const deductibleForProjected = expenseTotals.annual * deductibleRatio;
-    
     const taxBreakdown = calculateTax(incomeTotals.projected, deductibleForProjected, province, taxType);
     const gstOwed = gstRegistered ? incomeTotals.projected * gstRate : 0;
     const bufferMultiplier = 1 + (taxBuffer / 100);
@@ -142,10 +152,18 @@ export default function DashboardPage() {
 
   const isEmpty = syncedTransactions.length === 0;
 
+  const quickStatsProps = {
+    receivedYTD,
+    comingIn,
+    monthlyExpenses: expenseTotals.monthly,
+    spentYTD,
+    activeDeals: dealCounts.active,
+    closedDealsYTD: dealCounts.closedYTD,
+  };
+
   return (
     <AppLayout>
       <FloatingBackground />
-      
       <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
       
       <Header
@@ -173,23 +191,14 @@ export default function DashboardPage() {
               </h1>
             </motion.div>
 
-            {/* Stats */}
             <div className="px-5 mb-6">
-              <QuickStats 
-                revShareMonthlyAvg={revShareMonthlyAvg}
-                monthlyExpenses={expenseTotals.monthly}
-                syncedReceived={receivedYTD}
-                syncedComingIn={comingIn}
-                syncedTransactions={syncedTransactions}
-              />
+              <QuickStats {...quickStatsProps} />
             </div>
 
-            {/* Quick Actions */}
             <div className="px-5 mb-6">
               <QuickActions />
             </div>
 
-            {/* Mobile Tabs */}
             <Tabs defaultValue="insights" className="pb-8">
               <div className="px-5 mb-5">
                 <div className="bg-muted/50 backdrop-blur-xl rounded-2xl p-1.5 border border-border/30">
@@ -220,8 +229,6 @@ export default function DashboardPage() {
                 <PipelineProspects />
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                 <FinancialHealth 
-                  deals={[]}
-                  payouts={[]}
                   expenses={expenses}
                   properties={properties}
                   revShareMonthlyAvg={revShareMonthlyAvg}
@@ -268,22 +275,14 @@ export default function DashboardPage() {
           >
             <div className="p-5 lg:p-6 xl:p-8 space-y-6">
 
-              {/* Stats Section */}
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...springConfig, delay: 0.1 }}
               >
-                <QuickStats 
-                  revShareMonthlyAvg={revShareMonthlyAvg}
-                  monthlyExpenses={expenseTotals.monthly}
-                  syncedReceived={receivedYTD}
-                  syncedComingIn={comingIn}
-                  syncedTransactions={syncedTransactions}
-                />
+                <QuickStats {...quickStatsProps} />
               </motion.section>
 
-              {/* Quick Actions */}
               <motion.section
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -292,7 +291,6 @@ export default function DashboardPage() {
                 <QuickActions />
               </motion.section>
 
-              {/* Premium Tabs */}
               <Tabs defaultValue="insights" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -364,9 +362,7 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...springConfig, delay: 0.35 }}
                     >
-                      <UpcomingRevenue 
-                        syncedTransactions={syncedTransactions}
-                      />
+                      <UpcomingRevenue syncedTransactions={syncedTransactions} />
                     </motion.div>
 
                     <motion.div
@@ -374,9 +370,7 @@ export default function DashboardPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...springConfig, delay: 0.4 }}
                     >
-                      <NeedsAttention 
-                        syncedTransactions={syncedTransactions}
-                      />
+                      <NeedsAttention syncedTransactions={syncedTransactions} />
                     </motion.div>
                   </div>
 
@@ -407,8 +401,6 @@ export default function DashboardPage() {
                         transition={{ ...springConfig, delay: 0.3 }}
                       >
                         <FinancialHealth 
-                          deals={[]}
-                          payouts={[]}
                           expenses={expenses}
                           properties={properties}
                           revShareMonthlyAvg={revShareMonthlyAvg}
