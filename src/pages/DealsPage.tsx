@@ -26,12 +26,14 @@ import { triggerHaptic } from '@/lib/haptics';
 import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
 import { cn } from '@/lib/utils';
 
-type SortKey = 'date-desc' | 'date-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
+type SortKey = 'date-desc' | 'date-asc' | 'close-desc' | 'close-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
 type TabKey = 'active' | 'closed' | 'listings';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'date-desc', label: 'Newest' },
   { value: 'date-asc', label: 'Oldest' },
+  { value: 'close-desc', label: 'Close ↓' },
+  { value: 'close-asc', label: 'Close ↑' },
   { value: 'amount-desc', label: 'Highest' },
   { value: 'amount-asc', label: 'Lowest' },
   { value: 'address-asc', label: 'A → Z' },
@@ -55,6 +57,22 @@ function getSortFn(key: SortKey) {
       case 'date-asc': {
         const dA = a.closeDate || a.firmDate || '';
         const dB = b.closeDate || b.firmDate || '';
+        return dA.localeCompare(dB);
+      }
+      case 'close-desc': {
+        const dA = a.closeDate || '';
+        const dB = b.closeDate || '';
+        if (!dA && !dB) return 0;
+        if (!dA) return 1;
+        if (!dB) return -1;
+        return dB.localeCompare(dA);
+      }
+      case 'close-asc': {
+        const dA = a.closeDate || '';
+        const dB = b.closeDate || '';
+        if (!dA && !dB) return 0;
+        if (!dA) return 1;
+        if (!dB) return -1;
         return dA.localeCompare(dB);
       }
       case 'amount-desc':
