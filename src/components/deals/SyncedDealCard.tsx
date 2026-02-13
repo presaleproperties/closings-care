@@ -120,7 +120,7 @@ export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps
               "text-base lg:text-lg font-bold tracking-tight",
               deal.status === 'closed' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
             )}>
-              {formatCurrency(deal.myNetPayout || 0)}
+              {formatCurrency(deal.displayCommission || deal.myNetPayout || 0)}
             </p>
             {deal.salePrice != null && deal.salePrice > 0 && (
               <p className="text-[11px] text-muted-foreground">

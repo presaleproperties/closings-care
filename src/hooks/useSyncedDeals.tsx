@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { useSyncedTransactions } from './usePlatformConnections';
 
+// Team agents who get the 70/30 split (user keeps 30%)
+const TEAM_AGENT_NAMES = ['ravish', 'sarb'];
+
 export interface Participant {
   id: string;
   firstName?: string;
@@ -23,6 +26,8 @@ export interface SyncedDeal {
   salePrice: number | null;
   commissionAmount: number | null;
   myNetPayout: number | null;
+  displayCommission: number | null; // Gross for solo deals, net for team deals
+  isTeamDeal: boolean;
   mySplitPercent: number | null;
   firmDate: string | null;
   closeDate: string | null;
@@ -31,12 +36,24 @@ export interface SyncedDeal {
   rawData?: any;
 }
 
+function checkIsTeamDeal(participants: Participant[]): boolean {
+  return participants.some(p => {
+    const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+    return TEAM_AGENT_NAMES.some(agent => name.includes(agent));
+  });
+}
+
 export function useSyncedDeals() {
   const { data: syncedTransactions = [] } = useSyncedTransactions();
 
   const deals = useMemo(() => {
     return syncedTransactions.map((tx: any) => {
-      const participants = tx.raw_data?.participants || [];
+      const participants = (tx.raw_data?.participants || []) as Participant[];
+      const isTeamDeal = checkIsTeamDeal(participants);
+      // Use gross commission for solo deals, net payout for team deals (Ravish/Sarb)
+      const displayCommission = isTeamDeal 
+        ? (tx.my_net_payout || 0)
+        : (tx.commission_amount || 0);
       
       return {
         id: tx.id,
@@ -50,11 +67,13 @@ export function useSyncedDeals() {
         salePrice: tx.sale_price,
         commissionAmount: tx.commission_amount,
         myNetPayout: tx.my_net_payout,
+        displayCommission,
+        isTeamDeal,
         mySplitPercent: tx.my_split_percent,
         firmDate: tx.firm_date,
         closeDate: tx.close_date,
         listingDate: tx.listing_date,
-        participants: participants as Participant[],
+        participants,
         rawData: tx.raw_data,
       } as SyncedDeal;
     });
