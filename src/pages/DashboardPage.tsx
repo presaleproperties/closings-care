@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
               <TabsContent value="insights" className="px-5 space-y-4 mt-0">
                 <ThisWeekFocus syncedTransactions={syncedTransactions} />
-                <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} />
+                <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <LatestActivity syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
                 <NeedsAttention syncedTransactions={syncedTransactions} />
@@ -337,11 +337,12 @@ export default function DashboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ ...springConfig, delay: 0.25 }}
                   >
-                    <InsightsGreeting 
+                <InsightsGreeting 
                       syncedTransactions={syncedTransactions}
                       revenueShare={revenueShare}
                       userName={userName}
                       receivedYTD={receivedYTD}
+                      revShareMonthlyAvg={revShareMonthlyAvg}
                     />
                   </motion.div>
 
