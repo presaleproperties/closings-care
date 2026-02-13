@@ -56,7 +56,7 @@ export default function ForecastPage() {
   const { data: settings } = useSettings();
   const refreshData = useRefreshData();
 
-  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
+  const [excludedYears, setExcludedYears] = useState<Set<string>>(new Set());
 
   // Calculate months needed to cover all close dates
   const monthsNeeded = useMemo(() => {
@@ -135,11 +135,13 @@ export default function ForecastPage() {
     });
   }, [forecastData]);
 
-  // Filter by year if selected
+  // Filter by excluded years
   const filteredData = useMemo(() => {
-    if (selectedYear === 'all') return runningTotals;
-    return runningTotals.filter(m => m.month.startsWith(selectedYear));
-  }, [runningTotals, selectedYear]);
+    if (excludedYears.size === 0) return runningTotals;
+    return runningTotals.filter(m => !excludedYears.has(m.month.substring(0, 4)));
+  }, [runningTotals, excludedYears]);
+
+  const allSelected = excludedYears.size === 0;
 
   // Summary stats for filtered data
   const totals = useMemo(() => {
@@ -163,7 +165,7 @@ export default function ForecastPage() {
     <AppLayout>
       <Header 
         title="Forecast" 
-        subtitle={selectedYear === 'all' ? 'Multi-Year Projection' : `${selectedYear} Financial Outlook`}
+        subtitle={allSelected ? 'Multi-Year Projection' : `${availableYears.filter(y => !excludedYears.has(y)).join(', ')} Outlook`}
       />
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
@@ -176,30 +178,46 @@ export default function ForecastPage() {
           {/* Year Pills */}
           <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
             <button
-              onClick={() => setSelectedYear('all')}
+              onClick={() => setExcludedYears(new Set())}
               className={cn(
                 "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
-                selectedYear === 'all'
+                allSelected
                   ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               )}
             >
               All
             </button>
-            {availableYears.map(year => (
-              <button
-                key={year}
-                onClick={() => setSelectedYear(year)}
-                className={cn(
-                  "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
-                  selectedYear === year
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {year}
-              </button>
-            ))}
+            {availableYears.map(year => {
+              const isActive = !excludedYears.has(year);
+              return (
+                <button
+                  key={year}
+                  onClick={() => {
+                    setExcludedYears(prev => {
+                      const next = new Set(prev);
+                      if (next.has(year)) {
+                        next.delete(year);
+                      } else {
+                        // Don't allow excluding all years
+                        if (next.size < availableYears.length - 1) {
+                          next.add(year);
+                        }
+                      }
+                      return next;
+                    });
+                  }}
+                  className={cn(
+                    "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted line-through"
+                  )}
+                >
+                  {year}
+                </button>
+              );
+            })}
           </motion.div>
 
           {/* Summary Stats */}
@@ -349,7 +367,7 @@ export default function ForecastPage() {
                     fontSize={10} 
                     tickLine={false}
                     axisLine={false}
-                    interval={selectedYear === 'all' ? 5 : 0}
+                    interval={filteredData.length > 12 ? 5 : 0}
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))" 
