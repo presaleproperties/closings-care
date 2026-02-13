@@ -108,13 +108,26 @@ export default function AnalyticsPage() {
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { syncedPayouts, receivedYTD, comingIn } = useSyncedIncome(syncedTransactions);
   
-  const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all'>('12m');
+  const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all' | 'year'>('12m');
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [dealTypeFilter, setDealTypeFilter] = useState<'all' | 'presale' | 'resale'>('all');
   const [cityFilter, setCityFilter] = useState<string>('all');
   const [agentFilter, setAgentFilter] = useState<string>('all');
 
   const now = useMemo(() => new Date(), []);
   const thisYear = now.getFullYear();
+
+  // Get available years from transactions
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    syncedTransactions.forEach(tx => {
+      const d = tx.close_date || tx.firm_date || tx.listing_date;
+      if (d) years.add(d.substring(0, 4));
+    });
+    // Ensure at least 2023-current year
+    for (let y = 2023; y <= thisYear; y++) years.add(String(y));
+    return Array.from(years).sort();
+  }, [syncedTransactions, thisYear]);
 
   // Filter dimensions for dropdowns
   const filterDimensions = useMemo(() => {
@@ -137,7 +150,12 @@ export default function AnalyticsPage() {
     let txs = syncedTransactions;
 
     // Time range
-    if (timeRange !== 'all') {
+    if (timeRange === 'year') {
+      txs = txs.filter(tx => {
+        const d = tx.close_date || tx.firm_date || tx.listing_date;
+        return d && d.startsWith(selectedYear);
+      });
+    } else if (timeRange !== 'all') {
       const ranges: Record<string, Date> = {
         'ytd': new Date(thisYear, 0, 1),
         '12m': subMonths(now, 12),
@@ -164,7 +182,7 @@ export default function AnalyticsPage() {
     if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
 
     return txs;
-  }, [syncedTransactions, timeRange, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
+  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
 
   const monthsToShow = useMemo(() => {
     switch (timeRange) {
@@ -172,7 +190,8 @@ export default function AnalyticsPage() {
       case '6m': return 6;
       case 'ytd': return now.getMonth() + 1;
       case '12m': return 12;
-      case 'all': return 24;
+      case 'year': return 12;
+      case 'all': return 48;
       default: return 12;
     }
   }, [timeRange, now]);
@@ -326,10 +345,13 @@ export default function AnalyticsPage() {
 
   // ── GCI Trends ──
   const gciTrends = useMemo(() => {
-    const months = eachMonthOfInterval({
-      start: subMonths(now, monthsToShow - 1),
-      end: now,
-    });
+    const intervalStart = timeRange === 'year' 
+      ? new Date(parseInt(selectedYear), 0, 1)
+      : subMonths(now, monthsToShow - 1);
+    const intervalEnd = timeRange === 'year'
+      ? new Date(parseInt(selectedYear), 11, 31)
+      : now;
+    const months = eachMonthOfInterval({ start: intervalStart, end: intervalEnd });
     let cumulative = 0;
     return months.map(month => {
       const monthStart = startOfMonth(month);
@@ -343,14 +365,17 @@ export default function AnalyticsPage() {
       cumulative += gci;
       return { month: format(month, 'MMM'), fullMonth: format(month, 'MMMM yyyy'), gci, cumulative, deals: monthTxs.length };
     });
-  }, [filteredTransactions, now, monthsToShow]);
+  }, [filteredTransactions, now, monthsToShow, timeRange, selectedYear]);
 
   // ── Deals by Month (firm date) ──
   const dealsByMonth = useMemo(() => {
-    const months = eachMonthOfInterval({
-      start: subMonths(now, monthsToShow - 1),
-      end: now,
-    });
+    const intervalStart = timeRange === 'year' 
+      ? new Date(parseInt(selectedYear), 0, 1)
+      : subMonths(now, monthsToShow - 1);
+    const intervalEnd = timeRange === 'year'
+      ? new Date(parseInt(selectedYear), 11, 31)
+      : now;
+    const months = eachMonthOfInterval({ start: intervalStart, end: intervalEnd });
     return months.map(month => {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
@@ -370,7 +395,7 @@ export default function AnalyticsPage() {
         gci: monthTxs.reduce((s, tx) => s + getEffectiveCommission(tx), 0),
       };
     });
-  }, [filteredTransactions, now, monthsToShow]);
+  }, [filteredTransactions, now, monthsToShow, timeRange, selectedYear]);
 
   // ── RevShare by Month ──
   const revShareMonthly = useMemo(() => {
@@ -432,7 +457,10 @@ export default function AnalyticsPage() {
 
   return (
     <AppLayout>
-      <Header title="Business Analytics" subtitle="Deep dive into your business performance" />
+      <Header 
+        title="Business Analytics" 
+        subtitle={timeRange === 'year' ? `${selectedYear} Performance` : 'Deep dive into your business performance'} 
+      />
       
       <motion.div 
         className="p-4 sm:p-6 lg:p-8 space-y-6"
@@ -440,6 +468,39 @@ export default function AnalyticsPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
+        {/* Year Pills */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+          {['all', 'ytd', '12m', '6m', '3m'].map(range => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range as any)}
+              className={cn(
+                "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
+                timeRange === range
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {range === 'all' ? 'All Time' : range === 'ytd' ? 'YTD' : range.toUpperCase()}
+            </button>
+          ))}
+          <div className="w-px h-5 bg-border mx-1" />
+          {availableYears.map(year => (
+            <button
+              key={year}
+              onClick={() => { setTimeRange('year'); setSelectedYear(year); }}
+              className={cn(
+                "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
+                timeRange === 'year' && selectedYear === year
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+
         {/* Filters Bar */}
         <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -456,20 +517,6 @@ export default function AnalyticsPage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
-            <Select value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-              <SelectTrigger className="w-[130px] h-9 rounded-lg bg-background border-border/50 text-sm">
-                <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/50" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-lg">
-                <SelectItem value="ytd">Year to Date</SelectItem>
-                <SelectItem value="12m">Last 12 Months</SelectItem>
-                <SelectItem value="6m">Last 6 Months</SelectItem>
-                <SelectItem value="3m">Last 3 Months</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select value={dealTypeFilter} onValueChange={(v: any) => setDealTypeFilter(v)}>
               <SelectTrigger className="w-[120px] h-9 rounded-lg bg-background border-border/50 text-sm">
                 <Home className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/50" />
