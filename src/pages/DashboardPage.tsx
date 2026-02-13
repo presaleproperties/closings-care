@@ -20,7 +20,7 @@ import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
 import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
-import { BrokerageCapCard } from '@/components/dashboard/BrokerageCapCard';
+
 import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
 import { PipelineProspects } from '@/components/dashboard/PipelineProspects';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
@@ -239,7 +239,6 @@ export default function DashboardPage() {
                   receivedYTD={receivedYTD}
                   comingIn={comingIn}
                 />
-                <BrokerageCapCard />
               </TabsContent>
 
               <TabsContent value="taxes" className="px-5 space-y-4 mt-0">
@@ -434,13 +433,6 @@ export default function DashboardPage() {
                         transition={{ ...springConfig, delay: 0.35 }}
                       >
                         <PipelineProspects />
-                      </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...springConfig, delay: 0.45 }}
-                      >
-                        <BrokerageCapCard />
                       </motion.div>
                     </div>
                   </div>
