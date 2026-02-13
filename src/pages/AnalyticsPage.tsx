@@ -1,479 +1,110 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { format, parseISO, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths, isWithinInterval } from 'date-fns';
-import { useRevenueShare } from '@/hooks/usePlatformConnections';
-import { useNetworkSummary } from '@/hooks/useNetworkData';
-import { 
-  BarChart3, TrendingUp, Users, DollarSign, Building2, Target,
-  Calendar, PieChart, ArrowUpRight, ArrowDownRight, Filter,
-  MapPin, Home, UserCheck, Briefcase,
+import {
+  TrendingUp, TrendingDown, DollarSign, Building2, Target,
+  Calendar, Users, MapPin, Home, UserCheck, Filter,
+  BarChart3, Briefcase, ArrowUpRight, ArrowDownRight, PieChart,
+  ChevronRight,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
-import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
-import { useSyncedIncome } from '@/hooks/useSyncedIncome';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { useAnalyticsData, type TimeRange } from '@/hooks/useAnalyticsData';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell,
-  Line, Area, AreaChart, ComposedChart,
+  Area, AreaChart, ComposedChart, Line,
 } from 'recharts';
 
-const springConfig = { type: "spring" as const, stiffness: 100, damping: 20 };
-
 const PIE_COLORS = [
-  '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'
+  'hsl(158, 64%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(217, 91%, 60%)',
+  'hsl(280, 68%, 58%)', 'hsl(0, 84%, 60%)', 'hsl(190, 90%, 50%)',
+  'hsl(330, 80%, 60%)', 'hsl(90, 65%, 45%)',
 ];
+const YEAR_COLORS = ['hsl(158, 64%, 42%)', 'hsl(38, 92%, 50%)', 'hsl(217, 91%, 60%)', 'hsl(280, 68%, 58%)'];
 
-// Team members who get a split (NOT the user)
-const TEAM_MEMBERS = ['Ravish', 'Sarb'];
-// Admin/TC - NOT treated as team member for commission purposes
-const ADMIN_NAMES = ['Mary'];
-
-// Detect if a participant is a team member (Ravish or Sarb)
-function getTeamMemberFromTx(tx: any): string | null {
-  try {
-    const participants = tx.raw_data?.participants || [];
-    for (const p of participants) {
-      if (p.hidden || p.external) continue;
-      if (!['BUYERS_AGENT', 'SELLERS_AGENT'].includes(p.participantRole)) continue;
-      const firstName = (p.firstName || '').trim();
-      if (TEAM_MEMBERS.some(tm => firstName.toLowerCase().startsWith(tm.toLowerCase()))) {
-        return `${firstName} ${(p.lastName || '').trim()}`.trim();
-      }
-    }
-  } catch {}
-  return null;
-}
-
-function isAdminParticipant(p: any): boolean {
-  const firstName = (p.firstName || '').trim();
-  return ADMIN_NAMES.some(a => firstName.toLowerCase().startsWith(a.toLowerCase()));
-}
-
-// Get the "effective commission" for a transaction
-// Solo deals: gross commission_amount
-// Team deals (Ravish/Sarb): my_net_payout (user's 30%)
-// Mary Sheridan TC deals: gross commission_amount (she's admin, not team)
-function getEffectiveCommission(tx: any): number {
-  const teamMember = getTeamMemberFromTx(tx);
-  if (teamMember) {
-    return Number(tx.my_net_payout || 0);
-  }
-  return Number(tx.commission_amount || 0);
-}
-
-const normalizeCity = (city: string | null): string => {
-  if (!city) return 'Unknown';
-  const trimmed = city.trim();
-  const cityMap: Record<string, string> = {
-    'surrey bc': 'Surrey',
-    'surrey': 'Surrey',
-    'new westminister': 'New Westminster',
-    'new westminster district plan': 'New Westminster',
-    'new westminster district plan ': 'New Westminster',
-    'coquitlam': 'Coquitlam',
-    'langley township': 'Langley',
-  };
-  const lower = trimmed.toLowerCase();
-  if (cityMap[lower]) return cityMap[lower];
-  return trimmed.replace(/\b\w/g, c => c.toUpperCase());
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-const isPresaleTransaction = (tx: any): boolean => {
-  const addr = (tx.property_address || '').toLowerCase();
-  return addr.includes('part 1/2') || addr.includes('part 2/2') || addr.includes('part 3/3');
-};
+function ChangeIndicator({ current, previous, format: fmt = 'percent' }: { current: number; previous: number; format?: 'percent' | 'number' }) {
+  if (previous === 0) return null;
+  const change = ((current - previous) / previous) * 100;
+  const isPositive = change >= 0;
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-semibold",
+      isPositive ? "text-emerald-600" : "text-rose-600"
+    )}>
+      {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+      {Math.abs(change).toFixed(0)}%
+    </span>
+  );
+}
 
-const getWritingAgents = (tx: any): string[] => {
-  try {
-    const participants = tx.raw_data?.participants || [];
-    return participants
-      .filter((p: any) => 
-        ['BUYERS_AGENT', 'SELLERS_AGENT'].includes(p.participantRole) && 
-        !p.hidden && !p.external
-      )
-      .map((p: any) => `${p.firstName || ''} ${p.lastName || ''}`.trim())
-      .filter((n: string) => n.length > 0);
-  } catch { return []; }
+const ChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-popover/95 backdrop-blur-xl border border-border/50 rounded-xl p-3 shadow-xl">
+      <p className="font-semibold text-sm mb-1.5">{payload[0]?.payload?.fullMonth || label}</p>
+      {payload.map((entry: any, i: number) => (
+        <p key={i} className="text-sm flex items-center gap-2" style={{ color: entry.color }}>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          {entry.name}: {typeof entry.value === 'number' && entry.value > 100
+            ? formatCurrency(entry.value)
+            : entry.value}
+        </p>
+      ))}
+    </div>
+  );
 };
 
 export default function AnalyticsPage() {
-  const { data: revenueShares = [] } = useRevenueShare();
-  const { data: networkSummary } = useNetworkSummary();
-  const { data: syncedTransactions = [] } = useSyncedTransactions();
-  const { syncedPayouts, receivedYTD, comingIn } = useSyncedIncome(syncedTransactions);
-  
-  const [timeRange, setTimeRange] = useState<'ytd' | '12m' | '6m' | '3m' | 'all' | 'year'>('12m');
-  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
-  const [dealTypeFilter, setDealTypeFilter] = useState<'all' | 'presale' | 'resale'>('all');
-  const [cityFilter, setCityFilter] = useState<string>('all');
-  const [agentFilter, setAgentFilter] = useState<string>('all');
+  const data = useAnalyticsData();
+  const {
+    timeRange, setTimeRange, selectedYear, setSelectedYear,
+    dealTypeFilter, setDealTypeFilter, cityFilter, setCityFilter,
+    agentFilter, setAgentFilter,
+    syncedTransactions, filteredTransactions,
+    availableYears, filterDimensions, hasFilters,
+    metrics, previousMetrics, teamMemberData,
+    cityData, leadSourceData, presaleResaleData,
+    gciTrends, dealsByMonth, revShareMonthly, revShareByTier,
+    revenueShares,
+  } = data;
 
-  const now = useMemo(() => new Date(), []);
-  const thisYear = now.getFullYear();
-
-  // Get available years from transactions
-  const availableYears = useMemo(() => {
-    const years = new Set<string>();
-    syncedTransactions.forEach(tx => {
-      const d = tx.close_date || tx.firm_date || tx.listing_date;
-      if (d) years.add(d.substring(0, 4));
-    });
-    // Ensure at least 2023-current year
-    for (let y = 2023; y <= thisYear; y++) years.add(String(y));
-    return Array.from(years).sort();
-  }, [syncedTransactions, thisYear]);
-
-  // Filter dimensions for dropdowns
-  const filterDimensions = useMemo(() => {
-    const citySet = new Map<string, number>();
-    const agentSet = new Map<string, number>();
-    syncedTransactions.forEach(tx => {
-      citySet.set(normalizeCity(tx.city), (citySet.get(normalizeCity(tx.city)) || 0) + 1);
-      getWritingAgents(tx).forEach(agent => {
-        agentSet.set(agent, (agentSet.get(agent) || 0) + 1);
-      });
-    });
-    return {
-      cities: Array.from(citySet.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
-      agents: Array.from(agentSet.entries()).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count })),
-    };
-  }, [syncedTransactions]);
-
-  // Time-filtered transactions
-  const filteredTransactions = useMemo(() => {
-    let txs = syncedTransactions;
-
-    // Time range
-    if (timeRange === 'year') {
-      txs = txs.filter(tx => {
-        const d = tx.close_date || tx.firm_date || tx.listing_date;
-        return d && d.startsWith(selectedYear);
-      });
-    } else if (timeRange !== 'all') {
-      const ranges: Record<string, Date> = {
-        'ytd': new Date(thisYear, 0, 1),
-        '12m': subMonths(now, 12),
-        '6m': subMonths(now, 6),
-        '3m': subMonths(now, 3),
-      };
-      const startDate = ranges[timeRange];
-      if (startDate) {
-        txs = txs.filter(tx => {
-          const d = tx.close_date || tx.firm_date || tx.listing_date;
-          return d && new Date(d) >= startDate;
-        });
-      }
-    }
-
-    // Deal type
-    if (dealTypeFilter === 'presale') txs = txs.filter(isPresaleTransaction);
-    if (dealTypeFilter === 'resale') txs = txs.filter(tx => !isPresaleTransaction(tx));
-
-    // City
-    if (cityFilter !== 'all') txs = txs.filter(tx => normalizeCity(tx.city) === cityFilter);
-
-    // Agent
-    if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
-
-    return txs;
-  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
-
-  const monthsToShow = useMemo(() => {
-    switch (timeRange) {
-      case '3m': return 3;
-      case '6m': return 6;
-      case 'ytd': return now.getMonth() + 1;
-      case '12m': return 12;
-      case 'year': return 12;
-      case 'all': return 48;
-      default: return 12;
-    }
-  }, [timeRange, now]);
-
-  // ── Core Metrics ──
-  const metrics = useMemo(() => {
-    const closed = filteredTransactions.filter(tx => tx.status === 'closed');
-    const active = filteredTransactions.filter(tx => tx.status === 'active');
-    const all = [...closed, ...active];
-
-    // Effective commission: gross for solo, net for team deals
-    const totalEffectiveCommission = all.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-    const closedEffectiveCommission = closed.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-    const activeEffectiveCommission = active.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-
-    // Average sale price
-    const txsWithPrice = all.filter(tx => tx.sale_price && tx.sale_price > 100);
-    const avgSalePrice = txsWithPrice.length > 0 
-      ? txsWithPrice.reduce((s, tx) => s + Number(tx.sale_price || 0), 0) / txsWithPrice.length 
-      : 0;
-
-    // Average commission per deal
-    const avgCommission = all.length > 0 ? totalEffectiveCommission / all.length : 0;
-
-    // Team vs Solo
-    const teamTxs = all.filter(tx => getTeamMemberFromTx(tx) !== null);
-    const soloTxs = all.filter(tx => getTeamMemberFromTx(tx) === null);
-
-    return {
-      totalDeals: all.length,
-      closedDeals: closed.length,
-      activeDeals: active.length,
-      totalEffectiveCommission,
-      closedEffectiveCommission,
-      activeEffectiveCommission,
-      avgSalePrice,
-      avgCommission,
-      teamDeals: teamTxs.length,
-      soloDeals: soloTxs.length,
-      totalVolume: all.reduce((s, tx) => s + Number(tx.sale_price || 0), 0),
-    };
-  }, [filteredTransactions]);
-
-  // ── Team Member Analytics ──
-  const teamMemberData = useMemo(() => {
-    const members: Record<string, { 
-      deals: number; 
-      closedDeals: number;
-      totalGCI: number; 
-      userPortion: number; 
-      teamPortion: number;
-      avgDeal: number;
-      totalVolume: number;
-    }> = {};
-
-    filteredTransactions.forEach(tx => {
-      const teamMember = getTeamMemberFromTx(tx);
-      if (!teamMember) return;
-
-      if (!members[teamMember]) {
-        members[teamMember] = { deals: 0, closedDeals: 0, totalGCI: 0, userPortion: 0, teamPortion: 0, avgDeal: 0, totalVolume: 0 };
-      }
-      const m = members[teamMember];
-      m.deals++;
-      if (tx.status === 'closed') m.closedDeals++;
-      
-      const grossGCI = Number(tx.commission_amount || 0);
-      const userNet = Number(tx.my_net_payout || 0);
-      m.totalGCI += grossGCI;
-      m.userPortion += userNet;
-      m.teamPortion += grossGCI - userNet;
-      m.totalVolume += Number(tx.sale_price || 0);
-    });
-
-    return Object.entries(members)
-      .map(([name, data]) => ({
-        name,
-        ...data,
-        avgDeal: data.deals > 0 ? data.totalGCI / data.deals : 0,
-      }))
-      .sort((a, b) => b.deals - a.deals);
-  }, [filteredTransactions]);
-
-  // ── City Analytics ──
-  const cityData = useMemo(() => {
-    const cities: Record<string, { count: number; closedCount: number; totalGCI: number; avgPrice: number; prices: number[] }> = {};
-    
-    filteredTransactions.forEach(tx => {
-      const city = normalizeCity(tx.city);
-      if (!cities[city]) cities[city] = { count: 0, closedCount: 0, totalGCI: 0, avgPrice: 0, prices: [] };
-      const c = cities[city];
-      c.count++;
-      if (tx.status === 'closed') c.closedCount++;
-      c.totalGCI += getEffectiveCommission(tx);
-      if (tx.sale_price && tx.sale_price > 100) c.prices.push(Number(tx.sale_price));
-    });
-
-    return Object.entries(cities)
-      .map(([name, data]) => ({
-        name,
-        value: data.count,
-        closedCount: data.closedCount,
-        totalGCI: data.totalGCI,
-        avgPrice: data.prices.length > 0 ? data.prices.reduce((s, p) => s + p, 0) / data.prices.length : 0,
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 12);
-  }, [filteredTransactions]);
-
-  // ── Lead Source Analytics ──
-  const leadSourceData = useMemo(() => {
-    const sources: Record<string, { count: number; gci: number }> = {};
-    filteredTransactions.forEach(tx => {
-      const source = tx.lead_source || 'Unknown';
-      if (!sources[source]) sources[source] = { count: 0, gci: 0 };
-      sources[source].count++;
-      sources[source].gci += getEffectiveCommission(tx);
-    });
-    const total = filteredTransactions.length;
-    return Object.entries(sources)
-      .map(([name, data]) => ({
-        name,
-        count: data.count,
-        gci: data.gci,
-        percentage: total > 0 ? (data.count / total) * 100 : 0,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [filteredTransactions]);
-
-  // ── Presale vs Resale ──
-  const presaleResaleData = useMemo(() => {
-    const presale = filteredTransactions.filter(isPresaleTransaction);
-    const resale = filteredTransactions.filter(tx => !isPresaleTransaction(tx));
-    
-    const getStats = (txs: any[]) => ({
-      count: txs.length,
-      gci: txs.reduce((s, tx) => s + getEffectiveCommission(tx), 0),
-      avgCommission: txs.length > 0 ? txs.reduce((s, tx) => s + getEffectiveCommission(tx), 0) / txs.length : 0,
-      volume: txs.reduce((s, tx) => s + Number(tx.sale_price || 0), 0),
-    });
-
-    return {
-      presale: getStats(presale),
-      resale: getStats(resale),
-      comparisonData: [
-        { name: 'Presale', ...getStats(presale) },
-        { name: 'Resale', ...getStats(resale) },
-      ],
-    };
-  }, [filteredTransactions]);
-
-  // ── GCI Trends ──
-  const gciTrends = useMemo(() => {
-    const intervalStart = timeRange === 'year' 
-      ? new Date(parseInt(selectedYear), 0, 1)
-      : subMonths(now, monthsToShow - 1);
-    const intervalEnd = timeRange === 'year'
-      ? new Date(parseInt(selectedYear), 11, 31)
-      : now;
-    const months = eachMonthOfInterval({ start: intervalStart, end: intervalEnd });
-    let cumulative = 0;
-    return months.map(month => {
-      const monthStart = startOfMonth(month);
-      const monthEnd = endOfMonth(month);
-      const monthTxs = filteredTransactions.filter(tx => {
-        const d = tx.close_date || tx.firm_date;
-        if (!d) return false;
-        return isWithinInterval(new Date(d), { start: monthStart, end: monthEnd });
-      });
-      const gci = monthTxs.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-      cumulative += gci;
-      return { month: format(month, 'MMM'), fullMonth: format(month, 'MMMM yyyy'), gci, cumulative, deals: monthTxs.length };
-    });
-  }, [filteredTransactions, now, monthsToShow, timeRange, selectedYear]);
-
-  // ── Deals by Month (firm date) ──
-  const dealsByMonth = useMemo(() => {
-    const intervalStart = timeRange === 'year' 
-      ? new Date(parseInt(selectedYear), 0, 1)
-      : subMonths(now, monthsToShow - 1);
-    const intervalEnd = timeRange === 'year'
-      ? new Date(parseInt(selectedYear), 11, 31)
-      : now;
-    const months = eachMonthOfInterval({ start: intervalStart, end: intervalEnd });
-    return months.map(month => {
-      const monthStart = startOfMonth(month);
-      const monthEnd = endOfMonth(month);
-      const monthTxs = filteredTransactions.filter(tx => {
-        const d = tx.firm_date || tx.close_date;
-        if (!d) return false;
-        return isWithinInterval(new Date(d), { start: monthStart, end: monthEnd });
-      });
-      const closed = monthTxs.filter(tx => tx.status === 'closed');
-      const active = monthTxs.filter(tx => tx.status === 'active');
-      return {
-        month: format(month, 'MMM'),
-        fullMonth: format(month, 'MMMM yyyy'),
-        closed: closed.length,
-        pending: active.length,
-        total: monthTxs.length,
-        gci: monthTxs.reduce((s, tx) => s + getEffectiveCommission(tx), 0),
-      };
-    });
-  }, [filteredTransactions, now, monthsToShow, timeRange, selectedYear]);
-
-  // ── RevShare by Month ──
-  const revShareMonthly = useMemo(() => {
-    const byYearMonth: Record<string, Record<number, number>> = {};
-    revenueShares.forEach(rs => {
-      if (!rs.period || rs.period === 'unknown') return;
-      const [yearStr, monthStr] = rs.period.split('-');
-      if (!byYearMonth[yearStr]) byYearMonth[yearStr] = {};
-      byYearMonth[yearStr][parseInt(monthStr)] = (byYearMonth[yearStr][parseInt(monthStr)] || 0) + Number(rs.amount);
-    });
-    const years = Object.keys(byYearMonth).sort();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return {
-      chartData: monthNames.map((name, i) => {
-        const entry: Record<string, any> = { month: name };
-        years.forEach(y => { entry[y] = byYearMonth[y]?.[i + 1] || 0; });
-        return entry;
-      }),
-      years,
-      yearlyTotals: years.map(y => ({
-        year: y,
-        total: Object.values(byYearMonth[y] || {}).reduce((s, v) => s + v, 0),
-      })),
-    };
-  }, [revenueShares]);
-
-  const revShareByTier = useMemo(() => {
-    const tiers = networkSummary?.revshare_by_tier as any;
-    if (!tiers?.tierRevshareResponses) return [];
-    return (tiers.tierRevshareResponses as any[]).map((t: any) => ({
-      tier: `Tier ${t.tier}`,
-      earned: t.earnedRevshareAmount?.amount || 0,
-      missed: t.missedRevshareAmount?.amount || 0,
-      contributors: t.numberOfContributors || 0,
-    })).filter((t: any) => t.earned > 0 || t.missed > 0 || t.contributors > 0);
-  }, [networkSummary]);
-
-  const YEAR_COLORS = ['hsl(158 64% 42%)', 'hsl(38 92% 50%)', 'hsl(217 91% 60%)', 'hsl(280 68% 58%)'];
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl p-3 shadow-xl">
-          <p className="font-semibold text-sm mb-1">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {typeof entry.value === 'number' && entry.value > 100
-                ? formatCurrency(entry.value) 
-                : entry.value}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const hasFilters = dealTypeFilter !== 'all' || cityFilter !== 'all' || agentFilter !== 'all';
+  const subtitle = useMemo(() => {
+    if (timeRange === 'year') return `${selectedYear} Performance`;
+    if (timeRange === 'ytd') return `${new Date().getFullYear()} Year-to-Date`;
+    if (timeRange === 'all') return 'All-Time Performance';
+    return `Last ${timeRange.toUpperCase()} Performance`;
+  }, [timeRange, selectedYear]);
 
   return (
     <AppLayout>
-      <Header 
-        title="Business Analytics" 
-        subtitle={timeRange === 'year' ? `${selectedYear} Performance` : 'Deep dive into your business performance'} 
-      />
-      
-      <motion.div 
-        className="p-4 sm:p-6 lg:p-8 space-y-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+      <Header title="Analytics" subtitle={subtitle} />
+
+      <motion.div
+        className="p-3 sm:p-4 lg:p-6 space-y-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
       >
-        {/* Year Pills */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
-          {['all', 'ytd', '12m', '6m', '3m'].map(range => (
+        {/* ── Time Range Pills ── */}
+        <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+          {(['all', 'ytd', '12m', '6m', '3m'] as const).map(range => (
             <button
               key={range}
-              onClick={() => setTimeRange(range as any)}
+              onClick={() => setTimeRange(range)}
               className={cn(
                 "px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap",
                 timeRange === range
@@ -481,10 +112,10 @@ export default function AnalyticsPage() {
                   : "bg-muted/50 text-muted-foreground hover:bg-muted"
               )}
             >
-              {range === 'all' ? 'All Time' : range === 'ytd' ? 'YTD' : range.toUpperCase()}
+              {range === 'all' ? 'All' : range === 'ytd' ? 'YTD' : range.toUpperCase()}
             </button>
           ))}
-          <div className="w-px h-5 bg-border mx-1" />
+          <div className="w-px h-5 bg-border mx-0.5" />
           {availableYears.map(year => (
             <button
               key={year}
@@ -499,230 +130,283 @@ export default function AnalyticsPage() {
               {year}
             </button>
           ))}
-        </div>
+        </motion.div>
 
-        {/* Filters Bar */}
-        <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters</span>
-            {hasFilters && (
-              <button 
-                onClick={() => { setDealTypeFilter('all'); setCityFilter('all'); setAgentFilter('all'); }}
-                className="ml-auto text-xs text-primary hover:underline font-medium"
-              >
-                Clear all
-              </button>
-            )}
+        {/* ── Filters ── */}
+        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 mr-1">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">Filter:</span>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={dealTypeFilter} onValueChange={(v: any) => setDealTypeFilter(v)}>
-              <SelectTrigger className="w-[120px] h-9 rounded-lg bg-background border-border/50 text-sm">
-                <Home className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/50" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-lg">
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="presale">Presale</SelectItem>
-                <SelectItem value="resale">Resale</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-[150px] h-9 rounded-lg bg-background border-border/50 text-sm">
-                <MapPin className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/50" />
-                <SelectValue placeholder="All Cities" />
+          <Select value={dealTypeFilter} onValueChange={(v: any) => setDealTypeFilter(v)}>
+            <SelectTrigger className="w-[110px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
+              <Home className="h-3 w-3 mr-1 text-muted-foreground/50" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg">
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="presale">Presale</SelectItem>
+              <SelectItem value="resale">Resale</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger className="w-[130px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
+              <MapPin className="h-3 w-3 mr-1 text-muted-foreground/50" />
+              <SelectValue placeholder="All Cities" />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg max-h-[300px]">
+              <SelectItem value="all">All Cities</SelectItem>
+              {filterDimensions.cities.map(c => (
+                <SelectItem key={c.name} value={c.name}>{c.name} ({c.count})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filterDimensions.agents.length > 1 && (
+            <Select value={agentFilter} onValueChange={setAgentFilter}>
+              <SelectTrigger className="w-[150px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
+                <UserCheck className="h-3 w-3 mr-1 text-muted-foreground/50" />
+                <SelectValue placeholder="All Agents" />
               </SelectTrigger>
               <SelectContent className="rounded-lg max-h-[300px]">
-                <SelectItem value="all">All Cities</SelectItem>
-                {filterDimensions.cities.map(c => (
-                  <SelectItem key={c.name} value={c.name}>{c.name} ({c.count})</SelectItem>
+                <SelectItem value="all">All Agents</SelectItem>
+                {filterDimensions.agents.map(a => (
+                  <SelectItem key={a.name} value={a.name}>{a.name} ({a.count})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+          )}
+          {hasFilters && (
+            <>
+              <button
+                onClick={() => { setDealTypeFilter('all'); setCityFilter('all'); setAgentFilter('all'); }}
+                className="text-xs text-primary hover:underline font-medium ml-1"
+              >
+                Clear
+              </button>
+              <span className="text-[10px] text-muted-foreground ml-1">
+                {filteredTransactions.length} of {syncedTransactions.length}
+              </span>
+            </>
+          )}
+        </motion.div>
 
-            {filterDimensions.agents.length > 1 && (
-              <Select value={agentFilter} onValueChange={setAgentFilter}>
-                <SelectTrigger className="w-[170px] h-9 rounded-lg bg-background border-border/50 text-sm">
-                  <UserCheck className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/50" />
-                  <SelectValue placeholder="All Agents" />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg max-h-[300px]">
-                  <SelectItem value="all">All Agents</SelectItem>
-                  {filterDimensions.agents.map(a => (
-                    <SelectItem key={a.name} value={a.name}>{a.name} ({a.count})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+        {/* ── Hero Stats ── */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+          {/* Total Deals */}
+          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-primary/8 to-primary/3 border-primary/15">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-primary/15">
+                <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Deals</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <AnimatedNumber value={metrics.totalDeals} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1} />
+              <ChangeIndicator current={metrics.totalDeals} previous={previousMetrics.totalDeals} />
+            </div>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+              {metrics.closedDeals} closed · {metrics.activeDeals} active
+            </p>
           </div>
 
-          {hasFilters && (
-            <p className="text-xs text-muted-foreground">
-              Showing <span className="font-semibold text-primary">{filteredTransactions.length}</span> of {syncedTransactions.length} transactions
-            </p>
-          )}
-        </div>
-
-        {/* ── Key Metrics ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {[
-            { label: 'Total Deals', value: metrics.totalDeals.toString(), sub: `${metrics.closedDeals} closed · ${metrics.activeDeals} active`, icon: Briefcase, color: 'text-foreground' },
-            { label: 'Earned', value: formatCurrency(metrics.closedEffectiveCommission), sub: `From ${metrics.closedDeals} closed deals`, icon: DollarSign, color: 'text-emerald-600 dark:text-emerald-400' },
-            { label: 'Pipeline', value: formatCurrency(metrics.activeEffectiveCommission), sub: `${metrics.activeDeals} pending`, icon: TrendingUp, color: 'text-primary' },
-            { label: 'Avg Sale Price', value: formatCurrency(metrics.avgSalePrice), sub: 'Per transaction', icon: Building2, color: 'text-foreground' },
-            { label: 'Avg Commission', value: formatCurrency(metrics.avgCommission), sub: 'Per deal (effective)', icon: Target, color: 'text-foreground' },
-          ].map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, ...springConfig }}
-              className="rounded-xl border border-border/60 bg-card p-4 space-y-1"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</span>
-                <stat.icon className="h-4 w-4 text-muted-foreground/40" />
+          {/* Earned */}
+          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
+                <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
               </div>
-              <p className={cn("text-xl font-bold tracking-tight", stat.color)}>{stat.value}</p>
-              <p className="text-[11px] text-muted-foreground">{stat.sub}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* ── Main Tabs ── */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/40 rounded-lg border border-border/30">
-            <TabsTrigger value="overview" className="text-sm font-medium px-3 rounded-md">Overview</TabsTrigger>
-            <TabsTrigger value="cities" className="text-sm font-medium px-3 rounded-md">Cities</TabsTrigger>
-            <TabsTrigger value="deals" className="text-sm font-medium px-3 rounded-md">Deal Flow</TabsTrigger>
-            <TabsTrigger value="team" className="text-sm font-medium px-3 rounded-md">Team</TabsTrigger>
-            <TabsTrigger value="revshare" className="text-sm font-medium px-3 rounded-md">RevShare</TabsTrigger>
-          </TabsList>
-
-          {/* ═══ Overview Tab ═══ */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* GCI Trend */}
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <TrendingUp className="h-4 w-4 text-primary" />
-                    GCI Trend
-                  </CardTitle>
-                  <CardDescription>Monthly and cumulative effective commission</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ComposedChart data={gciTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="gci" name="Monthly GCI" fill="hsl(158 64% 42%)" radius={[4, 4, 0, 0]} />
-                      <Line type="monotone" dataKey="cumulative" name="Cumulative" stroke="hsl(38 92% 50%)" strokeWidth={2} dot={false} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Presale vs Resale */}
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    Presale vs Resale
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    {presaleResaleData.comparisonData.map(type => (
-                      <div 
-                        key={type.name}
-                        className="p-3 rounded-lg bg-muted/30 border border-border/40 cursor-pointer hover:border-primary/30 transition-all"
-                        onClick={() => setDealTypeFilter(type.name.toLowerCase() as 'presale' | 'resale')}
-                      >
-                        <p className="text-xs font-medium text-muted-foreground uppercase mb-2">{type.name}</p>
-                        <p className="text-2xl font-bold">{type.count}</p>
-                        <p className="text-sm text-primary font-semibold mt-1">{formatCurrency(type.gci)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Avg: {formatCurrency(type.avgCommission)}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={presaleResaleData.comparisonData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="gci" name="Total GCI" fill="hsl(217 91% 60%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Earned</span>
             </div>
+            <div className="flex items-baseline gap-2">
+              <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600" duration={1.2} />
+              <ChangeIndicator current={metrics.closedEffectiveCommission} previous={previousMetrics.totalGCI} />
+            </div>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">From {metrics.closedDeals} closed</p>
+          </div>
 
-            {/* Lead Sources */}
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-4 w-4 text-primary" />
-                  Lead Sources
-                </CardTitle>
-                <CardDescription>Where your deals come from</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid lg:grid-cols-2 gap-6">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <RechartsPieChart>
-                      <Pie data={leadSourceData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} dataKey="count">
-                        {leadSourceData.map((_, i) => (
-                          <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto">
-                    {leadSourceData.map((source, i) => (
-                      <div key={source.name} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/20 border border-border/30">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                          <div>
-                            <p className="text-sm font-medium">{source.name}</p>
-                            <p className="text-xs text-muted-foreground">{source.count} deals · {source.percentage.toFixed(0)}%</p>
-                          </div>
-                        </div>
-                        <p className="font-semibold text-sm">{formatCurrency(source.gci)}</p>
-                      </div>
-                    ))}
-                    {leadSourceData.length === 0 && (
-                      <p className="text-center text-muted-foreground py-6">No lead source data</p>
-                    )}
+          {/* Pipeline */}
+          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-blue-500/20">
+                <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pipeline</span>
+            </div>
+            <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{metrics.activeDeals} pending</p>
+          </div>
+
+          {/* Avg Sale Price */}
+          <div className="landing-card p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
+                <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Price</span>
+            </div>
+            <AnimatedNumber value={metrics.avgSalePrice} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per transaction</p>
+          </div>
+
+          {/* Avg Commission */}
+          <div className="landing-card p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
+                <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Comm.</span>
+            </div>
+            <AnimatedNumber value={metrics.avgCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per deal (effective)</p>
+          </div>
+        </motion.div>
+
+        {/* ── Tabs ── */}
+        <Tabs defaultValue="overview" className="space-y-4">
+          <motion.div variants={itemVariants}>
+            <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/30 rounded-xl border border-border/30">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
+              <TabsTrigger value="sources" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Sources</TabsTrigger>
+              <TabsTrigger value="deals" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Deal Flow</TabsTrigger>
+              <TabsTrigger value="team" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Team</TabsTrigger>
+              <TabsTrigger value="revshare" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">RevShare</TabsTrigger>
+            </TabsList>
+          </motion.div>
+
+          {/* ═══ OVERVIEW ═══ */}
+          <TabsContent value="overview" className="space-y-4">
+            {/* GCI Trend */}
+            <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                    GCI Trend
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Monthly + cumulative effective commission</p>
+                </div>
+              </div>
+              <div className="h-52 sm:h-64 lg:h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={gciTrends}>
+                    <defs>
+                      <linearGradient id="gciBarGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0.9} />
+                        <stop offset="100%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0.6} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={50} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="gci" name="Monthly GCI" fill="url(#gciBarGrad)" radius={[4, 4, 0, 0]} />
+                    <Line type="monotone" dataKey="cumulative" name="Cumulative" stroke="hsl(38, 92%, 50%)" strokeWidth={2.5} dot={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center gap-5 mt-3 pt-3 border-t border-border">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(158, 64%, 42%)' }} />
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">Monthly GCI</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(38, 92%, 50%)' }} />
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">Cumulative</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Presale vs Resale */}
+            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {presaleResaleData.comparisonData.map(type => (
+                <div
+                  key={type.name}
+                  className={cn(
+                    "landing-card p-4 cursor-pointer transition-all hover:shadow-md",
+                    type.name === 'Presale'
+                      ? "bg-gradient-to-br from-blue-500/8 to-indigo-500/3 border-blue-500/15"
+                      : "bg-gradient-to-br from-amber-500/8 to-orange-500/3 border-amber-500/15"
+                  )}
+                  onClick={() => setDealTypeFilter(type.name.toLowerCase() as 'presale' | 'resale')}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{type.name}</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-2xl font-bold">{type.count}</p>
+                      <p className="text-[10px] text-muted-foreground">Deals</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-primary">{formatCurrency(type.gci)}</p>
+                      <p className="text-[10px] text-muted-foreground">Total GCI</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">{formatCurrency(type.avgCommission)}</p>
+                      <p className="text-[10px] text-muted-foreground">Avg Commission</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </motion.div>
           </TabsContent>
 
-          {/* ═══ Cities Tab ═══ */}
-          <TabsContent value="cities" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* City Bar Chart */}
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Deals by City
-                  </CardTitle>
-                  <CardDescription>Click a bar to filter</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={Math.max(250, cityData.length * 35)}>
-                    <BarChart 
-                      data={cityData} 
+          {/* ═══ SOURCES ═══ */}
+          <TabsContent value="sources" className="space-y-4">
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Lead Sources */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                  <PieChart className="w-3.5 h-3.5 text-primary" />
+                  Lead Sources
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Where your deals come from</p>
+
+                {leadSourceData.length > 0 ? (
+                  <div className="flex flex-col items-center">
+                    <div className="h-48 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsPieChart>
+                          <Pie data={leadSourceData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3} dataKey="count">
+                            {leadSourceData.map((_, i) => (
+                              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<ChartTooltip />} />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="w-full space-y-1.5 mt-2">
+                      {leadSourceData.map((source, i) => (
+                        <div key={source.name} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                            <span className="text-xs font-medium">{source.name}</span>
+                            <span className="text-[10px] text-muted-foreground">{source.count} · {source.percentage.toFixed(0)}%</span>
+                          </div>
+                          <span className="text-xs font-semibold">{formatCurrency(source.gci)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8 text-sm">No lead source data</p>
+                )}
+              </motion.div>
+
+              {/* City Distribution */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  Cities
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Click a city to filter</p>
+
+                <div className="h-[calc(100%-3rem)] min-h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={cityData}
                       layout="vertical"
                       onClick={(state: any) => {
                         if (state?.activeTooltipIndex !== undefined && cityData[state.activeTooltipIndex]) {
@@ -730,322 +414,324 @@ export default function AnalyticsPage() {
                         }
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                      <XAxis type="number" tick={{ fontSize: 12 }} />
-                      <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 11 }} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="value" name="Deals" fill="hsl(217 91% 60%)" radius={[0, 4, 4, 0]} style={{ cursor: 'pointer' }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Bar dataKey="value" name="Deals" fill="hsl(217, 91%, 60%)" radius={[0, 6, 6, 0]} style={{ cursor: 'pointer' }} opacity={0.85} />
                     </BarChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* City Details Table */}
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="text-base">City Performance</CardTitle>
-                  <CardDescription>Average sale price & commission by city</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {cityData.map((city, i) => (
-                      <div 
-                        key={city.name} 
-                        className="p-3 rounded-lg bg-muted/20 border border-border/30 cursor-pointer hover:border-primary/30 transition-all"
-                        onClick={() => setCityFilter(city.name)}
-                      >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="font-semibold text-sm">{city.name}</p>
-                          <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                            {city.value} deals
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <p className="text-muted-foreground">Closed</p>
-                            <p className="font-semibold">{city.closedCount}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Avg Price</p>
-                            <p className="font-semibold">{city.avgPrice > 0 ? formatCurrency(city.avgPrice) : '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Total GCI</p>
-                            <p className="font-semibold text-primary">{formatCurrency(city.totalGCI)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             </div>
+
+            {/* City Performance Table */}
+            <motion.div variants={itemVariants} className="landing-card overflow-hidden">
+              <div className="p-3 sm:p-4 border-b border-border">
+                <h3 className="text-xs sm:text-sm font-semibold">City Performance</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Average price & commission by market</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border/30">
+                {cityData.map(city => (
+                  <div
+                    key={city.name}
+                    className="p-3 sm:p-4 bg-card cursor-pointer hover:bg-muted/20 transition-colors"
+                    onClick={() => setCityFilter(city.name)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-sm">{city.name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{city.value} deals</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground text-[10px]">Closed</p>
+                        <p className="font-semibold">{city.closedCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-[10px]">Avg Price</p>
+                        <p className="font-semibold">{city.avgPrice > 0 ? formatCurrency(city.avgPrice) : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-[10px]">GCI</p>
+                        <p className="font-semibold text-primary">{formatCurrency(city.totalGCI)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </TabsContent>
 
-          {/* ═══ Deal Flow Tab ═══ */}
-          <TabsContent value="deals" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    Deals by Month
-                  </CardTitle>
-                  <CardDescription>Closed vs pending by month</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+          {/* ═══ DEAL FLOW ═══ */}
+          <TabsContent value="deals" className="space-y-4">
+            <div className="grid lg:grid-cols-2 gap-4">
+              {/* Deals by Month */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  Deals by Month
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Closed vs pending by firm date</p>
+                <div className="h-56 sm:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dealsByMonth}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="closed" name="Closed" stackId="a" fill="hsl(142 76% 36%)" />
-                      <Bar dataKey="pending" name="Pending" stackId="a" fill="hsl(38 92% 50%)" radius={[4, 4, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Bar dataKey="closed" name="Closed" stackId="a" fill="hsl(158, 64%, 42%)" opacity={0.85} />
+                      <Bar dataKey="pending" name="Pending" stackId="a" fill="hsl(38, 92%, 50%)" radius={[4, 4, 0, 0]} opacity={0.85} />
                     </BarChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="flex items-center justify-center gap-5 mt-3 pt-3 border-t border-border">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(158, 64%, 42%)' }} />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">Closed</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(38, 92%, 50%)' }} />
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">Pending</span>
+                  </div>
+                </div>
+              </motion.div>
 
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <DollarSign className="h-4 w-4 text-primary" />
-                    Monthly GCI
-                  </CardTitle>
-                  <CardDescription>Commission earned by month</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+              {/* Monthly GCI Area */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                  <DollarSign className="w-3.5 h-3.5 text-primary" />
+                  Monthly GCI
+                </h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Commission earned by month</p>
+                <div className="h-56 sm:h-64">
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dealsByMonth}>
                       <defs>
-                        <linearGradient id="gciGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(158 64% 42%)" stopOpacity={0.4}/>
-                          <stop offset="95%" stopColor="hsl(158 64% 42%)" stopOpacity={0}/>
+                        <linearGradient id="gciAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Area type="monotone" dataKey="gci" name="GCI" stroke="hsl(158 64% 42%)" fill="url(#gciGrad)" strokeWidth={2} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} width={50} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Area type="monotone" dataKey="gci" name="GCI" stroke="hsl(158, 64%, 42%)" fill="url(#gciAreaGrad)" strokeWidth={2.5} />
                     </AreaChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                </div>
+              </motion.div>
             </div>
           </TabsContent>
 
-          {/* ═══ Team Tab ═══ */}
-          <TabsContent value="team" className="space-y-6">
-            {/* Team Summary */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* ═══ TEAM ═══ */}
+          <TabsContent value="team" className="space-y-4">
+            {/* Team Summary Stats */}
+            <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {[
-                { label: 'Solo Deals', value: metrics.soloDeals },
-                { label: 'Team Deals', value: metrics.teamDeals },
-                { label: 'Team Members', value: teamMemberData.length },
-                { label: 'Team Revenue', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)) },
+                { label: 'Solo', value: metrics.soloDeals, color: 'from-emerald-500/8 border-emerald-500/15' },
+                { label: 'Team', value: metrics.teamDeals, color: 'from-blue-500/8 border-blue-500/15' },
+                { label: 'Members', value: teamMemberData.length, color: '' },
+                { label: 'Team Rev', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)), color: 'from-emerald-500/8 border-emerald-500/15' },
               ].map(stat => (
-                <Card key={stat.label} className="border-border/50">
-                  <CardContent className="p-4">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                  </CardContent>
-                </Card>
+                <div key={stat.label} className={cn("landing-card p-3 sm:p-4 bg-gradient-to-br", stat.color)}>
+                  <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
+                  <p className="text-lg sm:text-xl font-bold mt-1">{stat.value}</p>
+                </div>
               ))}
-            </div>
+            </motion.div>
 
             {teamMemberData.length > 0 ? (
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* Team Performance Chart */}
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Users className="h-4 w-4 text-primary" />
-                      Team Performance
-                    </CardTitle>
-                    <CardDescription>GCI split by team member</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
+              <div className="grid lg:grid-cols-2 gap-4">
+                {/* Performance Chart */}
+                <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    GCI Split
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Your portion vs theirs</p>
+                  <div className="h-56 sm:h-64">
+                    <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={teamMemberData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                        <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                        <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 12 }} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="userPortion" name="Your Portion" stackId="a" fill="hsl(158 64% 42%)" />
-                        <Bar dataKey="teamPortion" name="Their Portion" stackId="a" fill="hsl(217 91% 60%)" radius={[0, 4, 4, 0]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
+                        <YAxis dataKey="name" type="category" width={110} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                        <Tooltip content={<ChartTooltip />} />
+                        <Bar dataKey="userPortion" name="Your Portion" stackId="a" fill="hsl(158, 64%, 42%)" opacity={0.85} />
+                        <Bar dataKey="teamPortion" name="Their Portion" stackId="a" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} opacity={0.85} />
                       </BarChart>
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="flex items-center justify-center gap-5 mt-3 pt-3 border-t border-border">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(158, 64%, 42%)' }} />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">Your Portion</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(217, 91%, 60%)' }} />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">Their Portion</span>
+                    </div>
+                  </div>
+                </motion.div>
 
                 {/* Team Member Cards */}
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="text-base">Team Member Details</CardTitle>
-                    <CardDescription>Individual performance breakdown</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 max-h-[350px] overflow-y-auto">
-                      {teamMemberData.map(member => (
-                        <div key={member.name} className="p-4 rounded-lg bg-muted/20 border border-border/30">
-                          <div className="flex items-center justify-between mb-3">
-                            <p className="font-semibold">{member.name}</p>
-                            <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                              {member.deals} deals ({member.closedDeals} closed)
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Total GCI</p>
-                              <p className="font-bold">{formatCurrency(member.totalGCI)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Your Share</p>
-                              <p className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(member.userPortion)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Their Share</p>
-                              <p className="font-bold">{formatCurrency(member.teamPortion)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Avg Deal</p>
-                              <p className="font-bold">{formatCurrency(member.avgDeal)}</p>
-                            </div>
-                          </div>
+                <motion.div variants={itemVariants} className="space-y-2 sm:space-y-3">
+                  {teamMemberData.map(member => (
+                    <div key={member.name} className="landing-card p-3 sm:p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-sm">{member.name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                          {member.deals} deals ({member.closedDeals} closed)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Total GCI</p>
+                          <p className="font-bold">{formatCurrency(member.totalGCI)}</p>
                         </div>
-                      ))}
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Your Share</p>
+                          <p className="font-bold text-emerald-600">{formatCurrency(member.userPortion)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Their Share</p>
+                          <p className="font-bold">{formatCurrency(member.teamPortion)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Avg Deal</p>
+                          <p className="font-bold">{formatCurrency(member.avgDeal)}</p>
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </motion.div>
               </div>
             ) : (
-              <Card className="border-border/50">
-                <CardContent className="py-12 text-center">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No team deals found</p>
-                  <p className="text-sm text-muted-foreground/70 mt-1">Deals with Ravish or Sarb will appear here</p>
-                </CardContent>
-              </Card>
+              <motion.div variants={itemVariants} className="landing-card p-12 text-center">
+                <Users className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
+                <p className="text-muted-foreground text-sm">No team deals found in this period</p>
+              </motion.div>
             )}
           </TabsContent>
 
-          {/* ═══ RevShare Tab ═══ */}
-          <TabsContent value="revshare" className="space-y-6">
+          {/* ═══ REVSHARE ═══ */}
+          <TabsContent value="revshare" className="space-y-4">
             {revenueShares.length === 0 ? (
-              <Card className="border-border/50">
-                <CardContent className="py-12 text-center">
-                  <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No revenue share data yet</p>
-                </CardContent>
-              </Card>
+              <motion.div variants={itemVariants} className="landing-card p-12 text-center">
+                <DollarSign className="h-10 w-10 mx-auto text-muted-foreground/20 mb-3" />
+                <p className="text-muted-foreground text-sm">No revenue share data yet</p>
+              </motion.div>
             ) : (
               <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Yearly Totals */}
+                <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
                   {revShareMonthly.yearlyTotals.map((yt, i) => (
-                    <motion.div key={yt.year} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, ...springConfig }}>
-                      <Card className="border-border/50">
-                        <CardContent className="p-4">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{yt.year} Total</p>
-                          <p className="text-xl font-bold mt-1">{formatCurrency(yt.total)}</p>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
+                    <div key={yt.year} className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/8 to-teal-500/3 border-emerald-500/15">
+                      <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{yt.year}</span>
+                      <AnimatedNumber value={yt.total} className="text-lg sm:text-xl font-bold text-emerald-600 mt-1" duration={1} />
+                    </div>
                   ))}
-                </div>
+                </motion.div>
 
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <BarChart3 className="h-4 w-4 text-primary" />
-                      RevShare by Month
-                    </CardTitle>
-                    <CardDescription>Year-over-year comparison</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={350}>
+                {/* YoY Comparison Chart */}
+                <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    RevShare by Month
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Year-over-year comparison</p>
+                  <div className="h-56 sm:h-72">
+                    <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={revShareMonthly.chartData} barGap={2}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v.toFixed(0)}`} tickLine={false} axisLine={false} width={50} />
+                        <Tooltip content={<ChartTooltip />} />
                         {revShareMonthly.years.map((year, i) => (
-                          <Bar key={year} dataKey={year} name={year} fill={YEAR_COLORS[i % YEAR_COLORS.length]} radius={[3, 3, 0, 0]} />
+                          <Bar key={year} dataKey={year} name={year} fill={YEAR_COLORS[i % YEAR_COLORS.length]} radius={[3, 3, 0, 0]} opacity={0.85} />
                         ))}
                       </BarChart>
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="flex items-center justify-center gap-5 mt-3 pt-3 border-t border-border">
+                    {revShareMonthly.years.map((year, i) => (
+                      <div key={year} className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: YEAR_COLORS[i % YEAR_COLORS.length] }} />
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">{year}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
 
-                <div className="grid lg:grid-cols-2 gap-6">
-                  <Card className="border-border/50">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        Cumulative RevShare
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        const sorted = [...revenueShares].filter(r => r.period && r.period !== 'unknown').sort((a, b) => a.period.localeCompare(b.period));
-                        let cum = 0;
-                        const trendData = sorted.map(r => {
-                          cum += Number(r.amount);
-                          const [y, m] = r.period.split('-');
-                          return { period: `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y.slice(2)}`, cumulative: cum };
-                        });
-                        return (
-                          <ResponsiveContainer width="100%" height={280}>
+                {/* Cumulative + Tier */}
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                    <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                      Cumulative RevShare
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">All-time growth</p>
+                    {(() => {
+                      const sorted = [...revenueShares].filter(r => r.period && r.period !== 'unknown').sort((a, b) => a.period.localeCompare(b.period));
+                      let cum = 0;
+                      const trendData = sorted.map(r => {
+                        cum += Number(r.amount);
+                        const [y, m] = r.period.split('-');
+                        return { period: `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(m) - 1]} ${y.slice(2)}`, cumulative: cum };
+                      });
+                      return (
+                        <div className="h-52 sm:h-60">
+                          <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                              <XAxis dataKey="period" tick={{ fontSize: 10 }} interval={Math.max(0, Math.floor(trendData.length / 8))} />
-                              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-                              <Tooltip content={<CustomTooltip />} />
-                              <Area type="monotone" dataKey="cumulative" name="Cumulative" stroke="hsl(158 64% 42%)" fill="hsl(158 64% 42% / 0.15)" strokeWidth={2} />
+                              <defs>
+                                <linearGradient id="cumRevGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0.3} />
+                                  <stop offset="95%" stopColor="hsl(158, 64%, 42%)" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                              <XAxis dataKey="period" tick={{ fontSize: 9 }} interval={Math.max(0, Math.floor(trendData.length / 8))} tickLine={false} axisLine={false} />
+                              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v.toFixed(0)}`} tickLine={false} axisLine={false} width={50} />
+                              <Tooltip content={<ChartTooltip />} />
+                              <Area type="monotone" dataKey="cumulative" name="Cumulative" stroke="hsl(158, 64%, 42%)" fill="url(#cumRevGrad)" strokeWidth={2.5} />
                             </AreaChart>
                           </ResponsiveContainer>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
+                        </div>
+                      );
+                    })()}
+                  </motion.div>
 
                   {revShareByTier.length > 0 && (
-                    <Card className="border-border/50">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Users className="h-4 w-4 text-primary" />
-                          RevShare by Tier
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={280}>
+                    <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
+                      <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+                        <Users className="w-3.5 h-3.5 text-primary" />
+                        By Tier
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Earned vs missed by tier</p>
+                      <div className="h-48 sm:h-52">
+                        <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={revShareByTier} layout="vertical" barGap={2}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.3)" />
-                            <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                            <YAxis type="category" dataKey="tier" tick={{ fontSize: 12 }} width={50} />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            <Bar dataKey="earned" name="Earned" fill="hsl(158 64% 42%)" radius={[0, 4, 4, 0]} />
-                            <Bar dataKey="missed" name="Missed" fill="hsl(0 84% 60% / 0.6)" radius={[0, 4, 4, 0]} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                            <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tickLine={false} axisLine={false} />
+                            <YAxis type="category" dataKey="tier" tick={{ fontSize: 11 }} width={50} tickLine={false} axisLine={false} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Bar dataKey="earned" name="Earned" fill="hsl(158, 64%, 42%)" radius={[0, 4, 4, 0]} opacity={0.85} />
+                            <Bar dataKey="missed" name="Missed" fill="hsl(0, 84%, 60%)" radius={[0, 4, 4, 0]} opacity={0.5} />
                           </BarChart>
                         </ResponsiveContainer>
-                        <div className="mt-4 space-y-1.5">
-                          {revShareByTier.map((t: any) => (
-                            <div key={t.tier} className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">{t.tier}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-muted-foreground">{t.contributors} contributors</span>
-                                <span className="font-semibold">{formatCurrency(t.earned)}</span>
-                              </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                        {revShareByTier.map((t: any) => (
+                          <div key={t.tier} className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">{t.tier}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-muted-foreground">{t.contributors} agents</span>
+                              <span className="font-semibold text-emerald-600">{formatCurrency(t.earned)}</span>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
                   )}
                 </div>
               </>
