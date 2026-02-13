@@ -108,12 +108,15 @@ export default function ForecastPage() {
       const isSlowMonth = net < 0;
       const isWarningMonth = net >= 0 && net < totalExpenses * 0.2;
 
+      const commissions = received + projected;
+
       return {
         month: monthStr,
         label: format(parseISO(`${monthStr}-01`), 'MMM'),
         shortYear: format(parseISO(`${monthStr}-01`), 'yy'),
         fullLabel: format(parseISO(`${monthStr}-01`), 'MMMM yyyy'),
         income: totalIncome,
+        commissions,
         revShare: revShareIncome,
         expenses: totalExpenses,
         net,
@@ -141,11 +144,13 @@ export default function ForecastPage() {
   // Summary stats for filtered data
   const totals = useMemo(() => {
     const income = filteredData.reduce((s, m) => s + m.income, 0);
+    const commissions = filteredData.reduce((s, m) => s + m.commissions, 0);
+    const revShare = filteredData.reduce((s, m) => s + m.revShare, 0);
     const expenses = filteredData.reduce((s, m) => s + m.expenses, 0);
     const net = filteredData.reduce((s, m) => s + m.net, 0);
     const slowMonths = filteredData.filter(m => m.isSlowMonth).length;
     const avgMonthlyNet = filteredData.length > 0 ? net / filteredData.length : 0;
-    return { income, expenses, net, slowMonths, avgMonthlyNet };
+    return { income, commissions, revShare, expenses, net, slowMonths, avgMonthlyNet };
   }, [filteredData]);
 
   // Get unique years from forecast data
@@ -198,22 +203,40 @@ export default function ForecastPage() {
           </motion.div>
 
           {/* Summary Stats */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            {/* Total Income */}
+          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+            {/* Commissions */}
             <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
               <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
                 <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
                   <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
                 </div>
-                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Income</span>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Commissions</span>
               </div>
               <AnimatedNumber
-                value={totals.income}
+                value={totals.commissions}
                 className="text-base sm:text-lg lg:text-xl font-bold text-emerald-600"
                 duration={1.2}
               />
               <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
-                Commissions + RevShare
+                Deal income
+              </p>
+            </div>
+
+            {/* RevShare */}
+            <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
+              <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
+                <div className="p-1 sm:p-1.5 rounded-lg bg-blue-500/20">
+                  <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">RevShare</span>
+              </div>
+              <AnimatedNumber
+                value={totals.revShare}
+                className="text-base sm:text-lg lg:text-xl font-bold text-blue-600"
+                duration={1.2}
+              />
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+                Network income
               </p>
             </div>
 
@@ -344,21 +367,31 @@ export default function ForecastPage() {
                       fontSize: '12px',
                       boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)',
                     }}
-                    formatter={(value: number, name: string) => [
-                      formatCurrency(value),
-                      name === 'income' ? 'Income (Commissions + RevShare)' : 'Expenses',
-                    ]}
+                    formatter={(value: number, name: string) => {
+                      const labels: Record<string, string> = {
+                        commissions: 'Commissions',
+                        revShare: 'RevShare',
+                        expenses: 'Expenses',
+                      };
+                      return [formatCurrency(value), labels[name] || name];
+                    }}
                     labelFormatter={(_, payload) => {
                       const d = payload?.[0]?.payload;
                       if (!d) return '';
-                      const revNote = d.revShare > 0 ? ` (incl. ${formatCurrency(d.revShare)} RevShare)` : '';
-                      return `${d.fullLabel}${revNote}`;
+                      return `${d.fullLabel} — Total: ${formatCurrency(d.income)}`;
                     }}
                   />
                   <ReferenceLine y={0} stroke="hsl(var(--border))" />
                   <Bar 
-                    dataKey="income" 
+                    dataKey="commissions" 
+                    stackId="income"
                     fill="hsl(160, 84%, 39%)" 
+                    opacity={0.85}
+                  />
+                  <Bar 
+                    dataKey="revShare" 
+                    stackId="income"
+                    fill="hsl(217, 91%, 60%)" 
                     radius={[4, 4, 0, 0]}
                     opacity={0.85}
                   />
@@ -375,8 +408,12 @@ export default function ForecastPage() {
             {/* Legend */}
             <div className="flex items-center justify-center gap-4 sm:gap-6 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-500" />
-                <span className="text-[10px] sm:text-xs text-muted-foreground">Income (Commissions + RevShare)</span>
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: 'hsl(160, 84%, 39%)' }} />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">Commissions</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: 'hsl(217, 91%, 60%)' }} />
+                <span className="text-[10px] sm:text-xs text-muted-foreground">RevShare</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-rose-500" />
@@ -395,11 +432,12 @@ export default function ForecastPage() {
               <p className="text-[10px] sm:text-xs text-muted-foreground">Detailed cashflow</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[400px]">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="text-left text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Month</th>
-                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Income</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Commissions</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">RevShare</th>
                     <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Expenses</th>
                     <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Net</th>
                     <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider hidden sm:table-cell">Running</th>
@@ -428,7 +466,10 @@ export default function ForecastPage() {
                         </div>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
-                        <span className="text-[11px] sm:text-sm text-emerald-600 font-medium">{formatCurrency(month.income)}</span>
+                        <span className="text-[11px] sm:text-sm text-emerald-600 font-medium">{formatCurrency(month.commissions)}</span>
+                      </td>
+                      <td className="p-2 sm:p-3 text-right">
+                        <span className="text-[11px] sm:text-sm text-blue-600 font-medium">{month.revShare > 0 ? formatCurrency(month.revShare) : '—'}</span>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
                         <span className="text-[11px] sm:text-sm text-rose-600">{formatCurrency(month.expenses)}</span>
