@@ -58,9 +58,9 @@ function getSortFn(key: SortKey) {
         return dA.localeCompare(dB);
       }
       case 'amount-desc':
-        return (b.myNetPayout || 0) - (a.myNetPayout || 0);
+        return (b.displayCommission || b.myNetPayout || 0) - (a.displayCommission || a.myNetPayout || 0);
       case 'amount-asc':
-        return (a.myNetPayout || 0) - (b.myNetPayout || 0);
+        return (a.displayCommission || a.myNetPayout || 0) - (b.displayCommission || b.myNetPayout || 0);
       case 'address-asc':
         return (a.propertyAddress || '').localeCompare(b.propertyAddress || '');
       case 'address-desc':
@@ -97,8 +97,8 @@ export default function DealsPage() {
 
     const min = minAmount ? Number(minAmount) : null;
     const max = maxAmount ? Number(maxAmount) : null;
-    if (min !== null) deals = deals.filter(d => (d.myNetPayout || 0) >= min);
-    if (max !== null) deals = deals.filter(d => (d.myNetPayout || 0) <= max);
+    if (min !== null) deals = deals.filter(d => (d.displayCommission || d.myNetPayout || 0) >= min);
+    if (max !== null) deals = deals.filter(d => (d.displayCommission || d.myNetPayout || 0) <= max);
 
     return [...deals].sort(getSortFn(sortKey));
   }, [activeTab, activeDeals, closedDeals, listings, search, sortKey, minAmount, maxAmount]);
@@ -116,14 +116,14 @@ export default function DealsPage() {
       key,
       label,
       deals,
-      totalPayout: deals.reduce((s, d) => s + (d.myNetPayout || 0), 0),
+      totalPayout: deals.reduce((s, d) => s + (d.displayCommission || d.myNetPayout || 0), 0),
     }));
   }, [filteredDeals]);
 
   const stats = useMemo(() => {
     const allDeals = [...activeDeals, ...closedDeals];
-    const closedNet = closedDeals.reduce((sum, d) => sum + (d.myNetPayout || 0), 0);
-    const activeNet = activeDeals.reduce((sum, d) => sum + (d.myNetPayout || 0), 0);
+    const closedNet = closedDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
+    const activeNet = activeDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
     return {
       active: activeDeals.length,
       closed: closedDeals.length,
