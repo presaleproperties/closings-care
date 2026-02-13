@@ -106,34 +106,38 @@ export function useAnalyticsData() {
     };
   }, [syncedTransactions]);
 
-  const filteredTransactions = useMemo(() => {
-    let txs = syncedTransactions;
-    if (timeRange === 'year') {
-      txs = txs.filter(tx => {
-        const d = tx.close_date || tx.firm_date || tx.listing_date;
-        return d && String(d).startsWith(selectedYear);
-      });
-    } else if (timeRange !== 'all') {
-      const ranges: Record<string, Date> = {
-        'ytd': new Date(thisYear, 0, 1),
-        '12m': subMonths(now, 12),
-        '6m': subMonths(now, 6),
-        '3m': subMonths(now, 3),
-      };
-      const startDate = ranges[timeRange];
-      if (startDate) {
-        txs = txs.filter(tx => {
-          const d = tx.close_date || tx.firm_date || tx.listing_date;
-          return d && new Date(d) >= startDate;
-        });
-      }
-    }
-    if (dealTypeFilter === 'presale') txs = txs.filter(isPresaleTransaction);
-    if (dealTypeFilter === 'resale') txs = txs.filter(tx => !isPresaleTransaction(tx));
-    if (cityFilter !== 'all') txs = txs.filter(tx => normalizeCity(tx.city) === cityFilter);
-    if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
-    return txs;
-  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
+   const filteredTransactions = useMemo(() => {
+     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     let txs = syncedTransactions.filter(tx => {
+       const d = tx.close_date || tx.firm_date || tx.listing_date;
+       return d && new Date(d) >= minDate;
+     });
+     if (timeRange === 'year') {
+       txs = txs.filter(tx => {
+         const d = tx.close_date || tx.firm_date || tx.listing_date;
+         return d && String(d).startsWith(selectedYear);
+       });
+     } else if (timeRange !== 'all') {
+       const ranges: Record<string, Date> = {
+         'ytd': new Date(thisYear, 0, 1),
+         '12m': subMonths(now, 12),
+         '6m': subMonths(now, 6),
+         '3m': subMonths(now, 3),
+       };
+       const startDate = ranges[timeRange];
+       if (startDate) {
+         txs = txs.filter(tx => {
+           const d = tx.close_date || tx.firm_date || tx.listing_date;
+           return d && new Date(d) >= startDate;
+         });
+       }
+     }
+     if (dealTypeFilter === 'presale') txs = txs.filter(isPresaleTransaction);
+     if (dealTypeFilter === 'resale') txs = txs.filter(tx => !isPresaleTransaction(tx));
+     if (cityFilter !== 'all') txs = txs.filter(tx => normalizeCity(tx.city) === cityFilter);
+     if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
+     return txs;
+   }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
 
   const monthsToShow = useMemo(() => {
     switch (timeRange) {
@@ -172,36 +176,40 @@ export function useAnalyticsData() {
     };
   }, [filteredTransactions]);
 
-  // Previous period metrics for YoY comparison
-  const previousMetrics = useMemo(() => {
-    let prevTxs = syncedTransactions;
-    if (timeRange === 'year') {
-      const prevYear = String(parseInt(selectedYear) - 1);
-      prevTxs = prevTxs.filter(tx => {
-        const d = tx.close_date || tx.firm_date || tx.listing_date;
-        return d && String(d).startsWith(prevYear);
-      });
-    } else if (timeRange !== 'all') {
-      const offsets: Record<string, number> = { 'ytd': 12, '12m': 24, '6m': 12, '3m': 6 };
-      const offset = offsets[timeRange] || 12;
-      const prevStart = subMonths(now, offset);
-      const prevEnd = subMonths(now, offset - monthsToShow);
-      prevTxs = prevTxs.filter(tx => {
-        const d = tx.close_date || tx.firm_date || tx.listing_date;
-        if (!d) return false;
-        const date = new Date(d);
-        return date >= prevStart && date < prevEnd;
-      });
-    }
-    if (dealTypeFilter === 'presale') prevTxs = prevTxs.filter(isPresaleTransaction);
-    if (dealTypeFilter === 'resale') prevTxs = prevTxs.filter(tx => !isPresaleTransaction(tx));
-    if (cityFilter !== 'all') prevTxs = prevTxs.filter(tx => normalizeCity(tx.city) === cityFilter);
-    if (agentFilter !== 'all') prevTxs = prevTxs.filter(tx => getWritingAgents(tx).includes(agentFilter));
+   // Previous period metrics for YoY comparison
+   const previousMetrics = useMemo(() => {
+     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     let prevTxs = syncedTransactions.filter(tx => {
+       const d = tx.close_date || tx.firm_date || tx.listing_date;
+       return d && new Date(d) >= minDate;
+     });
+     if (timeRange === 'year') {
+       const prevYear = String(parseInt(selectedYear) - 1);
+       prevTxs = prevTxs.filter(tx => {
+         const d = tx.close_date || tx.firm_date || tx.listing_date;
+         return d && String(d).startsWith(prevYear);
+       });
+     } else if (timeRange !== 'all') {
+       const offsets: Record<string, number> = { 'ytd': 12, '12m': 24, '6m': 12, '3m': 6 };
+       const offset = offsets[timeRange] || 12;
+       const prevStart = subMonths(now, offset);
+       const prevEnd = subMonths(now, offset - monthsToShow);
+       prevTxs = prevTxs.filter(tx => {
+         const d = tx.close_date || tx.firm_date || tx.listing_date;
+         if (!d) return false;
+         const date = new Date(d);
+         return date >= prevStart && date < prevEnd;
+       });
+     }
+     if (dealTypeFilter === 'presale') prevTxs = prevTxs.filter(isPresaleTransaction);
+     if (dealTypeFilter === 'resale') prevTxs = prevTxs.filter(tx => !isPresaleTransaction(tx));
+     if (cityFilter !== 'all') prevTxs = prevTxs.filter(tx => normalizeCity(tx.city) === cityFilter);
+     if (agentFilter !== 'all') prevTxs = prevTxs.filter(tx => getWritingAgents(tx).includes(agentFilter));
 
-    const all = prevTxs;
-    const totalGCI = all.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-    return { totalDeals: all.length, totalGCI, totalVolume: all.reduce((s, tx) => s + Number(tx.sale_price || 0), 0) };
-  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, now, monthsToShow]);
+     const all = prevTxs;
+     const totalGCI = all.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
+     return { totalDeals: all.length, totalGCI, totalVolume: all.reduce((s, tx) => s + Number(tx.sale_price || 0), 0) };
+   }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, now, monthsToShow]);
 
   // Team member analytics
   const teamMemberData = useMemo(() => {
@@ -330,16 +338,17 @@ export function useAnalyticsData() {
     });
   }, [filteredTransactions, now, monthsToShow, timeRange, selectedYear]);
 
-  // RevShare by month
-  const revShareMonthly = useMemo(() => {
-    const byYearMonth: Record<string, Record<number, number>> = {};
-    revenueShares.forEach(rs => {
-      if (!rs.period || rs.period === 'unknown') return;
-      const [yearStr, monthStr] = rs.period.split('-');
-      if (!byYearMonth[yearStr]) byYearMonth[yearStr] = {};
-      byYearMonth[yearStr][parseInt(monthStr)] = (byYearMonth[yearStr][parseInt(monthStr)] || 0) + Number(rs.amount);
-    });
-    const years = Object.keys(byYearMonth).sort();
+   // RevShare by month
+   const revShareMonthly = useMemo(() => {
+     const byYearMonth: Record<string, Record<number, number>> = {};
+     revenueShares.forEach(rs => {
+       if (!rs.period || rs.period === 'unknown') return;
+       const [yearStr, monthStr] = rs.period.split('-');
+       if (parseInt(yearStr) < 2023) return; // Exclude pre-2023 data
+       if (!byYearMonth[yearStr]) byYearMonth[yearStr] = {};
+       byYearMonth[yearStr][parseInt(monthStr)] = (byYearMonth[yearStr][parseInt(monthStr)] || 0) + Number(rs.amount);
+     });
+     const years = Object.keys(byYearMonth).sort();
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return {
       chartData: monthNames.map((name, i) => {
