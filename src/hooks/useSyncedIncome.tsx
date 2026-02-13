@@ -102,6 +102,13 @@ export function useSyncedIncome(syncedTransactions: SyncedTransaction[]) {
       .reduce((sum, p) => sum + p.netAmount, 0);
   }, [syncedPayouts]);
 
+  // 2026 projected revenue (all deals closing in 2026)
+  const projectedRevenue2026 = useMemo(() => {
+    return syncedPayouts
+      .filter(p => p.close_date.startsWith('2026'))
+      .reduce((sum, p) => sum + p.netAmount, 0);
+  }, [syncedPayouts]);
+
   // Gross totals for comparison
   const grossComingIn = useMemo(() => {
     return syncedPayouts
@@ -115,6 +122,7 @@ export function useSyncedIncome(syncedTransactions: SyncedTransaction[]) {
     receivedYTD,
     comingIn,
     totalThisYear,
+    projectedRevenue2026,
     grossComingIn,
   };
 }
