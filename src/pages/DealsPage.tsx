@@ -187,28 +187,36 @@ export default function DealsPage() {
                     value: stats.totalDeals.toString(),
                     sub: `${stats.active} active · ${stats.closed} closed`,
                     icon: BarChart3,
-                    color: 'text-foreground',
+                    color: 'text-slate-700 dark:text-slate-300',
+                    tint: 'bg-slate-50/70 dark:bg-slate-900/20 border-slate-200/60 dark:border-slate-700/30',
+                    iconTint: 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400',
                   },
                   {
                     label: 'Earned',
                     value: formatCurrency(stats.closedNet),
                     sub: 'From closed deals',
                     icon: DollarSign,
-                    color: 'text-emerald-600 dark:text-emerald-400',
+                    color: 'text-emerald-700 dark:text-emerald-400',
+                    tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30',
+                    iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
                   },
                   {
                     label: 'Pipeline',
                     value: formatCurrency(stats.activeNet),
                     sub: `${stats.active} pending`,
                     icon: TrendingUp,
-                    color: 'text-primary',
+                    color: 'text-blue-700 dark:text-blue-400',
+                    tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30',
+                    iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
                   },
                   {
                     label: 'Volume',
                     value: formatCurrency(stats.totalVolume),
                     sub: 'Total sale price',
                     icon: Building2,
-                    color: 'text-foreground',
+                    color: 'text-violet-700 dark:text-violet-400',
+                    tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25',
+                    iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
                   },
                 ].map((stat, i) => (
                   <motion.div
@@ -216,18 +224,20 @@ export default function DealsPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
-                    className="rounded-xl border border-border/60 bg-card p-4 space-y-1"
+                    className={cn("rounded-xl border p-4 space-y-1.5 transition-colors", stat.tint)}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconTint)}>
+                        <stat.icon className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                         {stat.label}
                       </span>
-                      <stat.icon className="h-4 w-4 text-muted-foreground/40" />
                     </div>
                     <p className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.color)}>
                       {stat.value}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">{stat.sub}</p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">{stat.sub}</p>
                   </motion.div>
                 ))}
               </div>
