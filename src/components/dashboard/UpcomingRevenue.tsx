@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from 'lucide-react';
 import { formatCurrency } from '@/lib/format';
@@ -37,41 +36,48 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
   const totalUpcoming = upcomingItems.reduce((s: number, i: any) => s + i.amount, 0);
 
   return (
-    <div className="liquid-glass rounded-2xl p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <Calendar className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h3 className="font-semibold text-foreground">Upcoming Revenue</h3>
+    <div className="liquid-glass rounded-2xl p-4 sm:p-5">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Calendar className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-[15px] text-foreground leading-tight">Upcoming Revenue</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Next 30 days</p>
+          </div>
         </div>
         {totalUpcoming > 0 && (
-          <Badge variant="outline" className="ml-auto text-primary border-primary/30">
-            {formatCurrency(totalUpcoming)} in 30 days
+          <Badge variant="outline" className="text-primary border-primary/30 text-xs shrink-0 mt-1">
+            {formatCurrency(totalUpcoming)}
           </Badge>
         )}
       </div>
 
-      <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      {/* Revenue items */}
+      <div className="space-y-3 max-h-[420px] overflow-y-auto">
         {upcomingItems.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">No upcoming closings</p>
+          <p className="text-sm text-muted-foreground text-center py-6">No upcoming closings</p>
         ) : upcomingItems.map((item: any) => (
           <div
             key={item.id}
-            className="p-3 rounded-lg border border-border/30 bg-muted/20"
+            className="p-3.5 rounded-xl border border-border/30 bg-muted/20"
           >
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-primary">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <p className="text-xs font-semibold text-primary leading-none">
                   Closing {format(item.date, 'MMM d')}
                 </p>
-                <p className="text-sm text-foreground truncate mt-0.5">{item.address}</p>
-                <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{item.address}</p>
+                <div className="flex items-center gap-2 flex-wrap">
                   {item.agentName && (
-                    <span className="text-xs text-muted-foreground">{item.agentName}</span>
+                    <span className="text-[11px] text-muted-foreground">{item.agentName}</span>
                   )}
-                  <Badge variant="outline" className="text-[10px] h-4 px-1.5">{item.type}</Badge>
+                  <Badge variant="outline" className="text-[10px] h-5 px-2">{item.type}</Badge>
                 </div>
               </div>
-              <p className="text-sm font-bold text-foreground ml-3">
+              <p className="text-base font-bold text-foreground shrink-0">
                 {item.amount >= 1000 ? `$${Math.round(item.amount / 1000)}K` : formatCurrency(item.amount)}
               </p>
             </div>
@@ -82,7 +88,7 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
       {upcomingItems.length > 0 && (
         <button 
           onClick={() => navigate('/payouts')}
-          className="w-full text-center text-sm text-primary hover:underline mt-3"
+          className="w-full text-center text-sm font-medium text-primary hover:bg-primary/5 rounded-xl py-2.5 mt-4 transition-colors"
         >
           View full calendar →
         </button>
