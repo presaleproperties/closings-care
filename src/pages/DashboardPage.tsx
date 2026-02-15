@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -33,9 +33,9 @@ import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt } from 'lucide-react';
+import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw } from 'lucide-react';
 import { getMonthlyRecurringExpenses, getAnnualExpenses, getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
-import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
+import { useSyncedTransactions, useRevenueShare, usePlatformConnections, useSyncPlatform } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { usePipelineProspects } from '@/hooks/usePipelineProspects';
@@ -51,8 +51,24 @@ export default function DashboardPage() {
   const { data: networkAgents = [] } = useNetworkAgents();
   const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
   const { data: pipelineProspects = [] } = usePipelineProspects();
+  const { data: connections = [] } = usePlatformConnections();
+  const syncPlatform = useSyncPlatform();
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const refreshData = useRefreshData();
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const activeConnection = connections.find((c: any) => c.is_active);
+
+  const handleResync = async () => {
+    if (!activeConnection || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await syncPlatform.mutateAsync({ platform: activeConnection.platform, connectionId: activeConnection.id });
+      await refreshData();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
   
   const userName = (settings as any)?.full_name?.split(' ')[0] || undefined;
   const now = new Date();
@@ -171,26 +187,42 @@ export default function DashboardPage() {
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
         showAddDeal={false}
         action={
-          <div className="hidden sm:flex items-center gap-2">
-            {[
-              { icon: Plus, label: 'New Deal', path: '/deals/new', primary: true },
-              { icon: Receipt, label: 'Add Expense', path: '/expenses' },
-              { icon: TrendingUp, label: 'View Forecast', path: '/forecast' },
-            ].map((action) => (
-              <Link key={action.path} to={action.path}>
-                <button
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
-                    action.primary 
-                      ? "btn-premium" 
-                      : "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50"
-                  )}
-                >
-                  <action.icon className="h-3.5 w-3.5" />
-                  {action.label}
-                </button>
-              </Link>
-            ))}
+          <div className="flex items-center gap-2">
+            {activeConnection && (
+              <button
+                onClick={handleResync}
+                disabled={isSyncing}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
+                  "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50",
+                  isSyncing && "opacity-60 pointer-events-none"
+                )}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+                {isSyncing ? 'Syncing...' : 'Resync'}
+              </button>
+            )}
+            <div className="hidden sm:flex items-center gap-2">
+              {[
+                { icon: Plus, label: 'New Deal', path: '/deals/new', primary: true },
+                { icon: Receipt, label: 'Add Expense', path: '/expenses' },
+                { icon: TrendingUp, label: 'View Forecast', path: '/forecast' },
+              ].map((action) => (
+                <Link key={action.path} to={action.path}>
+                  <button
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
+                      action.primary 
+                        ? "btn-premium" 
+                        : "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50"
+                    )}
+                  >
+                    <action.icon className="h-3.5 w-3.5" />
+                    {action.label}
+                  </button>
+                </Link>
+              ))}
+            </div>
           </div>
         }
       />
