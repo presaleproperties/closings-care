@@ -5,6 +5,21 @@ import { addMonths, format, startOfMonth, endOfMonth, parseISO, isWithinInterval
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
+const MONTH_TONES = [
+  'bg-primary/[0.04]',
+  'bg-accent/[0.06]',
+  'bg-muted/40',
+  'bg-primary/[0.03]',
+  'bg-accent/[0.04]',
+  'bg-muted/30',
+  'bg-primary/[0.04]',
+  'bg-accent/[0.06]',
+  'bg-muted/40',
+  'bg-primary/[0.03]',
+  'bg-accent/[0.04]',
+  'bg-muted/30',
+] as const;
+
 interface InsightsGreetingProps {
   syncedTransactions: any[];
   revenueShare?: any[];
@@ -119,9 +134,9 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
         >
           {!isCompact ? (
             /* 3-month: side-by-side columns */
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               {outlook.months.map((month, i) => (
-                <MonthColumn key={month.label + month.year} month={month} index={i} />
+                <MonthColumn key={month.label + month.year} month={month} index={i} tone={MONTH_TONES[i % MONTH_TONES.length]} />
               ))}
             </div>
           ) : (
@@ -130,7 +145,10 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
               {outlook.months.map((month, i) => (
                 <motion.div
                   key={month.label + month.year}
-                  className="rounded-xl bg-muted/20 border border-border/20 p-3 space-y-1"
+                  className={cn(
+                    "rounded-xl border border-border/20 p-3 space-y-1",
+                    MONTH_TONES[i % MONTH_TONES.length]
+                  )}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.03 }}
@@ -176,10 +194,10 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
   );
 }
 
-function MonthColumn({ month, index }: { month: any; index: number }) {
+function MonthColumn({ month, index, tone }: { month: any; index: number; tone: string }) {
   return (
     <motion.div
-      className="space-y-2"
+      className={cn("rounded-xl p-3.5 space-y-2 border border-border/15", tone)}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}
