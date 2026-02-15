@@ -166,7 +166,7 @@ export default function NetworkPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="p-5 lg:p-8 space-y-6 max-w-7xl mx-auto pb-28 lg:pb-8">
         {/* Hero Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -188,7 +188,7 @@ export default function NetworkPage() {
             </div>
 
             {/* Hero Stats Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 mt-6">
               {[
                 { label: 'Total Agents', value: agents.length.toString(), icon: Users, color: 'text-primary' },
                 { label: 'Active', value: activeAgents.length.toString(), icon: UserPlus, color: 'text-success' },
@@ -201,7 +201,7 @@ export default function NetworkPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/30 p-3.5 hover:border-border/60 transition-colors"
+                  className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/30 p-4 hover:border-border/60 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
