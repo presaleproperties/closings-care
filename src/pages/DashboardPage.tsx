@@ -227,28 +227,27 @@ export default function DashboardPage() {
         <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
           {/* Mobile Dashboard */}
           <div className="sm:hidden">
-            <div className="px-4 pt-3 pb-4">
+            <div className="px-5 pt-4 pb-5">
               <p className="text-xs text-muted-foreground">{format(now, 'EEEE, MMMM d')}</p>
-              <h1 className="text-2xl font-bold tracking-tight mt-0.5">Dashboard</h1>
+              <h1 className="text-2xl font-bold tracking-tight mt-1">Dashboard</h1>
             </div>
 
-            <div className="px-4 mb-4">
+            <div className="px-5 mb-5">
               <QuickStats {...quickStatsProps} />
             </div>
 
-            <div className="px-4 mb-4">
+            <div className="px-5 mb-5">
               <GCIGoalTracker {...goalTrackerProps} />
             </div>
 
-
-            <Tabs defaultValue="insights" className="pb-6">
-              <div className="px-4 mb-4">
-                <TabsList className="w-full grid grid-cols-4 h-10 bg-muted/50 rounded-lg p-1">
+            <Tabs defaultValue="insights" className="pb-8">
+              <div className="px-5 mb-5">
+                <TabsList className="w-full grid grid-cols-4 h-11 bg-muted/50 rounded-xl p-1">
                   {['insights', 'cashflow', 'taxes', 'analytics'].map((tab) => (
                     <TabsTrigger 
                       key={tab}
                       value={tab}
-                      className="text-[11px] font-medium rounded-md capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
+                      className="text-xs font-medium rounded-lg capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
                     >
                       {tab === 'insights' ? 'Insights' : tab === 'cashflow' ? 'Cashflow' : tab === 'taxes' ? 'Taxes' : 'Analytics'}
                     </TabsTrigger>
@@ -256,7 +255,7 @@ export default function DashboardPage() {
                 </TabsList>
               </div>
 
-              <TabsContent value="insights" className="px-4 space-y-3 mt-0">
+              <TabsContent value="insights" className="px-5 space-y-4 mt-0">
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <PipelinePreview layout="horizontal" />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
@@ -264,11 +263,11 @@ export default function DashboardPage() {
                 <RevShareSummaryCard revenueShare={revenueShare} />
               </TabsContent>
 
-              <TabsContent value="cashflow" className="px-4 space-y-3 mt-0">
+              <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
               </TabsContent>
 
-              <TabsContent value="taxes" className="px-4 space-y-3 mt-0">
+              <TabsContent value="taxes" className="px-5 space-y-4 mt-0">
                 <SafeToSpendCard
                   projectedCashIn={incomeTotals.projected}
                   monthlyExpenses={expenseTotals.monthly}
@@ -286,7 +285,7 @@ export default function DashboardPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="analytics" className="px-4 space-y-3 mt-0">
+              <TabsContent value="analytics" className="px-5 space-y-4 mt-0">
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
                 <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />

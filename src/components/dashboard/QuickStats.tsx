@@ -24,7 +24,7 @@ function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }:
 }) {
   return (
     <div className={cn(
-      "liquid-glass rounded-2xl p-4 space-y-1.5 transition-all duration-300",
+      "liquid-glass rounded-2xl p-4 sm:p-4 space-y-2 transition-all duration-300",
       tint
     )}>
       <div className="flex items-center gap-2">
@@ -38,7 +38,7 @@ function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }:
         className={cn("text-lg sm:text-xl font-bold block tracking-tight truncate", color)}
         duration={0.8}
       />
-      <p className="text-[11px] text-muted-foreground leading-tight truncate">{subtitle}</p>
+      <p className="text-[11px] text-muted-foreground leading-snug truncate">{subtitle}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function QuickStats({
 }: QuickStatsProps) {
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
       <StatCard
         icon={Banknote}
         label="Earned YTD"

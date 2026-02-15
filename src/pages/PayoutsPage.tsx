@@ -468,14 +468,14 @@ export default function PayoutsPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <motion.div 
-          className="p-4 lg:p-6 space-y-5"
+          className="p-5 lg:p-6 space-y-5 pb-28 lg:pb-6"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
            {/* Stats Grid - Collapsible */}
            <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
-             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {statCards.map((stat, index) => (
                   <motion.div
                     key={stat.label}

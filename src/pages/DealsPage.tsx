@@ -177,10 +177,10 @@ export default function DealsPage() {
 
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-4 lg:p-6 space-y-5 pb-24 lg:pb-6">
+            <div className="p-5 lg:p-6 space-y-5 pb-28 lg:pb-6">
 
               {/* ── Stats Row ── */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {[
                   {
                     label: 'Total Deals',
@@ -224,7 +224,7 @@ export default function DealsPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
-                    className={cn("rounded-xl border p-4 space-y-1.5 transition-colors", stat.tint)}
+                    className={cn("rounded-xl border p-4 sm:p-4 space-y-2 transition-colors", stat.tint)}
                   >
                     <div className="flex items-center gap-2">
                       <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconTint)}>
@@ -452,7 +452,7 @@ export default function DealsPage() {
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
                               className="overflow-hidden"
                             >
-                              <div className="space-y-2 pt-1">
+                              <div className="space-y-3 pt-2">
                                 {groupDeals.map((deal, idx) => (
                                   <Link key={deal.id} to={`/deals/${deal.id}`}>
                                     <SyncedDealCard deal={deal} index={idx} />

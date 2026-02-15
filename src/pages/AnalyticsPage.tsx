@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
       <Header title="Analytics" subtitle={subtitle} />
 
       <motion.div
-        className="p-3 sm:p-4 lg:p-6 space-y-4"
+        className="p-4 sm:p-5 lg:p-6 space-y-5 pb-28 lg:pb-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
