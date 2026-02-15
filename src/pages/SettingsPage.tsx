@@ -65,6 +65,8 @@ export default function SettingsPage() {
   
   // Goals
   const [monthlyIncomeGoal, setMonthlyIncomeGoal] = useState(0);
+  const [yearlyGciGoal, setYearlyGciGoal] = useState(0);
+  const [yearlyRevshareGoal, setYearlyRevshareGoal] = useState(0);
 
   useEffect(() => {
     if (settings) {
@@ -82,6 +84,8 @@ export default function SettingsPage() {
       setTaxCalculationMethod((settings as any).tax_calculation_method || 'progressive');
       setTaxSavedAmount((settings as any).tax_saved_amount || 0);
       setMonthlyIncomeGoal((settings as any).monthly_income_goal || 0);
+      setYearlyGciGoal((settings as any).yearly_gci_goal || 0);
+      setYearlyRevshareGoal((settings as any).yearly_revshare_goal || 0);
     }
   }, [settings]);
 
@@ -101,13 +105,15 @@ export default function SettingsPage() {
         taxCalculationMethod !== ((settings as any).tax_calculation_method || 'progressive') ||
         taxSavedAmount !== ((settings as any).tax_saved_amount || 0) ||
         monthlyIncomeGoal !== ((settings as any).monthly_income_goal || 0) ||
+        yearlyGciGoal !== ((settings as any).yearly_gci_goal || 0) ||
+        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0) ||
         JSON.stringify(presaleTemplate) !== JSON.stringify(settings.presale_template || defaultPresale) ||
         JSON.stringify(resaleTemplate) !== JSON.stringify(settings.resale_template || defaultResale);
       setHasChanges(changed);
     }
   }, [settings, taxPercent, applyTaxToForecasts, country, province, taxType, 
       gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount,
-      monthlyIncomeGoal, presaleTemplate, resaleTemplate]);
+      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal, presaleTemplate, resaleTemplate]);
 
   const handleSave = async () => {
     await updateSettings.mutateAsync({
@@ -125,6 +131,8 @@ export default function SettingsPage() {
       tax_calculation_method: taxCalculationMethod,
       tax_saved_amount: taxSavedAmount,
       monthly_income_goal: monthlyIncomeGoal,
+      yearly_gci_goal: yearlyGciGoal,
+      yearly_revshare_goal: yearlyRevshareGoal,
     } as any);
     setHasChanges(false);
   };
@@ -228,7 +236,7 @@ export default function SettingsPage() {
               iconColor="text-primary"
               gradient="from-primary/10 to-primary/5"
             >
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="space-y-3">
                   <Label>Monthly Income Goal</Label>
                   <p className="text-sm text-muted-foreground">
@@ -251,6 +259,44 @@ export default function SettingsPage() {
                       Annual target: {formatCurrency(monthlyIncomeGoal * 12)}
                     </p>
                   )}
+                </div>
+
+                <div className="border-t border-border/50 pt-4 space-y-3">
+                  <Label>Yearly GCI Goal</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Gross Commission Income target for the current year
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="5000"
+                      value={yearlyGciGoal}
+                      onChange={(e) => setYearlyGciGoal(parseFloat(e.target.value) || 0)}
+                      className="w-40"
+                      placeholder="e.g., 200000"
+                    />
+                    <span className="text-sm text-muted-foreground">/year</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-border/50 pt-4 space-y-3">
+                  <Label>Yearly RevShare Goal</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Revenue Share income target for the current year
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={yearlyRevshareGoal}
+                      onChange={(e) => setYearlyRevshareGoal(parseFloat(e.target.value) || 0)}
+                      className="w-40"
+                      placeholder="e.g., 50000"
+                    />
+                    <span className="text-sm text-muted-foreground">/year</span>
+                  </div>
                 </div>
               </div>
             </SettingsCard>

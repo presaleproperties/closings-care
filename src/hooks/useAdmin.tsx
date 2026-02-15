@@ -14,6 +14,8 @@ interface AdminUser {
   dealsCount: number;
   pendingDeals: number;
   closedDeals: number;
+  yearlyGciGoal: number;
+  yearlyRevshareGoal: number;
 }
 
 interface AdminSummary {

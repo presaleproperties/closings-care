@@ -64,7 +64,7 @@ serve(async (req) => {
     // Fetch all settings (for subscription data)
     const { data: settings, error: settingsError } = await supabaseAdmin
       .from("settings")
-      .select("user_id, subscription_tier, subscription_started_at, subscription_ends_at, created_at");
+      .select("user_id, subscription_tier, subscription_started_at, subscription_ends_at, created_at, yearly_gci_goal, yearly_revshare_goal");
 
     if (settingsError) {
       throw new Error(`Error fetching settings: ${settingsError.message}`);
@@ -120,6 +120,8 @@ serve(async (req) => {
         dealsCount: userDeals.total,
         pendingDeals: userDeals.pending,
         closedDeals: userDeals.closed,
+        yearlyGciGoal: (userSettings as any)?.yearly_gci_goal || 0,
+        yearlyRevshareGoal: (userSettings as any)?.yearly_revshare_goal || 0,
       };
     }) || [];
 

@@ -658,6 +658,8 @@ export type Database = {
           tax_type: string | null
           updated_at: string
           user_id: string
+          yearly_gci_goal: number | null
+          yearly_revshare_goal: number | null
         }
         Insert: {
           apply_tax_to_forecasts?: boolean
@@ -686,6 +688,8 @@ export type Database = {
           tax_type?: string | null
           updated_at?: string
           user_id: string
+          yearly_gci_goal?: number | null
+          yearly_revshare_goal?: number | null
         }
         Update: {
           apply_tax_to_forecasts?: boolean
@@ -714,6 +718,8 @@ export type Database = {
           tax_type?: string | null
           updated_at?: string
           user_id?: string
+          yearly_gci_goal?: number | null
+          yearly_revshare_goal?: number | null
         }
         Relationships: []
       }
