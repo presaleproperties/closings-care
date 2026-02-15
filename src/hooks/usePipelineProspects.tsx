@@ -65,6 +65,27 @@ export function useAddProspect() {
   });
 }
 
+export function useUpdateProspect() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<PipelineProspect> & { id: string }) => {
+      const { error } = await supabase
+        .from('pipeline_prospects')
+        .update(updates as any)
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pipeline_prospects'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to update prospect: ' + error.message);
+    },
+  });
+}
+
 export function useDeleteProspect() {
   const queryClient = useQueryClient();
 
