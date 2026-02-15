@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -8,6 +9,7 @@ import { useProperties } from '@/hooks/useProperties';
 import { useSettings } from '@/hooks/useSettings';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { cn } from '@/lib/utils';
 
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
@@ -31,7 +33,7 @@ import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Lightbulb } from 'lucide-react';
+import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt } from 'lucide-react';
 import { getMonthlyRecurringExpenses, getAnnualExpenses, getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
@@ -167,6 +169,30 @@ export default function DashboardPage() {
       <Header
         title="Dashboard" 
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
+        showAddDeal={false}
+        action={
+          <div className="hidden sm:flex items-center gap-2">
+            {[
+              { icon: Plus, label: 'New Deal', path: '/deals/new', primary: true },
+              { icon: Receipt, label: 'Add Expense', path: '/expenses' },
+              { icon: TrendingUp, label: 'View Forecast', path: '/forecast' },
+            ].map((action) => (
+              <Link key={action.path} to={action.path}>
+                <button
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
+                    action.primary 
+                      ? "btn-premium" 
+                      : "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50"
+                  )}
+                >
+                  <action.icon className="h-3.5 w-3.5" />
+                  {action.label}
+                </button>
+              </Link>
+            ))}
+          </div>
+        }
       />
 
       {isEmpty ? (
@@ -184,9 +210,6 @@ export default function DashboardPage() {
               <QuickStats {...quickStatsProps} />
             </div>
 
-            <div className="px-4 mb-4">
-              <QuickActions />
-            </div>
 
             <Tabs defaultValue="insights" className="pb-6">
               <div className="px-4 mb-4">
@@ -256,7 +279,7 @@ export default function DashboardPage() {
           {/* Desktop Layout */}
           <div className="hidden sm:block p-5 lg:p-6 space-y-5">
             <QuickStats {...quickStatsProps} />
-            <QuickActions />
+
 
             <Tabs defaultValue="insights" className="space-y-5">
               <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/50 rounded-lg border border-border/30">
