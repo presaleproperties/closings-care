@@ -461,13 +461,13 @@ export default function ForecastPage() {
               <p className="text-[10px] sm:text-xs text-muted-foreground">Detailed cashflow</p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px]">
+              <table className="w-full min-w-[420px]">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="text-left text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Month</th>
-                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Commissions</th>
-                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">RevShare</th>
-                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Expenses</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Comm.</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Rev$</th>
+                    <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Exp.</th>
                     <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider">Net</th>
                     <th className="text-right text-[9px] sm:text-[11px] font-semibold text-muted-foreground p-2 sm:p-3 uppercase tracking-wider hidden sm:table-cell">Running</th>
                   </tr>

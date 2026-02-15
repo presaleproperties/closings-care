@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { useSyncedDeals, SyncedDeal } from '@/hooks/useSyncedDeals';
 import { useRefreshData } from '@/hooks/useRefreshData';
-import { formatCurrency } from '@/lib/format';
+import { formatCurrency, formatCurrencyCompact } from '@/lib/format';
 import { triggerHaptic } from '@/lib/haptics';
 import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
 import { cn } from '@/lib/utils';
@@ -211,7 +211,7 @@ export default function DealsPage() {
                   },
                   {
                     label: 'Volume',
-                    value: formatCurrency(stats.totalVolume),
+                    value: formatCurrencyCompact(stats.totalVolume),
                     sub: 'Total sale price',
                     icon: Building2,
                     color: 'text-violet-700 dark:text-violet-400',
@@ -234,7 +234,7 @@ export default function DealsPage() {
                         {stat.label}
                       </span>
                     </div>
-                    <p className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.color)}>
+                    <p className={cn("text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate", stat.color)}>
                       {stat.value}
                     </p>
                     <p className="text-[11px] text-muted-foreground leading-tight">{stat.sub}</p>
