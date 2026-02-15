@@ -283,55 +283,52 @@ export default function ExpensesPage() {
 
          {/* Category Cards */}
          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-           {(['personal', 'business', 'rental', 'taxes'] as ExpenseType[]).map((type, index) => {
-             const config = typeConfig[type];
-             const total = getTypeTotal(type);
-             const count = groupedExpenses[type].length;
-             const isActive = activeFilter === type;
-             
-             return (
-               <motion.button
-                 key={type}
-                 onClick={() => setActiveFilter(isActive ? 'all' : type)}
-                 initial={{ opacity: 0, y: 20 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 transition={{ delay: index * 0.06 }}
-                 whileHover={{ y: -2 }}
-                 className={cn(
-                   "relative p-3 sm:p-4 rounded-xl border backdrop-blur-sm transition-all text-left overflow-hidden group",
-                   isActive 
-                     ? `bg-gradient-to-br ${config.gradient}/20 ${config.border} shadow-lg shadow-primary/10` 
-                     : "border-border/50 bg-gradient-to-br from-card/60 to-card/40 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-                 )}
-               >
-                 {/* Gradient overlay on hover/active */}
-                 <div className={cn(
-                   "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity",
-                   config.gradient,
-                   isActive ? "opacity-20" : "group-hover:opacity-10"
-                 )} />
-                 
-                 <div className="relative z-10">
-                   <div className={cn(
-                     "w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-2 backdrop-blur-sm transition-colors",
-                     isActive ? config.bg : "bg-muted/50"
-                   )}>
-                     <config.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? config.text : "text-muted-foreground")} />
-                   </div>
-                   <p className="font-bold text-base sm:text-lg leading-tight">{formatCurrency(total)}</p>
-                   <p className="text-[10px] sm:text-xs text-muted-foreground font-medium mt-1">{config.label}</p>
-                 </div>
+            {([
+              { type: 'personal' as ExpenseType, tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30', iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400', valueColor: 'text-blue-700 dark:text-blue-400', activeTint: 'bg-blue-100/80 dark:bg-blue-950/30 border-blue-300/70 dark:border-blue-700/40' },
+              { type: 'business' as ExpenseType, tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25', iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400', valueColor: 'text-violet-700 dark:text-violet-400', activeTint: 'bg-violet-100/80 dark:bg-violet-950/30 border-violet-300/70 dark:border-violet-700/40' },
+              { type: 'rental' as ExpenseType, tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30', iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400', valueColor: 'text-emerald-700 dark:text-emerald-400', activeTint: 'bg-emerald-100/80 dark:bg-emerald-950/30 border-emerald-300/70 dark:border-emerald-700/40' },
+              { type: 'taxes' as ExpenseType, tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30', iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400', valueColor: 'text-amber-700 dark:text-amber-400', activeTint: 'bg-amber-100/80 dark:bg-amber-950/30 border-amber-300/70 dark:border-amber-700/40' },
+            ]).map((item, index) => {
+              const config = typeConfig[item.type];
+              const total = getTypeTotal(item.type);
+              const count = groupedExpenses[item.type].length;
+              const isActive = activeFilter === item.type;
+              
+              return (
+                <motion.button
+                  key={item.type}
+                  onClick={() => setActiveFilter(isActive ? 'all' : item.type)}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
+                  className={cn(
+                    "rounded-xl border p-3 sm:p-4 space-y-1.5 transition-colors text-left",
+                    isActive ? item.activeTint : item.tint
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", item.iconTint)}>
+                      <config.icon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {config.label}
+                    </span>
+                  </div>
+                  <p className={cn("font-bold text-xl lg:text-2xl tracking-tight", item.valueColor)}>{formatCurrency(total)}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {count} expense{count !== 1 ? 's' : ''}
+                  </p>
 
-                 {isActive && (
-                   <motion.div 
-                     layoutId="activeIndicator"
-                     className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", `bg-gradient-to-r ${config.gradient}`)}
-                   />
-                 )}
-               </motion.button>
-             );
-           })}
-         </motion.div>
+                  {isActive && (
+                    <motion.div 
+                      layoutId="activeIndicator"
+                      className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", config.bg, config.text)}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </motion.div>
 
         {/* Filter Pills */}
         <motion.div variants={itemVariants} className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1">
