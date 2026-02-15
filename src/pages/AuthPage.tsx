@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { lovable } from '@/integrations/lovable/index';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,47 @@ import { Label } from '@/components/ui/label';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 
+// Rate limiting: max 5 attempts per 60 seconds
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 60_000;
+
+function useRateLimit() {
+  const attemptsRef = useRef<number[]>([]);
+
+  const checkLimit = useCallback(() => {
+    const now = Date.now();
+    attemptsRef.current = attemptsRef.current.filter(t => now - t < LOCKOUT_DURATION);
+    if (attemptsRef.current.length >= MAX_ATTEMPTS) {
+      const oldest = attemptsRef.current[0];
+      const waitSec = Math.ceil((LOCKOUT_DURATION - (now - oldest)) / 1000);
+      return { allowed: false, waitSec };
+    }
+    attemptsRef.current.push(now);
+    return { allowed: true, waitSec: 0 };
+  }, []);
+
+  return checkLimit;
+}
+
+function getPasswordStrength(pw: string): { score: number; label: string; color: string; feedback: string[] } {
+  const feedback: string[] = [];
+  let score = 0;
+  if (pw.length >= 8) score++; else feedback.push('At least 8 characters');
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw)) score++; else feedback.push('One uppercase letter');
+  if (/[a-z]/.test(pw)) score++; else feedback.push('One lowercase letter');
+  if (/[0-9]/.test(pw)) score++; else feedback.push('One number');
+  if (/[^A-Za-z0-9]/.test(pw)) score++; else feedback.push('One special character');
+
+  if (score <= 2) return { score, label: 'Weak', color: 'bg-destructive', feedback };
+  if (score <= 4) return { score, label: 'Fair', color: 'bg-yellow-500', feedback };
+  return { score, label: 'Strong', color: 'bg-emerald-500', feedback };
+}
+
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const initialMode = searchParams.get('mode') === 'reset' ? 'reset' : 'login';
+  const checkRateLimit = useRateLimit();
   
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
@@ -56,19 +94,43 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Rate limiting check
+    const { allowed, waitSec } = checkRateLimit();
+    if (!allowed) {
+      setError(`Too many attempts. Please wait ${waitSec} seconds before trying again.`);
+      return;
+    }
+
+    // Sanitize inputs
+    const sanitizedEmail = email.trim().toLowerCase().slice(0, 255);
+    const sanitizedName = fullName.trim().slice(0, 100);
+
+    // Password strength check on signup
+    if (mode === 'signup' || mode === 'reset') {
+      const strength = getPasswordStrength(password);
+      if (strength.score <= 2) {
+        setError('Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       if (mode === 'login') {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(sanitizedEmail, password);
         if (error) throw error;
         navigate('/dashboard');
       } else if (mode === 'signup') {
-        const { error } = await signUp(email, password, fullName);
+        if (!sanitizedName) {
+          throw new Error('Full name is required');
+        }
+        const { error } = await signUp(sanitizedEmail, password, sanitizedName);
         if (error) throw error;
         navigate('/dashboard');
       } else if (mode === 'forgot') {
-        const { error } = await resetPassword(email);
+        const { error } = await resetPassword(sanitizedEmail);
         if (error) throw error;
         setSuccess('Check your email for a password reset link');
       } else if (mode === 'reset') {
@@ -84,7 +146,13 @@ export default function AuthPage() {
         setTimeout(() => navigate('/dashboard'), 2000);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      // Obfuscate specific auth errors to prevent user enumeration
+      const msg = err.message || 'An error occurred';
+      if (mode === 'login' && (msg.includes('Invalid login') || msg.includes('invalid_credentials'))) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -324,6 +392,8 @@ export default function AuthPage() {
                         placeholder="••••••••"
                         required
                         minLength={8}
+                        maxLength={128}
+                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                         className="h-12 pr-12"
                       />
                       <button
@@ -334,6 +404,28 @@ export default function AuthPage() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
+                    {/* Password strength indicator for signup/reset */}
+                    {(mode === 'signup' || mode === 'reset') && password.length > 0 && (() => {
+                      const strength = getPasswordStrength(password);
+                      return (
+                        <div className="space-y-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-300 ${strength.color}`}
+                                style={{ width: `${Math.min(100, (strength.score / 6) * 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">{strength.label}</span>
+                          </div>
+                          {strength.feedback.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Missing: {strength.feedback.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
 
