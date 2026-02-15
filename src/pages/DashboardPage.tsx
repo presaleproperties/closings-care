@@ -133,6 +133,19 @@ export default function DashboardPage() {
     return (taxBreakdown.totalTax + gstOwed) * bufferMultiplier;
   }, [incomeTotals.paid, incomeTotals.projected, expenseTotals.annual, province, taxType, taxBuffer, gstRegistered, gstRate]);
 
+  const comingInDateRange = useMemo(() => {
+    const activeDates = syncedPayouts
+      .filter(p => p.status === 'active' && p.close_date)
+      .map(p => new Date(p.close_date))
+      .sort((a, b) => a.getTime() - b.getTime());
+    if (activeDates.length === 0) return '';
+    const earliest = activeDates[0];
+    const latest = activeDates[activeDates.length - 1];
+    const fmtEarliest = format(earliest, 'MMM yyyy');
+    const fmtLatest = format(latest, 'MMM yyyy');
+    return fmtEarliest === fmtLatest ? fmtEarliest : `${fmtEarliest} – ${fmtLatest}`;
+  }, [syncedPayouts]);
+
   if (isChecking) {
     return (
       <AppLayout>
@@ -167,6 +180,7 @@ export default function DashboardPage() {
     revShareMonthlyAvg,
     pipelineCount: activePipeline.length,
     pipelinePotential: activePipeline.reduce((sum, p) => sum + Number(p.potential_commission), 0),
+    comingInDateRange,
   };
 
   return (
