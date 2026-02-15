@@ -254,17 +254,18 @@ export default function AdminPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
-                    <th className="text-left p-3 text-xs font-medium text-muted-foreground">User</th>
-                    <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Joined</th>
-                    <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
-                    <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Deals</th>
-                    <th className="text-center p-3 text-xs font-medium text-muted-foreground">Actions</th>
+                     <th className="text-left p-3 text-xs font-medium text-muted-foreground">User</th>
+                     <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Joined</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Deals</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">GCI Goal</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
                         No users found matching "{searchQuery}"
                       </td>
                     </tr>
@@ -328,6 +329,15 @@ export default function AdminPage() {
                             <span className="text-muted-foreground text-xs">
                               ({user.closedDeals} closed)
                             </span>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center hidden lg:table-cell">
+                          <div className="text-sm">
+                            {user.yearlyGciGoal > 0 ? (
+                              <span className="font-medium">{formatCurrency(user.yearlyGciGoal)}</span>
+                            ) : (
+                              <span className="text-muted-foreground/50 text-xs">Not set</span>
+                            )}
                           </div>
                         </td>
                         <td className="p-3 text-center">

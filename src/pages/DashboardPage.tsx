@@ -40,6 +40,7 @@ import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { usePipelineProspects } from '@/hooks/usePipelineProspects';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
+import { GCIGoalTracker } from '@/components/dashboard/GCIGoalTracker';
 import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -94,6 +95,13 @@ export default function DashboardPage() {
     const uniqueMonths = new Set(recentRevShare.map((r: any) => r.period));
     return uniqueMonths.size > 0 ? total / uniqueMonths.size : 0;
   }, [revenueShare]);
+
+  const revShareYTD = useMemo(() => {
+    const yearPrefix = `${thisYear}-`;
+    return revenueShare
+      .filter((r: any) => r.period && r.period.startsWith(yearPrefix))
+      .reduce((sum: number, r: any) => sum + Number(r.amount), 0);
+  }, [revenueShare, thisYear]);
 
   const expenseTotals = useMemo(() => {
     const monthly = getMonthlyRecurringExpenses(expenses, properties);
@@ -260,6 +268,7 @@ export default function DashboardPage() {
 
               <TabsContent value="insights" className="px-4 space-y-3 mt-0">
                 <ThisWeekFocus syncedTransactions={syncedTransactions} />
+                <GCIGoalTracker gciYTD={receivedYTD} revShareYTD={revShareYTD} />
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <PipelinePreview layout="horizontal" />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
@@ -341,6 +350,8 @@ export default function DashboardPage() {
                   receivedYTD={receivedYTD}
                   revShareMonthlyAvg={revShareMonthlyAvg}
                 />
+
+                <GCIGoalTracker gciYTD={receivedYTD} revShareYTD={revShareYTD} />
 
                 <PipelinePreview layout="horizontal" />
 
