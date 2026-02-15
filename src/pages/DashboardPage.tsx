@@ -206,6 +206,7 @@ export default function DashboardPage() {
               <TabsContent value="insights" className="px-4 space-y-3 mt-0">
                 <ThisWeekFocus syncedTransactions={syncedTransactions} />
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
+                <PipelinePreview layout="horizontal" />
                 <LatestActivity syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
                 <NeedsAttention syncedTransactions={syncedTransactions} />
@@ -287,6 +288,8 @@ export default function DashboardPage() {
                   revShareMonthlyAvg={revShareMonthlyAvg}
                 />
 
+                <PipelinePreview layout="horizontal" />
+
                 <div className="grid lg:grid-cols-3 gap-4 items-start">
                   <LatestActivity 
                     syncedTransactions={syncedTransactions}
@@ -294,10 +297,7 @@ export default function DashboardPage() {
                     networkAgents={networkAgents}
                   />
                   <UpcomingRevenue syncedTransactions={syncedTransactions} />
-                  <div className="space-y-4">
-                    <NeedsAttention syncedTransactions={syncedTransactions} />
-                    <PipelinePreview />
-                  </div>
+                  <NeedsAttention syncedTransactions={syncedTransactions} />
                 </div>
 
                 <RevShareSummaryCard revenueShare={revenueShare} />
@@ -307,25 +307,22 @@ export default function DashboardPage() {
               <TabsContent value="cashflow" className="mt-0 space-y-5">
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
 
-                <div className="grid lg:grid-cols-3 gap-4 items-start">
-                  <div className="lg:col-span-2 space-y-4">
-                    <FinancialHealth 
-                      expenses={expenses}
-                      properties={properties}
-                      revShareMonthlyAvg={revShareMonthlyAvg}
-                      monthlyExpenses={expenseTotals.monthly}
-                      annualExpenses={expenseTotals.annual}
-                      receivedYTD={receivedYTD}
-                      comingIn={comingIn}
-                    />
-                    <ExpenseCommandCenter 
-                      expenses={expenses}
-                      properties={properties}
-                      monthlyExpenses={expenseTotals.monthly}
-                      annualExpenses={expenseTotals.annual}
-                    />
-                  </div>
-                  <PipelinePreview />
+                <div className="grid lg:grid-cols-2 gap-4 items-start">
+                  <FinancialHealth 
+                    expenses={expenses}
+                    properties={properties}
+                    revShareMonthlyAvg={revShareMonthlyAvg}
+                    monthlyExpenses={expenseTotals.monthly}
+                    annualExpenses={expenseTotals.annual}
+                    receivedYTD={receivedYTD}
+                    comingIn={comingIn}
+                  />
+                  <ExpenseCommandCenter 
+                    expenses={expenses}
+                    properties={properties}
+                    monthlyExpenses={expenseTotals.monthly}
+                    annualExpenses={expenseTotals.annual}
+                  />
                 </div>
               </TabsContent>
 
