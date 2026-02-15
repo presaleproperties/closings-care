@@ -45,7 +45,7 @@ export function ThisWeekFocus({ syncedTransactions }: ThisWeekFocusProps) {
   if (!focus || dismissed) return null;
 
   return (
-    <Card className="p-4 border-border/40 bg-card/80 backdrop-blur-sm">
+    <Card className="liquid-glass p-4 border-0">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
