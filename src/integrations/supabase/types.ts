@@ -432,6 +432,7 @@ export type Database = {
           notes: string | null
           potential_commission: number
           status: string
+          temperature: string
           updated_at: string
           user_id: string
         }
@@ -443,6 +444,7 @@ export type Database = {
           notes?: string | null
           potential_commission?: number
           status?: string
+          temperature?: string
           updated_at?: string
           user_id: string
         }
@@ -454,6 +456,7 @@ export type Database = {
           notes?: string | null
           potential_commission?: number
           status?: string
+          temperature?: string
           updated_at?: string
           user_id?: string
         }

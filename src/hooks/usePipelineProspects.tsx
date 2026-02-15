@@ -10,6 +10,7 @@ export interface PipelineProspect {
   home_type: string;
   potential_commission: number;
   status: string;
+  temperature: string;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -38,7 +39,7 @@ export function useAddProspect() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (prospect: { client_name: string; home_type: string; potential_commission: number }) => {
+    mutationFn: async (prospect: { client_name: string; home_type: string; potential_commission: number; temperature?: string }) => {
       if (!user) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
@@ -48,6 +49,7 @@ export function useAddProspect() {
           client_name: prospect.client_name,
           home_type: prospect.home_type,
           potential_commission: prospect.potential_commission,
+          temperature: prospect.temperature || 'warm',
         } as any)
         .select()
         .single();
