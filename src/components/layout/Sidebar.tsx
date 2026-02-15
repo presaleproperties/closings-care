@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ChevronDown,
   Shield,
-  Network
+  Network,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,6 +31,7 @@ const navSections: NavSection[] = [
     label: 'Production',
     items: [
       { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+      { icon: Users, label: 'Pipeline', path: '/pipeline' },
       { icon: Building2, label: 'Deals', path: '/deals' },
       { icon: Wallet, label: 'Payouts', path: '/payouts' },
       { icon: Receipt, label: 'Expenses', path: '/expenses' },
