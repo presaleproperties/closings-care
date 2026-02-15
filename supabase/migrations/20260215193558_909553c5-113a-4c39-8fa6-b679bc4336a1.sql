@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_prospects ADD COLUMN temperature text NOT NULL DEFAULT 'warm';
