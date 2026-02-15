@@ -22,7 +22,7 @@ import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
 
 import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
-import { PipelineProspects } from '@/components/dashboard/PipelineProspects';
+import { PipelinePreview } from '@/components/dashboard/PipelinePreview';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { FloatingBackground } from '@/components/dashboard/FloatingBackground';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
@@ -228,7 +228,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="cashflow" className="px-5 space-y-4 mt-0">
-                <PipelineProspects />
+                <PipelinePreview />
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
                 <FinancialHealth 
                   expenses={expenses}
@@ -371,8 +371,10 @@ export default function DashboardPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...springConfig, delay: 0.4 }}
+                      className="space-y-5"
                     >
                       <NeedsAttention syncedTransactions={syncedTransactions} />
+                      <PipelinePreview />
                     </motion.div>
                   </div>
 
@@ -433,7 +435,7 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ ...springConfig, delay: 0.35 }}
                       >
-                        <PipelineProspects />
+                        <PipelinePreview />
                       </motion.div>
                     </div>
                   </div>
