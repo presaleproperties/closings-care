@@ -17,11 +17,12 @@ interface QuickStatsProps {
   revShareMonthlyAvg?: number;
   pipelineCount?: number;
   pipelinePotential?: number;
+  comingInDateRange?: string;
 }
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, activeDeals, closedDealsYTD, projectedRevenue2026 = 0, revShareMonthlyAvg = 0, pipelineCount = 0, pipelinePotential = 0 }: QuickStatsProps) {
+export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, activeDeals, closedDealsYTD, projectedRevenue2026 = 0, revShareMonthlyAvg = 0, pipelineCount = 0, pipelinePotential = 0, comingInDateRange }: QuickStatsProps) {
   const thisYear = new Date().getFullYear();
 
   const projected2026Total = projectedRevenue2026 + (revShareMonthlyAvg * 12);
@@ -88,7 +89,7 @@ export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, a
                 className="text-2xl font-bold text-primary-foreground tracking-tight block"
                 duration={1.3}
               />
-              <p className="text-[11px] text-primary-foreground/60 mt-1">{activeDeals} active deals</p>
+              <p className="text-[11px] text-primary-foreground/60 mt-1">{activeDeals} deals · {comingInDateRange || 'upcoming'}</p>
             </div>
           </motion.div>
 
@@ -233,7 +234,7 @@ export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, a
               className="text-3xl font-bold text-primary-foreground tracking-tight block"
               duration={1.2}
             />
-            <p className="text-xs text-primary-foreground/60 mt-2">{activeDeals} active deals pending</p>
+            <p className="text-xs text-primary-foreground/60 mt-2">{activeDeals} deals · {comingInDateRange || 'upcoming'}</p>
           </div>
         </motion.div>
 
