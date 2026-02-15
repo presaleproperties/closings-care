@@ -1,8 +1,8 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, TrendingUp, Wallet, Home, Plus, BarChart3, Sparkles } from 'lucide-react';
-import { format, addMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/format';
 import { Payout, Expense } from '@/lib/types';
@@ -110,38 +110,23 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, properties = [], syncedPayouts = [] }: IncomeProjectionProps) {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<MonthData | null>(null);
-  // Calculate how many months to cover based on the furthest close date
-  const maxMonthsNeeded = useMemo(() => {
-    if (syncedPayouts.length === 0) return 12;
-    const now = new Date();
-    let maxDate = now;
+  // Build available years based on synced data range
+  const availableYears = useMemo(() => {
+    const currentYear = now.getFullYear();
+    const years = new Set<number>([currentYear]);
+    
     syncedPayouts.forEach(p => {
       const d = parseISO(p.close_date);
-      if (d > maxDate) maxDate = d;
+      years.add(d.getFullYear());
     });
-    const months = Math.ceil((maxDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) + 1;
-    return Math.max(12, months);
-  }, [syncedPayouts]);
+    
+    // Also include next year if we're past mid-year
+    if (now.getMonth() >= 5) years.add(currentYear + 1);
+    
+    return [...years].sort((a, b) => a - b);
+  }, [syncedPayouts, now]);
 
-  const projectionOptions = useMemo(() => {
-    const opts: number[] = [12];
-    if (maxMonthsNeeded > 12) opts.push(24);
-    if (maxMonthsNeeded > 24) opts.push(36);
-    if (maxMonthsNeeded > 36) opts.push(48);
-    if (maxMonthsNeeded > 48) opts.push(Math.ceil(maxMonthsNeeded / 12) * 12);
-    // Deduplicate
-    return [...new Set(opts)];
-  }, [maxMonthsNeeded]);
-
-  // Default to the max needed range
-  const [projectionMonths, setProjectionMonths] = useState<number>(maxMonthsNeeded);
-
-  // Update when maxMonthsNeeded changes (data loads)
-  useEffect(() => {
-    if (maxMonthsNeeded > projectionMonths) {
-      setProjectionMonths(maxMonthsNeeded);
-    }
-  }, [maxMonthsNeeded]);
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const { limits, isFree } = useSubscription();
   const { data: settings } = useSettings();
 
@@ -152,32 +137,23 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
     const months: MonthData[] = [];
     let cumulativeNet = 0;
 
-    for (let i = 0; i < projectionMonths; i++) {
-      const monthDate = addMonths(now, i);
+    for (let m = 0; m < 12; m++) {
+      const monthDate = new Date(selectedYear, m, 1);
       const monthLabel = format(monthDate, 'MMM');
       const monthStr = format(monthDate, 'yyyy-MM');
       const monthStart = startOfMonth(monthDate);
       const monthEnd = endOfMonth(monthDate);
 
-      // Get synced transactions for this month by close_date (both closed & active)
       const monthSyncedPayouts = syncedPayouts.filter((p) => {
         const date = parseISO(p.close_date);
         return isWithinInterval(date, { start: monthStart, end: monthEnd });
       });
 
-      // User's net income from synced transactions (already includes team split & brokerage)
       const income = monthSyncedPayouts.reduce((sum, p) => sum + p.netAmount, 0);
       const revShareIncome = revShareMonthlyAvg;
-      
-      // Property net: positive if rental income > costs, negative if costs > income
       const propertyNet = propertyCosts.totalNet;
-      
-      // Total income = commissions (user's net) + revshare
       const totalIncome = income + revShareIncome;
-      
-      // Calculate expenses for this month (includes property costs properly)
       const monthExpenses = getTotalExpensesForMonth(expenses, properties, monthStr);
-      
       const net = totalIncome - monthExpenses;
       cumulativeNet += net;
 
@@ -185,7 +161,7 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
         month: monthLabel,
         fullMonth: format(monthDate, 'MMMM yyyy'),
         monthStr,
-        monthIndex: i,
+        monthIndex: m,
         income,
         revShareIncome,
         propertyNet,
@@ -193,15 +169,15 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
         expenses: monthExpenses,
         net,
         cumulativeNet,
-        payouts: [], // Legacy field
+        payouts: [],
       });
     }
     return months;
-  }, [syncedPayouts, expenses, revShareMonthlyAvg, properties, propertyCosts, projectionMonths]);
+  }, [syncedPayouts, expenses, revShareMonthlyAvg, properties, propertyCosts, selectedYear]);
 
   const totalCommissions = chartData.reduce((sum, m) => sum + m.income, 0);
   const totalRevShare = chartData.reduce((sum, m) => sum + m.revShareIncome, 0);
-  const totalPropertyNet = propertyCosts.totalNet * projectionMonths;
+  const totalPropertyNet = propertyCosts.totalNet * 12;
   const totalProjectedIncome = totalCommissions + totalRevShare;
   const totalExpenses = chartData.reduce((sum, m) => sum + m.expenses, 0);
   const netProjection = chartData.reduce((sum, m) => sum + m.net, 0);
@@ -224,7 +200,7 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
             </div>
             <div>
               <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
-                {projectionMonths}-Month Projection
+                {selectedYear} Projection
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-muted-foreground">Income & expense forecast</p>
             </div>
@@ -250,7 +226,7 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
               Your forecast awaits
             </h3>
             <p className="text-sm text-slate-500 dark:text-muted-foreground mb-6 max-w-[280px]">
-              Add deals with expected payout dates to see your {projectionMonths}-month income projection
+              Add deals with expected payout dates to see your {selectedYear} income projection
             </p>
             
             <div className="space-y-3">
@@ -285,25 +261,25 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
           </div>
           <div>
             <h3 className="font-bold text-[15px] text-slate-800 dark:text-foreground">
-              {projectionMonths}-Month Projection
+              {selectedYear} Projection
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-muted-foreground">Click bar for details</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Dynamic toggle based on how far deals extend */}
+          {/* Year toggle */}
           <div className="flex bg-muted rounded-lg p-0.5">
-            {projectionOptions.map(months => (
+            {availableYears.map(year => (
               <button
-                key={months}
-                onClick={() => setProjectionMonths(months)}
+                key={year}
+                onClick={() => setSelectedYear(year)}
                 className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
-                  projectionMonths === months
+                  selectedYear === year
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {months}mo
+                {year}
               </button>
             ))}
           </div>
