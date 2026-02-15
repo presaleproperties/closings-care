@@ -3,9 +3,8 @@ import {
   LayoutDashboard, 
   Building2, 
   BarChart3,
-  TrendingUp,
-  Settings,
   Network,
+  Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
@@ -23,23 +22,16 @@ export function MobileNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
-      {/* Premium glass container - flush with bottom edge */}
       <div 
         className="relative backdrop-blur-2xl backdrop-saturate-150"
         style={{
-          background: 'linear-gradient(180deg, hsl(var(--card) / 0.92) 0%, hsl(var(--card) / 0.98) 100%)',
-          boxShadow: `
-            inset 0 1px 0 0 rgba(255,255,255,0.15),
-            0 -2px 12px -4px hsl(220 25% 10% / 0.12),
-            0 -8px 32px -8px hsl(220 25% 10% / 0.08)
-          `,
+          background: 'hsl(var(--background) / 0.75)',
         }}
       >
-        {/* Premium top highlight */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        {/* Top border — single subtle line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-border/40" />
         
-        {/* Nav items */}
-        <div className="relative flex justify-around items-center h-[56px] px-2">
+        <div className="relative flex justify-around items-center h-[50px] px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -54,37 +46,22 @@ export function MobileNav() {
                   'active:scale-90 active:opacity-70',
                   isActive 
                     ? 'text-primary' 
-                    : 'text-muted-foreground/50 hover:text-muted-foreground/70'
+                    : 'text-muted-foreground/50'
                 )}
               >
-                <div className={cn(
-                  "relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200",
-                  isActive && "bg-primary/10"
-                )}>
-                  {/* Glow behind active icon */}
-                  {isActive && (
-                    <div className="absolute inset-0 rounded-xl bg-primary/15 blur-lg" />
-                  )}
-                  <item.icon 
-                    className={cn(
-                      "relative w-[20px] h-[20px] transition-all duration-200",
-                      isActive && "drop-shadow-[0_0_6px_hsl(158_64%_32%/0.5)]"
-                    )}
-                    strokeWidth={isActive ? 2.25 : 1.75} 
-                  />
-                </div>
+                <item.icon 
+                  className="w-[22px] h-[22px]"
+                  strokeWidth={isActive ? 2.25 : 1.5} 
+                />
                 <span className={cn(
-                  "text-[10px] transition-all duration-200",
-                  isActive 
-                    ? "font-semibold" 
-                    : "font-medium"
+                  "text-[10px]",
+                  isActive ? "font-semibold" : "font-normal"
                 )}>{item.label}</span>
               </Link>
             );
           })}
         </div>
         
-        {/* Safe area spacer - extends background to bottom edge */}
         <div 
           className="w-full"
           style={{ 
