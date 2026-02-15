@@ -338,8 +338,8 @@ export default function PipelinePage() {
                     transition={{ duration: 0.2 }}
                     className={cn(
                       "flex border-b border-border/15 group transition-colors",
-                      idx % 2 === 0 ? 'bg-transparent' : 'bg-muted/[0.06]',
-                      'hover:bg-primary/[0.03]'
+                      idx % 2 === 0 ? 'bg-card' : 'bg-muted/30',
+                      'hover:bg-primary/[0.06]'
                     )}
                   >
                     {/* Row # */}
