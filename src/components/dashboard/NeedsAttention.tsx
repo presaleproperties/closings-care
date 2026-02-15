@@ -71,7 +71,7 @@ export function NeedsAttention({ syncedTransactions }: NeedsAttentionProps) {
   };
 
   return (
-    <Card className="p-5 border-border/40 bg-card/80 backdrop-blur-sm">
+    <div className="liquid-glass rounded-2xl p-5">
       <div className="flex items-center gap-3 mb-4">
         <AlertTriangle className="h-5 w-5 text-muted-foreground" />
         <h3 className="font-semibold text-foreground">Needs Attention</h3>
@@ -108,6 +108,6 @@ export function NeedsAttention({ syncedTransactions }: NeedsAttentionProps) {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   );
 }

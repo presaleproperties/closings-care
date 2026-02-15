@@ -93,7 +93,7 @@ export function RevShareSummaryCard({ revenueShare }: RevShareSummaryCardProps) 
   const displayYears = viewMode === 'single' ? [selectedYear] : availableYears;
 
   return (
-    <Card className="p-5 border-border/40 bg-card/80 backdrop-blur-sm">
+    <div className="liquid-glass rounded-2xl p-5">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
           <Users className="h-4.5 w-4.5 text-primary" />
@@ -209,6 +209,6 @@ export function RevShareSummaryCard({ revenueShare }: RevShareSummaryCardProps) 
           ))}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

@@ -37,7 +37,7 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
   const totalUpcoming = upcomingItems.reduce((s: number, i: any) => s + i.amount, 0);
 
   return (
-    <Card className="p-5 border-border/40 bg-card/80 backdrop-blur-sm">
+    <div className="liquid-glass rounded-2xl p-5">
       <div className="flex items-center gap-3 mb-4">
         <Calendar className="h-5 w-5 text-muted-foreground" />
         <div>
@@ -87,6 +87,6 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
           View full calendar →
         </button>
       )}
-    </Card>
+    </div>
   );
 }
