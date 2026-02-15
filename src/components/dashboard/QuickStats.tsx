@@ -35,10 +35,10 @@ function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }:
       </div>
       <AnimatedCurrency
         value={value}
-        className={cn("text-xl font-bold block tracking-tight", color)}
+        className={cn("text-lg sm:text-xl font-bold block tracking-tight truncate", color)}
         duration={0.8}
       />
-      <p className="text-[11px] text-muted-foreground leading-tight">{subtitle}</p>
+      <p className="text-[11px] text-muted-foreground leading-tight truncate">{subtitle}</p>
     </div>
   );
 }

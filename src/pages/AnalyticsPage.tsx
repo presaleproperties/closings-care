@@ -264,12 +264,12 @@ export default function AnalyticsPage() {
         {/* ── Tabs ── */}
         <Tabs defaultValue="overview" className="space-y-4">
           <motion.div variants={itemVariants}>
-            <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/30 rounded-xl border border-border/30">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Overview</TabsTrigger>
-              <TabsTrigger value="sources" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Sources</TabsTrigger>
-              <TabsTrigger value="deals" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Deal Flow</TabsTrigger>
-              <TabsTrigger value="team" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Team</TabsTrigger>
-              <TabsTrigger value="revshare" className="text-xs sm:text-sm font-medium px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">RevShare</TabsTrigger>
+            <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/30 rounded-xl border border-border/30 overflow-x-auto max-w-full">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="sources" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Sources</TabsTrigger>
+              <TabsTrigger value="deals" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Deal Flow</TabsTrigger>
+              <TabsTrigger value="team" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Team</TabsTrigger>
+              <TabsTrigger value="revshare" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">RevShare</TabsTrigger>
             </TabsList>
           </motion.div>
 

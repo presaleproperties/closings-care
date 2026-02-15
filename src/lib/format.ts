@@ -7,7 +7,16 @@ export function formatCurrency(amount: number | null | undefined): string {
     currency: 'CAD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+}).format(amount);
+}
+
+export function formatCurrencyCompact(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return '$0';
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 100_000) return `${sign}$${(abs / 1_000).toFixed(0)}K`;
+  return formatCurrency(amount);
 }
 
 export function formatCurrencyFull(amount: number | null | undefined): string {
