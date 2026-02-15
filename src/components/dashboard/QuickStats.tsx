@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Receipt, TrendingUp, TrendingDown, Banknote, ArrowUpRight, BarChart3, CalendarClock } from 'lucide-react';
+import { Wallet, Receipt, TrendingUp, TrendingDown, Banknote, ArrowUpRight, BarChart3, CalendarClock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic, springConfigs, staggerContainer, fadeInUp, tapScale } from '@/lib/haptics';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
@@ -15,15 +15,15 @@ interface QuickStatsProps {
   closedDealsYTD: number;
   projectedRevenue2026?: number;
   revShareMonthlyAvg?: number;
+  pipelineCount?: number;
+  pipelinePotential?: number;
 }
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
-export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, activeDeals, closedDealsYTD, projectedRevenue2026 = 0, revShareMonthlyAvg = 0 }: QuickStatsProps) {
+export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, activeDeals, closedDealsYTD, projectedRevenue2026 = 0, revShareMonthlyAvg = 0, pipelineCount = 0, pipelinePotential = 0 }: QuickStatsProps) {
   const thisYear = new Date().getFullYear();
 
-  const netCashflowYTD = receivedYTD - spentYTD;
-  const isPositive = netCashflowYTD >= 0;
   const projected2026Total = projectedRevenue2026 + (revShareMonthlyAvg * 12);
 
   return (
@@ -115,33 +115,27 @@ export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, a
             <p className="text-[11px] text-muted-foreground mt-1">Monthly recurring</p>
           </motion.div>
 
-          {/* Net Cashflow YTD */}
+          {/* Pipeline */}
           <motion.div 
             variants={fadeInUp}
             whileTap={tapScale}
             onTapStart={() => triggerHaptic('light')}
-            className={cn(
-              "rounded-3xl bg-card/95 backdrop-blur-xl border p-5 shadow-lg",
-              isPositive ? "border-emerald-500/30" : "border-destructive/30"
-            )}
+            className="rounded-3xl bg-card/95 backdrop-blur-xl border border-primary/30 p-5 shadow-lg"
           >
             <div className="flex items-center gap-2 mb-2">
-              <div className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center",
-                isPositive ? "bg-emerald-500/15" : "bg-destructive/15"
-              )}>
-                {isPositive ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
+              <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Users className="h-4 w-4 text-primary" />
               </div>
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Net YTD
+                Pipeline
               </span>
             </div>
             <AnimatedCurrency 
-              value={Math.abs(netCashflowYTD)}
-              className={cn("text-2xl font-bold tracking-tight block", isPositive ? "text-emerald-500" : "text-destructive")}
+              value={pipelinePotential}
+              className="text-2xl font-bold text-primary tracking-tight block"
               duration={1.1}
             />
-            <p className="text-[11px] text-muted-foreground mt-1">{isPositive ? 'Positive cashflow' : 'Negative cashflow'}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{pipelineCount} active prospect{pipelineCount !== 1 ? 's' : ''}</p>
           </motion.div>
 
           {/* 2026 Projected Revenue */}
@@ -267,32 +261,27 @@ export function QuickStats({ receivedYTD, comingIn, monthlyExpenses, spentYTD, a
           </div>
         </motion.div>
 
-        {/* Net Cashflow YTD */}
+        {/* Pipeline */}
         <motion.div
-          className={cn(
-            "relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1",
-            isPositive ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-destructive/30 hover:border-destructive/50"
-          )}
+          className="relative overflow-hidden rounded-3xl bg-card/95 backdrop-blur-xl border border-primary/30 p-6 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-primary/50"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ...springConfig, delay: 0.15 }}
         >
-          <div className={cn("absolute -right-6 -top-6 w-24 h-24 rounded-full", isPositive ? "bg-emerald-500/5" : "bg-destructive/5")} />
+          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-primary/5" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
-              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", isPositive ? "bg-emerald-500/15" : "bg-destructive/15")}>
-                {isPositive ? <TrendingUp className="h-4 w-4 text-emerald-500" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
+              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+                <Users className="h-4 w-4 text-primary" />
               </div>
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Net Cashflow YTD</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pipeline</span>
             </div>
             <AnimatedCurrency 
-              value={Math.abs(netCashflowYTD)}
-              className={cn("text-3xl font-bold tracking-tight block", isPositive ? "text-emerald-500" : "text-destructive")}
+              value={pipelinePotential}
+              className="text-3xl font-bold text-primary tracking-tight block"
               duration={1.2}
             />
-            <p className="text-xs text-muted-foreground mt-2">
-              {isPositive ? 'Earned minus spent' : 'Expenses exceed income'}
-            </p>
+            <p className="text-xs text-muted-foreground mt-2">{pipelineCount} active prospect{pipelineCount !== 1 ? 's' : ''}</p>
           </div>
         </motion.div>
         </div>

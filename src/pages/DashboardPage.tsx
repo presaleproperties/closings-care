@@ -38,6 +38,7 @@ import { getMonthlyRecurringExpenses, getAnnualExpenses, getTrackedExpensesForMo
 import { useSyncedTransactions, useRevenueShare } from '@/hooks/usePlatformConnections';
 import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
+import { usePipelineProspects } from '@/hooks/usePipelineProspects';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 import { Sparkles } from 'lucide-react';
 
@@ -58,6 +59,7 @@ export default function DashboardPage() {
   const { data: revenueShare = [] } = useRevenueShare();
   const { data: networkAgents = [] } = useNetworkAgents();
   const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
+  const { data: pipelineProspects = [] } = usePipelineProspects();
   const { showOnboarding, isChecking, completeOnboarding } = useOnboarding();
   const refreshData = useRefreshData();
   
@@ -152,6 +154,8 @@ export default function DashboardPage() {
 
   const isEmpty = syncedTransactions.length === 0;
 
+  const activePipeline = pipelineProspects.filter(p => p.status === 'active');
+
   const quickStatsProps = {
     receivedYTD,
     comingIn,
@@ -161,6 +165,8 @@ export default function DashboardPage() {
     closedDealsYTD: dealCounts.closedYTD,
     projectedRevenue2026,
     revShareMonthlyAvg,
+    pipelineCount: activePipeline.length,
+    pipelinePotential: activePipeline.reduce((sum, p) => sum + Number(p.potential_commission), 0),
   };
 
   return (
