@@ -420,40 +420,36 @@ export default function PayoutsPage() {
       value: stats.pending.total, 
       count: stats.pending.count,
       icon: Clock,
-      gradient: 'from-primary/20 via-primary/10 to-transparent',
-      iconBg: 'bg-primary/15',
-      iconColor: 'text-primary',
-      valueColor: 'text-primary'
+      tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30',
+      iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
+      valueColor: 'text-blue-700 dark:text-blue-400'
     },
     { 
       label: 'Needs Review', 
       value: stats.flagged.total, 
       count: stats.flagged.count,
       icon: AlertTriangle,
-      gradient: 'from-amber-500/20 via-amber-500/10 to-transparent',
-      iconBg: 'bg-amber-500/15',
-      iconColor: 'text-amber-600',
-      valueColor: 'text-amber-600'
+      tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30',
+      iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
+      valueColor: 'text-amber-700 dark:text-amber-400'
     },
     { 
       label: 'Received', 
       value: stats.received.total, 
       count: stats.received.count,
       icon: CheckCircle2,
-      gradient: 'from-emerald-500/20 via-emerald-500/10 to-transparent',
-      iconBg: 'bg-emerald-500/15',
-      iconColor: 'text-emerald-600',
-      valueColor: 'text-emerald-600'
+      tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30',
+      iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
+      valueColor: 'text-emerald-700 dark:text-emerald-400'
     },
     { 
       label: 'Total Pipeline', 
       value: stats.all.total, 
       count: stats.all.count,
       icon: Banknote,
-      gradient: 'from-violet-500/20 via-violet-500/10 to-transparent',
-      iconBg: 'bg-violet-500/15',
-      iconColor: 'text-violet-600',
-      valueColor: 'text-foreground'
+      tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25',
+      iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+      valueColor: 'text-violet-700 dark:text-violet-400'
     },
   ];
 
@@ -480,38 +476,32 @@ export default function PayoutsPage() {
            {/* Stats Grid - Collapsible */}
            <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-               {statCards.map((stat, index) => (
-                 <motion.div
-                   key={stat.label}
-                   className={cn(
-                     "relative overflow-hidden rounded-2xl border backdrop-blur-sm p-4 transition-all duration-300",
-                     "bg-gradient-to-br from-card/60 to-card/40 border-border/50",
-                     "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10"
-                   )}
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{ delay: index * 0.08 }}
-                   whileHover={{ y: -3 }}
-                 >
-                   <div className={cn("absolute inset-0 bg-gradient-to-br opacity-50", stat.gradient)} />
-                   <div className="relative z-10">
-                     <div className="flex items-center justify-between mb-3">
-                       <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-sm", stat.iconBg)}>
-                         <stat.icon className={cn("w-5 h-5", stat.iconColor)} />
-                       </div>
-                       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                         {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
-                       </span>
-                     </div>
-                     <p className="text-xs text-muted-foreground font-semibold mb-1.5">{stat.label}</p>
-                     <AnimatedNumber
-                       value={stat.value}
-                       className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
-                       duration={0.8}
-                     />
-                   </div>
-                 </motion.div>
-               ))}
+                {statCards.map((stat, index) => (
+                  <motion.div
+                    key={stat.label}
+                    className={cn("rounded-xl border p-4 space-y-1.5 transition-colors", stat.tint)}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconTint)}>
+                        <stat.icon className="h-3.5 w-3.5" />
+                      </div>
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                        {stat.label}
+                      </span>
+                    </div>
+                    <AnimatedNumber
+                      value={stat.value}
+                      className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                      duration={0.8}
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
+                    </p>
+                  </motion.div>
+                ))}
              </div>
            </CollapsibleSection>
 
