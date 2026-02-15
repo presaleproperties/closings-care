@@ -24,24 +24,16 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40">
-      {/* Premium frosted glass header with depth */}
       <div 
-        className="absolute inset-0 backdrop-blur-3xl backdrop-saturate-150"
+        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
         style={{
-          background: 'linear-gradient(180deg, hsl(var(--background) / 0.92) 0%, hsl(var(--background) / 0.85) 100%)',
-          boxShadow: `
-            inset 0 -1px 0 0 hsl(var(--border) / 0.2),
-            0 1px 3px 0 hsl(220 25% 10% / 0.04),
-            0 4px 12px -4px hsl(220 25% 10% / 0.06)
-          `,
+          background: 'hsl(var(--background) / 0.8)',
         }}
       />
-      {/* Subtle top highlight for glass effect */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-px bg-border/50" />
       
       <div className="relative flex items-center justify-between h-11 sm:h-12 lg:h-14 px-3 sm:px-4 lg:px-6 safe-area-inset-top">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-          {/* Mobile back button - premium styling */}
           {showBackButton && (
             <Link 
               to={backPath}
@@ -52,25 +44,23 @@ export function Header({
             </Link>
           )}
           
-          {/* Desktop sidebar menu trigger */}
           <Sheet>
             <SheetTrigger asChild className="hidden lg:flex">
               <Button variant="ghost" size="icon" className="shrink-0 -ml-2 h-9 w-9 active:scale-95 transition-transform">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] border-r border-sidebar-border/50 bg-sidebar">
+            <SheetContent side="left" className="p-0 w-[280px] border-r border-border/40 bg-sidebar">
               <Sidebar />
             </SheetContent>
           </Sheet>
 
           <div className="min-w-0">
-            {/* Premium typography with refined weight */}
-            <h1 className="text-[15px] sm:text-[17px] lg:text-lg font-semibold tracking-[-0.02em] truncate text-foreground">
+            <h1 className="text-[17px] sm:text-[17px] lg:text-lg font-semibold tracking-[-0.02em] truncate text-foreground">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-[10px] sm:text-[11px] lg:text-xs text-muted-foreground/80 tracking-tight truncate hidden sm:block">{subtitle}</p>
+              <p className="text-[11px] lg:text-xs text-muted-foreground tracking-tight truncate hidden sm:block">{subtitle}</p>
             )}
           </div>
         </div>
@@ -79,15 +69,12 @@ export function Header({
           {action}
           {showAddDeal && (
             <>
-              {/* Mobile: Premium icon button with glow */}
               <Link 
                 to="/deals/new"
                 className="sm:hidden relative group"
               >
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-md opacity-0 group-active:opacity-100 transition-opacity" />
                 <Plus className="relative h-5 w-5 sm:h-6 sm:w-6 text-primary active:scale-90 transition-transform" strokeWidth={2.5} />
               </Link>
-              {/* Desktop: Premium button with enhanced styling */}
               <Button asChild className="btn-premium hidden sm:flex h-8 sm:h-9 px-3 sm:px-4 text-[13px] sm:text-[14px] font-semibold tracking-tight">
                 <Link to="/deals/new">
                   <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" strokeWidth={2.5} />
