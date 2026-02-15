@@ -82,7 +82,7 @@ export function SafeToSpendCard({
 
   return (
     <motion.div 
-      className="landing-card"
+      className="liquid-glass rounded-2xl overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={springConfigs.gentle}

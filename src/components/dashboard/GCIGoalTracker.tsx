@@ -30,7 +30,7 @@ export function GCIGoalTracker({ gciYTD, revShareYTD }: GCIGoalTrackerProps) {
   if (goals.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border/30 p-5 bg-card/80 backdrop-blur-sm">
+    <div className="liquid-glass rounded-2xl p-5">
       <div className="flex items-center gap-2.5 mb-4">
         <div className="h-8 w-8 rounded-[10px] bg-primary/10 flex items-center justify-center">
           <Target className="h-4 w-4 text-primary" />

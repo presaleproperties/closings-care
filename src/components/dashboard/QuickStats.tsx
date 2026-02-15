@@ -28,7 +28,7 @@ function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }:
 }) {
   return (
     <div className={cn(
-      "rounded-xl border p-4 space-y-1.5 transition-colors",
+      "liquid-glass rounded-2xl p-4 space-y-1.5 transition-all duration-300",
       tint
     )}>
       <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export function QuickStats({
       </div>
 
       {/* 2026 projection */}
-      <div className="rounded-xl border border-border/40 bg-gradient-to-r from-card to-muted/30 dark:from-card dark:to-muted/10 p-4 flex items-center justify-between gap-4">
+      <div className="liquid-glass rounded-2xl p-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-100/80 dark:bg-amber-900/30 flex items-center justify-center">
             <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
