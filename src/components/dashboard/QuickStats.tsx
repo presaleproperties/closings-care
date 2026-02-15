@@ -6,7 +6,6 @@ interface QuickStatsProps {
   receivedYTD: number;
   comingIn: number;
   monthlyExpenses: number;
-  spentYTD: number;
   activeDeals: number;
   closedDealsYTD: number;
   pipelineCount?: number;

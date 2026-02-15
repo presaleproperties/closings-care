@@ -14,11 +14,9 @@ import { cn } from '@/lib/utils';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { IncomeProjection } from '@/components/dashboard/IncomeProjection';
 import { ExpenseAnalytics } from '@/components/dashboard/ExpenseAnalytics';
-import { QuickActions } from '@/components/dashboard/QuickActions';
 import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
 import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
-import { FinancialHealth } from '@/components/dashboard/FinancialHealth';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
 
 import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
@@ -26,17 +24,14 @@ import { PipelinePreview } from '@/components/dashboard/PipelinePreview';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { InsightsGreeting } from '@/components/dashboard/InsightsGreeting';
-import { LatestActivity } from '@/components/dashboard/LatestActivity';
 import { UpcomingRevenue } from '@/components/dashboard/UpcomingRevenue';
 import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
-import { ThisWeekFocus } from '@/components/dashboard/ThisWeekFocus';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw } from 'lucide-react';
-import { getMonthlyRecurringExpenses, getAnnualExpenses, getTrackedExpensesForMonth, getPropertyCostsForMonth } from '@/lib/expenseCalculations';
+import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare, usePlatformConnections, useSyncPlatform } from '@/hooks/usePlatformConnections';
-import { useNetworkAgents } from '@/hooks/useNetworkData';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { usePipelineProspects } from '@/hooks/usePipelineProspects';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
@@ -49,7 +44,6 @@ export default function DashboardPage() {
   const { data: settings } = useSettings();
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { data: revenueShare = [] } = useRevenueShare();
-  const { data: networkAgents = [] } = useNetworkAgents();
   const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
   const { data: pipelineProspects = [] } = usePipelineProspects();
   const { data: connections = [] } = usePlatformConnections();
@@ -109,18 +103,6 @@ export default function DashboardPage() {
     return { monthly, annual };
   }, [expenses, properties]);
 
-  const spentYTD = useMemo(() => {
-    const currentMonth = now.getMonth() + 1;
-    const propertyCosts = getPropertyCostsForMonth(properties);
-    const monthlyPropertyNet = propertyCosts.personalCost - propertyCosts.rentalNet;
-    let total = 0;
-    for (let month = 1; month <= currentMonth; month++) {
-      const monthStr = `${thisYear}-${month.toString().padStart(2, '0')}`;
-      total += getTrackedExpensesForMonth(expenses, monthStr) + monthlyPropertyNet;
-    }
-    return total;
-  }, [expenses, properties, thisYear, now]);
-
   const dealCounts = useMemo(() => {
     const active = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
     const closedYTD = syncedTransactions.filter((tx: any) => 
@@ -176,7 +158,6 @@ export default function DashboardPage() {
     receivedYTD,
     comingIn,
     monthlyExpenses: expenseTotals.monthly,
-    spentYTD,
     activeDeals: dealCounts.active,
     closedDealsYTD: dealCounts.closedYTD,
     pipelineCount: activePipeline.length,
@@ -276,7 +257,6 @@ export default function DashboardPage() {
               </div>
 
               <TabsContent value="insights" className="px-4 space-y-3 mt-0">
-                <ThisWeekFocus syncedTransactions={syncedTransactions} />
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <PipelinePreview layout="horizontal" />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
@@ -285,17 +265,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="cashflow" className="px-4 space-y-3 mt-0">
-                <PipelinePreview />
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
-                <FinancialHealth 
-                  expenses={expenses}
-                  properties={properties}
-                  revShareMonthlyAvg={revShareMonthlyAvg}
-                  monthlyExpenses={expenseTotals.monthly}
-                  annualExpenses={expenseTotals.annual}
-                  receivedYTD={receivedYTD}
-                  comingIn={comingIn}
-                />
               </TabsContent>
 
               <TabsContent value="taxes" className="px-4 space-y-3 mt-0">
@@ -373,23 +343,12 @@ export default function DashboardPage() {
               <TabsContent value="cashflow" className="mt-0 space-y-5">
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
 
-                <div className="grid lg:grid-cols-2 gap-4 items-start">
-                  <FinancialHealth 
-                    expenses={expenses}
-                    properties={properties}
-                    revShareMonthlyAvg={revShareMonthlyAvg}
-                    monthlyExpenses={expenseTotals.monthly}
-                    annualExpenses={expenseTotals.annual}
-                    receivedYTD={receivedYTD}
-                    comingIn={comingIn}
-                  />
-                  <ExpenseCommandCenter 
-                    expenses={expenses}
-                    properties={properties}
-                    monthlyExpenses={expenseTotals.monthly}
-                    annualExpenses={expenseTotals.annual}
-                  />
-                </div>
+                <ExpenseCommandCenter 
+                  expenses={expenses}
+                  properties={properties}
+                  monthlyExpenses={expenseTotals.monthly}
+                  annualExpenses={expenseTotals.annual}
+                />
               </TabsContent>
 
               {/* Taxes Tab */}
