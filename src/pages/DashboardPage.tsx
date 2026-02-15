@@ -230,7 +230,6 @@ export default function DashboardPage() {
                 <ThisWeekFocus syncedTransactions={syncedTransactions} />
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <PipelinePreview layout="horizontal" />
-                <LatestActivity syncedTransactions={syncedTransactions} revenueShare={revenueShare} networkAgents={networkAgents} />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
                 <NeedsAttention syncedTransactions={syncedTransactions} />
                 <RevShareSummaryCard revenueShare={revenueShare} />
@@ -313,12 +312,7 @@ export default function DashboardPage() {
 
                 <PipelinePreview layout="horizontal" />
 
-                <div className="grid lg:grid-cols-3 gap-4 items-start">
-                  <LatestActivity 
-                    syncedTransactions={syncedTransactions}
-                    revenueShare={revenueShare}
-                    networkAgents={networkAgents}
-                  />
+                <div className="grid lg:grid-cols-2 gap-4 items-start">
                   <UpcomingRevenue syncedTransactions={syncedTransactions} />
                   <NeedsAttention syncedTransactions={syncedTransactions} />
                 </div>
