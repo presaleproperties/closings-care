@@ -179,11 +179,16 @@ export default function DashboardPage() {
     spentYTD,
     activeDeals: dealCounts.active,
     closedDealsYTD: dealCounts.closedYTD,
-    projectedRevenue2026,
-    revShareMonthlyAvg,
     pipelineCount: activePipeline.length,
     pipelinePotential: activePipeline.reduce((sum, p) => sum + Number(p.potential_commission), 0),
     comingInDateRange,
+  };
+
+  const goalTrackerProps = {
+    gciYTD: receivedYTD,
+    revShareYTD,
+    projectedRevenue: projectedRevenue2026,
+    revShareMonthlyAvg,
   };
 
   return (
@@ -250,6 +255,10 @@ export default function DashboardPage() {
               <QuickStats {...quickStatsProps} />
             </div>
 
+            <div className="px-4 mb-4">
+              <GCIGoalTracker {...goalTrackerProps} />
+            </div>
+
 
             <Tabs defaultValue="insights" className="pb-6">
               <div className="px-4 mb-4">
@@ -268,7 +277,6 @@ export default function DashboardPage() {
 
               <TabsContent value="insights" className="px-4 space-y-3 mt-0">
                 <ThisWeekFocus syncedTransactions={syncedTransactions} />
-                <GCIGoalTracker gciYTD={receivedYTD} revShareYTD={revShareYTD} />
                 <InsightsGreeting syncedTransactions={syncedTransactions} revenueShare={revenueShare} userName={userName} receivedYTD={receivedYTD} revShareMonthlyAvg={revShareMonthlyAvg} />
                 <PipelinePreview layout="horizontal" />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
@@ -320,7 +328,7 @@ export default function DashboardPage() {
           <div className="hidden sm:block p-5 lg:p-6 space-y-5">
             <QuickStats {...quickStatsProps} />
 
-
+            <GCIGoalTracker {...goalTrackerProps} />
             <Tabs defaultValue="insights" className="space-y-5">
               <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/50 rounded-lg border border-border/30">
                 <TabsTrigger value="insights" className="text-sm font-medium gap-2 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">
@@ -343,15 +351,13 @@ export default function DashboardPage() {
 
               {/* Insights Tab */}
               <TabsContent value="insights" className="mt-0 space-y-5">
-                <InsightsGreeting 
+                <InsightsGreeting
                   syncedTransactions={syncedTransactions}
                   revenueShare={revenueShare}
                   userName={userName}
                   receivedYTD={receivedYTD}
                   revShareMonthlyAvg={revShareMonthlyAvg}
                 />
-
-                <GCIGoalTracker gciYTD={receivedYTD} revShareYTD={revShareYTD} />
 
                 <PipelinePreview layout="horizontal" />
 
