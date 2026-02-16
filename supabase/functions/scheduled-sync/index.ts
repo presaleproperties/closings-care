@@ -11,13 +11,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Use service role for scheduled tasks
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // Get all active connections that need syncing
+    // Get all active connections
     const { data: connections, error } = await supabaseAdmin
       .from('platform_connections')
       .select('*')
@@ -35,79 +34,39 @@ Deno.serve(async (req) => {
 
     for (const conn of connections) {
       try {
-        // Create a user-scoped client for RLS
-        // For scheduled sync, we use service role but still track user_id
-        const syncLog = await supabaseAdmin.from('sync_logs').insert({
-          user_id: conn.user_id,
-          platform: conn.platform,
-          sync_type: 'scheduled',
-          status: 'started',
-        }).select().single()
+        console.log(`[Scheduled Sync] Syncing ${conn.platform} for user ${conn.user_id}`)
 
-        if (conn.platform === 'lofty' && conn.api_key) {
-          await supabaseAdmin.from('platform_connections').update({
-            sync_status: 'syncing', sync_error: null
-          }).eq('id', conn.id)
-
-          const response = await fetch('https://api.lofty.com/transactions', {
+        // Call the sync-platform edge function internally for each connection
+        // This reuses all the existing sync logic (ReZen, Lofty, etc.)
+        const syncResponse = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/sync-platform`,
+          {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${conn.api_key}`,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
             },
-          })
-
-          if (!response.ok) {
-            const errorText = await response.text()
-            throw new Error(`Lofty API error [${response.status}]: ${errorText}`)
+            body: JSON.stringify({
+              platform: conn.platform,
+              connection_id: conn.id,
+              // Pass user_id for service-role auth context
+              scheduled_user_id: conn.user_id,
+            }),
           }
+        )
 
-          const data = await response.json()
-          const transactions = data.data || data.results || data || []
-          let recordsSynced = 0
+        const syncResult = await syncResponse.json()
 
-          if (Array.isArray(transactions)) {
-            for (const tx of transactions) {
-              const externalId = tx.id || tx._id || String(tx.transactionId)
-              await supabaseAdmin.from('synced_transactions').upsert({
-                user_id: conn.user_id,
-                platform: 'lofty',
-                external_id: externalId,
-                transaction_type: tx.type || tx.status || 'unknown',
-                client_name: tx.buyerName || tx.sellerName || tx.clientName || '',
-                property_address: tx.address || tx.propertyAddress || '',
-                city: tx.city || '',
-                sale_price: tx.price || tx.salePrice || null,
-                commission_amount: tx.commission || tx.commissionAmount || null,
-                close_date: tx.closeDate || tx.closingDate || null,
-                listing_date: tx.listingDate || null,
-                status: tx.status || '',
-                agent_name: tx.agentName || tx.agent || '',
-                raw_data: tx,
-                synced_at: new Date().toISOString(),
-              }, { onConflict: 'user_id,platform,external_id' })
-              recordsSynced++
-            }
-          }
-
-          await supabaseAdmin.from('platform_connections').update({
-            sync_status: 'success',
-            last_synced_at: new Date().toISOString(),
-            sync_error: null,
-          }).eq('id', conn.id)
-
-          if (syncLog.data) {
-            await supabaseAdmin.from('sync_logs').update({
-              status: 'success',
-              records_synced: recordsSynced,
-              completed_at: new Date().toISOString(),
-            }).eq('id', syncLog.data.id)
-          }
-
-          results.push({ platform: conn.platform, user_id: conn.user_id, records: recordsSynced })
+        if (!syncResponse.ok) {
+          console.error(`[Scheduled Sync] Failed for ${conn.platform} (user ${conn.user_id}):`, syncResult.error)
+          results.push({ platform: conn.platform, user_id: conn.user_id, error: syncResult.error })
+        } else {
+          console.log(`[Scheduled Sync] Success for ${conn.platform} (user ${conn.user_id}): ${syncResult.records_synced} records`)
+          results.push({ platform: conn.platform, user_id: conn.user_id, records: syncResult.records_synced })
         }
       } catch (connError) {
         const errorMsg = connError instanceof Error ? connError.message : 'Unknown error'
-        console.error(`Sync error for ${conn.platform} (user ${conn.user_id}):`, errorMsg)
+        console.error(`[Scheduled Sync] Error for ${conn.platform} (user ${conn.user_id}):`, errorMsg)
 
         await supabaseAdmin.from('platform_connections').update({
           sync_status: 'error',
