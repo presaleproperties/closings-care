@@ -35,7 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
       {/* Extra bottom padding for iOS home indicator + tab bar */}
       <main 
-        className={`pb-28 lg:pb-0 min-h-screen transition-all duration-300 ${
+        className={`pb-24 md:pb-24 lg:pb-0 min-h-screen transition-all duration-300 ${
           isCollapsed ? 'lg:ml-[68px]' : 'lg:ml-60'
         }`}
       >

@@ -252,7 +252,7 @@ export default function ExpensesPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div 
-        className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-5"
+        className="p-4 sm:p-5 md:p-6 lg:p-6 space-y-4 sm:space-y-5"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -286,7 +286,7 @@ export default function ExpensesPage() {
          </motion.div>
 
          {/* Category Cards */}
-         <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-3.5">
             {([
               { type: 'personal' as ExpenseType, tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30', iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400', valueColor: 'text-blue-700 dark:text-blue-400', activeTint: 'bg-blue-100/80 dark:bg-blue-950/30 border-blue-300/70 dark:border-blue-700/40' },
               { type: 'business' as ExpenseType, tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25', iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400', valueColor: 'text-violet-700 dark:text-violet-400', activeTint: 'bg-violet-100/80 dark:bg-violet-950/30 border-violet-300/70 dark:border-violet-700/40' },
