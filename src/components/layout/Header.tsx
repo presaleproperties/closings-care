@@ -23,7 +23,7 @@ export function Header({
   backPath = '/dashboard'
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40">
+    <header className="sticky top-0 z-40 safe-area-inset-top">
       <div 
         className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
         style={{
@@ -32,7 +32,7 @@ export function Header({
       />
       <div className="absolute inset-x-0 bottom-0 h-px bg-border/50" />
       
-      <div className="relative flex items-center justify-between h-11 sm:h-12 lg:h-14 px-3 sm:px-4 lg:px-6 safe-area-inset-top">
+      <div className="relative flex items-center justify-between h-11 sm:h-12 lg:h-14 px-3 sm:px-4 lg:px-6">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
           {showBackButton && (
             <Link 
