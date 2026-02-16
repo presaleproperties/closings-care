@@ -47,6 +47,8 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ExpenseGroupSection } from '@/components/expenses/ExpenseGroupSection';
 import { ExpenseRow } from '@/components/expenses/ExpenseRow';
 import { PropertyCostsSection } from '@/components/expenses/PropertyCostsSection';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { useRefreshData } from '@/hooks/useRefreshData';
 
 // Use shared expense categories
 import { expenseCategories, getCategoryType, getAllCategoriesFlat, ExpenseType } from '@/lib/expenseCategories';
@@ -79,6 +81,7 @@ export default function ExpensesPage() {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+  const refreshData = useRefreshData();
 
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [showDialog, setShowDialog] = useState(false);
@@ -247,6 +250,7 @@ export default function ExpensesPage() {
         }
       />
 
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div 
         className="p-4 sm:p-5 lg:p-6 space-y-4 sm:space-y-5"
         variants={containerVariants}
@@ -589,6 +593,7 @@ export default function ExpensesPage() {
           <Plus className="w-6 h-6" />
         </motion.button>
       </motion.div>
+      </PullToRefresh>
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>

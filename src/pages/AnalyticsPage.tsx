@@ -14,6 +14,8 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useAnalyticsData, type TimeRange } from '@/hooks/useAnalyticsData';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell,
@@ -70,6 +72,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 
 export default function AnalyticsPage() {
   const data = useAnalyticsData();
+  const refreshData = useRefreshData();
   const {
     timeRange, setTimeRange, selectedYear, setSelectedYear,
     dealTypeFilter, setDealTypeFilter, cityFilter, setCityFilter,
@@ -93,6 +96,7 @@ export default function AnalyticsPage() {
     <AppLayout>
       <Header title="Analytics" subtitle={subtitle} />
 
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div
         className="p-4 sm:p-5 lg:p-6 space-y-5 pb-28 lg:pb-6"
         variants={containerVariants}
@@ -739,6 +743,7 @@ export default function AnalyticsPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+      </PullToRefresh>
     </AppLayout>
   );
 }

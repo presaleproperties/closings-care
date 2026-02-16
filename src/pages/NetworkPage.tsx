@@ -8,7 +8,9 @@ import { AgentDirectory } from '@/components/network/AgentDirectory';
 import { SponsorTree } from '@/components/network/SponsorTree';
 import { TopPerformers } from '@/components/network/TopPerformers';
 import { Users, TrendingUp, Layers, Clock, DollarSign, UserPlus, UserMinus, Network, Trophy, GitBranch, BarChart3 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -36,6 +38,16 @@ export default function NetworkPage() {
   const { data: summary } = useNetworkSummary();
   const { data: revenueShare = [] } = useRevenueShare();
   const [activeTab, setActiveTab] = useState('overview');
+  const queryClient = useQueryClient();
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['network-agents'] }),
+      queryClient.invalidateQueries({ queryKey: ['network-summary'] }),
+      queryClient.invalidateQueries({ queryKey: ['revenue-share'] }),
+    ]);
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }, [queryClient]);
 
   const fmt = (v: number) => formatCurrency(v);
 
@@ -166,6 +178,7 @@ export default function NetworkPage() {
 
   return (
     <AppLayout>
+      <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-56px)]">
       <div className="p-5 lg:p-8 space-y-6 max-w-7xl mx-auto pb-28 lg:pb-8">
         {/* Hero Header */}
         <motion.div
@@ -507,6 +520,7 @@ export default function NetworkPage() {
           </TabsContent>
         </Tabs>
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
