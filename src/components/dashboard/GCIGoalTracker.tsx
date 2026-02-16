@@ -32,7 +32,7 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
   }, [gciYTD, revShareYTD, gciGoal, revShareGoal]);
 
   return (
-    <div className="liquid-glass rounded-2xl px-5 py-3.5 space-y-3">
+    <div className="liquid-glass rounded-2xl px-4 sm:px-5 py-3 space-y-2.5">
       {/* Top row: Projected total + stacked bar */}
       {(() => {
         const revShareAnnual = revShareMonthlyAvg * 12;
