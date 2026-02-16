@@ -32,7 +32,7 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
   }, [gciYTD, revShareYTD, gciGoal, revShareGoal]);
 
   return (
-    <div className="liquid-glass rounded-2xl p-5 space-y-4">
+    <div className="liquid-glass rounded-2xl px-5 py-3.5 space-y-3">
       {/* Top row: Projected total + stacked bar */}
       {(() => {
         const revShareAnnual = revShareMonthlyAvg * 12;
@@ -55,8 +55,8 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
               </div>
             </div>
             {/* Stacked proportion bar */}
-            <div className="space-y-1.5">
-              <div className="h-2.5 rounded-full overflow-hidden flex bg-muted/40">
+            <div className="space-y-1">
+              <div className="h-2 rounded-full overflow-hidden flex bg-muted/40">
                 <div
                   className="h-full rounded-l-full transition-all duration-700 ease-out bg-emerald-500 dark:bg-emerald-400"
                   style={{ width: `${commPct}%` }}
@@ -91,13 +91,13 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
             <Target className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{thisYear} Goals</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {goals.map((item) => {
               const pct = item.goal > 0 ? Math.min((item.current / item.goal) * 100, 100) : 0;
               const remaining = Math.max(item.goal - item.current, 0);
 
               return (
-                <div key={item.label} className="space-y-1.5">
+                <div key={item.label} className="space-y-1">
                   <div className="flex items-baseline justify-between">
                     <span className="text-xs font-medium text-muted-foreground">{item.label}</span>
                     <span className="text-[11px] text-muted-foreground">{pct.toFixed(0)}%</span>
