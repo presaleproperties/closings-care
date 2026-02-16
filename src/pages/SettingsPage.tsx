@@ -10,6 +10,8 @@ import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,6 +42,7 @@ const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const refreshData = useRefreshData();
   const [activeTab, setActiveTab] = useState('general');
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -190,6 +193,7 @@ export default function SettingsPage() {
         }
       />
 
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div 
         className="p-4 lg:p-6 max-w-4xl"
         initial={{ opacity: 0, y: 20 }}
@@ -713,6 +717,7 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
