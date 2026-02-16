@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { useCreateDeal } from '@/hooks/useDeals';
 import { useSettings } from '@/hooks/useSettings';
-import { usePayouts, useCreatePayoutsFromTemplate } from '@/hooks/usePayouts';
+import { usePayouts } from '@/hooks/usePayouts';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt, UsageLimitIndicator } from '@/components/UpgradePrompt';
 import { DealFormData, DealType, DealStatus, PropertyType } from '@/lib/types';
@@ -47,7 +47,7 @@ export default function NewDealPage() {
   const createDeal = useCreateDeal();
   const { data: settings } = useSettings();
   const { data: paidPayouts = [] } = usePayouts();
-  const createPayoutsFromTemplate = useCreatePayoutsFromTemplate();
+  
   const { canAddDeal, usage, isFree } = useSubscription();
   const { dealDraft, clearDraft } = useDealDraft();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
@@ -129,32 +129,6 @@ export default function NewDealPage() {
 
     try {
       const deal = await createDeal.mutateAsync(formData as DealFormData);
-      
-      if (settings) {
-        let template: string[];
-        if (isPresale) {
-          template = hasAdvanceCommission 
-            ? ['Advance', 'Completion'] 
-            : ['Completion'];
-        } else {
-          template = ['Completion'];
-        }
-        
-        await createPayoutsFromTemplate.mutateAsync({
-          dealId: deal.id,
-          template,
-          advanceCommission: hasAdvanceCommission ? ((formData as any).advance_commission || 0) : 0,
-          completionCommission: hasAdvanceCommission 
-            ? ((formData as any).completion_commission || 0) 
-            : (formData.gross_commission_est || 0),
-          grossCommission: formData.gross_commission_est || 0,
-          advanceDate: hasAdvanceCommission ? (formData as any).advance_date : undefined,
-          completionDate: (formData as any).completion_date,
-          closingDate: formData.close_date_est,
-          teamMemberPortion: isTeamDeal ? (formData.team_member_portion || 0) : 0,
-        });
-      }
-
       navigate(`/deals/${deal.id}`);
     } catch (error) {
       // Error handled by mutation
