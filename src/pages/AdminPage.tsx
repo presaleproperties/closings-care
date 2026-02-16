@@ -24,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { DataFlowMap } from '@/components/admin/DataFlowMap';
 import { 
   BarChart, 
   Bar, 
@@ -374,6 +375,9 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Data Flow Map */}
+        <DataFlowMap />
       </div>
     </AppLayout>
   );
