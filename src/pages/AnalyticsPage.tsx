@@ -98,7 +98,7 @@ export default function AnalyticsPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div
-        className="p-4 sm:p-5 lg:p-6 space-y-5"
+        className="p-4 sm:p-5 md:p-6 lg:p-6 space-y-5"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -195,7 +195,7 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* ── Hero Stats ── */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+        <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {/* Total Deals */}
           <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-primary/8 to-primary/3 border-primary/15">
             <div className="flex items-center gap-1.5 mb-1">

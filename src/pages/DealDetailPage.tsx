@@ -139,7 +139,7 @@ export default function DealDetailPage() {
         }
       />
 
-      <div className="p-3 lg:p-6 max-w-5xl mx-auto space-y-3 lg:space-y-5 pb-24 lg:pb-6">
+      <div className="p-4 md:p-5 lg:p-6 max-w-5xl mx-auto space-y-3 md:space-y-4 lg:space-y-5 pb-24 lg:pb-6">
         {/* Hero Card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -173,7 +173,7 @@ export default function DealDetailPage() {
         />
 
         {/* Dates & Details */}
-        <div className="grid lg:grid-cols-2 gap-3 lg:gap-5">
+        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
           <DealKeyDatesSection
             firmDate={firmDate}
             closeDate={closeDate}

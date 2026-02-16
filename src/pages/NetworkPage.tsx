@@ -181,7 +181,7 @@ export default function NetworkPage() {
     <AppLayout>
       <Header title="Network" subtitle="Agent network & revenue share" showAddDeal={false} />
       <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-56px)]">
-      <div className="p-5 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="p-5 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
         {/* Hero Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -203,7 +203,7 @@ export default function NetworkPage() {
             </div>
 
             {/* Hero Stats Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6">
               {[
                 { label: 'Total Agents', value: agents.length.toString(), icon: Users, color: 'text-primary' },
                 { label: 'Active', value: activeAgents.length.toString(), icon: UserPlus, color: 'text-success' },

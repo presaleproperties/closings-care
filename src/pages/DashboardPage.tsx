@@ -294,7 +294,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Desktop Layout */}
-          <div className="hidden sm:block p-5 lg:p-6 space-y-5">
+          <div className="hidden sm:block p-5 md:p-6 lg:p-6 space-y-5">
             <QuickStats {...quickStatsProps} />
 
             <GCIGoalTracker {...goalTrackerProps} />

@@ -181,7 +181,7 @@ export default function ForecastPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <motion.div 
-          className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4"
+          className="p-3 sm:p-4 md:p-6 lg:p-6 space-y-3 sm:space-y-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -232,7 +232,7 @@ export default function ForecastPage() {
           </motion.div>
 
           {/* Summary Stats */}
-          <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+          <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
             {/* Commissions */}
             <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
               <div className="flex items-center gap-1.5 mb-1 sm:mb-2">
