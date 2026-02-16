@@ -9,8 +9,6 @@ const DEFAULT_SETTINGS: Partial<Settings> = {
   tax_set_aside_percent: 0,
   brokerage_split_percent: 0,
   apply_tax_to_forecasts: false,
-  presale_template: ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion'],
-  resale_template: ['Completion'],
 };
 
 export function useSettings() {
@@ -33,15 +31,7 @@ export function useSettings() {
         return DEFAULT_SETTINGS as Settings;
       }
       
-      return {
-        ...data,
-        presale_template: Array.isArray(data.presale_template) 
-          ? data.presale_template 
-          : DEFAULT_SETTINGS.presale_template,
-        resale_template: Array.isArray(data.resale_template) 
-          ? data.resale_template 
-          : DEFAULT_SETTINGS.resale_template,
-      } as Settings;
+      return data as Settings;
     },
     enabled: !!user,
   });

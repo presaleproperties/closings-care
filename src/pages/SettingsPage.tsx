@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Save, Plus, X, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
+  Save, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
   Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles, 
-  Target, Palette, FileText, CreditCard, Database, Settings2, 
+  Target, Palette, CreditCard, Database, Settings2, 
   DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -34,8 +34,6 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { PlatformConnectionsManager } from '@/components/settings/PlatformConnectionsManager';
 
-const defaultPresale = ['Advance', '2nd Payment', '3rd Deposit', '4th Deposit', 'Completion'];
-const defaultResale = ['Completion'];
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
 
@@ -53,10 +51,6 @@ export default function SettingsPage() {
   const [country, setCountry] = useState('CA');
   const [province, setProvince] = useState<Province>('BC');
   const [taxType, setTaxType] = useState<TaxType>('self-employed');
-  const [presaleTemplate, setPresaleTemplate] = useState<string[]>(defaultPresale);
-  const [resaleTemplate, setResaleTemplate] = useState<string[]>(defaultResale);
-  const [newPresaleItem, setNewPresaleItem] = useState('');
-  const [newResaleItem, setNewResaleItem] = useState('');
   
   // Tax safety settings
   const [gstRegistered, setGstRegistered] = useState(false);
@@ -79,8 +73,6 @@ export default function SettingsPage() {
       setCountry((settings as any).country || 'CA');
       setProvince(((settings as any).province || 'BC') as Province);
       setTaxType(((settings as any).tax_type || 'self-employed') as TaxType);
-      setPresaleTemplate(settings.presale_template || defaultPresale);
-      setResaleTemplate(settings.resale_template || defaultResale);
       setGstRegistered((settings as any).gst_registered || false);
       setGstRate(((settings as any).gst_rate || 0.05) * 100);
       setTaxBuffer((settings as any).tax_buffer_percent || 5);
@@ -109,14 +101,12 @@ export default function SettingsPage() {
         taxSavedAmount !== ((settings as any).tax_saved_amount || 0) ||
         monthlyIncomeGoal !== ((settings as any).monthly_income_goal || 0) ||
         yearlyGciGoal !== ((settings as any).yearly_gci_goal || 0) ||
-        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0) ||
-        JSON.stringify(presaleTemplate) !== JSON.stringify(settings.presale_template || defaultPresale) ||
-        JSON.stringify(resaleTemplate) !== JSON.stringify(settings.resale_template || defaultResale);
+        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0);
       setHasChanges(changed);
     }
   }, [settings, taxPercent, applyTaxToForecasts, country, province, taxType, 
       gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount,
-      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal, presaleTemplate, resaleTemplate]);
+      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal]);
 
   const handleSave = async () => {
     await updateSettings.mutateAsync({
@@ -126,8 +116,6 @@ export default function SettingsPage() {
       country,
       province,
       tax_type: taxType,
-      presale_template: presaleTemplate,
-      resale_template: resaleTemplate,
       gst_registered: gstRegistered,
       gst_rate: gstRate / 100,
       tax_buffer_percent: taxBuffer,
@@ -140,27 +128,6 @@ export default function SettingsPage() {
     setHasChanges(false);
   };
 
-  const addPresaleItem = () => {
-    if (newPresaleItem.trim()) {
-      setPresaleTemplate([...presaleTemplate, newPresaleItem.trim()]);
-      setNewPresaleItem('');
-    }
-  };
-
-  const removePresaleItem = (index: number) => {
-    setPresaleTemplate(presaleTemplate.filter((_, i) => i !== index));
-  };
-
-  const addResaleItem = () => {
-    if (newResaleItem.trim()) {
-      setResaleTemplate([...resaleTemplate, newResaleItem.trim()]);
-      setNewResaleItem('');
-    }
-  };
-
-  const removeResaleItem = (index: number) => {
-    setResaleTemplate(resaleTemplate.filter((_, i) => i !== index));
-  };
 
   const taxBrackets = getTaxBrackets(province, taxType);
 
@@ -209,10 +176,6 @@ export default function SettingsPage() {
             <TabsTrigger value="tax" className="flex items-center gap-2">
               <PiggyBank className="w-4 h-4" />
               <span className="hidden sm:inline">Tax & Finance</span>
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Templates</span>
             </TabsTrigger>
             <TabsTrigger value="subscription" className="flex items-center gap-2">
               <Crown className="w-4 h-4" />
@@ -581,116 +544,6 @@ export default function SettingsPage() {
           </TabsContent>
 
 
-          {/* Templates Tab */}
-          <TabsContent value="templates" className="space-y-6">
-            <SettingsCard 
-              icon={FileText} 
-              title="Payout Templates" 
-              description="Default payout rows when creating new deals"
-              iconColor="text-violet-500"
-              gradient="from-violet-500/10 to-violet-500/5"
-            >
-              {/* Presale Template */}
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-base">Presale Template</Label>
-                  <p className="text-sm text-muted-foreground">
-                    For pre-construction deals with multiple deposits
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  {presaleTemplate.map((item, index) => (
-                    <motion.div 
-                      key={index} 
-                      className="flex items-center gap-2"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-xs font-bold text-violet-500">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 px-4 py-2.5 bg-muted/50 rounded-xl text-sm font-medium">
-                        {item}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removePresaleItem(index)}
-                        className="text-muted-foreground hover:text-destructive h-8 w-8"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    value={newPresaleItem}
-                    onChange={(e) => setNewPresaleItem(e.target.value)}
-                    placeholder="Add payout type..."
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addPresaleItem())}
-                    className="flex-1"
-                  />
-                  <Button variant="outline" onClick={addPresaleItem} size="icon">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Resale Template */}
-              <div className="space-y-4 pt-6 border-t border-border/50">
-                <div>
-                  <Label className="text-base">Resale Template</Label>
-                  <p className="text-sm text-muted-foreground">
-                    For existing property sales
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  {resaleTemplate.map((item, index) => (
-                    <motion.div 
-                      key={index} 
-                      className="flex items-center gap-2"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {index + 1}
-                      </div>
-                      <div className="flex-1 px-4 py-2.5 bg-muted/50 rounded-xl text-sm font-medium">
-                        {item}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeResaleItem(index)}
-                        className="text-muted-foreground hover:text-destructive h-8 w-8"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    value={newResaleItem}
-                    onChange={(e) => setNewResaleItem(e.target.value)}
-                    placeholder="Add payout type..."
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addResaleItem())}
-                    className="flex-1"
-                  />
-                  <Button variant="outline" onClick={addResaleItem} size="icon">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </SettingsCard>
-          </TabsContent>
 
           {/* Subscription Tab */}
           <TabsContent value="subscription" className="space-y-6">
