@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Header } from '@/components/layout/Header';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
+import { useRefreshData } from '@/hooks/useRefreshData';
 import { usePipelineProspects, useAddProspect, useUpdateProspect, useDeleteProspect, PipelineProspect } from '@/hooks/usePipelineProspects';
 import { formatCurrency } from '@/lib/format';
 import { Plus, Trash2, Users, Flame, Thermometer, Snowflake, TrendingUp } from 'lucide-react';
@@ -217,6 +220,7 @@ export default function PipelinePage() {
   const addProspect = useAddProspect();
   const updateProspect = useUpdateProspect();
   const deleteProspect = useDeleteProspect();
+  const refreshData = useRefreshData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
 
   const activeProspects = prospects.filter(p => p.status === 'active');
@@ -243,7 +247,9 @@ export default function PipelinePage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <Header title="Pipeline" subtitle={`${activeProspects.length} active prospects`} showAddDeal={false} />
+      <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+      <div className="p-5 lg:p-6 space-y-6">
         {/* ── Hero Header ────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -449,6 +455,7 @@ export default function PipelinePage() {
           </div>
         </motion.div>
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
