@@ -4,13 +4,14 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
-interface CollapsibleSectionProps {
+export interface CollapsibleSectionProps {
   icon: React.ElementType;
   title: string;
   badge?: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   className?: string;
+  action?: React.ReactNode;
 }
 
 export function CollapsibleSection({
@@ -20,6 +21,7 @@ export function CollapsibleSection({
   children,
   defaultOpen = true,
   className,
+  action,
 }: CollapsibleSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -39,12 +41,15 @@ export function CollapsibleSection({
             <span className="text-xs text-muted-foreground ml-1">{badge}</span>
           )}
         </div>
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </motion.div>
+        <div className="flex items-center gap-2">
+          {action}
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          </motion.div>
+        </div>
       </button>
 
       <AnimatePresence initial={false}>

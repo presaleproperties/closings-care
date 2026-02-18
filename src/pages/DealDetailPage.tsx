@@ -183,12 +183,14 @@ export default function DealDetailPage() {
             isPastDue={isPastDue}
           />
           <DealTransactionDetailsSection
+            transactionId={transaction.id}
             transactionType={raw.transactionType || transaction.transaction_type}
             propertyType={raw.propertyType}
             currency={transaction.currency}
             kind={raw.kind}
             lifecycleDesc={lifecycleDesc}
             leadSource={transaction.lead_source}
+            buyerType={(transaction as any).buyer_type}
             agentName={transaction.agent_name}
           />
         </div>
