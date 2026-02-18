@@ -42,6 +42,7 @@ export interface SyncedTransaction {
   my_net_payout: number | null;
   my_split_percent: number | null;
   lead_source: string | null;
+  buyer_type: string | null;
   transaction_code: string | null;
   currency: string | null;
   raw_data: any;

@@ -762,6 +762,7 @@ export type Database = {
       synced_transactions: {
         Row: {
           agent_name: string | null
+          buyer_type: string | null
           city: string | null
           client_name: string | null
           close_date: string | null
@@ -793,6 +794,7 @@ export type Database = {
         }
         Insert: {
           agent_name?: string | null
+          buyer_type?: string | null
           city?: string | null
           client_name?: string | null
           close_date?: string | null
@@ -824,6 +826,7 @@ export type Database = {
         }
         Update: {
           agent_name?: string | null
+          buyer_type?: string | null
           city?: string | null
           client_name?: string | null
           close_date?: string | null
