@@ -504,13 +504,13 @@ export default function NewDealPage() {
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="Tiktok">Tiktok</SelectItem>
-                    <SelectItem value="Instagram">Instagram</SelectItem>
-                    <SelectItem value="Youtube">Youtube</SelectItem>
-                    <SelectItem value="Referral">Referral</SelectItem>
-                    <SelectItem value="Team">Team</SelectItem>
-                  </SelectContent>
+                   <SelectContent className="bg-popover">
+                     <SelectItem value="Instagram">Instagram</SelectItem>
+                     <SelectItem value="Tiktok">Tiktok</SelectItem>
+                     <SelectItem value="Facebook Ads">Facebook Ads</SelectItem>
+                     <SelectItem value="Referral">Referral</SelectItem>
+                     <SelectItem value="Team">Team</SelectItem>
+                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
