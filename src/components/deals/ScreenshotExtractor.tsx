@@ -532,9 +532,9 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
                   <SelectValue placeholder="Select source" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="Tiktok">Tiktok</SelectItem>
                   <SelectItem value="Instagram">Instagram</SelectItem>
-                  <SelectItem value="Youtube">Youtube</SelectItem>
+                  <SelectItem value="Tiktok">Tiktok</SelectItem>
+                  <SelectItem value="Facebook Ads">Facebook Ads</SelectItem>
                   <SelectItem value="Referral">Referral</SelectItem>
                   <SelectItem value="Team">Team</SelectItem>
                 </SelectContent>
