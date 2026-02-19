@@ -10,7 +10,7 @@ import { triggerHaptic } from '@/lib/haptics';
 
 const spring = { type: 'spring' as const, stiffness: 120, damping: 20 };
 
-const LEAD_SOURCES = ['Instagram', 'Tiktok', 'Facebook Ads', 'Referral', 'Team'];
+const LEAD_SOURCES = ['Instagram', 'Tiktok', 'Facebook Ads', 'YouTube', 'Referral', 'Team'];
 const BUYER_TYPES = ['First Time Homebuyer', 'Investor'];
 
 interface TransactionDetailsSectionProps {
