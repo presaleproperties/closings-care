@@ -150,6 +150,7 @@ export default function DealDetailPage() {
           <DealHeroCard
             address={cleanAddress}
             city={transaction.city}
+            clientName={transaction.client_name}
             transactionCode={transactionCode}
             status={isClosed ? 'closed' : isPastDue ? 'active' : 'pending'}
             lifecycleState={lifecycleState}
