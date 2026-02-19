@@ -11,9 +11,8 @@ interface DealBuyerInfoCardProps {
 }
 
 export function DealBuyerInfoCard({ participants, clientName }: DealBuyerInfoCardProps) {
-  const buyer = participants.find(
-    (p) => p.participantRole === 'BUYER' || p.participantRole === 'SELLER'
-  );
+  const buyer = participants.find((p) => p.participantRole === 'BUYER')
+    || participants.find((p) => p.participantRole === 'SELLER');
 
   const name = buyer
     ? [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') || buyer.company
