@@ -14,6 +14,7 @@ import { DealKeyDatesSection } from '@/components/deals/DealKeyDatesSection';
 import { DealTransactionDetailsSection } from '@/components/deals/DealTransactionDetailsSection';
 import { DealParticipantsSection } from '@/components/deals/DealParticipantsSection';
 import { DealRelatedTransactionsSection } from '@/components/deals/DealRelatedTransactionsSection';
+import { DealBuyerInfoCard } from '@/components/deals/DealBuyerInfoCard';
 import type { Participant } from '@/components/deals/ParticipantCard';
 
 function extractNetPayout(rawData: any): number {
@@ -173,6 +174,9 @@ export default function DealDetailPage() {
           isClosed={isClosed}
           isPastDue={isPastDue}
         />
+
+        {/* Buyer Info */}
+        <DealBuyerInfoCard participants={participants} clientName={transaction.client_name} />
 
         {/* Dates & Details */}
         <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
