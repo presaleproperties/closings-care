@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Pencil, Check } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { CollapsibleSection } from './CollapsibleSection';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,34 +36,41 @@ export function DealTransactionDetailsSection({
   buyerType,
   agentName,
 }: TransactionDetailsSectionProps) {
-  const [isEditing, setIsEditing] = useState(false);
   const [source, setSource] = useState(leadSource || '');
   const [type, setType] = useState(buyerType || '');
-  const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleSave = async () => {
-    setSaving(true);
+  // Reset local state when navigating between deals
+  useEffect(() => {
+    setSource(leadSource || '');
+    setType(buyerType || '');
+  }, [transactionId, leadSource, buyerType]);
+
+  const saveField = async (field: 'lead_source' | 'buyer_type', value: string) => {
     try {
       const { error } = await supabase
         .from('synced_transactions')
-        .update({
-          lead_source: source || null,
-          buyer_type: type || null,
-        })
+        .update({ [field]: value || null })
         .eq('id', transactionId);
 
       if (error) throw error;
       
       triggerHaptic('light');
-      toast.success('Deal updated');
-      queryClient.invalidateQueries({ queryKey: ['synced-transactions'] });
-      setIsEditing(false);
+      toast.success('Saved');
+      queryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
     } catch {
       toast.error('Failed to save');
-    } finally {
-      setSaving(false);
     }
+  };
+
+  const handleSourceChange = (val: string) => {
+    setSource(val);
+    saveField('lead_source', val);
+  };
+
+  const handleTypeChange = (val: string) => {
+    setType(val);
+    saveField('buyer_type', val);
   };
 
   return (
@@ -76,64 +83,36 @@ export function DealTransactionDetailsSection({
         icon={FileText}
         title="Transaction Details"
         defaultOpen={true}
-        action={
-          isEditing ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleSave(); }}
-              disabled={saving}
-              className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              <Check className="h-3.5 w-3.5" />
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-              className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Pencil className="h-3 w-3" />
-              Edit
-            </button>
-          )
-        }
       >
         <div className="space-y-2.5">
-          {/* Editable: Lead Source */}
+          {/* Inline editable: Lead Source */}
           <div className="flex items-center justify-between py-1">
             <span className="text-xs lg:text-sm text-muted-foreground">Lead Source</span>
-            {isEditing ? (
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger className="h-8 w-[160px] text-xs lg:text-sm">
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {LEAD_SOURCES.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <span className="text-xs lg:text-sm font-medium text-foreground">{source || '—'}</span>
-            )}
+            <Select value={source} onValueChange={handleSourceChange}>
+              <SelectTrigger className="h-8 w-[160px] text-xs lg:text-sm border-dashed">
+                <SelectValue placeholder="Select source" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                {LEAD_SOURCES.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Editable: Buyer Type */}
+          {/* Inline editable: Buyer Type */}
           <div className="flex items-center justify-between py-1">
             <span className="text-xs lg:text-sm text-muted-foreground">Buyer Type</span>
-            {isEditing ? (
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="h-8 w-[160px] text-xs lg:text-sm">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {BUYER_TYPES.map(t => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <span className="text-xs lg:text-sm font-medium text-foreground">{type || '—'}</span>
-            )}
+            <Select value={type} onValueChange={handleTypeChange}>
+              <SelectTrigger className="h-8 w-[160px] text-xs lg:text-sm border-dashed">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                {BUYER_TYPES.map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <DetailRow label="Type" value={transactionType || '—'} />
