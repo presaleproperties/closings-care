@@ -175,19 +175,19 @@ export default function DealDetailPage() {
           isPastDue={isPastDue}
         />
 
-        {/* Buyer Info */}
-        <DealBuyerInfoCard participants={participants} clientName={transaction.client_name} />
-
-        {/* Dates & Details */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
-          <DealKeyDatesSection
-            firmDate={firmDate}
-            closeDate={closeDate}
-            listingDate={listingDate}
-            closedAt={raw.closedAt}
-            compliantAt={raw.compliantAt}
-            isPastDue={isPastDue}
-          />
+        {/* Buyer Info, Dates & Details */}
+        <div className="grid md:grid-cols-2 gap-3 md:gap-4 lg:gap-5">
+          <div className="space-y-3 md:space-y-4 lg:space-y-5">
+            <DealBuyerInfoCard participants={participants} clientName={transaction.client_name} />
+            <DealKeyDatesSection
+              firmDate={firmDate}
+              closeDate={closeDate}
+              listingDate={listingDate}
+              closedAt={raw.closedAt}
+              compliantAt={raw.compliantAt}
+              isPastDue={isPastDue}
+            />
+          </div>
           <DealTransactionDetailsSection
             transactionId={transaction.id}
             transactionType={raw.transactionType || transaction.transaction_type}
