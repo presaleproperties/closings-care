@@ -84,23 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteAccount = async () => {
-    // Delete user data first (RLS will handle cascading)
-    const userId = user?.id;
-    if (!userId) return { error: new Error('Not authenticated') };
+    if (!user) return { error: new Error('Not authenticated') };
 
     try {
-      // Delete in order of dependencies
-      await supabase.from('payouts').delete().eq('user_id', userId);
-      await supabase.from('expenses').delete().eq('user_id', userId);
-      await supabase.from('deals').delete().eq('user_id', userId);
-      await supabase.from('other_income').delete().eq('user_id', userId);
-      await supabase.from('properties').delete().eq('user_id', userId);
-      await supabase.from('expense_budgets').delete().eq('user_id', userId);
-      await supabase.from('settings').delete().eq('user_id', userId);
-      await supabase.from('profiles').delete().eq('user_id', userId);
+      const { data, error } = await supabase.functions.invoke('delete-account');
       
-      // Sign out (account deletion from auth.users requires admin API)
-      await signOut();
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      // Sign out locally after server-side deletion
+      await supabase.auth.signOut();
       
       return { error: null };
     } catch (err) {
