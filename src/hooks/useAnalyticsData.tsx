@@ -48,7 +48,9 @@ export const normalizeCity = (city: string | null): string => {
 
 export const isPresaleTransaction = (tx: any): boolean => {
   const addr = (tx.property_address || '').toLowerCase();
-  return addr.includes('part 1/2') || addr.includes('part 2/2') || addr.includes('part 3/3');
+  const hasPartLabel = addr.includes('part 1/2') || addr.includes('part 2/2') || addr.includes('part 3/3');
+  const hasProjectName = !!(tx.raw_data?.projectName || tx.project_name);
+  return hasPartLabel || hasProjectName;
 };
 
 export const getWritingAgents = (tx: any): string[] => {
