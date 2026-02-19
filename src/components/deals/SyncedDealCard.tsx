@@ -13,7 +13,8 @@ interface SyncedDealCardProps {
 
 export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps) {
   const partMatch = deal.propertyAddress?.match(/Part (\d+\/\d+)/);
-  const isPresale = !!partMatch;
+  const hasProjectName = !!(deal.rawData?.projectName);
+  const isPresale = !!partMatch || hasProjectName;
 
   const cleanAddress = deal.propertyAddress
     ? deal.propertyAddress.replace(/Part \d+\/\d+\s*-\s*/, '').trim()

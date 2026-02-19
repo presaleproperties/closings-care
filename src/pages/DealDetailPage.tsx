@@ -83,7 +83,8 @@ export default function DealDetailPage() {
   const isClosed = transaction.status === 'closed';
   const isListing = transaction.is_listing;
   const partMatch = transaction.property_address?.match(/Part (\d+\/\d+)/);
-  const isPresale = !!partMatch;
+  const hasProjectName = !!(raw.projectName || (transaction as any).project_name);
+  const isPresale = !!partMatch || hasProjectName;
   const cleanAddress = transaction.property_address
     ? transaction.property_address.replace(/Part \d+\/\d+\s*-\s*/, '').trim()
     : 'Unknown';

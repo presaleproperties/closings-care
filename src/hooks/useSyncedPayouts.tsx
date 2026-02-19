@@ -74,8 +74,12 @@ function getEffectiveCommission(tx: SyncedTransaction): number {
  * Determines if a transaction is a presale part and which type.
  * Convention: "Part 1/2" = Advance, "Part 2/2" = Completion
  */
-function detectPayoutType(address: string | null): { payoutType: 'Advance' | 'Completion' | 'Commission'; isPresale: boolean } {
-  if (!address) return { payoutType: 'Commission', isPresale: false };
+function detectPayoutType(address: string | null, rawData?: any): { payoutType: 'Advance' | 'Completion' | 'Commission'; isPresale: boolean } {
+  if (!address) {
+    // Even without address, check for project name in raw data
+    const hasProjectName = !!(rawData?.projectName);
+    return { payoutType: hasProjectName ? 'Commission' : 'Commission', isPresale: hasProjectName };
+  }
   
   const lowerAddr = address.toLowerCase();
   if (lowerAddr.includes('part 1/2') || lowerAddr.includes('1/2 -')) {
@@ -85,7 +89,9 @@ function detectPayoutType(address: string | null): { payoutType: 'Advance' | 'Co
     return { payoutType: 'Completion', isPresale: true };
   }
   
-  return { payoutType: 'Commission', isPresale: false };
+  // Check for project name in raw data
+  const hasProjectName = !!(rawData?.projectName);
+  return { payoutType: 'Commission', isPresale: hasProjectName };
 }
 
 /**
@@ -117,7 +123,7 @@ export function useSyncedPayouts(syncedTransactions: SyncedTransaction[]) {
     return syncedTransactions
       .filter(tx => tx.close_date) // must have a close date
       .map((tx): SyncedPayoutItem => {
-        const { payoutType, isPresale } = detectPayoutType(tx.property_address);
+        const { payoutType, isPresale } = detectPayoutType(tx.property_address, tx.raw_data);
         const effectiveAmount = getEffectiveCommission(tx);
         const grossAmount = Number(tx.commission_amount) || 0;
         
