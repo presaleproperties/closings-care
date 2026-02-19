@@ -535,6 +535,7 @@ export function ScreenshotExtractor({ onExtract, userId }: ScreenshotExtractorPr
                   <SelectItem value="Instagram">Instagram</SelectItem>
                   <SelectItem value="Tiktok">Tiktok</SelectItem>
                   <SelectItem value="Facebook Ads">Facebook Ads</SelectItem>
+                  <SelectItem value="YouTube">YouTube</SelectItem>
                   <SelectItem value="Referral">Referral</SelectItem>
                   <SelectItem value="Team">Team</SelectItem>
                 </SelectContent>
