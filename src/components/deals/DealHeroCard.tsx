@@ -1,4 +1,4 @@
-import { MapPin, Building2, Home, Shield, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Building2, Home, Shield, Clock, AlertTriangle, CheckCircle2, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { differenceInDays, parseISO } from 'date-fns';
@@ -6,6 +6,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 interface DealHeroCardProps {
   address: string;
   city?: string;
+  clientName?: string;
   transactionCode?: string;
   status: 'closed' | 'active' | 'pending';
   lifecycleState?: string;
@@ -20,6 +21,7 @@ interface DealHeroCardProps {
 export function DealHeroCard({
   address,
   city,
+  clientName,
   transactionCode,
   status,
   lifecycleState,
@@ -62,6 +64,13 @@ export function DealHeroCard({
               <h1 className="text-[15px] lg:text-xl font-bold text-foreground truncate">{address}</h1>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 ml-6 lg:ml-7">
+              {clientName && (
+                <span className="flex items-center gap-1 text-xs lg:text-sm font-semibold text-foreground">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
+                  {clientName}
+                </span>
+              )}
+              {clientName && city && <span className="text-muted-foreground/40">·</span>}
               {city && <span className="text-xs text-muted-foreground">{city}</span>}
               {transactionCode && (
                 <span className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
