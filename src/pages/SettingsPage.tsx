@@ -755,20 +755,31 @@ function SubscriptionSection() {
     setPortalLoading(true);
     try {
       const { supabase } = await import('@/integrations/supabase/client');
+      const { toast } = await import('sonner');
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) throw new Error('Please sign in');
+      if (!session) {
+        toast.error('Please sign in to manage your subscription');
+        return;
+      }
 
       const response = await supabase.functions.invoke('create-portal-session', {
         body: { returnUrl: window.location.origin },
       });
 
       if (response.error) throw new Error(response.error.message);
-      if (response.data?.noStripeCustomer || response.data?.noActiveSubscription) {
+      if (response.data?.noStripeCustomer) {
+        toast.info('Your subscription was set up by an administrator. No billing to manage.');
+        return;
+      }
+      if (response.data?.noActiveSubscription) {
+        toast.info("You don't have an active subscription to manage.");
         return;
       }
       if (response.data?.url) window.location.href = response.data.url;
-    } catch (error) {
+    } catch (error: any) {
+      const { toast } = await import('sonner');
+      toast.error(error?.message || 'Failed to open subscription portal');
       console.error('Error:', error);
     } finally {
       setPortalLoading(false);
@@ -929,8 +940,13 @@ function DeleteAccountSection() {
     if (confirmText !== 'DELETE') return;
     setLoading(true);
     const { error } = await deleteAccount();
-    if (!error) navigate('/auth');
-    setLoading(false);
+    if (error) {
+      const { toast } = await import('sonner');
+      toast.error(error.message || 'Failed to delete account');
+      setLoading(false);
+    } else {
+      navigate('/auth');
+    }
   };
 
   return (
