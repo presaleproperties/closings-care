@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_prospects ADD COLUMN deal_type text DEFAULT 'buyer';
