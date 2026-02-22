@@ -316,10 +316,71 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
 }
 
 // ── Board View ──────────────────────────────────────────────────────────
-function BoardView({ prospects, onMoveStatus, onDelete }: {
+function BoardQuickAdd({ status, onAdd }: { status: string; onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status: string }) => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [commission, setCommission] = useState('');
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    onAdd({ client_name: name.trim(), home_type: 'Detached', potential_commission: parseFloat(commission) || 0, temperature: 'warm', status });
+    setName('');
+    setCommission('');
+    setOpen(false);
+    triggerHaptic('light');
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full rounded-xl border border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5 p-2.5 text-xs text-muted-foreground/60 hover:text-primary transition-all duration-200 flex items-center justify-center gap-1.5"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        <span>Add</span>
+      </button>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-xl border border-primary/30 bg-card p-3 space-y-2"
+    >
+      <input
+        autoFocus
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+        placeholder="Client name"
+        className="w-full bg-transparent border-0 border-b border-border/30 outline-none text-sm py-1 placeholder:text-muted-foreground/40 focus:border-primary/50"
+      />
+      <input
+        value={commission}
+        onChange={(e) => setCommission(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+        placeholder="Commission $"
+        type="number"
+        className="w-full bg-transparent border-0 border-b border-border/30 outline-none text-sm py-1 placeholder:text-muted-foreground/40 focus:border-primary/50"
+      />
+      <div className="flex items-center gap-1.5 pt-1">
+        <button onClick={handleSubmit} disabled={!name.trim()} className="flex-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium py-1.5 disabled:opacity-40 transition-opacity">
+          Add
+        </button>
+        <button onClick={() => { setOpen(false); setName(''); setCommission(''); }} className="flex-1 rounded-lg bg-muted text-muted-foreground text-xs font-medium py-1.5">
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function BoardView({ prospects, onMoveStatus, onDelete, onAdd }: {
   prospects: PipelineProspect[];
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
+  onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status: string }) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const columns = useMemo(() => {
@@ -348,7 +409,7 @@ function BoardView({ prospects, onMoveStatus, onDelete }: {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {columns.map(col => (
         <div
           key={col.status}
@@ -385,6 +446,11 @@ function BoardView({ prospects, onMoveStatus, onDelete }: {
                 <p className="text-xs text-muted-foreground/40">Drop here</p>
               </div>
             )}
+          </div>
+
+          {/* Quick Add */}
+          <div className="mt-2.5">
+            <BoardQuickAdd status={col.status} onAdd={onAdd} />
           </div>
         </div>
       ))}
@@ -424,7 +490,7 @@ export default function PipelinePage() {
     updateProspect.mutate({ id, status } as any);
   }, [updateProspect]);
 
-  const handleAdd = (data: { client_name: string; home_type: string; potential_commission: number; temperature: string }) => {
+  const handleAdd = (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status?: string }) => {
     addProspect.mutate(data as any);
   };
 
@@ -547,6 +613,7 @@ export default function PipelinePage() {
                 prospects={prospects}
                 onMoveStatus={handleMoveStatus}
                 onDelete={(id) => deleteProspect.mutate(id)}
+                onAdd={handleAdd}
               />
             )}
           </motion.div>
