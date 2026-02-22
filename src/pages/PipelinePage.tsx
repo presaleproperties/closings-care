@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
-const STATUS_OPTIONS = ['active', 'in-contract', 'closed', 'lost'] as const;
+const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
 const DEAL_TYPE_OPTIONS = ['buyer', 'seller'];
 const DEAL_TYPE_LABELS: Record<string, string> = { buyer: 'Buyer', seller: 'Seller' };
@@ -23,6 +23,7 @@ const DEAL_TYPE_COLORS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Active',
+  listings: 'Listings',
   'in-contract': 'In Contract',
   closed: 'Closed',
   lost: 'Lost',
@@ -30,6 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-primary/15 text-primary border-primary/30',
+  listings: 'bg-violet-500/15 text-violet-600 border-violet-500/30',
   'in-contract': 'bg-amber-500/15 text-amber-600 border-amber-500/30',
   closed: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
   lost: 'bg-destructive/15 text-destructive border-destructive/30',
@@ -37,6 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_HEADER_COLORS: Record<string, string> = {
   active: 'border-primary/40 bg-primary/5',
+  listings: 'border-violet-500/40 bg-violet-500/5',
   'in-contract': 'border-amber-500/40 bg-amber-500/5',
   closed: 'border-emerald-500/40 bg-emerald-500/5',
   lost: 'border-destructive/40 bg-destructive/5',
@@ -44,6 +47,7 @@ const STATUS_HEADER_COLORS: Record<string, string> = {
 
 const STATUS_DOT_COLORS: Record<string, string> = {
   active: 'bg-primary',
+  listings: 'bg-violet-500',
   'in-contract': 'bg-amber-500',
   closed: 'bg-emerald-500',
   lost: 'bg-destructive',
