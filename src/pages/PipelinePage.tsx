@@ -446,10 +446,8 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd }: {
                 <p className="text-xs text-muted-foreground/40">Drop here</p>
               </div>
             )}
-          </div>
 
-          {/* Quick Add */}
-          <div className="mt-2.5">
+            {/* Quick Add - directly below last tile */}
             <BoardQuickAdd status={col.status} onAdd={onAdd} />
           </div>
         </div>
