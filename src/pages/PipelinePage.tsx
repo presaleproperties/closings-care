@@ -11,14 +11,14 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
-const HOME_TYPES = ['Detached', 'Townhome', 'Condo', 'Pre-Sale'];
+const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
-const DEAL_TYPE_OPTIONS = ['buyer', 'listing'];
-const DEAL_TYPE_LABELS: Record<string, string> = { buyer: 'Buyer', listing: 'Listing' };
+const DEAL_TYPE_OPTIONS = ['buyer', 'seller'];
+const DEAL_TYPE_LABELS: Record<string, string> = { buyer: 'Buyer', seller: 'Seller' };
 const DEAL_TYPE_COLORS: Record<string, string> = {
   buyer: 'bg-sky-500/15 text-sky-600 border-sky-500/30',
-  listing: 'bg-violet-500/15 text-violet-600 border-violet-500/30',
+  seller: 'bg-violet-500/15 text-violet-600 border-violet-500/30',
 };
 
 const STATUS_LABELS: Record<string, string> = {
