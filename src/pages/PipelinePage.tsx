@@ -219,10 +219,11 @@ function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type
 }
 
 // ── Board Card ──────────────────────────────────────────────────────────
-function BoardCard({ prospect, onMoveStatus, onDelete }: {
+function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
   prospect: PipelineProspect;
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, field: string, value: string) => void;
 }) {
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const nextStatuses = STATUS_OPTIONS.filter(s => s !== prospect.status);
@@ -245,11 +246,19 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{prospect.client_name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <button
+              onClick={(e) => { e.stopPropagation(); const next = DEAL_TYPE_OPTIONS[(DEAL_TYPE_OPTIONS.indexOf(prospect.deal_type || 'buyer') + 1) % DEAL_TYPE_OPTIONS.length]; onUpdate(prospect.id, 'deal_type', next); triggerHaptic('light'); }}
+              className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}
+            >
               {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
-            </span>
-            <span className="text-xs text-muted-foreground">{prospect.home_type}</span>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); const next = HOME_TYPES[(HOME_TYPES.indexOf(prospect.home_type) + 1) % HOME_TYPES.length]; onUpdate(prospect.id, 'home_type', next); triggerHaptic('light'); }}
+              className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-transparent hover:border-border/40 rounded px-1.5 py-0.5"
+            >
+              {prospect.home_type}
+            </button>
           </div>
         </div>
         <TempBadge temp={prospect.temperature || 'warm'} compact />
@@ -376,11 +385,12 @@ function BoardQuickAdd({ status, onAdd }: { status: string; onAdd: (data: { clie
   );
 }
 
-function BoardView({ prospects, onMoveStatus, onDelete, onAdd }: {
+function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   prospects: PipelineProspect[];
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status: string }) => void;
+  onUpdate: (id: string, field: string, value: string) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const columns = useMemo(() => {
@@ -437,7 +447,7 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd }: {
           <div className="space-y-2.5 flex-1">
             <AnimatePresence mode="popLayout">
               {col.items.map(p => (
-                <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} />
+                <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
               ))}
             </AnimatePresence>
 
@@ -612,6 +622,7 @@ export default function PipelinePage() {
                 onMoveStatus={handleMoveStatus}
                 onDelete={(id) => deleteProspect.mutate(id)}
                 onAdd={handleAdd}
+                onUpdate={(id, field, value) => updateProspect.mutate({ id, [field]: value } as any)}
               />
             )}
           </motion.div>
