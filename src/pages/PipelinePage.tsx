@@ -495,7 +495,9 @@ export default function PipelinePage() {
   }, [prospects, updateProspect]);
 
   const handleMoveStatus = useCallback((id: string, status: string) => {
-    updateProspect.mutate({ id, status } as any);
+    const updates: any = { id, status };
+    if (status === 'listings') updates.deal_type = 'seller';
+    updateProspect.mutate(updates);
   }, [updateProspect]);
 
   const handleAdd = (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status?: string }) => {
