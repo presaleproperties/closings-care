@@ -432,6 +432,23 @@ export default function PipelinePage() {
           </div>
         </motion.div>
 
+        {/* ── Status Summary Pills ────────────────────────────────── */}
+        <div className="flex flex-wrap gap-2">
+          {STATUS_OPTIONS.map(status => {
+            const items = prospects.filter(p => p.status === status);
+            const total = items.reduce((s, p) => s + Number(p.potential_commission), 0);
+            return (
+              <div key={status} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium", STATUS_COLORS[status])}>
+                <div className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_COLORS[status])} />
+                <span>{STATUS_LABELS[status]}</span>
+                <span className="font-bold">{items.length}</span>
+                <span className="opacity-60">·</span>
+                <span className="font-bold">{formatCurrency(total)}</span>
+              </div>
+            );
+          })}
+        </div>
+
         {/* ── View Toggle ────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground font-medium">
