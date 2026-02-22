@@ -291,41 +291,35 @@ export function IncomeProjection({ payouts, expenses, revShareMonthlyAvg = 0, pr
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 pt-3">
 
-      {/* Summary Stats - Two rows for better visual */}
-      <div className="space-y-3 mb-6">
-        {/* Income row */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-success/10 border border-success/20">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Commissions</p>
-            <p className="text-lg font-bold text-success">{formatCurrency(totalCommissions)}</p>
-          </div>
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <div className="flex items-center gap-1 mb-0.5">
-              <Wallet className="h-3 w-3 text-emerald-400" />
-              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">RevShare</p>
-            </div>
-            <p className="text-lg font-bold text-emerald-400">{formatCurrency(totalRevShare)}</p>
-          </div>
-          <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-emerald-500/10 border border-primary/20">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Income</p>
-            <p className="text-lg font-bold text-primary">{formatCurrency(totalProjectedIncome)}</p>
-          </div>
+      {/* Summary Stats - Compact inline */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-4 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-success" />
+          <span className="text-muted-foreground">Commissions</span>
+          <span className="font-bold text-success">{formatCurrency(totalCommissions)}</span>
         </div>
-        
-        {/* Expenses & Net row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Total Expenses</p>
-            <p className="text-lg font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
-          </div>
-          <div className={`p-3 rounded-xl border ${netProjection >= 0 ? 'bg-success/10 border-success/20' : 'bg-destructive/10 border-destructive/20'}`}>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">Net Projection</p>
-            <p className={`text-lg font-bold ${netProjection >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {formatCurrency(netProjection)}
-            </p>
-          </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400" />
+          <span className="text-muted-foreground">RevShare</span>
+          <span className="font-bold text-emerald-400">{formatCurrency(totalRevShare)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Total</span>
+          <span className="font-bold text-primary">{formatCurrency(totalProjectedIncome)}</span>
+        </div>
+        <div className="w-px h-3.5 bg-border" />
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-destructive" />
+          <span className="text-muted-foreground">Expenses</span>
+          <span className="font-bold text-destructive">{formatCurrency(totalExpenses)}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Net</span>
+          <span className={`font-bold ${netProjection >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {formatCurrency(netProjection)}
+          </span>
         </div>
       </div>
 
