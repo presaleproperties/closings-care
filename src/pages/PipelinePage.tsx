@@ -230,7 +230,13 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="rounded-xl border border-border/40 bg-card p-3.5 group hover:border-border/60 transition-all hover:shadow-sm"
+      draggable
+      onDragStart={(e: any) => {
+        e.dataTransfer?.setData('text/plain', prospect.id);
+        e.currentTarget.style.opacity = '0.5';
+      }}
+      onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
+      className="rounded-xl border border-border/40 bg-card p-3.5 group hover:border-border/60 transition-all hover:shadow-sm cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
@@ -311,6 +317,7 @@ function BoardView({ prospects, onMoveStatus, onDelete }: {
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const columns = useMemo(() => {
     return STATUS_OPTIONS.map(status => ({
       status,
@@ -320,10 +327,35 @@ function BoardView({ prospects, onMoveStatus, onDelete }: {
     }));
   }, [prospects]);
 
+  const handleDragOver = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCol(status);
+  };
+
+  const handleDrop = (e: React.DragEvent, status: string) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const prospectId = e.dataTransfer.getData('text/plain');
+    if (prospectId) {
+      triggerHaptic('light');
+      onMoveStatus(prospectId, status);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {columns.map(col => (
-        <div key={col.status} className="flex flex-col min-h-[200px]">
+        <div
+          key={col.status}
+          className={cn(
+            "flex flex-col min-h-[200px] rounded-2xl transition-all duration-200 p-1 -m-1",
+            dragOverCol === col.status && "bg-primary/5 ring-2 ring-primary/20 ring-dashed"
+          )}
+          onDragOver={(e) => handleDragOver(e, col.status)}
+          onDragLeave={() => setDragOverCol(null)}
+          onDrop={(e) => handleDrop(e, col.status)}
+        >
           {/* Column Header */}
           <div className={cn("rounded-xl border p-3 mb-3", STATUS_HEADER_COLORS[col.status])}>
             <div className="flex items-center gap-2 mb-1">
@@ -346,7 +378,7 @@ function BoardView({ prospects, onMoveStatus, onDelete }: {
 
             {col.items.length === 0 && (
               <div className="rounded-xl border border-dashed border-border/30 p-6 text-center">
-                <p className="text-xs text-muted-foreground/40">No prospects</p>
+                <p className="text-xs text-muted-foreground/40">Drop here</p>
               </div>
             )}
           </div>
