@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, Building2, Home, MapPin,
   ArrowUpDown, SlidersHorizontal, X, TrendingUp,
-  DollarSign, BarChart3, Filter, ChevronDown,
+  DollarSign, BarChart3, Filter, ChevronDown, ChevronRight, AlertTriangle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -20,10 +20,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSyncedDeals, SyncedDeal } from '@/hooks/useSyncedDeals';
+import { useSyncedTransactions } from '@/hooks/usePlatformConnections';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { formatCurrency, formatCurrencyCompact } from '@/lib/format';
 import { triggerHaptic } from '@/lib/haptics';
 import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
+import { MissingInfoDialog, getDealsWithMissingInfo } from '@/components/deals/MissingInfoDialog';
 import { cn } from '@/lib/utils';
 
 type SortKey = 'date-desc' | 'date-asc' | 'close-desc' | 'close-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
@@ -89,7 +91,9 @@ function getSortFn(key: SortKey) {
 
 export default function DealsPage() {
   const { activeDeals, closedDeals, listings } = useSyncedDeals();
+  const { data: syncedTransactions = [] } = useSyncedTransactions();
   const refreshData = useRefreshData();
+  const location = useLocation();
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('active');
@@ -98,6 +102,21 @@ export default function DealsPage() {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [collapsedMonths, setCollapsedMonths] = useState<Set<string>>(new Set());
+  const [showMissingInfo, setShowMissingInfo] = useState(false);
+
+  const dealsWithMissingInfo = useMemo(
+    () => getDealsWithMissingInfo(syncedTransactions),
+    [syncedTransactions]
+  );
+
+  // Show dialog when returning from new deal page or on first load with missing info
+  useEffect(() => {
+    if (dealsWithMissingInfo.length > 0 && location.state?.fromNewDeal) {
+      setShowMissingInfo(true);
+      // Clear the state so it doesn't re-trigger
+      window.history.replaceState({}, '');
+    }
+  }, [dealsWithMissingInfo, location.state]);
 
   const hasActiveFilters = !!minAmount || !!maxAmount;
 
@@ -241,6 +260,27 @@ export default function DealsPage() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* ── Missing Info Banner ── */}
+              {dealsWithMissingInfo.length > 0 && (
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => { triggerHaptic('light'); setShowMissingInfo(true); }}
+                  className="w-full flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5 text-left transition-colors hover:bg-amber-500/10"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {dealsWithMissingInfo.length} deal{dealsWithMissingInfo.length > 1 ? 's' : ''} missing info
+                    </p>
+                    <p className="text-xs text-muted-foreground">Tap to update lead source & buyer type</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                </motion.button>
+              )}
 
               {/* ── Toolbar: Tabs + Search + Sort + Filter ── */}
               <div className="space-y-3">
@@ -491,6 +531,11 @@ export default function DealsPage() {
           </div>
         </PullToRefresh>
       </div>
+      <MissingInfoDialog
+        open={showMissingInfo}
+        onOpenChange={setShowMissingInfo}
+        deals={dealsWithMissingInfo}
+      />
     </AppLayout>
   );
 }

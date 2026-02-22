@@ -129,7 +129,7 @@ export default function NewDealPage() {
 
     try {
       const deal = await createDeal.mutateAsync(formData as DealFormData);
-      navigate(`/deals/${deal.id}`);
+      navigate(`/deals/${deal.id}`, { state: { fromNewDeal: true } });
     } catch (error) {
       // Error handled by mutation
     }
