@@ -11,6 +11,7 @@ import { format, startOfMonth, endOfMonth, eachMonthOfInterval, isWithinInterval
 import { getEffectiveCommission } from '@/hooks/useAnalyticsData';
 
 type Grouping = 'monthly' | 'quarterly';
+type Metric = 'deals' | 'gci';
 
 interface DealsWrittenCardProps {
   syncedTransactions: any[];
@@ -32,7 +33,11 @@ const ChartTooltip = ({ active, payload, label }: any) => {
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
               {entry.name}
             </span>
-            <span className="font-bold">{entry.value}</span>
+            <span className="font-bold">
+              {typeof entry.value === 'number' && entry.value > 100
+                ? formatCurrency(entry.value)
+                : entry.value}
+            </span>
           </p>
         ))}
       </div>
@@ -134,6 +139,7 @@ function buildYoYData(monthlyData: ReturnType<typeof useDealsWrittenData>, group
 
 export function DealsWrittenCard({ syncedTransactions, compact = false }: DealsWrittenCardProps) {
   const [grouping, setGrouping] = useState<Grouping>('monthly');
+  const [metric, setMetric] = useState<Metric>('deals');
   const monthlyData = useDealsWrittenData(syncedTransactions);
 
   const currentYear = new Date().getFullYear();
@@ -172,21 +178,39 @@ export function DealsWrittenCard({ syncedTransactions, compact = false }: DealsW
             {currentYear} vs {prevYear} · By firm date
           </p>
         </div>
-        <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg">
-          {(['monthly', 'quarterly'] as Grouping[]).map(g => (
-            <button
-              key={g}
-              onClick={() => setGrouping(g)}
-              className={cn(
-                "px-2 py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all",
-                grouping === g
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {g === 'monthly' ? 'Monthly' : 'Quarterly'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg">
+            {(['deals', 'gci'] as Metric[]).map(m => (
+              <button
+                key={m}
+                onClick={() => setMetric(m)}
+                className={cn(
+                  "px-2 py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all",
+                  metric === m
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {m === 'deals' ? 'Deals' : 'GCI'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg">
+            {(['monthly', 'quarterly'] as Grouping[]).map(g => (
+              <button
+                key={g}
+                onClick={() => setGrouping(g)}
+                className={cn(
+                  "px-2 py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all",
+                  grouping === g
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {g === 'monthly' ? 'Monthly' : 'Quarterly'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -231,10 +255,29 @@ export function DealsWrittenCard({ syncedTransactions, compact = false }: DealsW
           <BarChart data={yoyData} barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: compact ? 9 : 10 }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} allowDecimals={false} width={25} />
+            <YAxis
+              tick={{ fontSize: 10 }}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+              width={metric === 'gci' ? 50 : 25}
+              tickFormatter={metric === 'gci' ? (v) => `$${(v / 1000).toFixed(0)}k` : undefined}
+            />
             <Tooltip content={<ChartTooltip />} />
-            <Bar dataKey={String(prevYear)} name={String(prevYear)} fill={PREV_COLOR} radius={[3, 3, 0, 0]} opacity={0.35} />
-            <Bar dataKey={String(currentYear)} name={String(currentYear)} fill={CURRENT_COLOR} radius={[3, 3, 0, 0]} opacity={0.85} />
+            <Bar
+              dataKey={metric === 'gci' ? `${prevYear}_gci` : String(prevYear)}
+              name={String(prevYear)}
+              fill={PREV_COLOR}
+              radius={[3, 3, 0, 0]}
+              opacity={0.35}
+            />
+            <Bar
+              dataKey={metric === 'gci' ? `${currentYear}_gci` : String(currentYear)}
+              name={String(currentYear)}
+              fill={CURRENT_COLOR}
+              radius={[3, 3, 0, 0]}
+              opacity={0.85}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
