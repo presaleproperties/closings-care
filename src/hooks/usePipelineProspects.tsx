@@ -11,6 +11,7 @@ export interface PipelineProspect {
   potential_commission: number;
   status: string;
   temperature: string;
+  deal_type: string;
   notes: string | null;
   created_at: string;
   updated_at: string;

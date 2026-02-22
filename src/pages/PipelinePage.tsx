@@ -14,6 +14,12 @@ import { triggerHaptic } from '@/lib/haptics';
 const HOME_TYPES = ['Detached', 'Townhome', 'Condo', 'Pre-Sale', 'Semi-Detached', 'Commercial', 'Land', 'Other'];
 const STATUS_OPTIONS = ['active', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
+const DEAL_TYPE_OPTIONS = ['buyer', 'listing'];
+const DEAL_TYPE_LABELS: Record<string, string> = { buyer: 'Buyer', listing: 'Listing' };
+const DEAL_TYPE_COLORS: Record<string, string> = {
+  buyer: 'bg-sky-500/15 text-sky-600 border-sky-500/30',
+  listing: 'bg-violet-500/15 text-violet-600 border-violet-500/30',
+};
 
 const STATUS_LABELS: Record<string, string> = {
   active: 'Active',
@@ -141,11 +147,12 @@ function StatusCell({ status, onClick }: { status: string; onClick: () => void }
 }
 
 // ── Quick-add row ──────────────────────────────────────────────────────
-function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string }) => void }) {
+function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; deal_type: string }) => void }) {
   const [name, setName] = useState('');
   const [homeType, setHomeType] = useState('Detached');
   const [commission, setCommission] = useState('');
   const [temp, setTemp] = useState('warm');
+  const [dealType, setDealType] = useState('buyer');
   const nameRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
@@ -155,11 +162,13 @@ function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type
       home_type: homeType,
       potential_commission: parseFloat(commission) || 0,
       temperature: temp,
+      deal_type: dealType,
     });
     setName('');
     setCommission('');
     setHomeType('Detached');
     setTemp('warm');
+    setDealType('buyer');
     setTimeout(() => nameRef.current?.focus(), 50);
   };
 
@@ -177,6 +186,11 @@ function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type
           placeholder="Type client name to add..."
           className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm font-medium placeholder:text-muted-foreground/30"
         />
+      </div>
+      <div className="w-[90px] shrink-0 border-l border-border/20 px-1 py-1">
+        <select value={dealType} onChange={(e) => setDealType(e.target.value)} className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm text-muted-foreground">
+          {DEAL_TYPE_OPTIONS.map(t => <option key={t} value={t}>{DEAL_TYPE_LABELS[t]}</option>)}
+        </select>
       </div>
       <div className="flex-1 min-w-[130px] border-l border-border/20 px-1 py-1">
         <select value={homeType} onChange={(e) => setHomeType(e.target.value)} className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm text-muted-foreground">
@@ -221,7 +235,12 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{prospect.client_name}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{prospect.home_type}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}>
+              {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
+            </span>
+            <span className="text-xs text-muted-foreground">{prospect.home_type}</span>
+          </div>
         </div>
         <TempBadge temp={prospect.temperature || 'warm'} compact />
       </div>
@@ -508,6 +527,7 @@ export default function PipelinePage() {
                 <div className="w-10 shrink-0 px-3 py-3 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">#</div>
                 {[
                   { label: 'Client', width: 'flex-[2] min-w-[180px]' },
+                  { label: 'Type', width: 'w-[90px] shrink-0' },
                   { label: 'Property Type', width: 'flex-1 min-w-[130px]' },
                   { label: 'Est. Commission', width: 'flex-1 min-w-[140px]' },
                   { label: 'Temperature', width: 'flex-1 min-w-[100px]' },
@@ -550,6 +570,18 @@ export default function PipelinePage() {
 
                       <div className="flex-[2] min-w-[180px] border-l border-border/15">
                         <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                      </div>
+
+                      <div className="w-[90px] shrink-0 border-l border-border/15">
+                        {isEditing(p.id, 'deal_type') ? (
+                          <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
+                        ) : (
+                          <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
+                            <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                              {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-[130px] border-l border-border/15">
