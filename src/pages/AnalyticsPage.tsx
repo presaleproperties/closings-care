@@ -359,74 +359,205 @@ export default function AnalyticsPage() {
 
           {/* ═══ SOURCES ═══ */}
           <TabsContent value="sources" className="space-y-4">
-            <div className="grid lg:grid-cols-2 gap-4">
+            {/* Missing Data Banner */}
+            {(() => {
+              const missingLeadSource = filteredTransactions.filter(tx => !tx.lead_source).length;
+              const missingBuyerType = filteredTransactions.filter(tx => !tx.buyer_type).length;
+              const missingCity = filteredTransactions.filter(tx => !tx.city).length;
+              const totalMissing = missingLeadSource + missingBuyerType + missingCity;
+              if (totalMissing === 0) return null;
+              return (
+                <motion.div variants={itemVariants} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+                  <span className="text-amber-600 font-medium">⚠ {totalMissing} missing fields across your deals</span>
+                  <span className="text-muted-foreground">
+                    ({missingLeadSource > 0 && `${missingLeadSource} lead sources`}
+                    {missingBuyerType > 0 && `${missingLeadSource > 0 ? ', ' : ''}${missingBuyerType} buyer types`}
+                    {missingCity > 0 && `${(missingLeadSource + missingBuyerType) > 0 ? ', ' : ''}${missingCity} cities`})
+                  </span>
+                  <a href="/deals" className="ml-auto text-primary font-semibold hover:underline whitespace-nowrap">Update Deals →</a>
+                </motion.div>
+              );
+            })()}
+
+            {/* Compact Breakdown Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Lead Sources */}
-              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
                   <PieChart className="w-3.5 h-3.5 text-primary" />
                   Lead Sources
                 </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Where your deals come from</p>
-
-                {leadSourceData.length > 0 ? (
-                  <div className="flex flex-col items-center">
-                    <div className="h-48 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartsPieChart>
-                          <Pie data={leadSourceData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={3} dataKey="count">
-                            {leadSourceData.map((_, i) => (
-                              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<ChartTooltip />} />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="w-full space-y-1.5 mt-2">
-                      {leadSourceData.map((source, i) => (
-                        <div key={source.name} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/30 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                            <span className="text-xs font-medium">{source.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{source.count} · {source.percentage.toFixed(0)}%</span>
-                          </div>
-                          <span className="text-xs font-semibold">{formatCurrency(source.gci)}</span>
+                {leadSourceData.filter(s => s.name !== 'Unknown').length > 0 ? (
+                  <div className="space-y-1.5">
+                    {leadSourceData.filter(s => s.name !== 'Unknown').slice(0, 5).map((source, i) => (
+                      <div key={source.name} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                          <span className="text-muted-foreground truncate max-w-[80px]">{source.name}</span>
                         </div>
-                      ))}
-                    </div>
+                        <span className="font-semibold">{source.count}</span>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-8 text-sm">No lead source data</p>
+                  <p className="text-[11px] text-muted-foreground py-3">
+                    <a href="/deals" className="text-primary hover:underline">Add lead sources</a> to your deals
+                  </p>
                 )}
               </motion.div>
 
-              {/* City Distribution */}
-              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
+              {/* Property Types (Presale vs Resale) */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                  <Building2 className="w-3.5 h-3.5 text-primary" />
+                  Property Types
+                </h3>
+                {presaleResaleData.presale.count + presaleResaleData.resale.count > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="text-muted-foreground">Presale</span>
+                      </div>
+                      <span className="font-semibold">{presaleResaleData.presale.count}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-muted-foreground">Resale</span>
+                      </div>
+                      <span className="font-semibold">{presaleResaleData.resale.count}</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(presaleResaleData.presale.count / (presaleResaleData.presale.count + presaleResaleData.resale.count)) * 100}%` }} />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground py-3">No data yet</p>
+                )}
+              </motion.div>
+
+              {/* Client Type (Buyer vs Seller) */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                  <UserCheck className="w-3.5 h-3.5 text-primary" />
+                  Client Type
+                </h3>
+                {(() => {
+                  const buyers = filteredTransactions.filter(tx => !tx.is_listing).length;
+                  const sellers = filteredTransactions.filter(tx => tx.is_listing).length;
+                  const total = buyers + sellers;
+                  if (total === 0) return <p className="text-[11px] text-muted-foreground py-3">No data yet</p>;
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(217, 91%, 60%)' }} />
+                          <span className="text-muted-foreground">Buyers</span>
+                        </div>
+                        <span className="font-semibold">{buyers}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(38, 92%, 50%)' }} />
+                          <span className="text-muted-foreground">Sellers</span>
+                        </div>
+                        <span className="font-semibold">{sellers}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                        <div className="h-full rounded-full" style={{ width: `${(buyers / total) * 100}%`, backgroundColor: 'hsl(217, 91%, 60%)' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </motion.div>
+
+              {/* Buyer Type */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  Buyer Type
+                </h3>
+                {(() => {
+                  const types: Record<string, number> = {};
+                  filteredTransactions.forEach(tx => {
+                    const t = tx.buyer_type || null;
+                    if (t) types[t] = (types[t] || 0) + 1;
+                  });
+                  const entries = Object.entries(types).sort((a, b) => b[1] - a[1]);
+                  if (entries.length === 0) return (
+                    <p className="text-[11px] text-muted-foreground py-3">
+                      <a href="/deals" className="text-primary hover:underline">Add buyer types</a> to your deals
+                    </p>
+                  );
+                  return (
+                    <div className="space-y-1.5">
+                      {entries.map(([name, count], i) => (
+                        <div key={name} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                            <span className="text-muted-foreground">{name}</span>
+                          </div>
+                          <span className="font-semibold">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </motion.div>
+
+              {/* Cities */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
                   Cities
                 </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Click a city to filter</p>
+                {cityData.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {cityData.slice(0, 5).map((city, i) => (
+                      <div key={city.name} className="flex items-center justify-between text-xs cursor-pointer hover:bg-muted/30 rounded px-1 -mx-1 py-0.5" onClick={() => setCityFilter(city.name)}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                          <span className="text-muted-foreground truncate max-w-[80px]">{city.name}</span>
+                        </div>
+                        <span className="font-semibold">{city.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground py-3">No data yet</p>
+                )}
+              </motion.div>
 
-                <div className="h-[calc(100%-3rem)] min-h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={cityData}
-                      layout="vertical"
-                      onClick={(state: any) => {
-                        if (state?.activeTooltipIndex !== undefined && cityData[state.activeTooltipIndex]) {
-                          setCityFilter(cityData[state.activeTooltipIndex].name);
-                        }
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                      <Tooltip content={<ChartTooltip />} />
-                      <Bar dataKey="value" name="Deals" fill="hsl(217, 91%, 60%)" radius={[0, 6, 6, 0]} style={{ cursor: 'pointer' }} opacity={0.85} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Solo vs Team */}
+              <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
+                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                  Solo vs Team
+                </h3>
+                {metrics.soloDeals + metrics.teamDeals > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(158, 64%, 42%)' }} />
+                        <span className="text-muted-foreground">Solo</span>
+                      </div>
+                      <span className="font-semibold">{metrics.soloDeals}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(217, 91%, 60%)' }} />
+                        <span className="text-muted-foreground">Team</span>
+                      </div>
+                      <span className="font-semibold">{metrics.teamDeals}</span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                      <div className="h-full rounded-full" style={{ width: `${(metrics.soloDeals / (metrics.soloDeals + metrics.teamDeals)) * 100}%`, backgroundColor: 'hsl(158, 64%, 42%)' }} />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground py-3">No data yet</p>
+                )}
               </motion.div>
             </div>
 
