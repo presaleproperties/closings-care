@@ -36,6 +36,7 @@ import { useSyncedIncome } from '@/hooks/useSyncedIncome';
 import { usePipelineProspects } from '@/hooks/usePipelineProspects';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 import { GCIGoalTracker } from '@/components/dashboard/GCIGoalTracker';
+import { DealsWrittenCard } from '@/components/dashboard/DealsWrittenCard';
 import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -285,6 +286,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="analytics" className="px-5 space-y-3 mt-0">
+                <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
                 <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
@@ -372,6 +374,7 @@ export default function DashboardPage() {
 
               {/* Analytics Tab */}
               <TabsContent value="analytics" className="mt-0 space-y-5">
+                <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
                 <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
