@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 
-const HOME_TYPES = ['Detached', 'Townhome', 'Condo', 'Pre-Sale', 'Semi-Detached', 'Commercial', 'Land', 'Other'];
+const HOME_TYPES = ['Detached', 'Townhome', 'Condo', 'Pre-Sale'];
 const STATUS_OPTIONS = ['active', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
 const DEAL_TYPE_OPTIONS = ['buyer', 'listing'];
