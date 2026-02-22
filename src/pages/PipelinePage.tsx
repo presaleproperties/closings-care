@@ -6,7 +6,7 @@ import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { useRefreshData } from '@/hooks/useRefreshData';
 import { usePipelineProspects, useAddProspect, useUpdateProspect, useDeleteProspect, PipelineProspect } from '@/hooks/usePipelineProspects';
 import { formatCurrency } from '@/lib/format';
-import { Plus, Trash2, Users, Flame, Thermometer, Snowflake, TrendingUp, List, LayoutGrid, ChevronRight, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Users, Flame, Thermometer, Snowflake, TrendingUp, List, LayoutGrid, ChevronRight, ArrowRight, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
@@ -393,14 +393,30 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   onUpdate: (id: string, field: string, value: string) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [dragColSource, setDragColSource] = useState<string | null>(null);
+  const [dragOverColTarget, setDragOverColTarget] = useState<string | null>(null);
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('pipeline-col-order');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const allStatuses = [...STATUS_OPTIONS];
+        const valid = parsed.filter((s: string) => (allStatuses as readonly string[]).includes(s));
+        const missing = allStatuses.filter(s => !valid.includes(s));
+        return [...valid, ...missing];
+      } catch { /* fall through */ }
+    }
+    return [...STATUS_OPTIONS];
+  });
+
   const columns = useMemo(() => {
-    return STATUS_OPTIONS.map(status => ({
+    return columnOrder.map(status => ({
       status,
       label: STATUS_LABELS[status],
       items: prospects.filter(p => p.status === status),
       total: prospects.filter(p => p.status === status).reduce((s, p) => s + Number(p.potential_commission), 0),
     }));
-  }, [prospects]);
+  }, [prospects, columnOrder]);
 
   const handleDragOver = (e: React.DragEvent, status: string) => {
     e.preventDefault();
@@ -411,11 +427,48 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   const handleDrop = (e: React.DragEvent, status: string) => {
     e.preventDefault();
     setDragOverCol(null);
+    const dragType = e.dataTransfer.getData('drag-type');
+    if (dragType === 'column') return;
     const prospectId = e.dataTransfer.getData('text/plain');
     if (prospectId) {
       triggerHaptic('light');
       onMoveStatus(prospectId, status);
     }
+  };
+
+  const handleColDragStart = (e: React.DragEvent, status: string) => {
+    e.dataTransfer.setData('drag-type', 'column');
+    e.dataTransfer.setData('col-status', status);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragColSource(status);
+  };
+
+  const handleColDragOver = (e: React.DragEvent, status: string) => {
+    if (!dragColSource) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColTarget(status);
+  };
+
+  const handleColDrop = (e: React.DragEvent, targetStatus: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourceStatus = e.dataTransfer.getData('col-status');
+    if (sourceStatus && sourceStatus !== targetStatus) {
+      setColumnOrder(prev => {
+        const newOrder = [...prev];
+        const fromIdx = newOrder.indexOf(sourceStatus);
+        const toIdx = newOrder.indexOf(targetStatus);
+        newOrder.splice(fromIdx, 1);
+        newOrder.splice(toIdx, 0, sourceStatus);
+        localStorage.setItem('pipeline-col-order', JSON.stringify(newOrder));
+        return newOrder;
+      });
+      triggerHaptic('medium');
+    }
+    setDragColSource(null);
+    setDragOverColTarget(null);
   };
 
   return (
@@ -425,21 +478,36 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
           key={col.status}
           className={cn(
             "flex flex-col min-h-[200px] rounded-2xl transition-all duration-200 p-1 -m-1",
-            dragOverCol === col.status && "bg-primary/5 ring-2 ring-primary/20 ring-dashed"
+            dragOverCol === col.status && !dragColSource && "bg-primary/5 ring-2 ring-primary/20 ring-dashed",
+            dragOverColTarget === col.status && dragColSource && "ring-2 ring-primary/30 bg-primary/5"
           )}
-          onDragOver={(e) => handleDragOver(e, col.status)}
-          onDragLeave={() => setDragOverCol(null)}
-          onDrop={(e) => handleDrop(e, col.status)}
+          onDragOver={(e) => {
+            if (dragColSource) { handleColDragOver(e, col.status); } else { handleDragOver(e, col.status); }
+          }}
+          onDragLeave={() => { setDragOverCol(null); setDragOverColTarget(null); }}
+          onDrop={(e) => {
+            if (dragColSource) { handleColDrop(e, col.status); } else { handleDrop(e, col.status); }
+          }}
         >
-          {/* Column Header */}
-          <div className={cn("rounded-xl border p-3 mb-3", STATUS_HEADER_COLORS[col.status])}>
+          {/* Column Header - draggable */}
+          <div
+            draggable
+            onDragStart={(e) => handleColDragStart(e, col.status)}
+            onDragEnd={() => { setDragColSource(null); setDragOverColTarget(null); }}
+            className={cn(
+              "rounded-xl border p-3 mb-3 cursor-grab active:cursor-grabbing select-none",
+              STATUS_HEADER_COLORS[col.status],
+              dragColSource === col.status && "opacity-50"
+            )}
+          >
             <div className="flex items-center gap-2 mb-1">
+              <GripVertical className="h-3 w-3 text-muted-foreground/40" />
               <div className={cn("w-2 h-2 rounded-full", STATUS_DOT_COLORS[col.status])} />
               <span className="text-sm font-bold">{col.label}</span>
               <span className="text-xs text-muted-foreground ml-auto">{col.items.length}</span>
             </div>
             {col.total > 0 && (
-              <p className="text-xs text-muted-foreground font-medium">{formatCurrency(col.total)}</p>
+              <p className="text-xs text-muted-foreground font-medium pl-5">{formatCurrency(col.total)}</p>
             )}
           </div>
 
@@ -457,7 +525,7 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
               </div>
             )}
 
-            {/* Quick Add - directly below last tile */}
+            {/* Quick Add */}
             <BoardQuickAdd status={col.status} onAdd={onAdd} />
           </div>
         </div>
