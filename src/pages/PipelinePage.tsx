@@ -11,12 +11,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const HOME_TYPES = ['Detached', 'Townhome', 'Condo', 'Pre-Sale', 'Semi-Detached', 'Commercial', 'Land', 'Other'];
-const STATUS_OPTIONS = ['active', 'won', 'lost', 'on-hold'];
+const STATUS_OPTIONS = ['active', 'in-contract', 'closed', 'lost'];
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
 
 // ── Inline editable cell ──────────────────────────────────────────────
 function InlineCell({
-  value, isEditing, onStartEdit, onSave, type = 'text', options, className, placeholder,
+  value, isEditing, onStartEdit, onSave, type = 'text', options, optionLabels, className, placeholder,
 }: {
   value: string | number | null;
   isEditing: boolean;
@@ -24,6 +24,7 @@ function InlineCell({
   onSave: (val: string) => void;
   type?: 'text' | 'number' | 'select';
   options?: string[];
+  optionLabels?: Record<string, string>;
   className?: string;
   placeholder?: string;
 }) {
@@ -49,7 +50,7 @@ function InlineCell({
           onBlur={commit}
           className="w-full h-full bg-card border-0 outline-none ring-2 ring-primary/50 rounded-lg px-3 py-2 text-sm font-medium"
         >
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
+          {options.map(o => <option key={o} value={o}>{optionLabels?.[o] || o}</option>)}
         </select>
       );
     }
@@ -101,15 +102,22 @@ function TempBadge({ temp, onClick }: { temp: string; onClick: () => void }) {
 function StatusCell({ status, onClick }: { status: string; onClick: () => void }) {
   const colors: Record<string, string> = {
     active: 'bg-primary/15 text-primary border-primary/30',
-    won: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
+    'in-contract': 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+    closed: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
     lost: 'bg-destructive/15 text-destructive border-destructive/30',
-    'on-hold': 'bg-muted text-muted-foreground border-border',
+  };
+
+  const labels: Record<string, string> = {
+    active: 'Active',
+    'in-contract': 'In Contract',
+    closed: 'Closed',
+    lost: 'Lost',
   };
 
   return (
     <div onClick={onClick} className="px-3 py-2 cursor-pointer">
       <span className={cn("inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border capitalize", colors[status] || colors.active)}>
-        {status}
+        {labels[status] || status}
       </span>
     </div>
   );
@@ -223,7 +231,7 @@ export default function PipelinePage() {
   const refreshData = useRefreshData();
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
 
-  const activeProspects = prospects.filter(p => p.status === 'active');
+  const activeProspects = prospects.filter(p => p.status === 'active' || p.status === 'in-contract');
   const totalPotential = activeProspects.reduce((sum, p) => sum + Number(p.potential_commission), 0);
   const hotCount = prospects.filter(p => p.temperature === 'hot' && p.status === 'active').length;
 
@@ -419,6 +427,7 @@ export default function PipelinePage() {
                           value={p.status} isEditing onStartEdit={() => {}}
                           onSave={(v) => handleSave(p.id, 'status', v)}
                           type="select" options={STATUS_OPTIONS}
+                          optionLabels={{ active: 'Active', 'in-contract': 'In Contract', closed: 'Closed', lost: 'Lost' }}
                         />
                       ) : (
                         <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
