@@ -242,8 +242,8 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-foreground truncate">{prospect.client_name}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}>
-              {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
+            <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border capitalize", STATUS_COLORS[prospect.status] || STATUS_COLORS.active)}>
+              {STATUS_LABELS[prospect.status] || prospect.status}
             </span>
             <span className="text-xs text-muted-foreground">{prospect.home_type}</span>
           </div>
@@ -311,55 +311,65 @@ function BoardCard({ prospect, onMoveStatus, onDelete }: {
   );
 }
 
-// ── Board View ──────────────────────────────────────────────────────────
-function BoardView({ prospects, onMoveStatus, onDelete }: {
+// ── Board View (grouped by deal type: Buyer / Listing) ─────────────────
+const BOARD_TYPE_HEADER_COLORS: Record<string, string> = {
+  buyer: 'border-sky-500/40 bg-sky-500/5',
+  listing: 'border-violet-500/40 bg-violet-500/5',
+};
+const BOARD_TYPE_DOT_COLORS: Record<string, string> = {
+  buyer: 'bg-sky-500',
+  listing: 'bg-violet-500',
+};
+
+function BoardView({ prospects, onMoveStatus, onMoveDealType, onDelete }: {
   prospects: PipelineProspect[];
   onMoveStatus: (id: string, status: string) => void;
+  onMoveDealType: (id: string, dealType: string) => void;
   onDelete: (id: string) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const columns = useMemo(() => {
-    return STATUS_OPTIONS.map(status => ({
-      status,
-      label: STATUS_LABELS[status],
-      items: prospects.filter(p => p.status === status),
-      total: prospects.filter(p => p.status === status).reduce((s, p) => s + Number(p.potential_commission), 0),
+    return DEAL_TYPE_OPTIONS.map(dt => ({
+      dealType: dt,
+      label: DEAL_TYPE_LABELS[dt],
+      items: prospects.filter(p => (p.deal_type || 'buyer') === dt),
+      total: prospects.filter(p => (p.deal_type || 'buyer') === dt).reduce((s, p) => s + Number(p.potential_commission), 0),
     }));
   }, [prospects]);
 
-  const handleDragOver = (e: React.DragEvent, status: string) => {
+  const handleDragOver = (e: React.DragEvent, dealType: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    setDragOverCol(status);
+    setDragOverCol(dealType);
   };
 
-  const handleDrop = (e: React.DragEvent, status: string) => {
+  const handleDrop = (e: React.DragEvent, dealType: string) => {
     e.preventDefault();
     setDragOverCol(null);
     const prospectId = e.dataTransfer.getData('text/plain');
     if (prospectId) {
       triggerHaptic('light');
-      onMoveStatus(prospectId, status);
+      onMoveDealType(prospectId, dealType);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {columns.map(col => (
         <div
-          key={col.status}
+          key={col.dealType}
           className={cn(
             "flex flex-col min-h-[200px] rounded-2xl transition-all duration-200 p-1 -m-1",
-            dragOverCol === col.status && "bg-primary/5 ring-2 ring-primary/20 ring-dashed"
+            dragOverCol === col.dealType && "bg-primary/5 ring-2 ring-primary/20 ring-dashed"
           )}
-          onDragOver={(e) => handleDragOver(e, col.status)}
+          onDragOver={(e) => handleDragOver(e, col.dealType)}
           onDragLeave={() => setDragOverCol(null)}
-          onDrop={(e) => handleDrop(e, col.status)}
+          onDrop={(e) => handleDrop(e, col.dealType)}
         >
           {/* Column Header */}
-          <div className={cn("rounded-xl border p-3 mb-3", STATUS_HEADER_COLORS[col.status])}>
+          <div className={cn("rounded-xl border p-3 mb-3", BOARD_TYPE_HEADER_COLORS[col.dealType])}>
             <div className="flex items-center gap-2 mb-1">
-              <div className={cn("w-2 h-2 rounded-full", STATUS_DOT_COLORS[col.status])} />
+              <div className={cn("w-2 h-2 rounded-full", BOARD_TYPE_DOT_COLORS[col.dealType])} />
               <span className="text-sm font-bold">{col.label}</span>
               <span className="text-xs text-muted-foreground ml-auto">{col.items.length}</span>
             </div>
@@ -542,6 +552,7 @@ export default function PipelinePage() {
               <BoardView
                 prospects={prospects}
                 onMoveStatus={handleMoveStatus}
+                onMoveDealType={(id, dealType) => updateProspect.mutate({ id, deal_type: dealType })}
                 onDelete={(id) => deleteProspect.mutate(id)}
               />
             )}
