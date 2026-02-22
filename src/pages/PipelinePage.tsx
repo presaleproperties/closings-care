@@ -546,9 +546,9 @@ export default function PipelinePage() {
     return (localStorage.getItem('pipeline-view') as ViewMode) || 'list';
   });
 
-  const activeProspects = prospects.filter(p => p.status === 'active' || p.status === 'in-contract');
+  const activeProspects = prospects.filter(p => p.status === 'active' || p.status === 'in-contract' || p.status === 'listings');
   const totalPotential = activeProspects.reduce((sum, p) => sum + Number(p.potential_commission), 0);
-  const hotCount = prospects.filter(p => p.temperature === 'hot' && p.status === 'active').length;
+  const hotCount = prospects.filter(p => p.temperature === 'hot' && (p.status === 'active' || p.status === 'listings')).length;
 
   const handleSave = useCallback((id: string, field: string, value: string) => {
     setEditingCell(null);
@@ -559,7 +559,12 @@ export default function PipelinePage() {
     if (field === 'potential_commission') parsed = parseFloat(value) || 0;
     if (String((prospect as any)[field]) === String(parsed)) return;
 
-    updateProspect.mutate({ id, [field]: parsed } as any);
+    // Auto-set deal_type to 'seller' when status changed to 'listings'
+    if (field === 'status' && value === 'listings') {
+      updateProspect.mutate({ id, status: value, deal_type: 'seller' } as any);
+    } else {
+      updateProspect.mutate({ id, [field]: parsed } as any);
+    }
   }, [prospects, updateProspect]);
 
   const handleMoveStatus = useCallback((id: string, status: string) => {
