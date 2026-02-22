@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { DealsWrittenCard } from '@/components/dashboard/DealsWrittenCard';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, DollarSign, Building2, Target,
@@ -468,6 +469,11 @@ export default function AnalyticsPage() {
 
           {/* ═══ DEAL FLOW ═══ */}
           <TabsContent value="deals" className="space-y-4">
+            {/* Deals Written Tracker */}
+            <motion.div variants={itemVariants}>
+              <DealsWrittenCard syncedTransactions={filteredTransactions} />
+            </motion.div>
+
             <div className="grid lg:grid-cols-2 gap-4">
               {/* Deals by Month */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
