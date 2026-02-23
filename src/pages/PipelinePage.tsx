@@ -787,12 +787,24 @@ export default function PipelinePage() {
                           >
                             <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
                             <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground line-through decoration-muted-foreground/30">{p.client_name}</div>
-                            <div className="flex-1 min-w-[100px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground">{p.home_type}</div>
+                            <div className="flex-1 min-w-[100px] border-l border-border/10">
+                              {isEditing(p.id, 'home_type') ? (
+                                <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
+                              ) : (
+                                <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
+                              )}
+                            </div>
                             <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-emerald-600">{formatCurrency(p.potential_commission)}</div>
-                            <div className="w-[80px] shrink-0 border-l border-border/10 px-3 py-2">
-                              <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
-                                {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
-                              </span>
+                            <div className="w-[80px] shrink-0 border-l border-border/10">
+                              {isEditing(p.id, 'deal_type') ? (
+                                <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
+                              ) : (
+                                <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
+                                  <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                                    {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.notes || '—'}</div>
                             <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
