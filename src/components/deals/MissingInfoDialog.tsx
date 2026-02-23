@@ -130,8 +130,8 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
           >
             {/* Deal identifier */}
             <div className="rounded-xl border border-border/50 bg-muted/30 p-3">
-              <p className="font-semibold text-sm text-foreground truncate">{address}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{current.clientName}</p>
+              <p className="font-semibold text-sm text-foreground">{current.clientName || 'Unknown Client'}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{address}</p>
               <div className="flex items-center gap-1.5 mt-2">
                 <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
                   {currentIndex + 1} of {deals.length}
