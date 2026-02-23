@@ -633,7 +633,7 @@ export default function PipelinePage() {
             ) : (
               <>
                 {([
-                  { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.home_type === 'Presale' },
+                  { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type === 'Presale' },
                   { key: 'buyer', label: 'Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', badgeClass: DEAL_TYPE_COLORS['buyer'], dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
                   { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', badgeClass: DEAL_TYPE_COLORS['seller'], dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
                 ]).map(group => {
@@ -742,7 +742,7 @@ export default function PipelinePage() {
 
                 {/* ── Closed Deals Section ── */}
                 {(() => {
-                  const closedItems = [...prospects].reverse().filter(p => p.status === 'closed' && p.home_type !== 'Presale');
+                  const closedItems = [...prospects].reverse().filter(p => p.status === 'closed');
                   if (closedItems.length === 0) return null;
                   const closedGCI = closedItems.reduce((s, p) => s + Number(p.potential_commission), 0);
                   return (
