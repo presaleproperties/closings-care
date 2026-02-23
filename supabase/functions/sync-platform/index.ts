@@ -152,15 +152,24 @@ function buildTransactionRecord(tx: any, userId: string, agentName: string, yent
 
   // Extract new enriched fields
   const enriched = extractTransactionFields(tx, yentaId)
+  // Only include lead_source and buyer_type from ReZen if they have actual values.
+  // This prevents overwriting user-edited values with null on re-sync.
+  const userEditableFields: Record<string, string> = {}
+  if (enriched.lead_source) userEditableFields.lead_source = enriched.lead_source
+  // ReZen doesn't provide buyer_type, so never overwrite it
+  // city: only overwrite if ReZen provides a non-empty value
+  const cityValue = address.city || ''
 
-  return {
+  // Remove lead_source from enriched since we handle it separately
+  const { lead_source: _ls, ...enrichedSafe } = enriched
+
+  const record: Record<string, any> = {
     user_id: userId,
     platform: 'real_broker',
     external_id: externalId,
     transaction_type: tx.transactionType || tx.dealType || tx.type || 'unknown',
     client_name: clientName,
     property_address: fullAddress || '',
-    city: address.city || '',
     sale_price: salePrice,
     commission_amount: commission,
     close_date: closeDate,
@@ -169,8 +178,14 @@ function buildTransactionRecord(tx: any, userId: string, agentName: string, yent
     agent_name: agentName,
     raw_data: tx,
     synced_at: new Date().toISOString(),
-    ...enriched,
+    ...enrichedSafe,
+    ...userEditableFields,
   }
+
+  // Only include city if ReZen provides a non-empty value
+  if (cityValue) record.city = cityValue
+
+  return record
 }
 
 // ─── Sync Real Broker ─────────────────────────────────────────────────────────
