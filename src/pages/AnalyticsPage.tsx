@@ -203,14 +203,14 @@ export default function AnalyticsPage() {
               <div className="p-1 sm:p-1.5 rounded-lg bg-primary/15">
                 <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
               </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Deals</span>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">All Deals</span>
             </div>
             <div className="flex items-baseline gap-2">
               <AnimatedNumber value={metrics.totalDeals} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1} />
               <ChangeIndicator current={metrics.totalDeals} previous={previousMetrics.totalDeals} />
             </div>
             <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
-              {metrics.closedDeals} closed · {metrics.activeDeals} active
+              {metrics.closedDeals} closed · {metrics.activeDeals} pending
             </p>
           </div>
 
@@ -220,13 +220,13 @@ export default function AnalyticsPage() {
               <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
                 <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
               </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Earned</span>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Earned (Closed)</span>
             </div>
             <div className="flex items-baseline gap-2">
               <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600" duration={1.2} />
               <ChangeIndicator current={metrics.closedEffectiveCommission} previous={previousMetrics.totalGCI} />
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">From {metrics.closedDeals} closed</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">From {metrics.closedDeals} closed deals</p>
           </div>
 
           {/* Pipeline */}
@@ -235,10 +235,10 @@ export default function AnalyticsPage() {
               <div className="p-1 sm:p-1.5 rounded-lg bg-blue-500/20">
                 <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
               </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pipeline</span>
+              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</span>
             </div>
             <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{metrics.activeDeals} pending</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{metrics.activeDeals} pending deals</p>
           </div>
 
           {/* Avg Sale Price */}
@@ -288,7 +288,7 @@ export default function AnalyticsPage() {
                     <TrendingUp className="w-3.5 h-3.5 text-primary" />
                     GCI Trend
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Monthly + cumulative effective commission</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Monthly + cumulative effective commission (all deals)</p>
                 </div>
               </div>
               <div className="h-52 sm:h-64 lg:h-72">
@@ -341,7 +341,7 @@ export default function AnalyticsPage() {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-2xl font-bold">{type.count}</p>
-                      <p className="text-[10px] text-muted-foreground">Deals</p>
+                      <p className="text-[10px] text-muted-foreground">All Deals</p>
                     </div>
                     <div>
                       <p className="text-lg font-bold text-primary">{formatCurrency(type.gci)}</p>
@@ -565,7 +565,7 @@ export default function AnalyticsPage() {
             <motion.div variants={itemVariants} className="landing-card overflow-hidden">
               <div className="p-3 sm:p-4 border-b border-border">
                 <h3 className="text-xs sm:text-sm font-semibold">City Performance</h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Average price & commission by market</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Average price & commission by market (all deals)</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-border/30">
                 {cityData.map(city => (
@@ -576,7 +576,7 @@ export default function AnalyticsPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-semibold text-sm">{city.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{city.value} deals</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{city.value} total deals</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs">
                       <div>
@@ -643,7 +643,7 @@ export default function AnalyticsPage() {
                   <DollarSign className="w-3.5 h-3.5 text-primary" />
                   Monthly GCI
                 </h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Commission earned by month</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Commission earned from closed deals</p>
                 <div className="h-56 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dealsByMonth}>

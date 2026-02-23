@@ -406,8 +406,8 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [], syncedTr
             <BarChart3 className="h-5 w-5 text-primary" />
             Business Analytics
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track your performance across all business metrics
+           <p className="text-sm text-muted-foreground mt-1">
+            All deals (written &amp; closed) · By close date
           </p>
         </div>
         
@@ -436,13 +436,13 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [], syncedTr
           icon={Briefcase}
           label="Total Deals"
           value={analytics.totalDeals.toString()}
-          subValue={`${analytics.closedDeals} closed · ${analytics.pendingDeals} pending`}
+          subValue={`${analytics.closedDeals} closed · ${analytics.pendingDeals} pending (all statuses)`}
         />
         <StatCard
           icon={DollarSign}
           label="Total GCI"
           value={formatCurrency(analytics.totalExpectedCommission)}
-          subValue={`${formatCurrency(analytics.totalRevenue)} received`}
+          subValue={`${formatCurrency(analytics.totalRevenue)} received (closed)`}
           color="primary"
         />
         <StatCard
@@ -467,7 +467,7 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [], syncedTr
           <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
             <Calendar className="h-4 w-4 text-primary" />
           </div>
-          <h3 className="font-semibold">Monthly Performance</h3>
+          <h3 className="font-semibold">Monthly Performance <span className="text-xs font-normal text-muted-foreground">(by close date)</span></h3>
         </div>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
