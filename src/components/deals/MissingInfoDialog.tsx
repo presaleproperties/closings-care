@@ -25,6 +25,7 @@ interface DealMissingInfo {
   clientName: string;
   leadSource: string | null;
   buyerType: string | null;
+  city: string | null;
 }
 
 interface MissingInfoDialogProps {
@@ -36,7 +37,7 @@ interface MissingInfoDialogProps {
 export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDialogProps) {
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [localValues, setLocalValues] = useState<Record<string, { source: string; type: string }>>({});
+  const [localValues, setLocalValues] = useState<Record<string, { source: string; type: string; city: string }>>({});
   const [saving, setSaving] = useState(false);
 
   // Reset index when dialog opens
@@ -44,9 +45,9 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
     if (open) {
       setCurrentIndex(0);
       // Initialize local values from existing data
-      const init: Record<string, { source: string; type: string }> = {};
+      const init: Record<string, { source: string; type: string; city: string }> = {};
       deals.forEach(d => {
-        init[d.id] = { source: d.leadSource || '', type: d.buyerType || '' };
+        init[d.id] = { source: d.leadSource || '', type: d.buyerType || '', city: d.city || '' };
       });
       setLocalValues(init);
     }
@@ -57,7 +58,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
   const current = deals[currentIndex];
   if (!current) return null;
 
-  const values = localValues[current.id] || { source: '', type: '' };
+  const values = localValues[current.id] || { source: '', type: '', city: '' };
   const address = current.propertyAddress
     ? current.propertyAddress.replace(/Part \d+\/\d+\s*-\s*/, '').trim()
     : 'Unknown';
@@ -68,6 +69,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
       const updates: Record<string, string | null> = {};
       if (values.source) updates.lead_source = values.source;
       if (values.type) updates.buyer_type = values.type;
+      if (values.city) updates.city = values.city;
 
       if (Object.keys(updates).length > 0) {
         const { error } = await supabase
@@ -102,7 +104,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
   };
 
   const isLast = currentIndex === deals.length - 1;
-  const hasValues = !!values.source || !!values.type;
+  const hasValues = !!values.source || !!values.type || !!values.city;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,7 +117,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
             <DialogTitle className="text-base">Missing Deal Info</DialogTitle>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
-            {deals.length} deal{deals.length > 1 ? 's' : ''} missing lead source or buyer type
+            {deals.length} deal{deals.length > 1 ? 's' : ''} missing lead source, buyer type, or city
           </DialogDescription>
         </DialogHeader>
 
@@ -185,6 +187,23 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
               </Select>
             </div>
 
+            {/* City */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">City</label>
+              <input
+                type="text"
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                placeholder="e.g. Vancouver"
+                value={values.city}
+                onChange={(e) =>
+                  setLocalValues(prev => ({
+                    ...prev,
+                    [current.id]: { ...prev[current.id], city: e.target.value },
+                  }))
+                }
+              />
+            </div>
+
             {/* Actions */}
             <div className="flex items-center gap-2 pt-2">
               <Button
@@ -235,12 +254,13 @@ function extractBuyerName(tx: any): string {
 // Helper to extract deals missing info from synced transactions
 export function getDealsWithMissingInfo(transactions: any[]): DealMissingInfo[] {
   return transactions
-    .filter(tx => tx.status !== 'closed' && (!tx.lead_source || !tx.buyer_type))
+    .filter(tx => tx.status !== 'closed' && (!tx.lead_source || !tx.buyer_type || !tx.city))
     .map(tx => ({
       id: tx.id,
       propertyAddress: tx.property_address,
       clientName: extractBuyerName(tx),
       leadSource: tx.lead_source,
       buyerType: tx.buyer_type,
+      city: tx.city,
     }));
 }
