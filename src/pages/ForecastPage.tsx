@@ -56,7 +56,7 @@ export default function ForecastPage() {
   const { data: settings } = useSettings();
   const refreshData = useRefreshData();
 
-  const [excludedYears, setExcludedYears] = useState<Set<string>>(new Set());
+  const [excludedYears, setExcludedYears] = useState<Set<string>>(new Set(['2028', '2029', '2030']));
 
   // Calculate months needed to cover all close dates
   const monthsNeeded = useMemo(() => {
