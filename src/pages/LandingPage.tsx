@@ -37,6 +37,7 @@ import {
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import logoMark from '@/assets/logo-mark.png';
 
 // ─── Animated counter ─────────────────────────────
 function AnimatedNumber({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
@@ -900,7 +901,7 @@ function Footer() {
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src="/favicon.png" alt="dealzflow" className="w-8 h-8 rounded-lg" />
+            <img src={logoMark} alt="dealzflow" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-white">dealz<span className="text-emerald-400">flow</span></span>
           </div>
           <div className="flex items-center gap-6 text-sm text-white/35">
@@ -928,7 +929,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-[72px]">
             <Link to="/" className="flex items-center gap-2.5">
-              <img src="/favicon.png" alt="dealzflow" className="w-9 h-9 rounded-xl" />
+              <img src={logoMark} alt="dealzflow" className="w-9 h-9 rounded-xl" />
               <span className="font-bold text-lg text-white tracking-tight">
                 dealz<span className="text-emerald-400">flow</span>
               </span>
