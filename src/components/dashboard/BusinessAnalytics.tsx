@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { isTeamDeal as checkIsTeamDeal } from '@/lib/transactionUtils';
+import { getEffectiveCommission } from '@/hooks/useAnalyticsData';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -37,6 +39,7 @@ interface BusinessAnalyticsProps {
   deals: Deal[];
   payouts: Payout[];
   syncedPayouts?: SyncedPayout[];
+  syncedTransactions?: any[];
 }
 
 const EMERALD_PALETTE = [
@@ -57,7 +60,7 @@ const CHART_COLORS = {
 
 type TimeFilter = 'all' | 'ytd' | '12m' | '6m' | '3m';
 
-export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: BusinessAnalyticsProps) {
+export function BusinessAnalytics({ deals, payouts, syncedPayouts = [], syncedTransactions = [] }: BusinessAnalyticsProps) {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
 
   const filteredDeals = useMemo(() => {
@@ -139,37 +142,26 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: Busine
       return grossCommission;
     };
 
-    // Lead source breakdown - use total deal value (paid + projected)
-    const leadSourceMap = new Map<string, { count: number; revenue: number; avgDeal: number }>();
-    filteredDeals.forEach(deal => {
-      const source = deal.lead_source || 'Unknown';
-      const existing = leadSourceMap.get(source) || { count: 0, revenue: 0, avgDeal: 0 };
-      const dealValue = getDealValue(deal);
-      const newCount = existing.count + 1;
-      const newRevenue = existing.revenue + dealValue;
-      leadSourceMap.set(source, {
-        count: newCount,
-        revenue: newRevenue,
-        avgDeal: newRevenue / newCount,
-      });
-    });
+    // Helper to accumulate into a map
+    const accum = (map: Map<string, { count: number; revenue: number }>, key: string, value: number) => {
+      const existing = map.get(key) || { count: 0, revenue: 0 };
+      map.set(key, { count: existing.count + 1, revenue: existing.revenue + value });
+    };
+
+    // Lead source breakdown - combine manual deals + synced transactions
+    const leadSourceMap = new Map<string, { count: number; revenue: number }>();
+    filteredDeals.forEach(deal => accum(leadSourceMap, deal.lead_source || 'Unknown', getDealValue(deal)));
+    syncedTransactions.forEach((tx: any) => accum(leadSourceMap, tx.lead_source || 'Unknown', getEffectiveCommission(tx)));
     const leadSources = Array.from(leadSourceMap.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.revenue - a.revenue);
 
     // Property type breakdown
-    const propertyTypeMap = new Map<string, { count: number; revenue: number; avgDeal: number }>();
-    filteredDeals.forEach(deal => {
-      const type = deal.property_type || 'Unknown';
-      const existing = propertyTypeMap.get(type) || { count: 0, revenue: 0, avgDeal: 0 };
-      const dealValue = getDealValue(deal);
-      const newCount = existing.count + 1;
-      const newRevenue = existing.revenue + dealValue;
-      propertyTypeMap.set(type, {
-        count: newCount,
-        revenue: newRevenue,
-        avgDeal: newRevenue / newCount,
-      });
+    const propertyTypeMap = new Map<string, { count: number; revenue: number }>();
+    filteredDeals.forEach(deal => accum(propertyTypeMap, deal.property_type || 'Unknown', getDealValue(deal)));
+    syncedTransactions.forEach((tx: any) => {
+      const type = tx.transaction_type || tx.raw_data?.propertyType || 'Unknown';
+      accum(propertyTypeMap, type, getEffectiveCommission(tx));
     });
     const propertyTypes = Array.from(propertyTypeMap.entries())
       .map(([name, data]) => ({ 
@@ -178,16 +170,12 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: Busine
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Deal type (Buy vs Sell)
+    // Deal type (Buy vs Sell) - manual + synced
     const dealTypeMap = new Map<string, { count: number; revenue: number }>();
-    filteredDeals.forEach(deal => {
-      const type = deal.deal_type;
-      const existing = dealTypeMap.get(type) || { count: 0, revenue: 0 };
-      const dealValue = getDealValue(deal);
-      dealTypeMap.set(type, {
-        count: existing.count + 1,
-        revenue: existing.revenue + dealValue,
-      });
+    filteredDeals.forEach(deal => accum(dealTypeMap, deal.deal_type, getDealValue(deal)));
+    syncedTransactions.forEach((tx: any) => {
+      const type = tx.is_listing ? 'SELL' : 'BUY';
+      accum(dealTypeMap, type, getEffectiveCommission(tx));
     });
     const dealTypes = Array.from(dealTypeMap.entries())
       .map(([name, data]) => ({ name: name === 'BUY' ? 'Buyer Rep' : 'Seller Rep', ...data }))
@@ -195,45 +183,30 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: Busine
 
     // Buyer type breakdown
     const buyerTypeMap = new Map<string, { count: number; revenue: number }>();
-    filteredDeals.forEach(deal => {
-      const type = deal.buyer_type || 'Not Specified';
-      const existing = buyerTypeMap.get(type) || { count: 0, revenue: 0 };
-      const dealValue = getDealValue(deal);
-      buyerTypeMap.set(type, {
-        count: existing.count + 1,
-        revenue: existing.revenue + dealValue,
-      });
-    });
+    filteredDeals.forEach(deal => accum(buyerTypeMap, deal.buyer_type || 'Not Specified', getDealValue(deal)));
+    syncedTransactions.forEach((tx: any) => accum(buyerTypeMap, tx.buyer_type || 'Not Specified', getEffectiveCommission(tx)));
     const buyerTypes = Array.from(buyerTypeMap.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.count - a.count);
 
     // City breakdown
     const cityMap = new Map<string, { count: number; revenue: number }>();
-    filteredDeals.forEach(deal => {
-      const city = deal.city || 'Unknown';
-      const existing = cityMap.get(city) || { count: 0, revenue: 0 };
-      const dealValue = getDealValue(deal);
-      cityMap.set(city, {
-        count: existing.count + 1,
-        revenue: existing.revenue + dealValue,
-      });
-    });
+    filteredDeals.forEach(deal => accum(cityMap, deal.city || 'Unknown', getDealValue(deal)));
+    syncedTransactions.forEach((tx: any) => accum(cityMap, tx.city || 'Unknown', getEffectiveCommission(tx)));
     const cities = Array.from(cityMap.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.count - a.count);
 
-    // Team breakdown (if any deals have team members)
+    // Team breakdown - manual + synced
     const teamMap = new Map<string, { count: number; revenue: number }>();
     filteredDeals.forEach(deal => {
-      const isTeamDeal = deal.team_member && deal.team_member_portion && deal.team_member_portion > 0;
-      const category = isTeamDeal ? 'Team Deals' : 'Solo Deals';
-      const existing = teamMap.get(category) || { count: 0, revenue: 0 };
-      const dealValue = getDealValue(deal);
-      teamMap.set(category, {
-        count: existing.count + 1,
-        revenue: existing.revenue + dealValue,
-      });
+      const isTeam = deal.team_member && deal.team_member_portion && deal.team_member_portion > 0;
+      accum(teamMap, isTeam ? 'Team Deals' : 'Solo Deals', getDealValue(deal));
+    });
+    syncedTransactions.forEach((tx: any) => {
+      const participants = tx.raw_data?.participants || [];
+      const isTeam = checkIsTeamDeal(participants);
+      accum(teamMap, isTeam ? 'Team Deals' : 'Solo Deals', getEffectiveCommission(tx));
     });
     const teamBreakdown = Array.from(teamMap.entries())
       .map(([name, data]) => ({ name, ...data }))
@@ -287,7 +260,7 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [] }: Busine
       teamBreakdown,
       monthlyData,
     };
-  }, [filteredDeals, payouts, syncedPayouts]);
+  }, [filteredDeals, payouts, syncedPayouts, syncedTransactions]);
 
   const renderCustomLabel = ({ name, percent }: { name: string; percent: number }) => {
     return percent > 0.08 ? `${(percent * 100).toFixed(0)}%` : '';

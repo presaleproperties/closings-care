@@ -291,7 +291,7 @@ export default function DashboardPage() {
                 <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
-                <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
+                <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} syncedTransactions={syncedTransactions} />
               </TabsContent>
             </Tabs>
           </div>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                 <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
                 <ExpenseAnalytics expenses={expenses} />
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
-                <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} />
+                <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} syncedTransactions={syncedTransactions} />
               </TabsContent>
             </Tabs>
           </div>
