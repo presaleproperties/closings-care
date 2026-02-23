@@ -15,15 +15,8 @@ import { DealTransactionDetailsSection } from '@/components/deals/DealTransactio
 import { DealParticipantsSection } from '@/components/deals/DealParticipantsSection';
 import { DealRelatedTransactionsSection } from '@/components/deals/DealRelatedTransactionsSection';
 import { DealBuyerInfoCard } from '@/components/deals/DealBuyerInfoCard';
+import { extractNetPayout } from '@/lib/transactionUtils';
 import type { Participant } from '@/components/deals/ParticipantCard';
-
-function extractNetPayout(rawData: any): number {
-  try {
-    return Number(rawData?.myNetPayout?.amount) || 0;
-  } catch {
-    return 0;
-  }
-}
 
 export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -78,7 +71,7 @@ export default function DealDetailPage() {
   // Extract data
   const raw = transaction.raw_data || {};
   const participants: Participant[] = raw.participants || [];
-  const netPayout = extractNetPayout(raw);
+  const netPayout = extractNetPayout(raw, 0);
   const grossCommission = transaction.commission_amount || 0;
   const salePrice = transaction.sale_price || 0;
   const isClosed = transaction.status === 'closed';

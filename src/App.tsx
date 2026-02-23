@@ -64,24 +64,6 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function HomeRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <>{children}</>;
-}
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -92,7 +74,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<HomeRoute><LandingPage /></HomeRoute>} />
+                <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
                 <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />

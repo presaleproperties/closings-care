@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CollapsibleSection } from './CollapsibleSection';
 import { formatCurrency } from '@/lib/format';
+import { extractNetPayout } from '@/lib/transactionUtils';
 import { format, parseISO } from 'date-fns';
 
 const spring = { type: 'spring' as const, stiffness: 120, damping: 20 };
@@ -21,12 +22,8 @@ interface RelatedTransactionsSectionProps {
   allTransactions: SyncedTransaction[];
 }
 
-function extractNetPayout(rawData: any): number {
-  try {
-    return Number(rawData?.myNetPayout?.amount) || 0;
-  } catch {
-    return 0;
-  }
+function extractNetPayoutLocal(rawData: any): number {
+  return extractNetPayout(rawData, 0);
 }
 
 export function DealRelatedTransactionsSection({
@@ -68,7 +65,7 @@ export function DealRelatedTransactionsSection({
                   </p>
                 </div>
                 <span className="text-sm font-bold text-foreground ml-3">
-                  {formatCurrency(extractNetPayout(tx.raw_data))}
+                  {formatCurrency(extractNetPayoutLocal(tx.raw_data))}
                 </span>
               </Link>
             );
