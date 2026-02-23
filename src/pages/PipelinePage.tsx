@@ -225,8 +225,7 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
   onDelete: (id: string) => void;
   onUpdate: (id: string, field: string, value: string) => void;
 }) {
-  const [showMoveMenu, setShowMoveMenu] = useState(false);
-  const nextStatuses = STATUS_OPTIONS.filter(s => s !== prospect.status);
+  // Cards are moved via drag-and-drop between columns
 
   return (
     <motion.div
@@ -234,91 +233,50 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
       draggable
       onDragStart={(e: any) => {
         e.dataTransfer?.setData('text/plain', prospect.id);
         e.currentTarget.style.opacity = '0.5';
       }}
       onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-      className="rounded-xl border border-border/40 bg-card p-3.5 group hover:border-border/60 transition-all hover:shadow-sm cursor-grab active:cursor-grabbing"
+      className="rounded-lg border border-border/40 bg-card px-3 py-2 group hover:border-border/60 transition-all hover:shadow-sm cursor-grab active:cursor-grabbing"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground truncate">{prospect.client_name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <button
-              onClick={(e) => { e.stopPropagation(); const next = DEAL_TYPE_OPTIONS[(DEAL_TYPE_OPTIONS.indexOf(prospect.deal_type || 'buyer') + 1) % DEAL_TYPE_OPTIONS.length]; onUpdate(prospect.id, 'deal_type', next); triggerHaptic('light'); }}
-              className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}
-            >
-              {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); const next = HOME_TYPES[(HOME_TYPES.indexOf(prospect.home_type) + 1) % HOME_TYPES.length]; onUpdate(prospect.id, 'home_type', next); triggerHaptic('light'); }}
-              className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors border border-transparent hover:border-border/40 rounded px-1.5 py-0.5"
-            >
-              {prospect.home_type}
-            </button>
-          </div>
-        </div>
+      {/* Row 1: Name + temp */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-foreground truncate flex-1">{prospect.client_name}</p>
         <TempBadge temp={prospect.temperature || 'warm'} compact />
       </div>
 
-      {prospect.potential_commission > 0 && (
-        <p className="text-sm font-bold text-primary mb-2.5">{formatCurrency(prospect.potential_commission)}</p>
-      )}
+      {/* Row 2: Tags + commission */}
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); const next = DEAL_TYPE_OPTIONS[(DEAL_TYPE_OPTIONS.indexOf(prospect.deal_type || 'buyer') + 1) % DEAL_TYPE_OPTIONS.length]; onUpdate(prospect.id, 'deal_type', next); triggerHaptic('light'); }}
+            className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity", DEAL_TYPE_COLORS[prospect.deal_type || 'buyer'])}
+          >
+            {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); const next = HOME_TYPES[(HOME_TYPES.indexOf(prospect.home_type) + 1) % HOME_TYPES.length]; onUpdate(prospect.id, 'home_type', next); triggerHaptic('light'); }}
+            className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded px-1 py-0.5"
+          >
+            {prospect.home_type}
+          </button>
+        </div>
+        {prospect.potential_commission > 0 && (
+          <span className="text-xs font-bold text-primary">{formatCurrency(prospect.potential_commission)}</span>
+        )}
+      </div>
 
-      {prospect.notes && (
-        <p className="text-xs text-muted-foreground/70 mb-2.5 line-clamp-2">{prospect.notes}</p>
-      )}
-
-      {/* Move actions */}
-      <div className="relative">
+      {/* Delete on hover */}
+      <div className="flex items-center justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={() => { triggerHaptic('light'); setShowMoveMenu(!showMoveMenu); }}
-          className="w-full flex items-center justify-between gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-lg px-2 py-1.5 hover:bg-muted/50"
+          onClick={() => { triggerHaptic('light'); onDelete(prospect.id); }}
+          className="text-[10px] text-muted-foreground/50 hover:text-destructive transition-colors flex items-center gap-0.5"
         >
-          <span>Move to...</span>
-          <ChevronRight className={cn("h-3 w-3 transition-transform", showMoveMenu && "rotate-90")} />
+          <Trash2 className="h-2.5 w-2.5" />
         </button>
-
-        <AnimatePresence>
-          {showMoveMenu && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="overflow-hidden"
-            >
-              <div className="flex flex-col gap-1 pt-1.5">
-                {nextStatuses.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      triggerHaptic('light');
-                      onMoveStatus(prospect.id, s);
-                      setShowMoveMenu(false);
-                    }}
-                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                  >
-                    <ArrowRight className="h-3 w-3 text-muted-foreground/50" />
-                    <span className={cn("inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border", STATUS_COLORS[s])}>
-                      {STATUS_LABELS[s]}
-                    </span>
-                  </button>
-                ))}
-                <button
-                  onClick={() => { triggerHaptic('light'); onDelete(prospect.id); }}
-                  className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-destructive/70 hover:text-destructive"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>Delete</span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );
