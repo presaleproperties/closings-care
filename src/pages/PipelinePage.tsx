@@ -245,7 +245,12 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
       {/* Row 1: Name + temp */}
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-foreground truncate flex-1">{prospect.client_name}</p>
-        <TempBadge temp={prospect.temperature || 'warm'} compact />
+        <button
+          onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(prospect.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; onUpdate(prospect.id, 'temperature', next); triggerHaptic('light'); }}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <TempBadge temp={prospect.temperature || 'warm'} compact />
+        </button>
       </div>
 
       {/* Row 2: Tags + commission */}
