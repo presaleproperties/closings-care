@@ -87,8 +87,7 @@ function InlineCell({
         <select
           ref={ref as React.RefObject<HTMLSelectElement>}
           value={draft}
-          onChange={(e) => { setDraft(e.target.value); onSave(e.target.value); }}
-          onBlur={commit}
+          onChange={(e) => { const v = e.target.value; setDraft(v); requestAnimationFrame(() => onSave(v)); }}
           className="w-full h-full bg-card border-0 outline-none ring-2 ring-primary/50 rounded-lg px-3 py-2 text-sm font-medium"
         >
           {options.map(o => <option key={o} value={o}>{optionLabels?.[o] || o}</option>)}
@@ -494,12 +493,15 @@ export default function PipelinePage() {
     if (field === 'potential_commission') parsed = parseFloat(value) || 0;
     if (String((prospect as any)[field]) === String(parsed)) return;
 
-    // Auto-set deal_type to 'seller' when status changed to 'listings'
-    if (field === 'status' && value === 'listings') {
-      updateProspect.mutate({ id, status: value, deal_type: 'seller' } as any);
-    } else {
-      updateProspect.mutate({ id, [field]: parsed } as any);
-    }
+    // Defer mutation to next frame so AnimatePresence can cleanly unmount elements
+    requestAnimationFrame(() => {
+      // Auto-set deal_type to 'seller' when status changed to 'listings'
+      if (field === 'status' && value === 'listings') {
+        updateProspect.mutate({ id, status: value, deal_type: 'seller' } as any);
+      } else {
+        updateProspect.mutate({ id, [field]: parsed } as any);
+      }
+    });
   }, [prospects, updateProspect]);
 
   const handleMoveStatus = useCallback((id: string, status: string) => {
@@ -770,15 +772,10 @@ export default function PipelinePage() {
                         <div className="flex-[2] min-w-[120px] px-3 py-2 border-l border-border/15">Notes</div>
                         <div className="w-10 shrink-0" />
                       </div>
-                      <AnimatePresence mode="popLayout">
+                      <div>
                         {closedItems.map((p, idx) => (
-                          <motion.div
+                          <div
                             key={p.id}
-                            layout
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.15 }}
                             className={cn(
                               "flex border-b border-border/20 group transition-colors",
                               idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
@@ -812,9 +809,9 @@ export default function PipelinePage() {
                                 <Trash2 className="h-3 w-3" />
                               </button>
                             </div>
-                          </motion.div>
+                          </div>
                         ))}
-                      </AnimatePresence>
+                      </div>
                     </motion.div>
                   );
                 })()}
