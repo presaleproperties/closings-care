@@ -108,7 +108,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl p-4 sm:p-6 gap-3 sm:gap-5">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -128,21 +128,19 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.15 }}
-            className="space-y-4 pt-2"
+            className="space-y-3 pt-1"
           >
             {/* Deal identifier */}
-            <div className="rounded-xl border border-border/50 bg-muted/30 p-3">
+            <div className="rounded-xl border border-border/50 bg-muted/30 p-2.5">
               <p className="font-semibold text-sm text-foreground">{current.clientName || 'Unknown Client'}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{address}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                  {currentIndex + 1} of {deals.length}
-                </span>
-              </div>
+              <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md mt-1 inline-block">
+                {currentIndex + 1} of {deals.length}
+              </span>
             </div>
 
             {/* Lead Source */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Lead Source</label>
               <Select
                 value={values.source}
@@ -165,7 +163,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
             </div>
 
             {/* Buyer Type */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Buyer Type</label>
               <Select
                 value={values.type}
@@ -188,7 +186,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
             </div>
 
             {/* City */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">City</label>
               <input
                 type="text"
@@ -205,7 +203,7 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-1">
               <Button
                 variant="ghost"
                 size="sm"
