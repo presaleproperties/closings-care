@@ -37,6 +37,7 @@ import { usePipelineProspects } from '@/hooks/usePipelineProspects';
 import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 import { GCIGoalTracker } from '@/components/dashboard/GCIGoalTracker';
 import { DealsWrittenCard } from '@/components/dashboard/DealsWrittenCard';
+import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
 import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -183,6 +184,7 @@ export default function DashboardPage() {
         showAddDeal={false}
         action={
           <div className="flex items-center gap-2">
+            <NotificationCenter syncedTransactions={syncedTransactions} pipelineProspects={pipelineProspects} />
             {activeConnection && (
               <button
                 onClick={handleResync}
