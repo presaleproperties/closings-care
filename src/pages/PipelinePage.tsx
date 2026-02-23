@@ -684,18 +684,22 @@ export default function PipelinePage() {
                 </div>
               ) : (
                 <>
-                  {(['buyer', 'seller'] as const).map(dealType => {
-                    const groupItems = [...prospects].reverse().filter(p => (p.deal_type || 'buyer') === dealType);
+                  {([
+                    { key: 'presale', label: 'Presale', color: 'bg-amber-500/5', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', filter: (p: PipelineProspect) => p.home_type === 'Presale' },
+                    { key: 'buyer', label: 'Buyers', color: 'bg-sky-500/5', badgeClass: DEAL_TYPE_COLORS['buyer'], filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
+                    { key: 'seller', label: 'Sellers', color: 'bg-violet-500/5', badgeClass: DEAL_TYPE_COLORS['seller'], filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
+                  ]).map(group => {
+                    const groupItems = [...prospects].reverse().filter(group.filter);
                     if (groupItems.length === 0) return null;
                     const groupTotal = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
                     return (
-                      <div key={dealType}>
+                      <div key={group.key}>
                         <div className={cn(
                           "flex items-center gap-2 px-4 py-2.5 border-b border-border",
-                          dealType === 'buyer' ? 'bg-sky-500/5' : 'bg-violet-500/5'
+                          group.color
                         )}>
-                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider", DEAL_TYPE_COLORS[dealType])}>
-                            {DEAL_TYPE_LABELS[dealType]}s
+                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider", group.badgeClass)}>
+                            {group.label}
                           </span>
                           <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} prospects</span>
                           <span className="text-[10px] font-bold text-primary ml-auto">{formatCurrency(groupTotal)}</span>
