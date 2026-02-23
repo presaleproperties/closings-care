@@ -633,9 +633,9 @@ export default function PipelinePage() {
             ) : (
               <>
                 {([
-                  { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.home_type === 'Presale' },
-                  { key: 'buyer', label: 'Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', badgeClass: DEAL_TYPE_COLORS['buyer'], dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
-                  { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', badgeClass: DEAL_TYPE_COLORS['seller'], dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
+                  { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type === 'Presale' },
+                  { key: 'buyer', label: 'Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', badgeClass: DEAL_TYPE_COLORS['buyer'], dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
+                  { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', badgeClass: DEAL_TYPE_COLORS['seller'], dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
                 ]).map(group => {
                   const groupItems = [...prospects].reverse().filter(group.filter);
                   const groupGCI = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
@@ -739,6 +739,73 @@ export default function PipelinePage() {
                     </motion.div>
                   );
                 })}
+
+                {/* ── Closed Deals Section ── */}
+                {(() => {
+                  const closedItems = [...prospects].reverse().filter(p => p.status === 'closed');
+                  if (closedItems.length === 0) return null;
+                  const closedGCI = closedItems.reduce((s, p) => s + Number(p.potential_commission), 0);
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="rounded-xl border border-border bg-card/50 overflow-hidden opacity-80"
+                    >
+                      <div className="flex items-center gap-3 px-4 py-3 border-b border-emerald-500/30 bg-emerald-500/5">
+                        <div className="w-2 h-2 rounded-full shrink-0 bg-emerald-500" />
+                        <span className="text-sm font-bold tracking-tight">Closed Deals</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{closedItems.length} deals</span>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                          <span className="text-sm font-bold text-emerald-600">{formatCurrency(closedGCI)}</span>
+                        </div>
+                      </div>
+                      <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                        <div className="w-8 shrink-0 px-2 py-2">#</div>
+                        <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
+                        <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
+                        <div className="flex-1 min-w-[120px] px-3 py-2 border-l border-border/15">GCI</div>
+                        <div className="w-[80px] shrink-0 px-3 py-2 border-l border-border/15">Type</div>
+                        <div className="flex-[2] min-w-[120px] px-3 py-2 border-l border-border/15">Notes</div>
+                        <div className="w-10 shrink-0" />
+                      </div>
+                      <AnimatePresence mode="popLayout">
+                        {closedItems.map((p, idx) => (
+                          <motion.div
+                            key={p.id}
+                            layout
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.15 }}
+                            className={cn(
+                              "flex border-b border-border/20 group transition-colors",
+                              idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
+                              'hover:bg-primary/[0.02]'
+                            )}
+                          >
+                            <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
+                            <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground line-through decoration-muted-foreground/30">{p.client_name}</div>
+                            <div className="flex-1 min-w-[100px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground">{p.home_type}</div>
+                            <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-emerald-600">{formatCurrency(p.potential_commission)}</div>
+                            <div className="w-[80px] shrink-0 border-l border-border/10 px-3 py-2">
+                              <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                                {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                              </span>
+                            </div>
+                            <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.notes || '—'}</div>
+                            <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                              <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })()}
               </>
             )}
           </div>
