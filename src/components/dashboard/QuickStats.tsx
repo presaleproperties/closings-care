@@ -60,7 +60,7 @@ export function QuickStats({
         icon={Banknote}
         label="Earned YTD"
         value={receivedYTD}
-        subtitle={`${closedDealsYTD} deals closed`}
+        subtitle={`${closedDealsYTD} closed deals`}
         color="text-emerald-700 dark:text-emerald-400"
         tint="bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30"
         iconTint="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
@@ -69,7 +69,7 @@ export function QuickStats({
         icon={ArrowUpRight}
         label="Coming In"
         value={comingIn}
-        subtitle={`${activeDeals} deals · ${comingInDateRange || 'upcoming'}`}
+        subtitle={`${activeDeals} pending deals · ${comingInDateRange || 'upcoming'}`}
         color="text-blue-700 dark:text-blue-400"
         tint="bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30"
         iconTint="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
