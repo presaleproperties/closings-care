@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 
-// Team agents who get the 70/30 split (user keeps 30%)
-const TEAM_AGENT_NAMES = ['ravish', 'sarb'];
+import { getEffectiveCommission } from '@/lib/transactionUtils';
 
 interface SyncedTransaction {
   id: string;
@@ -36,38 +35,9 @@ export interface SyncedPayoutItem {
   rawTransaction: SyncedTransaction;
 }
 
-/**
- * Checks if a transaction is a team deal (has Ravish or Sarb as participants).
- */
-function isTeamDeal(tx: SyncedTransaction): boolean {
-  const participants = tx.raw_data?.participants || [];
-  return participants.some((p: any) => {
-    const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
-    return TEAM_AGENT_NAMES.some(agent => name.includes(agent));
-  });
-}
-
-/**
- * Extracts user's net payout from synced transaction raw_data.
- */
-function extractNetPayout(tx: SyncedTransaction): number {
-  try {
-    const myNet = tx.raw_data?.myNetPayout?.amount;
-    if (myNet !== null && myNet !== undefined) {
-      return Number(myNet);
-    }
-  } catch {}
-  return Number(tx.commission_amount) || 0;
-}
-
-/**
- * Returns the effective commission: gross for solo deals, net for team deals (Ravish/Sarb).
- */
-function getEffectiveCommission(tx: SyncedTransaction): number {
-  if (isTeamDeal(tx)) {
-    return extractNetPayout(tx);
-  }
-  return Number(tx.commission_amount) || 0;
+// Local helper wrapping the shared utility with the SyncedTransaction shape
+function getEffectiveCommissionForTx(tx: SyncedTransaction): number {
+  return getEffectiveCommission(tx.raw_data, Number(tx.commission_amount) || 0);
 }
 
 /**
@@ -124,7 +94,7 @@ export function useSyncedPayouts(syncedTransactions: SyncedTransaction[]) {
       .filter(tx => tx.close_date) // must have a close date
       .map((tx): SyncedPayoutItem => {
         const { payoutType, isPresale } = detectPayoutType(tx.property_address, tx.raw_data);
-        const effectiveAmount = getEffectiveCommission(tx);
+        const effectiveAmount = getEffectiveCommissionForTx(tx);
         const grossAmount = Number(tx.commission_amount) || 0;
         
         // Determine status: if active but close_date is past, flag for review

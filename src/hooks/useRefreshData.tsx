@@ -17,6 +17,10 @@ export function useRefreshData() {
       queryClient.invalidateQueries({ queryKey: ['revenue-share'] }),
       queryClient.invalidateQueries({ queryKey: ['properties'] }),
       queryClient.invalidateQueries({ queryKey: ['settings'] }),
+      queryClient.invalidateQueries({ queryKey: ['synced_transactions'] }),
+      queryClient.invalidateQueries({ queryKey: ['platform_connections'] }),
+      queryClient.invalidateQueries({ queryKey: ['sync_logs'] }),
+      queryClient.invalidateQueries({ queryKey: ['pipeline_prospects'] }),
     ]);
     
     // Small delay to ensure UI feels responsive

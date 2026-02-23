@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import { useSyncedTransactions } from './usePlatformConnections';
-
-// Team agents who get the 70/30 split (user keeps 30%)
-const TEAM_AGENT_NAMES = ['ravish', 'sarb'];
+import { isTeamDeal as checkIsTeamDealShared } from '@/lib/transactionUtils';
 
 export interface Participant {
   id: string;
@@ -37,10 +35,7 @@ export interface SyncedDeal {
 }
 
 function checkIsTeamDeal(participants: Participant[]): boolean {
-  return participants.some(p => {
-    const name = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
-    return TEAM_AGENT_NAMES.some(agent => name.includes(agent));
-  });
+  return checkIsTeamDealShared(participants);
 }
 
 export function useSyncedDeals() {
