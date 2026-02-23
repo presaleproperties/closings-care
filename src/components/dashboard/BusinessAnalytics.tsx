@@ -156,18 +156,21 @@ export function BusinessAnalytics({ deals, payouts, syncedPayouts = [], syncedTr
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // Property type breakdown
+    // Property type breakdown — classify as Presale vs Resale
     const propertyTypeMap = new Map<string, { count: number; revenue: number }>();
-    filteredDeals.forEach(deal => accum(propertyTypeMap, deal.property_type || 'Unknown', getDealValue(deal)));
+    filteredDeals.forEach(deal => {
+      const label = deal.property_type === 'PRESALE' ? 'Presale' : deal.property_type === 'RESALE' ? 'Resale' : deal.property_type || 'Unknown';
+      accum(propertyTypeMap, label, getDealValue(deal));
+    });
     syncedTransactions.forEach((tx: any) => {
-      const type = tx.transaction_type || tx.raw_data?.propertyType || 'Unknown';
-      accum(propertyTypeMap, type, getEffectiveCommission(tx));
+      const addr = (tx.property_address || '').toLowerCase();
+      const hasPartLabel = addr.includes('part 1/2') || addr.includes('part 2/2') || addr.includes('part 3/3');
+      const hasProjectName = !!(tx.raw_data?.projectName || tx.project_name);
+      const label = (hasPartLabel || hasProjectName) ? 'Presale' : 'Resale';
+      accum(propertyTypeMap, label, getEffectiveCommission(tx));
     });
     const propertyTypes = Array.from(propertyTypeMap.entries())
-      .map(([name, data]) => ({ 
-        name: name === 'PRESALE' ? 'Pre-Sale' : name === 'RESALE' ? 'Resale' : name, 
-        ...data 
-      }))
+      .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.count - a.count);
 
     // Deal type (Buy vs Sell) - manual + synced
