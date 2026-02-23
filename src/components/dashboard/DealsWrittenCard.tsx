@@ -142,9 +142,17 @@ export function DealsWrittenCard({ syncedTransactions, compact = false }: DealsW
   const [metric, setMetric] = useState<Metric>('deals');
   const monthlyData = useDealsWrittenData(syncedTransactions);
 
-  const currentYear = new Date().getFullYear();
+  // Derive available years from data
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    monthlyData.forEach(m => years.add(m.monthDate.getFullYear()));
+    return Array.from(years).sort((a, b) => b - a); // descending
+  }, [monthlyData]);
+
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const currentYear = selectedYear;
   const prevYear = currentYear - 1;
-  const currentMonth = new Date().getMonth();
+  const currentMonth = selectedYear === new Date().getFullYear() ? new Date().getMonth() : 11;
 
   const yoyData = useMemo(() => buildYoYData(monthlyData, grouping, currentYear), [monthlyData, grouping, currentYear]);
 
@@ -178,7 +186,26 @@ export function DealsWrittenCard({ syncedTransactions, compact = false }: DealsW
             {currentYear} vs {prevYear} · By firm date
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {/* Year toggle */}
+          {availableYears.length > 1 && (
+            <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg">
+              {availableYears.map(y => (
+                <button
+                  key={y}
+                  onClick={() => setSelectedYear(y)}
+                  className={cn(
+                    "px-2 py-1 text-[10px] sm:text-xs font-medium rounded-md transition-all",
+                    selectedYear === y
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-1 p-0.5 bg-muted/50 rounded-lg">
             {(['deals', 'gci'] as Metric[]).map(m => (
               <button
