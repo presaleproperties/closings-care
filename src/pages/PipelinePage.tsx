@@ -230,9 +230,9 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.15 }}
       draggable
       onDragStart={(e: any) => {
@@ -240,21 +240,21 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
         e.currentTarget.style.opacity = '0.5';
       }}
       onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-      className="rounded-lg border border-border/40 bg-card px-3 py-2 group hover:border-border/60 transition-all hover:shadow-sm cursor-grab active:cursor-grabbing"
+      className="rounded-lg border border-border bg-card px-2.5 py-2 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
     >
       {/* Row 1: Name + temp */}
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-foreground truncate flex-1">{prospect.client_name}</p>
+      <div className="flex items-center justify-between gap-1.5">
+        <p className="text-[11px] font-semibold text-foreground truncate flex-1">{prospect.client_name}</p>
         <button
           onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(prospect.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; onUpdate(prospect.id, 'temperature', next); triggerHaptic('light'); }}
-          className="cursor-pointer hover:opacity-80 transition-opacity"
+          className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
         >
           <TempBadge temp={prospect.temperature || 'warm'} compact />
         </button>
       </div>
 
       {/* Row 2: Tags + commission */}
-      <div className="flex items-center justify-between gap-2 mt-1">
+      <div className="flex items-center justify-between gap-1.5 mt-1">
         <div className="flex items-center gap-1">
           <button
             onClick={(e) => { e.stopPropagation(); const next = DEAL_TYPE_OPTIONS[(DEAL_TYPE_OPTIONS.indexOf(prospect.deal_type || 'buyer') + 1) % DEAL_TYPE_OPTIONS.length]; onUpdate(prospect.id, 'deal_type', next); triggerHaptic('light'); }}
@@ -262,26 +262,11 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
           >
             {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); const next = HOME_TYPES[(HOME_TYPES.indexOf(prospect.home_type) + 1) % HOME_TYPES.length]; onUpdate(prospect.id, 'home_type', next); triggerHaptic('light'); }}
-            className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors rounded px-1 py-0.5"
-          >
-            {prospect.home_type}
-          </button>
+          <span className="text-[10px] text-muted-foreground">{prospect.home_type}</span>
         </div>
         {prospect.potential_commission > 0 && (
-          <span className="text-xs font-bold text-primary">{formatCurrency(prospect.potential_commission)}</span>
+          <span className="text-[11px] font-bold text-primary">{formatCurrency(prospect.potential_commission)}</span>
         )}
-      </div>
-
-      {/* Delete on hover */}
-      <div className="flex items-center justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => { triggerHaptic('light'); onDelete(prospect.id); }}
-          className="text-[10px] text-muted-foreground/50 hover:text-destructive transition-colors flex items-center gap-0.5"
-        >
-          <Trash2 className="h-2.5 w-2.5" />
-        </button>
       </div>
     </motion.div>
   );
@@ -435,14 +420,14 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       {columns.map(col => (
         <div
           key={col.status}
           className={cn(
-            "flex flex-col min-h-[200px] rounded-2xl transition-all duration-200 p-1 -m-1",
-            dragOverCol === col.status && !dragColSource && "bg-primary/5 ring-2 ring-primary/20 ring-dashed",
-            dragOverColTarget === col.status && dragColSource && "ring-2 ring-primary/30 bg-primary/5"
+            "flex flex-col min-h-[200px] rounded-xl border border-border bg-card/50 transition-all duration-200 p-2",
+            dragOverCol === col.status && !dragColSource && "bg-primary/5 border-primary/30",
+            dragOverColTarget === col.status && dragColSource && "border-primary/30 bg-primary/5"
           )}
           onDragOver={(e) => {
             if (dragColSource) { handleColDragOver(e, col.status); } else { handleDragOver(e, col.status); }
@@ -452,30 +437,28 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
             if (dragColSource) { handleColDrop(e, col.status); } else { handleDrop(e, col.status); }
           }}
         >
-          {/* Column Header - draggable */}
+          {/* Column Header */}
           <div
             draggable
             onDragStart={(e) => handleColDragStart(e, col.status)}
             onDragEnd={() => { setDragColSource(null); setDragOverColTarget(null); }}
             className={cn(
-              "rounded-xl border p-3 mb-3 cursor-grab active:cursor-grabbing select-none",
-              STATUS_HEADER_COLORS[col.status],
+              "flex items-center justify-between px-2 py-2 mb-2 cursor-grab active:cursor-grabbing select-none border-b border-border/50",
               dragColSource === col.status && "opacity-50"
             )}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <GripVertical className="h-3 w-3 text-muted-foreground/40" />
+            <div className="flex items-center gap-1.5">
               <div className={cn("w-2 h-2 rounded-full", STATUS_DOT_COLORS[col.status])} />
-              <span className="text-sm font-bold">{col.label}</span>
-              <span className="text-xs text-muted-foreground ml-auto">{col.items.length}</span>
+              <span className="text-xs font-bold">{col.label}</span>
+              <span className="text-[10px] text-muted-foreground font-medium bg-muted/60 px-1.5 py-0.5 rounded-md">{col.items.length}</span>
             </div>
             {col.total > 0 && (
-              <p className="text-xs text-muted-foreground font-medium pl-5">{formatCurrency(col.total)}</p>
+              <p className="text-[10px] text-muted-foreground font-semibold">{formatCurrency(col.total)}</p>
             )}
           </div>
 
           {/* Cards */}
-          <div className="space-y-2.5 flex-1">
+          <div className="space-y-1.5 flex-1">
             <AnimatePresence mode="popLayout">
               {col.items.map(p => (
                 <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
@@ -483,12 +466,11 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
             </AnimatePresence>
 
             {col.items.length === 0 && (
-              <div className="rounded-xl border border-dashed border-border/30 p-6 text-center">
-                <p className="text-xs text-muted-foreground/40">Drop here</p>
+              <div className="rounded-lg border border-dashed border-border/40 p-4 text-center">
+                <p className="text-[10px] text-muted-foreground/40">Drop here</p>
               </div>
             )}
 
-            {/* Quick Add */}
             <BoardQuickAdd status={col.status} onAdd={onAdd} />
           </div>
         </div>
@@ -552,46 +534,43 @@ export default function PipelinePage() {
     <AppLayout>
       <Header title="Pipeline" subtitle={`${activeProspects.length} active prospects`} showAddDeal={false} />
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-      <div className="p-5 lg:p-6 space-y-6">
-        {/* ── Hero Header ────────────────────────────────── */}
+      <div className="p-5 lg:p-6 space-y-5">
+        {/* ── Hero Stats Bar ────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card via-card to-primary/[0.04] border border-border/40 p-6"
+          className="rounded-2xl border border-border bg-card p-5"
         >
-          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Users className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Track your prospects from first contact to close
-                </p>
+                <h1 className="text-lg font-bold tracking-tight">Pipeline</h1>
+                <p className="text-xs text-muted-foreground">First contact → Close</p>
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-6">
+            <div className="hidden sm:flex items-center gap-5">
               <div className="text-right">
-                <p className="text-2xl font-bold text-primary">{formatCurrency(totalPotential)}</p>
-                <p className="text-xs text-muted-foreground">Potential Revenue</p>
+                <p className="text-lg font-bold text-primary">{formatCurrency(totalPotential)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Potential</p>
               </div>
-              <div className="h-10 w-px bg-border/40" />
+              <div className="h-8 w-px bg-border" />
               <div className="text-right">
-                <p className="text-2xl font-bold">{activeProspects.length}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
+                <p className="text-lg font-bold">{activeProspects.length}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</p>
               </div>
               {hotCount > 0 && (
                 <>
-                  <div className="h-10 w-px bg-border/40" />
+                  <div className="h-8 w-px bg-border" />
                   <div className="text-right">
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <Flame className="h-4 w-4 text-rose-500" />
-                      <p className="text-2xl font-bold text-rose-500">{hotCount}</p>
+                    <div className="flex items-center gap-1 justify-end">
+                      <Flame className="h-3.5 w-3.5 text-rose-500" />
+                      <p className="text-lg font-bold text-rose-500">{hotCount}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">Hot Leads</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Hot</p>
                   </div>
                 </>
               )}
@@ -599,34 +578,27 @@ export default function PipelinePage() {
           </div>
         </motion.div>
 
-        {/* ── Status Summary Pills ────────────────────────────────── */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map(status => {
-            const items = prospects.filter(p => p.status === status);
-            const total = items.reduce((s, p) => s + Number(p.potential_commission), 0);
-            return (
-              <div key={status} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium", STATUS_COLORS[status])}>
-                <div className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_COLORS[status])} />
-                <span>{STATUS_LABELS[status]}</span>
-                <span className="font-bold">{items.length}</span>
-                <span className="opacity-60">·</span>
-                <span className="font-bold">{formatCurrency(total)}</span>
-              </div>
-            );
-          })}
-        </div>
+        {/* ── Status Pills + View Toggle ────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_OPTIONS.map(status => {
+              const items = prospects.filter(p => p.status === status);
+              return (
+                <div key={status} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium", STATUS_COLORS[status])}>
+                  <div className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_COLORS[status])} />
+                  <span>{STATUS_LABELS[status]}</span>
+                  <span className="font-bold">{items.length}</span>
+                </div>
+              );
+            })}
+          </div>
 
-        {/* ── View Toggle ────────────────────────────────── */}
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground font-medium">
-            {prospects.length} prospect{prospects.length !== 1 ? 's' : ''}
-          </p>
-          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/40">
+          <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/50 border border-border shrink-0">
             <button
               onClick={() => toggleView('list')}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                viewMode === 'list' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                viewMode === 'list' ? "bg-card text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground border border-transparent"
               )}
             >
               <List className="h-3.5 w-3.5" />
@@ -635,8 +607,8 @@ export default function PipelinePage() {
             <button
               onClick={() => toggleView('board')}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all",
-                viewMode === 'board' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                viewMode === 'board' ? "bg-card text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground border border-transparent"
               )}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -669,11 +641,11 @@ export default function PipelinePage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="rounded-2xl border border-border/50 bg-card/90 backdrop-blur-sm overflow-hidden shadow-sm"
+            className="rounded-xl border border-border bg-card overflow-hidden"
           >
             <div className="overflow-x-auto">
               {/* Header */}
-              <div className="flex bg-muted/40 border-b border-border/50 sticky top-0 z-10">
+              <div className="flex bg-muted/30 border-b border-border sticky top-0 z-10">
                 <div className="w-10 shrink-0 px-3 py-3 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">#</div>
                 {[
                   { label: 'Client', width: 'flex-[2] min-w-[180px]' },
@@ -711,9 +683,9 @@ export default function PipelinePage() {
                       exit={{ opacity: 0, x: -30 }}
                       transition={{ duration: 0.2 }}
                       className={cn(
-                        "flex border-b border-border/15 group transition-colors",
-                        idx % 2 === 0 ? 'bg-card' : 'bg-muted/30',
-                        'hover:bg-primary/[0.06]'
+                        "flex border-b border-border group transition-colors",
+                        idx % 2 === 0 ? 'bg-card' : 'bg-muted/20',
+                        'hover:bg-primary/[0.04]'
                       )}
                     >
                       <div className="w-10 shrink-0 px-3 py-2.5 text-xs text-muted-foreground/40 font-mono flex items-center">{idx + 1}</div>
