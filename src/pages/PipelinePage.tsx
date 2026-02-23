@@ -684,7 +684,7 @@ export default function PipelinePage() {
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {prospects.map((p, idx) => (
+                  {[...prospects].reverse().map((p, idx) => (
                     <motion.div
                       key={p.id}
                       layout
