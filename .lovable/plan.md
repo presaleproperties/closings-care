@@ -1,87 +1,86 @@
 
 
-## Premium Floating Mobile Navigation Upgrade
+# Codebase Cleanup Plan
 
-This plan enhances the mobile navigation bar with a true floating design and elevated premium aesthetics.
-
----
-
-### Changes Overview
-
-**File to modify:** `src/components/layout/MobileNav.tsx`
+## Overview
+This plan addresses 5 categories of issues: duplicated logic, disconnected legacy systems, dead code, incomplete data refresh, and redundant route wrappers.
 
 ---
 
-### 1. Increased Bottom Spacing (Floating Effect)
+## 1. Extract Shared Transaction Utilities
 
-- Change bottom positioning from `bottom-0` to `bottom-4` (16px from edge)
-- Increase the safe area calculation to `pb-[calc(env(safe-area-inset-bottom,12px)+8px)]`
-- Remove `mb-2` since we're using absolute positioning offset instead
+Create a single shared utility file for transaction logic that's currently duplicated across 3-5 files.
 
-This creates clear visual separation from the browser's bottom toolbar.
+**New file: `src/lib/transactionUtils.ts`**
+- Move `TEAM_AGENT_NAMES` constant (single source of truth)
+- Move `isTeamDeal()` function
+- Move `extractNetPayout()` function
+- Move `getEffectiveCommission()` function
+- Export a shared `SyncedTransaction` interface
 
----
-
-### 2. Enhanced Floating Island Design
-
-- Reduce max-width slightly (`max-w-[380px]`) for a more compact, pill-like shape
-- Add a subtle outer border ring with gradient for depth
-- Increase border-radius to `rounded-[28px]` for a softer, more modern look
-
----
-
-### 3. Premium Shadow & Depth Upgrade
-
-Replace current shadow with a more dramatic, layered shadow system:
-- Primary shadow layer for depth
-- Emerald-tinted ambient glow underneath
-- Subtle inner highlight for glass realism
+**Files to update (remove local duplicates, import from shared util):**
+- `src/hooks/useSyncedDeals.tsx`
+- `src/hooks/useSyncedIncome.tsx`
+- `src/hooks/useSyncedPayouts.tsx`
+- `src/pages/DealDetailPage.tsx`
+- `src/components/deals/DealRelatedTransactionsSection.tsx`
 
 ---
 
-### 4. Enhanced Glass Effect
+## 2. Fix `useRefreshData` to Include Synced Data
 
-- Increase backdrop blur to `backdrop-blur-3xl`
-- Add a subtle gradient border effect
-- Enhance the top highlight shimmer with animation potential
+Update `src/hooks/useRefreshData.tsx` to also invalidate:
+- `synced_transactions`
+- `platform_connections`
+- `sync_logs`
+- `revenue_share`
+- `pipeline_prospects`
 
----
-
-### 5. Refined Active State
-
-- Add a subtle pill background behind active item
-- Enhance the glow effect for the active icon
-- Add micro-interaction improvements
+These are the queries the dashboard and deals pages actually depend on.
 
 ---
 
-### Technical Details
+## 3. Remove Duplicate `HomeRoute`
 
-```text
-Nav Container Changes:
-  - Position: bottom-0 → bottom-4
-  - Padding: Adjusted safe-area calculation
-  - Width: max-w-md → max-w-[380px]
-
-Glass Container Changes:
-  - Border radius: 24px → 28px
-  - Shadow: 6-layer premium shadow system
-  - Border: Added gradient border effect
-  - Backdrop: Enhanced blur intensity
-
-Visual Effects:
-  - Outer glow: Increased intensity
-  - Top highlight: Dual-layer shimmer
-  - Active states: Enhanced glow and background
-```
+In `src/App.tsx`, delete the `HomeRoute` component and replace its usage with `PublicRoute` on the `/` route. They are functionally identical.
 
 ---
 
-### Expected Result
+## 4. Clean Up Dead `chat_messages` References
 
-A floating navigation island that:
-- Sits comfortably above browser toolbars
-- Has a premium, Apple-inspired glass aesthetic
-- Features rich shadows and depth
-- Feels modern and high-end
+Remove the `chat_messages` reference from the `delete-account` edge function cleanup list. The table itself can remain (no data loss risk) but the code reference is dead weight.
+
+---
+
+## 5. Flag Legacy Manual Deals System (No Removal Yet)
+
+The manual deals system (`useDeals`, `usePayouts`, `useCreateDeal`, `useUpdateDeal`, `NewDealPage`, `DealDraftContext`, and the `deals`/`payouts` DB tables) is **disconnected** from the synced transaction system that powers the rest of the app.
+
+**Recommendation:** Do NOT remove yet, but add a note. `NewDealPage` still allows manual deal entry which some users may need for deals outside of ReZen. However, these manual deals won't appear in the main Deals list, Payouts page, Dashboard stats, or Forecast -- which is confusing.
+
+A future step would be to either:
+- (A) Unify both systems so manual deals appear alongside synced deals, OR
+- (B) Remove manual deals entirely if all deals come through ReZen sync
+
+This is a design decision that needs your input before proceeding.
+
+---
+
+## Technical Details
+
+### File changes summary
+
+| Action | File | What |
+|--------|------|------|
+| Create | `src/lib/transactionUtils.ts` | Shared transaction utilities |
+| Edit | `src/hooks/useSyncedDeals.tsx` | Import from shared util |
+| Edit | `src/hooks/useSyncedIncome.tsx` | Import from shared util |
+| Edit | `src/hooks/useSyncedPayouts.tsx` | Import from shared util |
+| Edit | `src/pages/DealDetailPage.tsx` | Import from shared util |
+| Edit | `src/components/deals/DealRelatedTransactionsSection.tsx` | Import from shared util |
+| Edit | `src/hooks/useRefreshData.tsx` | Add missing query invalidations |
+| Edit | `src/App.tsx` | Remove HomeRoute, use PublicRoute |
+| Edit | `supabase/functions/delete-account/index.ts` | Remove chat_messages reference |
+
+No database changes required. No breaking changes to the UI.
 
