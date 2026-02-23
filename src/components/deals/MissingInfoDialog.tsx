@@ -216,6 +216,22 @@ export function MissingInfoDialog({ open, onOpenChange, deals }: MissingInfoDial
   );
 }
 
+// Extract buyer name from participants array in raw_data
+function extractBuyerName(tx: any): string {
+  const participants = tx.raw_data?.participants || [];
+  // Look for BUYER first, then SELLER
+  for (const role of ['BUYER', 'SELLER']) {
+    const p = participants.find((p: any) => p.participantRole === role && !p.hidden);
+    if (p) {
+      const first = p.firstName || '';
+      const last = p.lastName || '';
+      const full = `${first} ${last}`.trim();
+      if (full) return full;
+    }
+  }
+  return tx.client_name || 'Unknown Client';
+}
+
 // Helper to extract deals missing info from synced transactions
 export function getDealsWithMissingInfo(transactions: any[]): DealMissingInfo[] {
   return transactions
@@ -223,7 +239,7 @@ export function getDealsWithMissingInfo(transactions: any[]): DealMissingInfo[] 
     .map(tx => ({
       id: tx.id,
       propertyAddress: tx.property_address,
-      clientName: tx.client_name || 'Unknown',
+      clientName: extractBuyerName(tx),
       leadSource: tx.lead_source,
       buyerType: tx.buyer_type,
     }));
