@@ -420,8 +420,16 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   };
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-      {columns.map(col => (
+    <div className="relative">
+      {/* Scroll hint */}
+      <div className="flex items-center justify-end gap-1.5 mb-2 text-[10px] text-muted-foreground/60">
+        <span>Scroll for more</span>
+        <ChevronRight className="h-3 w-3" />
+      </div>
+      {/* Columns - scrollbar on top via flex-col-reverse */}
+      <div className="flex flex-col-reverse">
+        <div className="flex gap-3 overflow-x-auto pb-1 snap-x scroll-smooth" style={{ direction: 'ltr' }}>
+        {columns.map(col => (
         <div
           key={col.status}
           className={cn(
@@ -475,6 +483,8 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
           </div>
         </div>
       ))}
+    </div>
+    </div>
     </div>
   );
 }
