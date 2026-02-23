@@ -28,16 +28,14 @@ import { SyncedDealCard } from '@/components/deals/SyncedDealCard';
 import { MissingInfoDialog, getDealsWithMissingInfo } from '@/components/deals/MissingInfoDialog';
 import { cn } from '@/lib/utils';
 
-type SortKey = 'date-desc' | 'date-asc' | 'close-desc' | 'close-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
+type SortKey = 'close-desc' | 'close-asc' | 'amount-desc' | 'amount-asc' | 'address-asc' | 'address-desc';
 type TabKey = 'active' | 'closed' | 'listings';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: 'date-desc', label: 'Newest' },
-  { value: 'date-asc', label: 'Oldest' },
-  { value: 'close-desc', label: 'Close ↓' },
-  { value: 'close-asc', label: 'Close ↑' },
-  { value: 'amount-desc', label: 'Highest' },
-  { value: 'amount-asc', label: 'Lowest' },
+  { value: 'close-desc', label: 'Close Date ↓' },
+  { value: 'close-asc', label: 'Close Date ↑' },
+  { value: 'amount-desc', label: 'Highest $' },
+  { value: 'amount-asc', label: 'Lowest $' },
   { value: 'address-asc', label: 'A → Z' },
   { value: 'address-desc', label: 'Z → A' },
 ];
@@ -51,27 +49,17 @@ const TABS: { key: TabKey; label: string; icon: typeof Building2 }[] = [
 function getSortFn(key: SortKey) {
   return (a: SyncedDeal, b: SyncedDeal) => {
     switch (key) {
-      case 'date-desc': {
-        const dA = a.closeDate || a.firmDate || '';
-        const dB = b.closeDate || b.firmDate || '';
-        return dB.localeCompare(dA);
-      }
-      case 'date-asc': {
-        const dA = a.closeDate || a.firmDate || '';
-        const dB = b.closeDate || b.firmDate || '';
-        return dA.localeCompare(dB);
-      }
       case 'close-desc': {
-        const dA = a.closeDate || '';
-        const dB = b.closeDate || '';
+        const dA = a.closeDate || a.firmDate || '';
+        const dB = b.closeDate || b.firmDate || '';
         if (!dA && !dB) return 0;
         if (!dA) return 1;
         if (!dB) return -1;
         return dB.localeCompare(dA);
       }
       case 'close-asc': {
-        const dA = a.closeDate || '';
-        const dB = b.closeDate || '';
+        const dA = a.closeDate || a.firmDate || '';
+        const dB = b.closeDate || b.firmDate || '';
         if (!dA && !dB) return 0;
         if (!dA) return 1;
         if (!dB) return -1;
@@ -97,7 +85,7 @@ export default function DealsPage() {
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('active');
-  const [sortKey, setSortKey] = useState<SortKey>('date-desc');
+  const [sortKey, setSortKey] = useState<SortKey>('close-desc');
   const [showFilters, setShowFilters] = useState(false);
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
