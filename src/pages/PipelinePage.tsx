@@ -151,73 +151,53 @@ function StatusCell({ status, onClick }: { status: string; onClick: () => void }
 }
 
 // ── Quick-add row ──────────────────────────────────────────────────────
-function QuickAddRow({ onAdd }: { onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; deal_type: string }) => void }) {
+function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; deal_type: string }) => void; defaultDealType?: string; defaultHomeType?: string }) {
   const [name, setName] = useState('');
-  const [homeType, setHomeType] = useState('Detached');
   const [commission, setCommission] = useState('');
   const [temp, setTemp] = useState('warm');
-  const [dealType, setDealType] = useState('buyer');
   const nameRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     if (!name.trim()) return;
     onAdd({
       client_name: name.trim(),
-      home_type: homeType,
+      home_type: defaultHomeType || 'Detached',
       potential_commission: parseFloat(commission) || 0,
       temperature: temp,
-      deal_type: dealType,
+      deal_type: defaultDealType || 'buyer',
     });
     setName('');
     setCommission('');
-    setHomeType('Detached');
     setTemp('warm');
-    setDealType('buyer');
     setTimeout(() => nameRef.current?.focus(), 50);
   };
 
   return (
-    <div className="flex items-center border-t-2 border-dashed border-primary/20 bg-primary/[0.02]">
-      <div className="w-10 shrink-0 px-3 py-2.5 flex items-center justify-center">
-        <Plus className="h-3.5 w-3.5 text-primary/40" />
-      </div>
-      <div className="flex-[2] min-w-[180px] border-l border-border/20 px-1 py-1">
-        <input
-          ref={nameRef}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-          placeholder="Type client name to add..."
-          className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm font-medium placeholder:text-muted-foreground/30"
-        />
-      </div>
-      <div className="w-[90px] shrink-0 border-l border-border/20 px-1 py-1">
-        <select value={dealType} onChange={(e) => setDealType(e.target.value)} className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm text-muted-foreground">
-          {DEAL_TYPE_OPTIONS.map(t => <option key={t} value={t}>{DEAL_TYPE_LABELS[t]}</option>)}
-        </select>
-      </div>
-      <div className="flex-1 min-w-[130px] border-l border-border/20 px-1 py-1">
-        <select value={homeType} onChange={(e) => setHomeType(e.target.value)} className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm text-muted-foreground">
-          {HOME_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div className="flex-1 min-w-[140px] border-l border-border/20 px-1 py-1">
-        <input type="number" value={commission} onChange={(e) => setCommission(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }} placeholder="$0" className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm placeholder:text-muted-foreground/30" />
-      </div>
-      <div className="flex-1 min-w-[100px] border-l border-border/20 px-1 py-1">
-        <select value={temp} onChange={(e) => setTemp(e.target.value)} className="w-full bg-transparent border-0 outline-none px-2 py-1.5 text-sm text-muted-foreground">
-          {TEMP_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-        </select>
-      </div>
-      <div className="flex-1 min-w-[100px] border-l border-border/20 px-3 py-2.5 text-xs text-muted-foreground/40">Active</div>
-      <div className="flex-[2] min-w-[140px] border-l border-border/20" />
-      <div className="w-14 shrink-0 border-l border-border/20 flex items-center justify-center">
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary font-semibold" onClick={handleSubmit} disabled={!name.trim()}>Add</Button>
-      </div>
+    <div className="flex items-center gap-2 px-3 py-2 border-t border-dashed border-border/40 bg-muted/10">
+      <Plus className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0" />
+      <input
+        ref={nameRef}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+        placeholder="Client name..."
+        className="flex-1 bg-transparent border-0 outline-none text-sm font-medium placeholder:text-muted-foreground/30 min-w-0"
+      />
+      <input
+        type="number"
+        value={commission}
+        onChange={(e) => setCommission(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+        placeholder="$0"
+        className="w-24 bg-transparent border-0 outline-none text-sm text-right placeholder:text-muted-foreground/30"
+      />
+      <select value={temp} onChange={(e) => setTemp(e.target.value)} className="bg-transparent border-0 outline-none text-xs text-muted-foreground">
+        {TEMP_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+      </select>
+      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary font-semibold shrink-0" onClick={handleSubmit} disabled={!name.trim()}>Add</Button>
     </div>
   );
 }
-
 // ── Board Card ──────────────────────────────────────────────────────────
 function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
   prospect: PipelineProspect;
@@ -647,141 +627,121 @@ export default function PipelinePage() {
             )}
           </motion.div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-xl border border-border bg-card overflow-hidden"
-          >
-            <div className="overflow-x-auto">
-              {/* Header */}
-              <div className="flex bg-muted/30 border-b border-border sticky top-0 z-10">
-                <div className="w-10 shrink-0 px-3 py-3 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">#</div>
-                {[
-                  { label: 'Client', width: 'flex-[2] min-w-[180px]' },
-                  { label: 'Type', width: 'w-[90px] shrink-0' },
-                  { label: 'Property Type', width: 'flex-1 min-w-[130px]' },
-                  { label: 'Est. Commission', width: 'flex-1 min-w-[140px]' },
-                  { label: 'Temperature', width: 'flex-1 min-w-[100px]' },
-                  { label: 'Status', width: 'flex-1 min-w-[100px]' },
-                  { label: 'Notes', width: 'flex-[2] min-w-[140px]' },
-                ].map(col => (
-                  <div key={col.label} className={cn("px-3 py-3 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest border-l border-border/20", col.width)}>
-                    {col.label}
-                  </div>
-                ))}
-                <div className="w-14 shrink-0 border-l border-border/20" />
-              </div>
-
-              {/* Rows */}
-              {isLoading ? (
-                <div className="px-6 py-16 text-center text-muted-foreground text-sm">Loading pipeline...</div>
-              ) : prospects.length === 0 ? (
-                <div className="px-6 py-16 text-center">
-                  <TrendingUp className="h-10 w-10 mx-auto mb-3 text-muted-foreground/20" />
-                  <p className="text-sm font-medium text-muted-foreground">Your pipeline is empty</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">Start typing below to add your first prospect</p>
-                </div>
-              ) : (
-                <>
-                  {([
-                    { key: 'presale', label: 'Presale', color: 'bg-amber-500/5', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', filter: (p: PipelineProspect) => p.home_type === 'Presale' },
-                    { key: 'buyer', label: 'Buyers', color: 'bg-sky-500/5', badgeClass: DEAL_TYPE_COLORS['buyer'], filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
-                    { key: 'seller', label: 'Sellers', color: 'bg-violet-500/5', badgeClass: DEAL_TYPE_COLORS['seller'], filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
-                  ]).map(group => {
-                    const groupItems = [...prospects].reverse().filter(group.filter);
-                    if (groupItems.length === 0) return null;
-                    const groupTotal = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
-                    return (
-                      <div key={group.key}>
-                        <div className={cn(
-                          "flex items-center gap-2 px-4 py-2.5 border-b border-border",
-                          group.color
-                        )}>
-                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider", group.badgeClass)}>
-                            {group.label}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} prospects</span>
-                          <span className="text-[10px] font-bold text-primary ml-auto">{formatCurrency(groupTotal)}</span>
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="px-6 py-16 text-center text-muted-foreground text-sm">Loading pipeline...</div>
+            ) : (
+              <>
+                {([
+                  { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', badgeClass: 'bg-amber-500/15 text-amber-600 border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.home_type === 'Presale' },
+                  { key: 'buyer', label: 'Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', badgeClass: DEAL_TYPE_COLORS['buyer'], dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
+                  { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', badgeClass: DEAL_TYPE_COLORS['seller'], dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
+                ]).map(group => {
+                  const groupItems = [...prospects].reverse().filter(group.filter);
+                  const groupGCI = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
+                  return (
+                    <motion.div
+                      key={group.key}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 }}
+                      className="rounded-xl border border-border bg-card overflow-hidden"
+                    >
+                      {/* Section Header */}
+                      <div className={cn("flex items-center gap-3 px-4 py-3 border-b", group.headerBorder, group.headerBg)}>
+                        <div className={cn("w-2 h-2 rounded-full shrink-0", group.dotColor)} />
+                        <span className="text-sm font-bold tracking-tight">{group.label}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} deals</span>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                          <span className="text-sm font-bold text-primary">{formatCurrency(groupGCI)}</span>
                         </div>
+                      </div>
+
+                      {/* Column headers */}
+                      <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                        <div className="w-8 shrink-0 px-2 py-2">#</div>
+                        <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
+                        <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
+                        <div className="flex-1 min-w-[120px] px-3 py-2 border-l border-border/15">Est. GCI</div>
+                        <div className="w-[80px] shrink-0 px-3 py-2 border-l border-border/15">Temp</div>
+                        <div className="w-[90px] shrink-0 px-3 py-2 border-l border-border/15">Status</div>
+                        <div className="flex-[2] min-w-[120px] px-3 py-2 border-l border-border/15">Notes</div>
+                        <div className="w-10 shrink-0" />
+                      </div>
+
+                      {/* Rows */}
+                      {groupItems.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-xs text-muted-foreground/40">No deals yet</div>
+                      ) : (
                         <AnimatePresence mode="popLayout">
                           {groupItems.map((p, idx) => (
                             <motion.div
                               key={p.id}
                               layout
-                              initial={{ opacity: 0, y: 8 }}
+                              initial={{ opacity: 0, y: 6 }}
                               animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, x: -30 }}
-                              transition={{ duration: 0.2 }}
+                              exit={{ opacity: 0, x: -20 }}
+                              transition={{ duration: 0.15 }}
                               className={cn(
-                                "flex border-b border-border group transition-colors",
-                                idx % 2 === 0 ? 'bg-card' : 'bg-muted/20',
-                                'hover:bg-primary/[0.04]'
+                                "flex border-b border-border/30 group transition-colors",
+                                idx % 2 === 0 ? 'bg-card' : 'bg-muted/10',
+                                'hover:bg-primary/[0.03]'
                               )}
                             >
-                              <div className="w-10 shrink-0 px-3 py-2.5 text-xs text-muted-foreground/40 font-mono flex items-center">{idx + 1}</div>
-                              <div className="flex-[2] min-w-[180px] border-l border-border/15">
+                              <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
+                              <div className="flex-[3] min-w-[160px] border-l border-border/10">
                                 <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
                               </div>
-                              <div className="w-[90px] shrink-0 border-l border-border/15">
-                                {isEditing(p.id, 'deal_type') ? (
-                                  <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
-                                ) : (
-                                  <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
-                                    <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
-                                      {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-[130px] border-l border-border/15">
+                              <div className="flex-1 min-w-[100px] border-l border-border/10">
                                 {isEditing(p.id, 'home_type') ? (
                                   <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
                                 ) : (
-                                  <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2.5 text-sm cursor-pointer text-muted-foreground min-h-[42px] flex items-center">{p.home_type}</div>
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
                                 )}
                               </div>
-                              <div className="flex-1 min-w-[140px] border-l border-border/15">
+                              <div className="flex-1 min-w-[120px] border-l border-border/10">
                                 {isEditing(p.id, 'potential_commission') ? (
                                   <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
                                 ) : (
-                                  <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2.5 text-sm cursor-text font-bold text-primary min-h-[42px] flex items-center">{formatCurrency(p.potential_commission)}</div>
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2 text-sm cursor-text font-bold text-primary min-h-[36px] flex items-center">{formatCurrency(p.potential_commission)}</div>
                                 )}
                               </div>
-                              <div className="flex-1 min-w-[100px] border-l border-border/15">
+                              <div className="w-[80px] shrink-0 border-l border-border/10">
                                 {isEditing(p.id, 'temperature') ? (
                                   <InlineCell value={p.temperature || 'warm'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'temperature', v)} type="select" options={TEMP_OPTIONS} />
                                 ) : (
                                   <TempBadge temp={p.temperature || 'warm'} onClick={() => setEditingCell({ id: p.id, field: 'temperature' })} />
                                 )}
                               </div>
-                              <div className="flex-1 min-w-[100px] border-l border-border/15">
+                              <div className="w-[90px] shrink-0 border-l border-border/10">
                                 {isEditing(p.id, 'status') ? (
                                   <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
                                 ) : (
                                   <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
                                 )}
                               </div>
-                              <div className="flex-[2] min-w-[140px] border-l border-border/15">
+                              <div className="flex-[2] min-w-[120px] border-l border-border/10">
                                 <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
                               </div>
-                              <div className="w-14 shrink-0 border-l border-border/15 flex items-center justify-center">
-                                <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive">
-                                  <Trash2 className="h-3.5 w-3.5" />
+                              <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                                <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
                               </div>
                             </motion.div>
                           ))}
                         </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
+                      )}
 
-              <QuickAddRow onAdd={handleAdd} />
-            </div>
-          </motion.div>
+                      {/* Quick add for this section */}
+                      <QuickAddRow onAdd={handleAdd} defaultDealType={group.defaultDealType} defaultHomeType={group.defaultHomeType} />
+                    </motion.div>
+                  );
+                })}
+              </>
+            )}
+          </div>
         )}
       </div>
       </PullToRefresh>
