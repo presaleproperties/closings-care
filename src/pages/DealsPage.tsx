@@ -437,6 +437,7 @@ export default function DealsPage() {
               {/* ── Deal List grouped by month ── */}
               {filteredDeals.length > 0 ? (
                 <div className="space-y-4">
+                  <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest px-1">Grouped by Close Date</p>
                   {monthGroups.map(({ key, label, deals: groupDeals, totalPayout }) => {
                     const isCollapsed = collapsedMonths.has(key);
                     return (
