@@ -16,6 +16,7 @@ import {
   Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logoMark from '@/assets/logo-mark.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
@@ -105,7 +106,7 @@ export function Sidebar() {
       <div className="relative px-4 py-3.5 border-b border-border/20">
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
           <img 
-            src="/favicon.png" 
+            src={logoMark} 
             alt="Dealzflow" 
             className="w-8 h-8 rounded-[10px] transition-all duration-200 group-hover:scale-105 flex-shrink-0"
           />
@@ -114,7 +115,7 @@ export function Sidebar() {
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
             <h1 className="font-semibold text-sidebar-foreground text-[15px] leading-tight tracking-[-0.02em] whitespace-nowrap">
-              dealzflow
+              dealz<span className="text-primary">flow</span>
             </h1>
           </div>
         </Link>
