@@ -508,7 +508,7 @@ export default function PipelinePage() {
     updateProspect.mutate(updates);
   }, [updateProspect]);
 
-  const handleAdd = (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status?: string }) => {
+  const handleAdd = (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; deal_type?: string; status?: string }) => {
     addProspect.mutate(data as any);
   };
 
