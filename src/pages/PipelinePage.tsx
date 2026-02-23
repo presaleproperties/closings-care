@@ -420,12 +420,12 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
       {columns.map(col => (
         <div
           key={col.status}
           className={cn(
-            "flex flex-col min-h-[200px] rounded-xl border border-border bg-card/50 transition-all duration-200 p-2",
+            "flex flex-col min-h-[200px] rounded-xl border border-border bg-card/50 transition-all duration-200 p-2 shrink-0 w-[280px] sm:w-[calc(50%-6px)] lg:w-[calc(25%-9px)] snap-start",
             dragOverCol === col.status && !dragColSource && "bg-primary/5 border-primary/30",
             dragOverColTarget === col.status && dragColSource && "border-primary/30 bg-primary/5"
           )}
