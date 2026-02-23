@@ -683,83 +683,96 @@ export default function PipelinePage() {
                   <p className="text-xs text-muted-foreground/60 mt-1">Start typing below to add your first prospect</p>
                 </div>
               ) : (
-                <AnimatePresence mode="popLayout">
-                  {[...prospects].reverse().map((p, idx) => (
-                    <motion.div
-                      key={p.id}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -30 }}
-                      transition={{ duration: 0.2 }}
-                      className={cn(
-                        "flex border-b border-border group transition-colors",
-                        idx % 2 === 0 ? 'bg-card' : 'bg-muted/20',
-                        'hover:bg-primary/[0.04]'
-                      )}
-                    >
-                      <div className="w-10 shrink-0 px-3 py-2.5 text-xs text-muted-foreground/40 font-mono flex items-center">{idx + 1}</div>
-
-                      <div className="flex-[2] min-w-[180px] border-l border-border/15">
-                        <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                <>
+                  {(['buyer', 'seller'] as const).map(dealType => {
+                    const groupItems = [...prospects].reverse().filter(p => (p.deal_type || 'buyer') === dealType);
+                    if (groupItems.length === 0) return null;
+                    const groupTotal = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
+                    return (
+                      <div key={dealType}>
+                        <div className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 border-b border-border",
+                          dealType === 'buyer' ? 'bg-sky-500/5' : 'bg-violet-500/5'
+                        )}>
+                          <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider", DEAL_TYPE_COLORS[dealType])}>
+                            {DEAL_TYPE_LABELS[dealType]}s
+                          </span>
+                          <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} prospects</span>
+                          <span className="text-[10px] font-bold text-primary ml-auto">{formatCurrency(groupTotal)}</span>
+                        </div>
+                        <AnimatePresence mode="popLayout">
+                          {groupItems.map((p, idx) => (
+                            <motion.div
+                              key={p.id}
+                              layout
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, x: -30 }}
+                              transition={{ duration: 0.2 }}
+                              className={cn(
+                                "flex border-b border-border group transition-colors",
+                                idx % 2 === 0 ? 'bg-card' : 'bg-muted/20',
+                                'hover:bg-primary/[0.04]'
+                              )}
+                            >
+                              <div className="w-10 shrink-0 px-3 py-2.5 text-xs text-muted-foreground/40 font-mono flex items-center">{idx + 1}</div>
+                              <div className="flex-[2] min-w-[180px] border-l border-border/15">
+                                <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                              </div>
+                              <div className="w-[90px] shrink-0 border-l border-border/15">
+                                {isEditing(p.id, 'deal_type') ? (
+                                  <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
+                                ) : (
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
+                                    <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                                      {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-[130px] border-l border-border/15">
+                                {isEditing(p.id, 'home_type') ? (
+                                  <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
+                                ) : (
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2.5 text-sm cursor-pointer text-muted-foreground min-h-[42px] flex items-center">{p.home_type}</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-[140px] border-l border-border/15">
+                                {isEditing(p.id, 'potential_commission') ? (
+                                  <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
+                                ) : (
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2.5 text-sm cursor-text font-bold text-primary min-h-[42px] flex items-center">{formatCurrency(p.potential_commission)}</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-[100px] border-l border-border/15">
+                                {isEditing(p.id, 'temperature') ? (
+                                  <InlineCell value={p.temperature || 'warm'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'temperature', v)} type="select" options={TEMP_OPTIONS} />
+                                ) : (
+                                  <TempBadge temp={p.temperature || 'warm'} onClick={() => setEditingCell({ id: p.id, field: 'temperature' })} />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-[100px] border-l border-border/15">
+                                {isEditing(p.id, 'status') ? (
+                                  <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
+                                ) : (
+                                  <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
+                                )}
+                              </div>
+                              <div className="flex-[2] min-w-[140px] border-l border-border/15">
+                                <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
+                              </div>
+                              <div className="w-14 shrink-0 border-l border-border/15 flex items-center justify-center">
+                                <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
                       </div>
-
-                      <div className="w-[90px] shrink-0 border-l border-border/15">
-                        {isEditing(p.id, 'deal_type') ? (
-                          <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
-                        ) : (
-                          <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
-                            <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
-                              {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-[130px] border-l border-border/15">
-                        {isEditing(p.id, 'home_type') ? (
-                          <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
-                        ) : (
-                          <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2.5 text-sm cursor-pointer text-muted-foreground min-h-[42px] flex items-center">{p.home_type}</div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-[140px] border-l border-border/15">
-                        {isEditing(p.id, 'potential_commission') ? (
-                          <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
-                        ) : (
-                          <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2.5 text-sm cursor-text font-bold text-primary min-h-[42px] flex items-center">{formatCurrency(p.potential_commission)}</div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-[100px] border-l border-border/15">
-                        {isEditing(p.id, 'temperature') ? (
-                          <InlineCell value={p.temperature || 'warm'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'temperature', v)} type="select" options={TEMP_OPTIONS} />
-                        ) : (
-                          <TempBadge temp={p.temperature || 'warm'} onClick={() => setEditingCell({ id: p.id, field: 'temperature' })} />
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-[100px] border-l border-border/15">
-                        {isEditing(p.id, 'status') ? (
-                          <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
-                        ) : (
-                          <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
-                        )}
-                      </div>
-
-                      <div className="flex-[2] min-w-[140px] border-l border-border/15">
-                        <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
-                      </div>
-
-                      <div className="w-14 shrink-0 border-l border-border/15 flex items-center justify-center">
-                        <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                    );
+                  })}
+                </>
               )}
 
               <QuickAddRow onAdd={handleAdd} />
