@@ -565,18 +565,38 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
             )}
           </div>
 
-          {/* Cards */}
-          <div className="space-y-1.5 flex-1">
-            <AnimatePresence mode="popLayout">
-              {col.items.map(p => (
-                <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
-              ))}
-            </AnimatePresence>
-
-            {col.items.length === 0 && (
+          {/* Cards grouped by temperature */}
+          <div className="flex-1 space-y-1">
+            {col.items.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border/40 p-4 text-center">
                 <p className="text-[10px] text-muted-foreground/40">Drop here</p>
               </div>
+            ) : (
+              [
+                { temp: 'hot', label: 'Hot', icon: Flame, pillClass: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
+                { temp: 'warm', label: 'Warm', icon: Thermometer, pillClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+                { temp: 'cold', label: 'Cold', icon: Snowflake, pillClass: 'bg-sky-500/10 text-sky-500 border-sky-500/20' },
+              ].map(({ temp, label, icon: TIcon, pillClass }) => {
+                const tempItems = col.items.filter(p => (p.temperature || 'warm') === temp);
+                if (tempItems.length === 0) return null;
+                return (
+                  <div key={temp}>
+                    {/* Temp divider */}
+                    <div className={cn("flex items-center gap-1.5 px-1 py-1 mb-1 rounded-md border text-[10px] font-semibold", pillClass)}>
+                      <TIcon className="h-2.5 w-2.5" />
+                      {label}
+                      <span className="font-normal opacity-60 ml-auto">{tempItems.length}</span>
+                    </div>
+                    <AnimatePresence mode="popLayout">
+                      {tempItems.map(p => (
+                        <div key={p.id} className="mb-1.5">
+                          <BoardCard prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={(id, field, value) => { onUpdate(id, field, value); }} />
+                        </div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
             )}
 
             <BoardQuickAdd status={col.status} onAdd={onAdd} />
