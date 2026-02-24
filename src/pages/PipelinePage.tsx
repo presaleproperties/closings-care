@@ -325,36 +325,26 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
   onDelete: (id: string) => void;
   onUpdate: (id: string, field: string, value: string) => void;
 }) {
-  // Cards are moved via drag-and-drop between columns
-
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.97 }}
-      transition={{ duration: 0.15 }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.13 }}
       draggable
       onDragStart={(e: any) => {
         e.dataTransfer?.setData('text/plain', prospect.id);
-        e.currentTarget.style.opacity = '0.5';
+        e.currentTarget.style.opacity = '0.45';
       }}
       onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-      className="rounded-lg border border-border bg-card px-2.5 py-2 group hover:border-primary/30 transition-all cursor-grab active:cursor-grabbing"
+      className="rounded-lg border border-border/60 bg-card px-3 py-2.5 group hover:border-primary/30 hover:shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing"
     >
-      {/* Row 1: Name + temp */}
-      <div className="flex items-center justify-between gap-1.5">
-        <p className="text-[11px] font-semibold text-foreground truncate flex-1">{prospect.client_name}</p>
-        <button
-          onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(prospect.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; onUpdate(prospect.id, 'temperature', next); triggerHaptic('light'); }}
-          className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-        >
-          <TempBadge temp={prospect.temperature || 'warm'} compact />
-        </button>
-      </div>
+      {/* Name row */}
+      <p className="text-xs font-semibold text-foreground truncate mb-1.5">{prospect.client_name}</p>
 
-      {/* Row 2: Tags + commission */}
-      <div className="flex items-center justify-between gap-1.5 mt-1">
+      {/* Meta row */}
+      <div className="flex items-center justify-between gap-1.5">
         <div className="flex items-center gap-1">
           <button
             onClick={(e) => { e.stopPropagation(); const next = DEAL_TYPE_OPTIONS[(DEAL_TYPE_OPTIONS.indexOf(prospect.deal_type || 'buyer') + 1) % DEAL_TYPE_OPTIONS.length]; onUpdate(prospect.id, 'deal_type', next); triggerHaptic('light'); }}
@@ -362,10 +352,10 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
           >
             {DEAL_TYPE_LABELS[prospect.deal_type || 'buyer']}
           </button>
-          <span className="text-[10px] text-muted-foreground">{prospect.home_type}</span>
+          {prospect.home_type && <span className="text-[10px] text-muted-foreground/70">{prospect.home_type}</span>}
         </div>
         {prospect.potential_commission > 0 && (
-          <span className="text-[11px] font-bold text-primary">{formatCurrency(prospect.potential_commission)}</span>
+          <span className="text-[11px] font-bold text-primary tabular-nums">{formatCurrency(prospect.potential_commission)}</span>
         )}
       </div>
     </motion.div>
@@ -566,32 +556,31 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
           </div>
 
           {/* Cards grouped by temperature */}
-          <div className="flex-1 space-y-1">
+          <div className="flex-1 space-y-2">
             {col.items.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border/40 p-4 text-center">
-                <p className="text-[10px] text-muted-foreground/40">Drop here</p>
+              <div className="rounded-lg border border-dashed border-border/30 p-5 text-center">
+                <p className="text-[10px] text-muted-foreground/30">No leads</p>
               </div>
             ) : (
               [
-                { temp: 'hot', label: 'Hot', icon: Flame, pillClass: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
-                { temp: 'warm', label: 'Warm', icon: Thermometer, pillClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-                { temp: 'cold', label: 'Cold', icon: Snowflake, pillClass: 'bg-sky-500/10 text-sky-500 border-sky-500/20' },
-              ].map(({ temp, label, icon: TIcon, pillClass }) => {
+                { temp: 'hot', label: 'Hot', icon: Flame, dotClass: 'bg-rose-500' },
+                { temp: 'warm', label: 'Warm', icon: Thermometer, dotClass: 'bg-amber-500' },
+                { temp: 'cold', label: 'Cold', icon: Snowflake, dotClass: 'bg-sky-400' },
+              ].map(({ temp, label, icon: TIcon, dotClass }) => {
                 const tempItems = col.items.filter(p => (p.temperature || 'warm') === temp);
                 if (tempItems.length === 0) return null;
                 return (
-                  <div key={temp}>
-                    {/* Temp divider */}
-                    <div className={cn("flex items-center gap-1.5 px-1 py-1 mb-1 rounded-md border text-[10px] font-semibold", pillClass)}>
-                      <TIcon className="h-2.5 w-2.5" />
-                      {label}
-                      <span className="font-normal opacity-60 ml-auto">{tempItems.length}</span>
+                  <div key={temp} className="space-y-1.5">
+                    {/* Subtle label row */}
+                    <div className="flex items-center gap-1.5 px-0.5">
+                      <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotClass)} />
+                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+                      <div className="flex-1 h-px bg-border/40" />
+                      <span className="text-[10px] text-muted-foreground/50">{tempItems.length}</span>
                     </div>
                     <AnimatePresence mode="popLayout">
                       {tempItems.map(p => (
-                        <div key={p.id} className="mb-1.5">
-                          <BoardCard prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={(id, field, value) => { onUpdate(id, field, value); }} />
-                        </div>
+                        <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
                       ))}
                     </AnimatePresence>
                   </div>
@@ -599,7 +588,9 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
               })
             )}
 
-            <BoardQuickAdd status={col.status} onAdd={onAdd} />
+            <div className="pt-1">
+              <BoardQuickAdd status={col.status} onAdd={onAdd} />
+            </div>
           </div>
         </div>
       ))}
