@@ -199,12 +199,11 @@ function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data
 }
 // ── Temperature sub-group (list view) ─────────────────────────────────
 function TempSubGroup({
-  temp, label, icon: Icon, headerClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp,
+  temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp,
 }: {
   temp: string;
   label: string;
-  icon: any;
-  headerClass: string;
+  dotClass: string;
   items: PipelineProspect[];
   isEditing: (id: string, field: string) => boolean;
   setEditingCell: (cell: { id: string; field: string } | null) => void;
@@ -217,7 +216,7 @@ function TempSubGroup({
 
   return (
     <div
-      className={cn("transition-colors", isDragOver && "bg-primary/[0.04]")}
+      className={cn("transition-colors", isDragOver && "bg-primary/[0.03]")}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setIsDragOver(true); }}
       onDragLeave={() => setIsDragOver(false)}
       onDrop={(e) => {
@@ -227,19 +226,19 @@ function TempSubGroup({
         if (id) { onDropTemp(id); triggerHaptic('light'); }
       }}
     >
-      {/* Temp sub-header */}
+      {/* Temp sub-header — minimal dot + label divider */}
       <button
         onClick={() => setCollapsed(c => !c)}
         className={cn(
-          "w-full flex items-center gap-2 px-4 py-1.5 border-b border-t text-[11px] font-bold transition-colors",
-          headerClass,
-          isDragOver && "brightness-95"
+          "w-full flex items-center gap-2 px-4 py-1.5 border-b border-border/30 transition-colors hover:bg-muted/20",
+          isDragOver && "bg-primary/[0.04]"
         )}
       >
-        <Icon className="h-3 w-3" />
-        {label}
-        <span className="font-normal opacity-60">{items.length}</span>
-        <ChevronDown className={cn("h-3 w-3 ml-auto opacity-50 transition-transform", collapsed && "-rotate-90")} />
+        <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotClass)} />
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+        <div className="flex-1 h-px bg-border/40 mx-1" />
+        <span className="text-[10px] text-muted-foreground/50">{items.length}</span>
+        <ChevronDown className={cn("h-3 w-3 text-muted-foreground/40 transition-transform", collapsed && "-rotate-90")} />
       </button>
 
       {!collapsed && (
@@ -774,10 +773,10 @@ export default function PipelinePage() {
                   const groupItems = [...prospects].reverse().filter(group.filter);
                   const groupGCI = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
 
-                  const tempGroups: { temp: string; label: string; icon: any; headerClass: string; items: PipelineProspect[] }[] = [
-                    { temp: 'hot', label: 'Hot', icon: Flame, headerClass: 'bg-rose-500/8 border-rose-500/20 text-rose-600', items: groupItems.filter(p => (p.temperature || 'warm') === 'hot') },
-                    { temp: 'warm', label: 'Warm', icon: Thermometer, headerClass: 'bg-amber-500/8 border-amber-500/20 text-amber-600', items: groupItems.filter(p => (p.temperature || 'warm') === 'warm') },
-                    { temp: 'cold', label: 'Cold', icon: Snowflake, headerClass: 'bg-sky-500/8 border-sky-500/20 text-sky-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'cold') },
+                  const tempGroups: { temp: string; label: string; dotClass: string; items: PipelineProspect[] }[] = [
+                    { temp: 'hot', label: 'Hot', dotClass: 'bg-rose-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'hot') },
+                    { temp: 'warm', label: 'Warm', dotClass: 'bg-amber-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'warm') },
+                    { temp: 'cold', label: 'Cold', dotClass: 'bg-sky-400', items: groupItems.filter(p => (p.temperature || 'warm') === 'cold') },
                   ].filter(tg => tg.items.length > 0 || tg.temp === 'warm'); // always show warm as drop target
 
                   return (
@@ -816,8 +815,7 @@ export default function PipelinePage() {
                           key={tg.temp}
                           temp={tg.temp}
                           label={tg.label}
-                          icon={tg.icon}
-                          headerClass={tg.headerClass}
+                          dotClass={tg.dotClass}
                           items={tg.items}
                           isEditing={isEditing}
                           setEditingCell={setEditingCell}
