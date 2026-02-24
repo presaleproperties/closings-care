@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Menu, ChevronLeft } from 'lucide-react';
+import { Plus, Menu, ChevronLeft, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
+import { useTheme } from 'next-themes';
 
 interface HeaderProps {
   title: string;
@@ -14,7 +15,23 @@ interface HeaderProps {
   backPath?: string;
 }
 
-export function Header({ 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 shrink-0 active:scale-90 transition-transform"
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      aria-label="Toggle theme"
+    >
+      <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    </Button>
+  );
+}
+
+export function Header({
   title, 
   subtitle, 
   action, 
@@ -66,6 +83,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <ThemeToggle />
           {action}
           {showAddDeal && (
             <>
