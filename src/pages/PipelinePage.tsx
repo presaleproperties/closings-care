@@ -267,7 +267,7 @@ function TempSubGroup({
                   }}
                   onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
                   className={cn(
-                    "flex border-b border-border/30 group transition-colors cursor-grab active:cursor-grabbing",
+                    "flex items-stretch border-b border-border/30 group transition-colors cursor-grab active:cursor-grabbing",
                     idx % 2 === 0 ? 'bg-card' : 'bg-muted/10',
                     'hover:bg-primary/[0.03]'
                   )}
@@ -277,6 +277,14 @@ function TempSubGroup({
                   </div>
                   <div className="flex-[3] min-w-[160px] border-l border-border/10">
                     <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                  </div>
+                  <div className="w-[70px] shrink-0 border-l border-border/10 flex items-center justify-center">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; handleSave(p.id, 'temperature', next); triggerHaptic('light'); }}
+                      className="cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <TempBadge temp={p.temperature || 'warm'} compact />
+                    </button>
                   </div>
                   <div className="flex-1 min-w-[100px] border-l border-border/10">
                     {isEditing(p.id, 'home_type') ? (
@@ -802,6 +810,7 @@ export default function PipelinePage() {
                       <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                         <div className="w-8 shrink-0 px-2 py-2" />
                         <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
+                        <div className="w-[70px] shrink-0 px-3 py-2 border-l border-border/15">Temp</div>
                         <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
                         <div className="flex-1 min-w-[120px] px-3 py-2 border-l border-border/15">Est. GCI</div>
                         <div className="w-[90px] shrink-0 px-3 py-2 border-l border-border/15">Status</div>
