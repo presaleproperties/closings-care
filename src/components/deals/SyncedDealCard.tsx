@@ -52,6 +52,7 @@ export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className={cn(
             "w-2.5 h-2.5 rounded-full",
+            deal.isListing ? 'bg-amber-500' :
             deal.status === 'closed' ? 'bg-emerald-500' :
             deal.status === 'active' ? 'bg-primary' :
             'bg-amber-500'
@@ -71,7 +72,7 @@ export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps
               </span>
             )}
             {deal.isListing && (
-              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium">
+              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold">
                 Listing
               </span>
             )}
@@ -119,6 +120,7 @@ export function SyncedDealCard({ deal, index = 0, onClick }: SyncedDealCardProps
           <div className="text-right">
             <p className={cn(
               "text-base lg:text-lg font-bold tracking-tight",
+              deal.isListing ? 'text-amber-600 dark:text-amber-400' :
               deal.status === 'closed' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
             )}>
               {formatCurrency(deal.displayCommission || deal.myNetPayout || 0)}

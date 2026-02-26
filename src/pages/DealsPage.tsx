@@ -148,15 +148,18 @@ export default function DealsPage() {
   const stats = useMemo(() => {
     const allDeals = [...activeDeals, ...closedDeals];
     const closedListings = listings.filter(d => d.status === 'closed');
-    const closedNet = [...closedDeals, ...closedListings].reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
+    const closedNet = closedDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
     const activeNet = activeDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
+    const listingsNet = listings.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
     return {
       active: activeDeals.length,
       closed: closedDeals.length,
       listings: listings.length,
+      closedListings: closedListings.length,
       totalDeals: allDeals.length,
       closedNet,
       activeNet,
+      listingsNet,
       totalVolume: allDeals.reduce((sum, d) => sum + (d.salePrice || 0), 0),
     };
   }, [activeDeals, closedDeals, listings]);
@@ -202,7 +205,7 @@ export default function DealsPage() {
                   {
                     label: 'Earned',
                     value: formatCurrency(stats.closedNet),
-                    sub: 'From closed deals',
+                    sub: `Deals · ${stats.closed} closed`,
                     icon: DollarSign,
                     color: 'text-emerald-700 dark:text-emerald-400',
                     tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30',
@@ -218,13 +221,13 @@ export default function DealsPage() {
                     iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
                   },
                   {
-                    label: 'Volume',
-                    value: formatCurrencyCompact(stats.totalVolume),
-                    sub: 'Total sale price',
-                    icon: Building2,
-                    color: 'text-violet-700 dark:text-violet-400',
-                    tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25',
-                    iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+                    label: 'Listings',
+                    value: formatCurrency(stats.listingsNet),
+                    sub: `${stats.listings} total · ${stats.closedListings} closed`,
+                    icon: MapPin,
+                    color: 'text-amber-700 dark:text-amber-400',
+                    tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30',
+                    iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
                   },
                 ].map((stat, i) => (
                   <motion.div
