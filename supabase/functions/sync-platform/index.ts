@@ -190,7 +190,7 @@ function buildTransactionRecord(tx: any, userId: string, agentName: string, yent
 
 // ─── Sync Real Broker ─────────────────────────────────────────────────────────
 
-async function syncRealBroker(supabase: any, userId: string, apiKey: string, connectionId: string) {
+async function syncRealBroker(supabase: any, userId: string, apiKey: string, connectionId: string, prefs = { transactions: true, revshare: true, network: true }) {
   await supabase.from('platform_connections').update({
     sync_status: 'syncing', sync_error: null,
   }).eq('id', connectionId)
@@ -211,7 +211,10 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     let recordsSynced = 0
 
     // 2. Sync transactions - multiple lifecycle groups
-    for (const group of ['OPEN', 'CLOSED']) {
+    if (!prefs.transactions) {
+      console.log('[ReZen] Skipping transactions (disabled by user preferences)')
+    }
+    for (const group of ['OPEN', 'CLOSED'].filter(() => prefs.transactions)) {
       try {
         console.log(`[ReZen] Fetching ${group} transactions...`)
         const txData = await rezenGet(ARRAKIS,
@@ -305,6 +308,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     console.log(`[ReZen] === LISTING SYNC END: ${listingsFound} total listings ===`)
 
     // 3. Sync revenue share payments
+    if (prefs.revshare) {
     try {
       console.log('[ReZen] Fetching revshare payments...')
       const rsData = await rezenGet(ARRAKIS,
@@ -466,8 +470,10 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     } catch (contribErr) {
       console.warn('[ReZen] Per-agent contribution sync error:', contribErr)
     }
+    } // end if (prefs.revshare)
 
-    // 4. Sync revshare performance & by-tier data
+    // 4. Sync revshare performance & by-tier data + network summary
+    if (prefs.revshare || prefs.network) {
     try {
       console.log('[ReZen] Fetching revshare performance...')
       const [perfData, byTierData] = await Promise.allSettled([
@@ -520,8 +526,10 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     } catch (err) {
       console.warn('[ReZen] Performance/network sync error:', err)
     }
+    } // end if (prefs.revshare || prefs.network)
 
     // 6. Sync front-line agents (Tier 1 network) — now with avatar + network_size
+    if (prefs.network) {
     try {
       console.log('[ReZen] Fetching frontline agents...')
       const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
@@ -634,6 +642,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
         console.log(`[ReZen] Tier ${tier} downline: no data or error`)
       }
     }
+    } // end if (prefs.network)
 
     // Update connection status
     await supabase.from('platform_connections').update({
@@ -777,7 +786,12 @@ Deno.serve(async (req) => {
     }
 
     const userId = data.claims.sub as string;
-    const { platform, connection_id } = await req.json()
+    const { platform, connection_id, preferences } = await req.json()
+    const syncPrefs = {
+      transactions: preferences?.transactions !== false,
+      revshare: preferences?.revshare !== false,
+      network: preferences?.network !== false,
+    }
 
     if (!platform || !connection_id) {
       return new Response(JSON.stringify({ error: 'platform and connection_id required' }), {
@@ -810,7 +824,7 @@ Deno.serve(async (req) => {
         syncPromise = syncLofty(supabase, userId, connection.api_key, connection_id)
         break
       case 'real_broker':
-        syncPromise = syncRealBroker(supabase, userId, connection.api_key, connection_id)
+        syncPromise = syncRealBroker(supabase, userId, connection.api_key, connection_id, syncPrefs)
         break
       default:
         return new Response(JSON.stringify({ error: `Platform '${platform}' sync not yet supported` }), {
