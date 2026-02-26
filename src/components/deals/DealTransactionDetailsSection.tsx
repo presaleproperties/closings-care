@@ -102,7 +102,7 @@ export function DealTransactionDetailsSection({
 
           {/* Inline editable: Buyer Type */}
           <div className="flex items-center justify-between py-1">
-            <span className="text-xs lg:text-sm text-muted-foreground">Buyer Type</span>
+            <span className="text-xs lg:text-sm text-muted-foreground">Client Type</span>
             <Select value={type} onValueChange={handleTypeChange}>
               <SelectTrigger className="h-8 w-[160px] text-xs lg:text-sm border-dashed">
                 <SelectValue placeholder="Select type" />
