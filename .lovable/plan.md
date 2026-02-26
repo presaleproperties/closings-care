@@ -1,86 +1,89 @@
 
+## Landing Page Refresh: Audience Clarity + Integration Showcase
 
-# Codebase Cleanup Plan
-
-## Overview
-This plan addresses 5 categories of issues: duplicated logic, disconnected legacy systems, dead code, incomplete data refresh, and redundant route wrappers.
-
----
-
-## 1. Extract Shared Transaction Utilities
-
-Create a single shared utility file for transaction logic that's currently duplicated across 3-5 files.
-
-**New file: `src/lib/transactionUtils.ts`**
-- Move `TEAM_AGENT_NAMES` constant (single source of truth)
-- Move `isTeamDeal()` function
-- Move `extractNetPayout()` function
-- Move `getEffectiveCommission()` function
-- Export a shared `SyncedTransaction` interface
-
-**Files to update (remove local duplicates, import from shared util):**
-- `src/hooks/useSyncedDeals.tsx`
-- `src/hooks/useSyncedIncome.tsx`
-- `src/hooks/useSyncedPayouts.tsx`
-- `src/pages/DealDetailPage.tsx`
-- `src/components/deals/DealRelatedTransactionsSection.tsx`
+### Goal
+Make it immediately clear the product is built exclusively for **Real Brokerage agents** (not just "Canadian realtors"), highlight the direct ReZen connection as the #1 differentiator, and add a dedicated integrations section showing ReZen (live), SkySlope (coming soon), and Lofty (coming soon).
 
 ---
 
-## 2. Fix `useRefreshData` to Include Synced Data
+### Changes Overview
 
-Update `src/hooks/useRefreshData.tsx` to also invalidate:
-- `synced_transactions`
-- `platform_connections`
-- `sync_logs`
-- `revenue_share`
-- `pipeline_prospects`
+#### 1. Hero Section — Audience Signal
+- Change badge from `"BUILT FOR CANADIAN REALTORS"` → `"BUILT FOR REAL BROKERAGE AGENTS"`
+- Update headline to reinforce the Real Brokerage connection — e.g. *"Financial Clarity for Every Real Deal"*
+- Update sub-copy to call out the auto-sync: *"Connect your ReZen account once. Your deals, commissions, and rev share sync automatically."*
+- Add a third hero trust tag: `"Syncs directly with ReZen"`
+- Replace hero stat card's generic numbers with a "Connected to ReZen" badge/indicator in the card
 
-These are the queries the dashboard and deals pages actually depend on.
+#### 2. New "Integrations" Section — placed after HowItWorks, before DealTypes
+A dedicated section with:
+- Header: *"Connects to the tools you already use"*
+- Three integration tiles in a row:
+  - **ReZen** — `LIVE` green badge — *"Auto-sync your deals, payouts, rev share, and network. Connect once and everything stays up to date."*
+  - **SkySlope** — `COMING SOON` amber badge — *"Transaction coordination data synced directly into your deal pipeline."*
+  - **Lofty (Chime)** — `COMING SOON` amber badge — *"CRM contacts and pipeline leads coming straight into your pipeline view."*
+- Each tile: platform logo placeholder (icon-based), name, badge, description, and a subtle animated pulse on the LIVE badge
+
+#### 3. HowItWorks Section — Update Step 1
+- Change "Add your deals" → "Connect ReZen once"
+- Update description: *"Paste your ReZen API key in Settings. Deals, commissions, and rev share populate automatically — no manual entry."*
+- Keep Steps 2 & 3 as-is (the math, the clarity)
+
+#### 4. Features Section — Add "ReZen Auto-Sync" Feature Card
+- Insert a new feature card at position 1 (before Safe-to-Spend):
+  - Icon: `Zap` or `RefreshCw`
+  - Title: "Auto-Sync from ReZen"
+  - Desc: *"Connect once and your deals, payouts, and rev share populate automatically. No manual entry."*
+  - Highlights: Auto-imports deals, Rev share tracking, Network data synced, Payouts auto-matched
+  - Gradient: `from-emerald-600 to-green-500`
+- This makes the grid 7 features — adjust to `lg:grid-cols-3 md:grid-cols-2` which already handles it by wrapping
+
+#### 5. Pain Section — Add a ReZen-specific pain
+- Replace one of the 4 generic pains with a more targeted one:
+  - Icon: `RefreshCw`
+  - Question: *"Why am I manually entering deals I already closed in ReZen?"*
+  - Detail: *"You close a deal in ReZen, then re-enter it somewhere else for tracking. That's wasted time on work you already did."*
+
+#### 6. Testimonials — Update brokerage names
+- Change all testimonials to reference **Real Brokerage** agents specifically:
+  - "Sarah M. — Real Brokerage, Vancouver"
+  - "David C. — Real Brokerage, Burnaby"  
+  - "Jennifer L. — Real Brokerage, Calgary"
+- This reinforces the product is purpose-built for this audience
+
+#### 7. FAQ — Add ReZen-specific question
+- Add: *"Does it work with other brokerages?"* → *"Right now, dealzflow is purpose-built for Real Brokerage agents using ReZen. SkySlope and Lofty integrations are coming soon."*
 
 ---
 
-## 3. Remove Duplicate `HomeRoute`
+### Technical Details
 
-In `src/App.tsx`, delete the `HomeRoute` component and replace its usage with `PublicRoute` on the `/` route. They are functionally identical.
+**Files changed:**
+- `src/pages/LandingPage.tsx` — all changes above in one file
 
----
+**New imports needed:**
+- `RefreshCw`, `Wifi`, `Clock` from `lucide-react` (for new cards/icons)
 
-## 4. Clean Up Dead `chat_messages` References
+**New component added inside the file:**
+```tsx
+function IntegrationsSection() { ... }
+```
+Inserted between `<HowItWorksSection />` and `<DealTypesSection />` in the main render.
 
-Remove the `chat_messages` reference from the `delete-account` edge function cleanup list. The table itself can remain (no data loss risk) but the code reference is dead weight.
+**Integration tile structure:**
+```text
+┌─────────────────────────────────────┐
+│  [Icon]  ReZen          ● LIVE      │
+│  Auto-sync deals, payouts, rev...   │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│  [Icon]  SkySlope    ◌ COMING SOON  │
+│  Transaction coordination data...   │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│  [Icon]  Lofty (Chime) ◌ COMING SOON│
+│  CRM contacts and pipeline leads... │
+└─────────────────────────────────────┘
+```
 
----
-
-## 5. Flag Legacy Manual Deals System (No Removal Yet)
-
-The manual deals system (`useDeals`, `usePayouts`, `useCreateDeal`, `useUpdateDeal`, `NewDealPage`, `DealDraftContext`, and the `deals`/`payouts` DB tables) is **disconnected** from the synced transaction system that powers the rest of the app.
-
-**Recommendation:** Do NOT remove yet, but add a note. `NewDealPage` still allows manual deal entry which some users may need for deals outside of ReZen. However, these manual deals won't appear in the main Deals list, Payouts page, Dashboard stats, or Forecast -- which is confusing.
-
-A future step would be to either:
-- (A) Unify both systems so manual deals appear alongside synced deals, OR
-- (B) Remove manual deals entirely if all deals come through ReZen sync
-
-This is a design decision that needs your input before proceeding.
-
----
-
-## Technical Details
-
-### File changes summary
-
-| Action | File | What |
-|--------|------|------|
-| Create | `src/lib/transactionUtils.ts` | Shared transaction utilities |
-| Edit | `src/hooks/useSyncedDeals.tsx` | Import from shared util |
-| Edit | `src/hooks/useSyncedIncome.tsx` | Import from shared util |
-| Edit | `src/hooks/useSyncedPayouts.tsx` | Import from shared util |
-| Edit | `src/pages/DealDetailPage.tsx` | Import from shared util |
-| Edit | `src/components/deals/DealRelatedTransactionsSection.tsx` | Import from shared util |
-| Edit | `src/hooks/useRefreshData.tsx` | Add missing query invalidations |
-| Edit | `src/App.tsx` | Remove HomeRoute, use PublicRoute |
-| Edit | `supabase/functions/delete-account/index.ts` | Remove chat_messages reference |
-
-No database changes required. No breaking changes to the UI.
-
+No database changes required. No new dependencies needed.
