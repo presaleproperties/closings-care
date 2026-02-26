@@ -36,7 +36,7 @@ export function NeedsAttention({ syncedTransactions }: NeedsAttentionProps) {
         title: `${flaggedSynced.length} active deal${flaggedSynced.length > 1 ? 's' : ''} past close date`,
         subtitle: 'These deals are still active but their close date has passed',
         amount: flaggedValue,
-        link: '/deals',
+        link: '/deals?filter=overdue',
         severity: 'error',
       });
     }
@@ -54,7 +54,7 @@ export function NeedsAttention({ syncedTransactions }: NeedsAttentionProps) {
         title: `${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing this week`,
         subtitle: `${closingThisWeek.length} deal${closingThisWeek.length > 1 ? 's' : ''} closing within 7 days`,
         amount: weekValue,
-        link: '/deals',
+        link: '/deals?filter=this-week',
         severity: 'warning',
       });
     }
