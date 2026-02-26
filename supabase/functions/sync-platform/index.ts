@@ -268,27 +268,36 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     let listingsFound = 0
     console.log(`[ReZen] === LISTING SYNC START for agent ${yentaId} ===`)
 
-    // Try ARRAKIS-based listing endpoints first, then YENTA
-    const listingEndpointCandidates = [
-      { url: `transactions/participant/${yentaId}/listings/ACTIVE`, base: ARRAKIS },
-      { url: `transactions/participant/${yentaId}/listings/CLOSED`, base: ARRAKIS },
-      { url: `listings/agent/${yentaId}`, base: ARRAKIS },
-      { url: `listings/participant/${yentaId}`, base: ARRAKIS },
-      { url: `agents/${yentaId}/listings`, base: YENTA },
-      { url: `users/${yentaId}/listings`, base: YENTA },
+    // ReZen listings endpoint — uses agentId (yentaId) with pageNumber/pageSize
+    // Try the known patterns: /listings with agentId query param, and /agents/{id}/listings
+    const listingCandidates = [
+      // Pattern 1: filter by agentId query param
+      { base: ARRAKIS, url: `listings`, params: { agentId: yentaId, pageNumber: '0', pageSize: '200' } },
+      // Pattern 2: filter by listingAgentId
+      { base: ARRAKIS, url: `listings`, params: { listingAgentId: yentaId, pageNumber: '0', pageSize: '200' } },
+      // Pattern 3: agent sub-resource (different base path)
+      { base: ARRAKIS, url: `agents/${yentaId}/listings`, params: { pageNumber: '0', pageSize: '200' } },
+      // Pattern 4: YENTA agent listings
+      { base: YENTA, url: `agents/${yentaId}/listings`, params: { pageNumber: '0', pageSize: '200' } },
+      // Pattern 5: ARRAKIS transactions with listing type filter
+      { base: ARRAKIS, url: `transactions`, params: { agentId: yentaId, transactionType: 'LISTING', pageNumber: '0', pageSize: '200' } },
+      // Pattern 6: search endpoint
+      { base: ARRAKIS, url: `transactions/search`, params: { agentId: yentaId, listing: 'true', pageNumber: '0', pageSize: '200' } },
     ]
 
-    for (const candidate of listingEndpointCandidates) {
+    for (const candidate of listingCandidates) {
       try {
-        const baseLabel = candidate.base === ARRAKIS ? 'ARRAKIS' : 'YENTA'
-        console.log(`[ReZen] Trying listing: [${baseLabel}] ${candidate.url}`)
-        const listingData = await rezenGet(candidate.base, candidate.url, apiKey, { pageNumber: '0', pageSize: '200' })
-        const responseKeys = JSON.stringify(Object.keys(listingData || {}))
-        const listings = listingData?.data || listingData?.listings || listingData?.content || (Array.isArray(listingData) ? listingData : [])
-        console.log(`[ReZen] [${baseLabel}] ${candidate.url} → keys:${responseKeys} count:${Array.isArray(listings) ? listings.length : 'not-array'}`)
+        const label = `${candidate.base === ARRAKIS ? 'ARRAKIS' : 'YENTA'} ${candidate.url} params:${JSON.stringify(candidate.params)}`
+        console.log(`[ReZen] Trying listing endpoint: ${label}`)
+        const data = await rezenGet(candidate.base, candidate.url, apiKey, candidate.params)
+        const keys = Object.keys(data || {})
+        console.log(`[ReZen] Response keys: ${JSON.stringify(keys)}, totalPages: ${data?.totalPages}, totalElements: ${data?.totalElements}`)
 
-        if (Array.isArray(listings) && listings.length > 0) {
-          for (const tx of listings) {
+        const items = data?.data || data?.listings || data?.content || data?.results || (Array.isArray(data) ? data : [])
+        console.log(`[ReZen] Items found: ${Array.isArray(items) ? items.length : 'not-array'}`)
+
+        if (Array.isArray(items) && items.length > 0) {
+          for (const tx of items) {
             const record = buildTransactionRecord(tx, userId, agentName, yentaId)
             if (!record) continue
             record.is_listing = true
@@ -296,12 +305,12 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             recordsSynced++
             listingsFound++
           }
-          console.log(`[ReZen] SUCCESS: synced ${listingsFound} listings from [${baseLabel}] ${candidate.url}`)
-          // Don't break — there may be separate ACTIVE and CLOSED endpoints
+          console.log(`[ReZen] SUCCESS: synced ${listingsFound} listings from ${label}`)
+          break // found working endpoint, stop trying
         }
-      } catch (listErr) {
-        const msg = (listErr as Error).message?.slice(0, 150)
-        console.log(`[ReZen] FAIL listing [${candidate.base === ARRAKIS ? 'ARRAKIS' : 'YENTA'}] ${candidate.url}: ${msg}`)
+      } catch (err) {
+        const msg = (err as Error).message?.slice(0, 200)
+        console.log(`[ReZen] FAIL ${candidate.url}: ${msg}`)
       }
     }
 
