@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Save, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
@@ -41,8 +42,10 @@ export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
   const refreshData = useRefreshData();
-  const [activeTab, setActiveTab] = useState('general');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'general');
   const [hasChanges, setHasChanges] = useState(false);
+
 
   // All settings state
   const [taxPercent, setTaxPercent] = useState(0);
