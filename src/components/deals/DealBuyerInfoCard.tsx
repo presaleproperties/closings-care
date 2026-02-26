@@ -11,16 +11,17 @@ interface DealBuyerInfoCardProps {
 }
 
 export function DealBuyerInfoCard({ participants, clientName }: DealBuyerInfoCardProps) {
-  const buyer = participants.find((p) => p.participantRole === 'BUYER')
-    || participants.find((p) => p.participantRole === 'SELLER');
+  // For listings (SELLERS_AGENT deals), prioritize SELLER; for buyer deals, prioritize BUYER
+  const isListing = participants.some((p) => p.participantRole === 'SELLERS_AGENT');
+  const buyer = isListing
+    ? (participants.find((p) => p.participantRole === 'SELLER') || participants.find((p) => p.participantRole === 'BUYER'))
+    : (participants.find((p) => p.participantRole === 'BUYER') || participants.find((p) => p.participantRole === 'SELLER'));
 
   const name = buyer
     ? [buyer.firstName, buyer.lastName].filter(Boolean).join(' ') || buyer.company
     : clientName;
 
-  const role = buyer
-    ? buyer.participantRole === 'SELLER' ? 'Seller' : 'Buyer'
-    : 'Client';
+  const role = isListing ? 'Seller' : (buyer?.participantRole === 'SELLER' ? 'Seller' : 'Buyer');
 
   if (!name) return null;
 
