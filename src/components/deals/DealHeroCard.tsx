@@ -41,17 +41,19 @@ export function DealHeroCard({
     <div
       className={cn(
         'relative overflow-hidden rounded-2xl lg:rounded-3xl border p-4 lg:p-6',
-        status === 'closed'
+        status === 'closed' && !isListing
           ? 'bg-gradient-to-br from-emerald-500/5 to-card border-emerald-500/30'
-          : isPastDue
+          : isListing
             ? 'bg-gradient-to-br from-amber-500/5 to-card border-amber-500/30'
-            : 'bg-card/80 border-border/50'
+            : isPastDue
+              ? 'bg-gradient-to-br from-amber-500/5 to-card border-amber-500/30'
+              : 'bg-card/80 border-border/50'
       )}
     >
       <div
         className={cn(
           'absolute left-0 top-0 bottom-0 w-1 lg:w-1.5 rounded-l-2xl lg:rounded-l-3xl',
-          status === 'closed' ? 'bg-success' : isPastDue ? 'bg-amber-500' : 'bg-primary'
+          isListing ? 'bg-amber-500' : status === 'closed' ? 'bg-success' : isPastDue ? 'bg-amber-500' : 'bg-primary'
         )}
       />
 
@@ -81,7 +83,11 @@ export function DealHeroCard({
           </div>
 
           <div className="shrink-0">
-            {status === 'closed' ? (
+            {isListing ? (
+              <Badge className="bg-amber-500/15 text-amber-600 border-amber-500/30 gap-1 px-2 lg:px-3 py-1 lg:py-1.5 text-[11px]">
+                <MapPin className="h-3 w-3" /> {status === 'closed' ? 'Sold' : 'Active Listing'}
+              </Badge>
+            ) : status === 'closed' ? (
               <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 gap-1 px-2 lg:px-3 py-1 lg:py-1.5 text-[11px]">
                 <CheckCircle2 className="h-3 w-3" /> Settled
               </Badge>
@@ -115,8 +121,8 @@ export function DealHeroCard({
             </span>
           )}
           {isListing && (
-            <span className="text-[10px] lg:text-xs px-2 py-0.5 lg:py-1 rounded-lg bg-violet-500/10 text-violet-600 font-medium">
-              Listing
+            <span className="text-[10px] lg:text-xs px-2 py-0.5 lg:py-1 rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> Listing
             </span>
           )}
           {mlsNumber && mlsNumber !== 'N/A' && (

@@ -28,7 +28,8 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
         address: tx.property_address || tx.client_name || 'Unknown',
         amount: Number(tx.raw_data?.myNetPayout?.amount || tx.commission_amount || 0),
         agentName: tx.agent_name || undefined,
-        type: tx.transaction_type === 'BUYER_SIDE' ? 'Buyers Agent' : 'Listing Agent',
+        isListing: !!tx.is_listing,
+        type: tx.is_listing ? 'Listing Agent' : (tx.transaction_type === 'BUYER_SIDE' ? 'Buyers Agent' : 'Listing Agent'),
       }))
       .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
   }, [syncedTransactions, now]);
@@ -74,7 +75,7 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
                   {item.agentName && (
                     <span className="text-[11px] text-muted-foreground">{item.agentName}</span>
                   )}
-                  <Badge variant="outline" className="text-[10px] h-5 px-2">{item.type}</Badge>
+                  <Badge variant="outline" className={`text-[10px] h-5 px-2 ${item.isListing ? 'border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5' : ''}`}>{item.type}</Badge>
                 </div>
               </div>
               <p className="text-base font-bold text-foreground shrink-0">

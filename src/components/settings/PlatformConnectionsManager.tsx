@@ -67,8 +67,8 @@ const DATA_TYPES = [
     label: 'Listings',
     description: 'Properties where you are the listing agent',
     icon: TrendingUp,
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
+    color: 'text-amber-500',
+    bg: 'bg-amber-500/10',
   },
   {
     key: 'revshare' as const,
