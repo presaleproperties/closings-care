@@ -54,8 +54,14 @@ function extractTransactionFields(tx: any, yentaId: string) {
   // MLS number
   const mlsNumber = tx.mlsNum || tx.mlsNumber || null
 
-  // Listing flag
-  const isListing = tx.listing === true
+  // Listing flag — tx.listing flag OR user's participantRole is SELLERS_AGENT
+  let isListing = tx.listing === true
+  if (!isListing && tx.participants && Array.isArray(tx.participants)) {
+    const myParticipant = tx.participants.find((p: any) => p.yentaUserId === yentaId)
+    if (myParticipant?.participantRole === 'SELLERS_AGENT') {
+      isListing = true
+    }
+  }
 
   // Lifecycle state (detailed ReZen state)
   const lifecycleState = tx.lifecycleState?.state || (typeof tx.lifecycleState === 'string' ? tx.lifecycleState : null)
