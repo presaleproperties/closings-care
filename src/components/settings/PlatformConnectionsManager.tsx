@@ -29,6 +29,7 @@ import {
 
 export interface SyncPreferences {
   transactions: boolean;
+  listings: boolean;
   revshare: boolean;
   network: boolean;
 }
@@ -38,9 +39,9 @@ const PREF_KEY = 'sync_preferences';
 function loadPreferences(): SyncPreferences {
   try {
     const raw = localStorage.getItem(PREF_KEY);
-    if (raw) return { transactions: true, revshare: true, network: true, ...JSON.parse(raw) };
+    if (raw) return { transactions: true, listings: true, revshare: true, network: true, ...JSON.parse(raw) };
   } catch {}
-  return { transactions: true, revshare: true, network: true };
+  return { transactions: true, listings: true, revshare: true, network: true };
 }
 
 function savePreferences(prefs: SyncPreferences) {
@@ -60,6 +61,14 @@ const DATA_TYPES = [
     icon: Building2,
     color: 'text-blue-500',
     bg: 'bg-blue-500/10',
+  },
+  {
+    key: 'listings' as const,
+    label: 'Listings',
+    description: 'Properties where you are the listing agent',
+    icon: TrendingUp,
+    color: 'text-orange-500',
+    bg: 'bg-orange-500/10',
   },
   {
     key: 'revshare' as const,
