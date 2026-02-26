@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Trash2, ChevronLeft, ChevronRight, 
   Home, Briefcase, Building2, PiggyBank, Receipt,
   TrendingDown, Pencil, Wallet, ArrowUpRight, ArrowDownRight,
-  DollarSign, Calendar, MoreHorizontal, X, Check
+  DollarSign, Calendar, MoreHorizontal, X, Check, Tag, Zap, Settings2
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -49,13 +49,25 @@ import { ExpenseRow } from '@/components/expenses/ExpenseRow';
 import { PropertyCostsSection } from '@/components/expenses/PropertyCostsSection';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 import { useRefreshData } from '@/hooks/useRefreshData';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 
 // Use shared expense categories
 import { expenseCategories, getCategoryType, getAllCategoriesFlat, ExpenseType } from '@/lib/expenseCategories';
+import { useCustomExpenseCategories } from '@/hooks/useCustomExpenseCategories';
 
 const allCategoriesFlat = getAllCategoriesFlat();
 
 type RecurrenceType = 'monthly' | 'weekly' | 'yearly' | 'one-time';
+
+// Quick-pick chips per type — most common agent expenses
+const quickPicks: Record<ExpenseType, string[]> = {
+  personal: ['Groceries', 'Gym/Fitness', 'Entertainment/Dining', 'Phone (Personal)', 'Internet', 'Hydro/Utilities'],
+  business: ['Board Fees', 'Brokerage Fees', 'Facebook/Social Ads', 'Photography', 'Client Gifts', 'Staging/Clean-ups', 'Phone (Business)', 'CRM (CHIME, etc.)', 'Signs & Signage', 'Admin Support'],
+  rental: ['Rental Mortgage', 'Property Management', 'Rental Insurance', 'Rental Repairs/Maintenance', 'Rental Utilities'],
+  taxes: ['Tax Set-Aside', 'GST/HST Remittance', 'Debt Pay Down'],
+  other: ['Miscellaneous'],
+};
 
 const typeConfig: Record<ExpenseType, { icon: typeof Home; label: string; gradient: string; bg: string; border: string; text: string }> = {
   personal: { icon: Home, label: 'Personal', gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-500' },
@@ -82,12 +94,16 @@ export default function ExpensesPage() {
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
   const refreshData = useRefreshData();
+  const { getCategoriesForType, addCategory, removeCategory, customCategories } = useCustomExpenseCategories();
 
   const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<ExpenseType>('personal');
   const [activeFilter, setActiveFilter] = useState<ExpenseType | 'all'>('all');
+  const [categoryMode, setCategoryMode] = useState<'pick' | 'custom'>('pick');
+  const [newCustomName, setNewCustomName] = useState('');
+  const [showManageCategories, setShowManageCategories] = useState(false);
   const [formData, setFormData] = useState<Partial<ExpenseFormData> & { recurrence?: RecurrenceType; rental_property_id?: string; is_fixed?: boolean; is_tax_deductible?: boolean }>({
     category: '',
     amount: 0,
@@ -183,6 +199,8 @@ export default function ExpensesPage() {
     const expenseType = type || 'personal';
     setEditingId(null);
     setSelectedType(expenseType);
+    setCategoryMode('pick');
+    setNewCustomName('');
     setFormData({ 
       category: '', 
       amount: 0, 
@@ -199,6 +217,8 @@ export default function ExpensesPage() {
     const type = getCategoryType(expense.category);
     setEditingId(expense.id);
     setSelectedType(type);
+    setCategoryMode('pick');
+    setNewCustomName('');
     setFormData({
       category: expense.category,
       amount: expense.amount,
@@ -210,6 +230,15 @@ export default function ExpensesPage() {
       is_tax_deductible: (expense as any).is_tax_deductible !== false,
     });
     setShowDialog(true);
+  };
+
+  const handleAddCustomCategory = () => {
+    const trimmed = newCustomName.trim();
+    if (!trimmed) return;
+    addCategory(trimmed, selectedType);
+    setFormData(p => ({ ...p, category: trimmed }));
+    setNewCustomName('');
+    setCategoryMode('pick');
   };
 
   const handleSave = async () => {
@@ -597,12 +626,63 @@ export default function ExpensesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">{editingId ? 'Edit Expense' : 'New Expense'}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl">{editingId ? 'Edit Expense' : 'New Expense'}</DialogTitle>
+              <button
+                type="button"
+                onClick={() => setShowManageCategories(v => !v)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+                Manage Custom
+              </button>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-5 py-2">
+
+          {/* Manage Custom Categories Panel */}
+          <AnimatePresence>
+            {showManageCategories && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2 mb-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Custom Categories</p>
+                  {customCategories.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No custom categories yet. Add one below.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {customCategories.map(cat => {
+                        const cfg = typeConfig[cat.type];
+                        return (
+                          <div key={cat.id} className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-xs border", cfg.bg, cfg.border)}>
+                            <span className={cfg.text}>{cat.name}</span>
+                            <span className="text-muted-foreground/60">·</span>
+                            <span className="text-muted-foreground text-[10px]">{cfg.label}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeCategory(cat.id)}
+                              className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="space-y-5 py-1">
             {/* Type Selection */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category Type</Label>
@@ -614,7 +694,8 @@ export default function ExpensesPage() {
                       key={type}
                       type="button"
                       onClick={() => { 
-                        setSelectedType(type); 
+                        setSelectedType(type);
+                        setCategoryMode('pick');
                         setFormData(p => ({ 
                           ...p, 
                           category: '',
@@ -638,24 +719,164 @@ export default function ExpensesPage() {
               </div>
             </div>
 
-            {/* Category Selection */}
+            {/* Category — Quick Pick Chips or Custom Input */}
             <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={formData.category} onValueChange={(v) => setFormData(p => ({ ...p, category: v }))}>
-                <SelectTrigger className="h-11 rounded-xl">
-                  <SelectValue placeholder="Select category..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {Object.entries(currentCategories).map(([group, items]) => (
-                    <div key={group}>
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold uppercase tracking-wide">{group}</div>
-                      {(items as string[]).map((item: string) => (
-                        <SelectItem key={item} value={item}>{item}</SelectItem>
-                      ))}
+              <div className="flex items-center justify-between">
+                <Label>Category</Label>
+                <div className="flex rounded-lg border border-border overflow-hidden text-[11px] font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryMode('pick')}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      categoryMode === 'pick' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    Quick Pick
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryMode('custom')}
+                    className={cn(
+                      "px-2.5 py-1 transition-colors",
+                      categoryMode === 'custom' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    Custom
+                  </button>
+                </div>
+              </div>
+
+              {categoryMode === 'pick' ? (
+                <div className="space-y-3">
+                  {/* Quick-pick chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickPicks[selectedType].map(pick => (
+                      <button
+                        key={pick}
+                        type="button"
+                        onClick={() => setFormData(p => ({ ...p, category: pick }))}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-xs border transition-all",
+                          formData.category === pick
+                            ? `${typeConfig[selectedType].bg} ${typeConfig[selectedType].border} ${typeConfig[selectedType].text} font-semibold`
+                            : "border-border bg-muted/30 text-muted-foreground hover:bg-muted hover:border-muted-foreground"
+                        )}
+                      >
+                        {pick}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom categories for this type */}
+                  {getCategoriesForType(selectedType).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Your Custom</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {getCategoriesForType(selectedType).map(cat => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setFormData(p => ({ ...p, category: cat.name }))}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-xs border transition-all",
+                              formData.category === cat.name
+                                ? `${typeConfig[selectedType].bg} ${typeConfig[selectedType].border} ${typeConfig[selectedType].text} font-semibold`
+                                : "border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+                            )}
+                          >
+                            <Tag className="w-2.5 h-2.5 inline mr-1" />
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                  )}
+
+                  {/* Browse all via dropdown */}
+                  <Select value={formData.category} onValueChange={(v) => setFormData(p => ({ ...p, category: v }))}>
+                    <SelectTrigger className="h-9 rounded-xl text-xs text-muted-foreground border-dashed">
+                      <SelectValue placeholder="Browse all categories…" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {Object.entries(expenseCategories[selectedType] || {}).map(([group, items]) => (
+                        <div key={group}>
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground font-semibold uppercase tracking-wide">{group}</div>
+                          {(items as string[]).map((item: string) => (
+                            <SelectItem key={item} value={item}>{item}</SelectItem>
+                          ))}
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {formData.category && (
+                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border", typeConfig[selectedType].bg, typeConfig[selectedType].border)}>
+                      <Check className={cn("w-3.5 h-3.5", typeConfig[selectedType].text)} />
+                      <span>{formData.category}</span>
+                      <button type="button" onClick={() => setFormData(p => ({ ...p, category: '' }))} className="ml-auto text-muted-foreground hover:text-foreground">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Custom / manual entry */
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      className="h-11 rounded-xl flex-1"
+                      value={newCustomName}
+                      onChange={(e) => setNewCustomName(e.target.value)}
+                      placeholder="Type category name…"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newCustomName.trim()) {
+                            setFormData(p => ({ ...p, category: newCustomName.trim() }));
+                            setNewCustomName('');
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 px-3 rounded-xl shrink-0"
+                      onClick={() => {
+                        if (newCustomName.trim()) {
+                          setFormData(p => ({ ...p, category: newCustomName.trim() }));
+                          setNewCustomName('');
+                        }
+                      }}
+                    >
+                      Use Once
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-11 px-3 rounded-xl btn-premium shrink-0"
+                      onClick={handleAddCustomCategory}
+                      disabled={!newCustomName.trim()}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Save
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground px-1">
+                    "Use Once" — sets category for this entry only. "Save" — adds to your quick-picks permanently.
+                  </p>
+
+                  {formData.category && (
+                    <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border", typeConfig[selectedType].bg, typeConfig[selectedType].border)}>
+                      <Check className={cn("w-3.5 h-3.5", typeConfig[selectedType].text)} />
+                      <span>{formData.category}</span>
+                      <button type="button" onClick={() => setFormData(p => ({ ...p, category: '' }))} className="ml-auto text-muted-foreground hover:text-foreground">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Rental Property Selection */}
@@ -730,7 +951,10 @@ export default function ExpensesPage() {
                 "flex items-center justify-between p-3 rounded-xl border-2 transition-colors",
                 formData.is_fixed ? "border-primary/30 bg-primary/5" : "border-border"
               )}>
-                <Label className="text-sm cursor-pointer">Fixed Cost</Label>
+                <div>
+                  <Label className="text-sm cursor-pointer">Fixed Cost</Label>
+                  <p className="text-[10px] text-muted-foreground">Counts in runway</p>
+                </div>
                 <Switch
                   checked={formData.is_fixed}
                   onCheckedChange={(v) => setFormData(p => ({ ...p, is_fixed: v }))}
@@ -740,7 +964,10 @@ export default function ExpensesPage() {
                 "flex items-center justify-between p-3 rounded-xl border-2 transition-colors",
                 formData.is_tax_deductible ? "border-emerald-500/30 bg-emerald-500/5" : "border-border"
               )}>
-                <Label className="text-sm cursor-pointer">Tax Ded.</Label>
+                <div>
+                  <Label className="text-sm cursor-pointer">Tax Ded.</Label>
+                  <p className="text-[10px] text-muted-foreground">Reduces tax burden</p>
+                </div>
                 <Switch
                   checked={formData.is_tax_deductible}
                   onCheckedChange={(v) => setFormData(p => ({ ...p, is_tax_deductible: v }))}
@@ -755,7 +982,7 @@ export default function ExpensesPage() {
                 className="h-11 rounded-xl"
                 value={formData.notes || ''}
                 onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Add a note..."
+                placeholder="Add a note…"
               />
             </div>
           </div>
@@ -770,7 +997,7 @@ export default function ExpensesPage() {
               className="flex-1 h-11 rounded-xl btn-premium"
             >
               <Check className="w-4 h-4 mr-2" />
-              {editingId ? 'Save' : 'Add'}
+              {editingId ? 'Save Changes' : 'Add Expense'}
             </Button>
           </DialogFooter>
         </DialogContent>
