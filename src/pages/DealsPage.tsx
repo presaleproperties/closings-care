@@ -147,7 +147,8 @@ export default function DealsPage() {
 
   const stats = useMemo(() => {
     const allDeals = [...activeDeals, ...closedDeals];
-    const closedNet = closedDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
+    const closedListings = listings.filter(d => d.status === 'closed');
+    const closedNet = [...closedDeals, ...closedListings].reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
     const activeNet = activeDeals.reduce((sum, d) => sum + (d.displayCommission || d.myNetPayout || 0), 0);
     return {
       active: activeDeals.length,

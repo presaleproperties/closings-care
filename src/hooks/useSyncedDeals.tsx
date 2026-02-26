@@ -45,8 +45,9 @@ export function useSyncedDeals() {
     return syncedTransactions.map((tx: any) => {
       const participants = (tx.raw_data?.participants || []) as Participant[];
       const isTeamDeal = checkIsTeamDeal(participants);
-      // Use gross commission for solo deals, net payout for team deals (Ravish/Sarb)
-      const displayCommission = isTeamDeal 
+      // Listings are always solo (SELLERS_AGENT role), use gross commission
+      // Team deals (Ravish/Sarb): use net payout; all others: gross commission
+      const displayCommission = isTeamDeal
         ? (tx.my_net_payout || 0)
         : (tx.commission_amount || 0);
       

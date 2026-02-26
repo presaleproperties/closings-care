@@ -31,7 +31,7 @@ export function DealKeyDatesSection({
       <CollapsibleSection icon={Calendar} title="Key Dates" defaultOpen={true}>
         <div className="space-y-2.5">
           {firmDate && <DateRow label="Firm Date" date={firmDate} />}
-          {closeDate && <DateRow label="Close Date" date={closeDate} highlight={isPastDue} />}
+          {closeDate && <DateRow label={isPastDue ? 'Close Date (Overdue)' : 'Completion Date'} date={closeDate} highlight={isPastDue} />}
           {listingDate && <DateRow label="Listing Date" date={listingDate} />}
           {closedAt && <DateRow label="Settled" date={format(new Date(closedAt), 'yyyy-MM-dd')} />}
           {compliantAt && (
