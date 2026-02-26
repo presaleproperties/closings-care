@@ -792,13 +792,13 @@ Deno.serve(async (req) => {
       })
     }
 
-    let result
+    let syncPromise: Promise<any>
     switch (platform) {
       case 'lofty':
-        result = await syncLofty(supabase, userId, connection.api_key, connection_id)
+        syncPromise = syncLofty(supabase, userId, connection.api_key, connection_id)
         break
       case 'real_broker':
-        result = await syncRealBroker(supabase, userId, connection.api_key, connection_id)
+        syncPromise = syncRealBroker(supabase, userId, connection.api_key, connection_id)
         break
       default:
         return new Response(JSON.stringify({ error: `Platform '${platform}' sync not yet supported` }), {
@@ -806,7 +806,11 @@ Deno.serve(async (req) => {
         })
     }
 
-    return new Response(JSON.stringify(result), {
+    // Run sync in the background — returns immediately so navigation away won't cancel it
+    // @ts-ignore
+    EdgeRuntime.waitUntil(syncPromise.catch((err) => console.error('Background sync error:', err)))
+
+    return new Response(JSON.stringify({ success: true, message: 'Sync started in background' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
