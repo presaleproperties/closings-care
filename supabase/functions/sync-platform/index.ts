@@ -316,7 +316,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
 
     console.log(`[ReZen] === LISTING SYNC END: ${listingsFound} total listings ===`)
 
-    // 3. Sync revenue share payments
+    // 3. Sync revenue share payments (AFTER listings - don't block listings with slow revshare calls)
     if (prefs.revshare) {
     try {
       console.log('[ReZen] Fetching revshare payments...')
@@ -364,67 +364,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
       console.warn('[ReZen] RevShare sync error:', rsErr)
     }
 
-    // 3b. Sync per-agent revshare contributions
+    // 3b. Try the direct contributions endpoint (per-payment 404s removed — endpoint doesn't exist)
     try {
-      console.log('[ReZen] Fetching per-agent revshare contributions...')
-      
-      const { data: existingPayments } = await supabase
-        .from('revenue_share')
-        .select('raw_data, period')
-        .eq('user_id', userId)
-        .eq('platform', 'real_broker')
-        .not('raw_data', 'is', null)
-      
-      if (existingPayments && existingPayments.length > 0) {
-        for (const payment of existingPayments) {
-          const paymentId = payment.raw_data?.outgoingPaymentId
-          if (!paymentId) continue
-          
-          try {
-            const contribData = await rezenGet(ARRAKIS,
-              `revshares/payments/${paymentId}/contributions`,
-              apiKey,
-              { pageSize: '200' }
-            )
-            
-            const contributions = contribData?.data || contribData?.contributions || contribData?.content || (Array.isArray(contribData) ? contribData : [])
-            // Suppress per-payment logs to reduce noise
-            
-            if (Array.isArray(contributions)) {
-              for (const contrib of contributions) {
-                const contributorName = contrib.contributorName || contrib.agentName || 
-                  (contrib.firstName ? `${contrib.firstName} ${contrib.lastName || ''}`.trim() : '') || 'Unknown'
-                
-                const contribAmount = contrib.amount?.amount 
-                  ? contrib.amount.amount 
-                  : (typeof contrib.amount === 'number' ? contrib.amount : 0)
-                
-                if (contribAmount <= 0) continue
-                
-                const contribTier = contrib.tier || contrib.revShareTier || 1
-                
-                await supabase.from('revenue_share').upsert({
-                  user_id: userId,
-                  platform: 'real_broker',
-                  agent_name: contributorName,
-                  tier: contribTier,
-                  amount: contribAmount,
-                  period: payment.period,
-                  cap_contribution: contrib.capContribution || contrib.capAmount || null,
-                  status: contrib.status || 'paid',
-                  notes: `Contribution from ${contributorName}`,
-                  raw_data: contrib,
-                }, { onConflict: 'user_id,platform,agent_name,period' })
-                
-                recordsSynced++
-              }
-            }
-          } catch (contribErr) {
-            console.log(`[ReZen] Payment contributions endpoint failed for ${paymentId}, trying alternate...`)
-          }
-        }
-      }
-      
       // Also try the direct contributions endpoint
       try {
         const allContribs = await rezenGet(ARRAKIS,
