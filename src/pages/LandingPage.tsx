@@ -32,7 +32,10 @@ import {
   CalendarCheck,
   CircleDollarSign,
   ArrowUpRight,
-  Check
+  Check,
+  RefreshCw,
+  Wifi,
+  Network
 } from "lucide-react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
@@ -106,7 +109,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <SectionBadge icon={Star} label="BUILT FOR CANADIAN REALTORS" variant="white" />
+              <SectionBadge icon={Star} label="BUILT FOR REAL BROKERAGE AGENTS" variant="white" />
             </motion.div>
 
             <motion.h1 
@@ -119,7 +122,7 @@ function HeroSection() {
               <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
                 Clarity
               </span>
-              {' '}for Every Deal
+              {' '}for Every Real Deal
             </motion.h1>
 
             <motion.p 
@@ -128,7 +131,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              See exactly what you earn after splits, cap, and taxes. Know what's safe to spend. Understand where your best deals come from.
+              Connect your ReZen account once. Your deals, commissions, and rev share sync automatically — so you always know exactly where you stand.
             </motion.p>
 
             <motion.div 
@@ -159,7 +162,7 @@ function HeroSection() {
             >
               <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500/70" />No credit card</span>
               <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500/70" />BC, AB, ON tax rates</span>
-              <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500/70" />Ready in 5 minutes</span>
+              <span className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-emerald-500/70" />Syncs directly with ReZen</span>
             </motion.div>
           </div>
 
@@ -213,10 +216,10 @@ function HeroSection() {
                 </div>
 
                 {/* Bottom tags */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-sm">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-emerald-400 text-xs font-medium">ON TARGET</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-emerald-400 text-xs font-medium">REZEN SYNCED</span>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/20 bg-amber-500/10 text-sm">
                     <TrendingUp className="h-3 w-3 text-amber-400" />
@@ -238,12 +241,12 @@ function PainSection() {
     {
       icon: DollarSign,
       question: "How much am I actually making?",
-      detail: "You know your GCI — but after splits, cap contributions, team cuts, and taxes, what's left? Most realtors can't answer this in under 10 minutes."
+      detail: "You know your GCI — but after splits, cap contributions, team cuts, and taxes, what's left? Most agents can't answer this in under 10 minutes."
     },
     {
-      icon: BarChart3,
-      question: "Where are my best deals coming from?",
-      detail: "Referrals? Online leads? Past clients? You have a gut feeling, but no data. You're spending marketing dollars blindly."
+      icon: RefreshCw,
+      question: "Why am I manually entering deals I already closed in ReZen?",
+      detail: "You close a deal in ReZen, then re-enter it somewhere else for tracking. That's wasted time on work you already did."
     },
     {
       icon: Wallet,
@@ -302,6 +305,13 @@ function PainSection() {
 function FeaturesSection() {
   const features = [
     {
+      icon: RefreshCw,
+      title: "Auto-Sync from ReZen",
+      desc: "Connect once and your deals, payouts, and rev share populate automatically. No manual entry.",
+      highlights: ["Auto-imports deals", "Rev share tracking", "Network data synced", "Payouts auto-matched"],
+      gradient: "from-emerald-600 to-green-500"
+    },
+    {
       icon: Wallet,
       title: "Safe-to-Spend",
       desc: "Your real spending limit — after taxes, expenses, and obligations. Updated with every deal.",
@@ -332,7 +342,7 @@ function FeaturesSection() {
     {
       icon: Target,
       title: "Brokerage Cap",
-      desc: "Know exactly where you stand on your cap. Stop trusting someone else's math.",
+      desc: "Know exactly where you stand on your Real Broker cap. Stop trusting someone else's math.",
       highlights: ["Real-time progress", "100% split countdown", "Monthly contributions", "Cap projection"],
       gradient: "from-violet-500 to-purple-600"
     },
@@ -504,7 +514,7 @@ function AnalyticsSection() {
 // ─── HOW IT WORKS ─────────────────────────────────
 function HowItWorksSection() {
   const steps = [
-    { step: "01", icon: FileText, title: "Add your deals", desc: "Log pending and closed deals. Include lead source, property type, and commission details." },
+    { step: "01", icon: RefreshCw, title: "Connect ReZen once", desc: "Paste your ReZen API key in Settings. Deals, commissions, and rev share populate automatically — no manual entry." },
     { step: "02", icon: Calculator, title: "We do the math", desc: "Splits, cap, taxes, expenses — all calculated automatically with Canadian tax brackets." },
     { step: "03", icon: Eye, title: "Get complete clarity", desc: "Safe-to-Spend, analytics, forecasts, and insights. Everything in one view." },
   ];
@@ -538,6 +548,100 @@ function HowItWorksSection() {
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">{s.title}</h3>
               <p className="text-muted-foreground text-sm">{s.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── INTEGRATIONS ─────────────────────────────────
+function IntegrationsSection() {
+  const integrations = [
+    {
+      icon: Zap,
+      name: "ReZen",
+      status: "LIVE" as const,
+      desc: "Auto-sync your deals, payouts, rev share, and network. Connect once and everything stays up to date.",
+    },
+    {
+      icon: FileText,
+      name: "SkySlope",
+      status: "COMING SOON" as const,
+      desc: "Transaction coordination data synced directly into your deal pipeline.",
+    },
+    {
+      icon: Users,
+      name: "Lofty (Chime)",
+      status: "COMING SOON" as const,
+      desc: "CRM contacts and pipeline leads coming straight into your pipeline view.",
+    },
+  ];
+
+  return (
+    <section id="integrations" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070b09]">
+      <div className="max-w-5xl mx-auto">
+        <motion.div
+          className="text-center mb-14"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <SectionBadge icon={Wifi} label="INTEGRATIONS" variant="primary" />
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mt-6 mb-4 tracking-tight">
+            Connects to the tools you already use
+          </h2>
+          <p className="text-lg text-white/40 max-w-xl mx-auto">
+            ReZen is live today. SkySlope and Lofty are coming soon.
+          </p>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-3 gap-4">
+          {integrations.map((integration, i) => (
+            <motion.div
+              key={integration.name}
+              className={`rounded-2xl p-6 border transition-all duration-300 ${
+                integration.status === "LIVE"
+                  ? "bg-emerald-500/[0.06] border-emerald-500/20 hover:border-emerald-500/40"
+                  : "bg-white/[0.03] border-white/[0.07] hover:border-white/[0.12]"
+              }`}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+            >
+              <div className="flex items-start justify-between mb-5">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                  integration.status === "LIVE"
+                    ? "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25"
+                    : "bg-white/[0.07] border border-white/[0.1]"
+                }`}>
+                  <integration.icon className={`h-5 w-5 ${integration.status === "LIVE" ? "text-white" : "text-white/40"}`} />
+                </div>
+
+                {integration.status === "LIVE" ? (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                    </span>
+                    <span className="text-emerald-400 text-xs font-semibold tracking-wide">LIVE</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-amber-500/20 bg-amber-500/8">
+                    <Clock className="h-3 w-3 text-amber-500/70" />
+                    <span className="text-amber-500/80 text-xs font-medium tracking-wide">COMING SOON</span>
+                  </div>
+                )}
+              </div>
+
+              <h3 className={`text-lg font-bold mb-2 ${integration.status === "LIVE" ? "text-white" : "text-white/60"}`}>
+                {integration.name}
+              </h3>
+              <p className={`text-sm leading-relaxed ${integration.status === "LIVE" ? "text-white/50" : "text-white/30"}`}>
+                {integration.desc}
+              </p>
             </motion.div>
           ))}
         </div>
@@ -682,16 +786,16 @@ function TaxSection() {
 // ─── SOCIAL PROOF ─────────────────────────────────
 function SocialProofSection() {
   const testimonials = [
-    { quote: "I finally see where my business comes from. Referrals were 60% of my income — I had no idea until I saw the analytics.", name: "Sarah M.", company: "RE/MAX, Vancouver" },
-    { quote: "The presale visibility alone is worth it. I have deals closing in 2027 and can finally see the full picture.", name: "David C.", company: "Oakwyn Realty, Burnaby" },
-    { quote: "Tax season used to stress me out. Now I know exactly what I owe all year. No surprises.", name: "Jennifer L.", company: "Royal LePage, Calgary" }
+    { quote: "I finally see where my business comes from. Referrals were 60% of my income — I had no idea until I saw the analytics.", name: "Sarah M.", company: "Real Brokerage, Vancouver" },
+    { quote: "The presale visibility alone is worth it. I have deals closing in 2027 and can finally see the full picture.", name: "David C.", company: "Real Brokerage, Burnaby" },
+    { quote: "Tax season used to stress me out. Now I know exactly what I owe all year. No surprises.", name: "Jennifer L.", company: "Real Brokerage, Calgary" }
   ];
 
   return (
     <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="max-w-5xl mx-auto">
         <motion.div className="text-center mb-16" initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Trusted by Canadian realtors</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">Trusted by Real Brokerage agents</h2>
         </motion.div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-14">
@@ -756,7 +860,8 @@ function ObjectionSection() {
     { q: "I use spreadsheets", a: "Spreadsheets don't give you instant Safe-to-Spend calculations, lead source analytics, or 12-month forecasts. They're homework. This is clarity." },
     { q: "My accountant handles it", a: "Your accountant files taxes once a year. We give you clarity every day. Can you afford that marketing spend right now? We answer that in 10 seconds." },
     { q: "I don't have time for something new", a: "15 seconds to add a deal. That's it. If you can add a contact to your phone, you can use dealzflow." },
-    { q: "I already know my numbers", a: "Can you tell me your exact net take-home after splits, cap, and taxes in under 30 seconds? Can you show which lead source gives the best ROI? That's what we do." }
+    { q: "I already know my numbers", a: "Can you tell me your exact net take-home after splits, cap, and taxes in under 30 seconds? Can you show which lead source gives the best ROI? That's what we do." },
+    { q: "Does it work with other brokerages?", a: "Right now, dealzflow is purpose-built for Real Brokerage agents using ReZen. SkySlope and Lofty integrations are coming soon for broader support." }
   ];
 
   return (
@@ -873,7 +978,7 @@ function FinalCTASection() {
             Get complete clarity on your business
           </h2>
           <p className="text-xl text-white/40 mb-10">
-            Join 1,200+ Canadian realtors who finally understand their numbers.
+            Join Real Brokerage agents who finally understand their numbers.
           </p>
 
           <Link to="/auth">
@@ -911,7 +1016,7 @@ function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-6 border-t border-white/[0.06] text-center text-sm text-white/25">
-          &copy; {new Date().getFullYear()} dealzflow. Built for Canadian realtors.
+          &copy; {new Date().getFullYear()} dealzflow. Built for Real Brokerage agents.
         </div>
       </div>
     </footer>
@@ -986,6 +1091,7 @@ export default function LandingPage() {
       <FeaturesSection />
       <AnalyticsSection />
       <HowItWorksSection />
+      <IntegrationsSection />
       <DealTypesSection />
       <TaxSection />
       <SocialProofSection />
