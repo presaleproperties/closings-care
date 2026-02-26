@@ -6,7 +6,7 @@ import {
   ArrowUpDown, SlidersHorizontal, X, TrendingUp,
   DollarSign, BarChart3, Filter, ChevronDown, ChevronRight, AlertTriangle,
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore, isAfter, addDays, startOfDay } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { PullToRefresh } from '@/components/ui/pull-to-refresh';
@@ -85,6 +85,7 @@ export default function DealsPage() {
 
   // Read ?month=yyyy-MM from URL (from dashboard month card clicks)
   const monthParam = new URLSearchParams(location.search).get('month');
+  const filterParam = new URLSearchParams(location.search).get('filter');
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('active');
@@ -123,6 +124,16 @@ export default function DealsPage() {
       });
     }
 
+    // Filter by overdue/this-week from Needs Attention
+    if (filterParam === 'overdue') {
+      const today = startOfDay(new Date());
+      deals = deals.filter(d => d.status === 'active' && d.closeDate && isBefore(new Date(d.closeDate), today));
+    } else if (filterParam === 'this-week') {
+      const today = startOfDay(new Date());
+      const weekOut = addDays(today, 7);
+      deals = deals.filter(d => d.closeDate && isAfter(new Date(d.closeDate), today) && isBefore(new Date(d.closeDate), weekOut));
+    }
+
     if (search) {
       const q = search.toLowerCase();
       deals = deals.filter(d =>
@@ -138,7 +149,7 @@ export default function DealsPage() {
     if (max !== null) deals = deals.filter(d => (d.displayCommission || d.myNetPayout || 0) <= max);
 
     return [...deals].sort(getSortFn(sortKey));
-  }, [activeTab, activeDeals, closedDeals, listings, search, sortKey, minAmount, maxAmount]);
+  }, [activeTab, activeDeals, closedDeals, listings, search, sortKey, minAmount, maxAmount, monthParam, filterParam]);
 
   const monthGroups = useMemo(() => {
     const groups = new Map<string, { label: string; deals: SyncedDeal[] }>();
@@ -202,11 +213,15 @@ export default function DealsPage() {
           <div className="flex-1 overflow-y-auto">
             <div className="p-5 md:p-6 lg:p-6 space-y-5 pb-24 md:pb-24 lg:pb-6">
 
-              {/* ── Month filter banner ── */}
-              {monthParam && (
-                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/25 text-sm">
-                  <span className="text-primary font-medium">
-                    Showing deals closing in {format(parseISO(`${monthParam}-01`), 'MMMM yyyy')}
+              {/* ── Filter banner ── */}
+              {(monthParam || filterParam) && (
+                <div className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm ${filterParam === 'overdue' ? 'bg-destructive/10 border-destructive/25' : filterParam === 'this-week' ? 'bg-amber-500/10 border-amber-500/25' : 'bg-primary/10 border-primary/25'}`}>
+                  <span className={`font-medium ${filterParam === 'overdue' ? 'text-destructive' : filterParam === 'this-week' ? 'text-amber-500' : 'text-primary'}`}>
+                    {monthParam
+                      ? `Showing deals closing in ${format(parseISO(`${monthParam}-01`), 'MMMM yyyy')}`
+                      : filterParam === 'overdue'
+                        ? 'Showing overdue active deals (past close date)'
+                        : 'Showing deals closing this week'}
                   </span>
                   <button
                     onClick={() => window.history.replaceState({}, '', '/deals')}
