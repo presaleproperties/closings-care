@@ -261,94 +261,48 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     }
 
     // 2b. Sync Listings (separate endpoint in ReZen)
-    // ReZen listings live under the ARRAKIS /listings endpoint, separate from /transactions
+    // ReZen listings are separate resources - try multiple possible API endpoints
     let listingsFound = 0
-    
-    // Try all known ReZen listing endpoint patterns
+    console.log(`[ReZen] === LISTING SYNC START for agent ${yentaId} ===`)
+
+    // Try ARRAKIS-based listing endpoints first, then YENTA
     const listingEndpointCandidates = [
-      // Most likely correct endpoints based on ReZen API structure
-      { url: `listings/agent/${yentaId}`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-      { url: `listings/participant/${yentaId}`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-      { url: `agent/${yentaId}/listings`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-      // Try transactions endpoint with listing filter
-      { url: `transactions/agent/${yentaId}/listings`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-      { url: `transactions/participant/${yentaId}/listings/ACTIVE`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
+      { url: `transactions/participant/${yentaId}/listings/ACTIVE`, base: ARRAKIS },
+      { url: `transactions/participant/${yentaId}/listings/CLOSED`, base: ARRAKIS },
+      { url: `listings/agent/${yentaId}`, base: ARRAKIS },
+      { url: `listings/participant/${yentaId}`, base: ARRAKIS },
+      { url: `agents/${yentaId}/listings`, base: YENTA },
+      { url: `users/${yentaId}/listings`, base: YENTA },
     ]
 
     for (const candidate of listingEndpointCandidates) {
       try {
-        console.log(`[ReZen] Trying listing endpoint: ${candidate.url}`)
-        const listingData = await rezenGet(candidate.base, candidate.url, apiKey, candidate.params)
+        const baseLabel = candidate.base === ARRAKIS ? 'ARRAKIS' : 'YENTA'
+        console.log(`[ReZen] Trying listing: [${baseLabel}] ${candidate.url}`)
+        const listingData = await rezenGet(candidate.base, candidate.url, apiKey, { pageNumber: '0', pageSize: '200' })
+        const responseKeys = JSON.stringify(Object.keys(listingData || {}))
         const listings = listingData?.data || listingData?.listings || listingData?.content || (Array.isArray(listingData) ? listingData : [])
-        console.log(`[ReZen] Listing endpoint ${candidate.url} response keys: ${JSON.stringify(Object.keys(listingData || {}))}`)
-        console.log(`[ReZen] Found ${Array.isArray(listings) ? listings.length : 0} listings`)
+        console.log(`[ReZen] [${baseLabel}] ${candidate.url} → keys:${responseKeys} count:${Array.isArray(listings) ? listings.length : 'not-array'}`)
 
         if (Array.isArray(listings) && listings.length > 0) {
           for (const tx of listings) {
             const record = buildTransactionRecord(tx, userId, agentName, yentaId)
             if (!record) continue
-            // Force is_listing = true for records from listing endpoints
             record.is_listing = true
             await supabase.from('synced_transactions').upsert(record, { onConflict: 'user_id,platform,external_id' })
             recordsSynced++
             listingsFound++
           }
-          console.log(`[ReZen] Successfully synced ${listingsFound} listings from ${candidate.url}`)
-          break // Found working endpoint
+          console.log(`[ReZen] SUCCESS: synced ${listingsFound} listings from [${baseLabel}] ${candidate.url}`)
+          // Don't break — there may be separate ACTIVE and CLOSED endpoints
         }
       } catch (listErr) {
-        console.warn(`[ReZen] Listing endpoint ${candidate.url} failed: ${(listErr as Error).message?.slice(0, 200)}`)
+        const msg = (listErr as Error).message?.slice(0, 150)
+        console.log(`[ReZen] FAIL listing [${candidate.base === ARRAKIS ? 'ARRAKIS' : 'YENTA'}] ${candidate.url}: ${msg}`)
       }
     }
 
-    // Also try fetching closed listings separately
-    if (listingsFound > 0) {
-      // Try to fetch closed/settled listings too
-      const closedListingCandidates = [
-        { url: `listings/agent/${yentaId}/closed`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-        { url: `listings/participant/${yentaId}/closed`, base: ARRAKIS, params: { pageNumber: '0', pageSize: '200' } },
-      ]
-      for (const candidate of closedListingCandidates) {
-        try {
-          const listingData = await rezenGet(candidate.base, candidate.url, apiKey, candidate.params)
-          const listings = listingData?.data || listingData?.listings || listingData?.content || (Array.isArray(listingData) ? listingData : [])
-          if (Array.isArray(listings) && listings.length > 0) {
-            for (const tx of listings) {
-              const record = buildTransactionRecord(tx, userId, agentName, yentaId)
-              if (!record) continue
-              record.is_listing = true
-              await supabase.from('synced_transactions').upsert(record, { onConflict: 'user_id,platform,external_id' })
-              recordsSynced++
-            }
-            console.log(`[ReZen] Also synced closed listings from ${candidate.url}`)
-            break
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-
-    console.log(`[ReZen] Listings sync complete. Total listings found: ${listingsFound}`)
-
-    // Fallback: also mark transactions where the API explicitly has listing=true
-    const { data: txWithListingFlag } = await supabase
-      .from('synced_transactions')
-      .select('id, raw_data')
-      .eq('user_id', userId)
-      .eq('platform', 'real_broker')
-      .eq('is_listing', false)
-
-    if (txWithListingFlag) {
-      let flagUpdates = 0
-      for (const tx of txWithListingFlag) {
-        if (tx.raw_data?.listing === true || tx.raw_data?.transactionType === 'LISTING' || tx.raw_data?.type === 'LISTING') {
-          await supabase.from('synced_transactions').update({ is_listing: true }).eq('id', tx.id)
-          flagUpdates++
-        }
-      }
-      if (flagUpdates > 0) console.log(`[ReZen] Corrected is_listing flag on ${flagUpdates} existing records`)
-    }
+    console.log(`[ReZen] === LISTING SYNC END: ${listingsFound} total listings ===`)
 
     // 3. Sync revenue share payments
     try {
@@ -421,7 +375,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
             )
             
             const contributions = contribData?.data || contribData?.contributions || contribData?.content || (Array.isArray(contribData) ? contribData : [])
-            console.log(`[ReZen] Payment ${paymentId}: ${Array.isArray(contributions) ? contributions.length : 0} contributions`)
+            // Suppress per-payment logs to reduce noise
             
             if (Array.isArray(contributions)) {
               for (const contrib of contributions) {
