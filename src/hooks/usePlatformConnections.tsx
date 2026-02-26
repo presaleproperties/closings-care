@@ -270,8 +270,15 @@ export function useSyncPlatform() {
 
   return useMutation({
     mutationFn: async ({ platform, connectionId }: { platform: string; connectionId: string }) => {
+      // Read sync preferences from localStorage and pass to edge function
+      let preferences = { transactions: true, revshare: true, network: true };
+      try {
+        const raw = localStorage.getItem('sync_preferences');
+        if (raw) preferences = { ...preferences, ...JSON.parse(raw) };
+      } catch {}
+
       const { data, error } = await supabase.functions.invoke('sync-platform', {
-        body: { platform, connection_id: connectionId },
+        body: { platform, connection_id: connectionId, preferences },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
