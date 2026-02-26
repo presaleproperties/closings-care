@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -215,6 +216,50 @@ export function useDeleteConnection() {
 
 export function useSyncPlatform() {
   const queryClient = useQueryClient();
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  const startPolling = useCallback((connectionId: string) => {
+    stopPolling();
+    let attempts = 0;
+    const MAX_ATTEMPTS = 60; // 5 minutes max (60 × 5s)
+
+    pollingRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const { data } = await (supabase as any)
+          .from('platform_connections')
+          .select('sync_status, sync_error, last_synced_at')
+          .eq('id', connectionId)
+          .single();
+
+        if (data?.sync_status === 'success') {
+          stopPolling();
+          queryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['sync_logs'] });
+          queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
+          queryClient.invalidateQueries({ queryKey: ['revenue_share'] });
+          toast.success('Sync complete! Your data is up to date.');
+        } else if (data?.sync_status === 'error') {
+          stopPolling();
+          queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
+          toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
+        } else if (attempts >= MAX_ATTEMPTS) {
+          stopPolling();
+          toast.warning('Sync is taking longer than expected. Check back soon.');
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 5000);
+  }, [queryClient, stopPolling]);
+
   return useMutation({
     mutationFn: async ({ platform, connectionId }: { platform: string; connectionId: string }) => {
       const { data, error } = await supabase.functions.invoke('sync-platform', {
@@ -222,13 +267,11 @@ export function useSyncPlatform() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return data;
+      return { ...data, connectionId };
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['sync_logs'] });
-      queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
-      toast.success(`Synced ${data.records_synced || 0} records`);
+    onSuccess: ({ connectionId }) => {
+      toast.info('Sync started — you\'ll be notified when it\'s done.', { duration: 4000 });
+      startPolling(connectionId);
     },
     onError: (error) => {
       toast.error(`Sync failed: ${error.message}`);
