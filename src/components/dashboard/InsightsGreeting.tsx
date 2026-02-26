@@ -4,6 +4,7 @@ import { CalendarRange, MapPin, DollarSign, TrendingUp, Briefcase } from 'lucide
 import { addMonths, format, startOfMonth, endOfMonth, parseISO, isWithinInterval } from 'date-fns';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const MONTH_TONES = [
   'bg-primary/[0.04]',
@@ -36,6 +37,7 @@ const RANGE_OPTIONS = [
 
 export function InsightsGreeting({ syncedTransactions, revenueShare = [], userName, receivedYTD = 0, revShareMonthlyAvg = 0 }: InsightsGreetingProps) {
   const [range, setRange] = useState(3);
+  const navigate = useNavigate();
   const now = new Date();
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
   const displayName = userName || 'there';
@@ -60,6 +62,7 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
       return {
         label: format(monthStart, 'MMM'),
         year: format(monthStart, 'yy'),
+        monthKey: format(monthStart, 'yyyy-MM'),
         deals,
         commission,
         total: commission + revShareMonthlyAvg,
@@ -134,9 +137,9 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
         >
           {!isCompact ? (
             /* 3-month: side-by-side columns */
-            <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3">
               {outlook.months.map((month, i) => (
-                <MonthColumn key={month.label + month.year} month={month} index={i} tone={MONTH_TONES[i % MONTH_TONES.length]} />
+                <MonthColumn key={month.label + month.year} month={month} index={i} tone={MONTH_TONES[i % MONTH_TONES.length]} onClick={() => navigate(`/deals?month=${month.monthKey}`)} />
               ))}
             </div>
           ) : (
@@ -145,8 +148,9 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
               {outlook.months.map((month, i) => (
                 <motion.div
                   key={month.label + month.year}
+                  onClick={() => navigate(`/deals?month=${month.monthKey}`)}
                   className={cn(
-                    "rounded-xl border border-border/20 p-3 space-y-1",
+                    "rounded-xl border border-border/20 p-3 space-y-1 cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-colors",
                     MONTH_TONES[i % MONTH_TONES.length]
                   )}
                   initial={{ opacity: 0, y: 8 }}
@@ -194,10 +198,11 @@ export function InsightsGreeting({ syncedTransactions, revenueShare = [], userNa
   );
 }
 
-function MonthColumn({ month, index, tone }: { month: any; index: number; tone: string }) {
+function MonthColumn({ month, index, tone, onClick }: { month: any; index: number; tone: string; onClick?: () => void }) {
   return (
     <motion.div
-      className={cn("rounded-xl p-3.5 space-y-2 border border-border/15", tone)}
+      onClick={onClick}
+      className={cn("rounded-xl p-3.5 space-y-2 border border-border/15 cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-colors", tone)}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06 }}

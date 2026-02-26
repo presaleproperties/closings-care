@@ -83,6 +83,9 @@ export default function DealsPage() {
   const refreshData = useRefreshData();
   const location = useLocation();
 
+  // Read ?month=yyyy-MM from URL (from dashboard month card clicks)
+  const monthParam = new URLSearchParams(location.search).get('month');
+
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<TabKey>('active');
   const [sortKey, setSortKey] = useState<SortKey>('close-desc');
@@ -110,6 +113,15 @@ export default function DealsPage() {
 
   const filteredDeals = useMemo(() => {
     let deals = activeTab === 'active' ? activeDeals : activeTab === 'closed' ? closedDeals : listings;
+
+    // Filter to specific month if coming from dashboard
+    if (monthParam) {
+      deals = deals.filter(d => {
+        const dateStr = d.closeDate || d.firmDate || d.listingDate;
+        if (!dateStr) return false;
+        return format(parseISO(dateStr), 'yyyy-MM') === monthParam;
+      });
+    }
 
     if (search) {
       const q = search.toLowerCase();
@@ -189,6 +201,21 @@ export default function DealsPage() {
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
             <div className="p-5 md:p-6 lg:p-6 space-y-5 pb-24 md:pb-24 lg:pb-6">
+
+              {/* ── Month filter banner ── */}
+              {monthParam && (
+                <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-primary/10 border border-primary/25 text-sm">
+                  <span className="text-primary font-medium">
+                    Showing deals closing in {format(parseISO(`${monthParam}-01`), 'MMMM yyyy')}
+                  </span>
+                  <button
+                    onClick={() => window.history.replaceState({}, '', '/deals')}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Clear ×
+                  </button>
+                </div>
+              )}
 
               {/* ── Stats Row ── */}
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
