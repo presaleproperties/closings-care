@@ -29,7 +29,7 @@ import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw } from 'lucide-react';
+import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw, Plug, ArrowRight } from 'lucide-react';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare, usePlatformConnections, useSyncPlatform } from '@/hooks/usePlatformConnections';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
@@ -228,6 +228,24 @@ export default function DashboardPage() {
         <EmptyDashboard />
       ) : (
         <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
+          {/* ReZen connect banner — shown when user has no active connection */}
+          {connections.length === 0 && (
+            <div className="px-4 lg:px-6 pt-4">
+              <Link to="/settings?tab=integrations">
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/8 border border-primary/20 hover:bg-primary/12 transition-colors cursor-pointer">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                    <Plug className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">Connect ReZen to auto-sync your deals</p>
+                    <p className="text-xs text-muted-foreground">Go to Settings → Integrations to add your API key</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </div>
+              </Link>
+            </div>
+          )}
+
           {/* Mobile Dashboard */}
           <div className="sm:hidden">
             <div className="px-5 pt-3 pb-4">
