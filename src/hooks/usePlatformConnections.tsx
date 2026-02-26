@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -214,51 +213,60 @@ export function useDeleteConnection() {
   });
 }
 
+// Module-level polling state so it survives component unmounts/navigation
+let _syncPollingInterval: ReturnType<typeof setInterval> | null = null;
+let _syncQueryClient: any = null;
+
+function stopSyncPolling() {
+  if (_syncPollingInterval) {
+    clearInterval(_syncPollingInterval);
+    _syncPollingInterval = null;
+  }
+}
+
+function startSyncPolling(connectionId: string) {
+  stopSyncPolling();
+  let attempts = 0;
+  const MAX_ATTEMPTS = 60; // 5 minutes max (60 × 5s)
+
+  _syncPollingInterval = setInterval(async () => {
+    attempts++;
+    try {
+      const { data } = await (supabase as any)
+        .from('platform_connections')
+        .select('sync_status, sync_error, last_synced_at')
+        .eq('id', connectionId)
+        .single();
+
+      if (data?.sync_status === 'success') {
+        stopSyncPolling();
+        if (_syncQueryClient) {
+          _syncQueryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
+          _syncQueryClient.invalidateQueries({ queryKey: ['sync_logs'] });
+          _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
+          _syncQueryClient.invalidateQueries({ queryKey: ['revenue_share'] });
+        }
+        toast.success('Sync complete! Your data is up to date.');
+      } else if (data?.sync_status === 'error') {
+        stopSyncPolling();
+        if (_syncQueryClient) {
+          _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
+        }
+        toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
+      } else if (attempts >= MAX_ATTEMPTS) {
+        stopSyncPolling();
+        toast.warning('Sync is taking longer than expected. Check back soon.');
+      }
+    } catch {
+      // Silently ignore polling errors
+    }
+  }, 5000);
+}
+
 export function useSyncPlatform() {
   const queryClient = useQueryClient();
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-  }, []);
-
-  const startPolling = useCallback((connectionId: string) => {
-    stopPolling();
-    let attempts = 0;
-    const MAX_ATTEMPTS = 60; // 5 minutes max (60 × 5s)
-
-    pollingRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const { data } = await (supabase as any)
-          .from('platform_connections')
-          .select('sync_status, sync_error, last_synced_at')
-          .eq('id', connectionId)
-          .single();
-
-        if (data?.sync_status === 'success') {
-          stopPolling();
-          queryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['sync_logs'] });
-          queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
-          queryClient.invalidateQueries({ queryKey: ['revenue_share'] });
-          toast.success('Sync complete! Your data is up to date.');
-        } else if (data?.sync_status === 'error') {
-          stopPolling();
-          queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
-          toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
-        } else if (attempts >= MAX_ATTEMPTS) {
-          stopPolling();
-          toast.warning('Sync is taking longer than expected. Check back soon.');
-        }
-      } catch {
-        // Silently ignore polling errors
-      }
-    }, 5000);
-  }, [queryClient, stopPolling]);
+  // Keep module-level ref to queryClient updated
+  _syncQueryClient = queryClient;
 
   return useMutation({
     mutationFn: async ({ platform, connectionId }: { platform: string; connectionId: string }) => {
@@ -270,8 +278,8 @@ export function useSyncPlatform() {
       return { ...data, connectionId };
     },
     onSuccess: ({ connectionId }) => {
-      toast.info('Sync started — you\'ll be notified when it\'s done.', { duration: 4000 });
-      startPolling(connectionId);
+      toast.info("Sync started — you'll be notified when it's done.", { duration: 4000 });
+      startSyncPolling(connectionId);
     },
     onError: (error) => {
       toast.error(`Sync failed: ${error.message}`);
