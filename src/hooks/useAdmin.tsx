@@ -16,6 +16,9 @@ interface AdminUser {
   closedDeals: number;
   yearlyGciGoal: number;
   yearlyRevshareGoal: number;
+  isBanned: boolean;
+  bannedAt: string | null;
+  banReason: string | null;
 }
 
 interface AdminSummary {
@@ -93,10 +96,11 @@ export function useAdminManageUser() {
 
   return useMutation({
     mutationFn: async (payload: {
-      action: 'delete' | 'reset_password' | 'edit';
+      action: 'delete' | 'reset_password' | 'edit' | 'ban' | 'unban';
       targetUserId: string;
       name?: string;
       email?: string;
+      banReason?: string;
     }) => {
       const { data, error } = await supabase.functions.invoke('admin-manage-user', { body: payload });
       if (error) throw new Error(error.message);
@@ -107,6 +111,8 @@ export function useAdminManageUser() {
         delete: 'User deleted successfully.',
         reset_password: 'Password reset email sent.',
         edit: 'User updated successfully.',
+        ban: 'User has been suspended.',
+        unban: 'User suspension lifted.',
       };
       toast({ title: 'Done', description: messages[variables.action] });
       queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });

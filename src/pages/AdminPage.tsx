@@ -5,6 +5,7 @@ import {
   Calendar, Shield, ArrowUpCircle, ArrowDownCircle, Loader2,
   Search, X, Bell, Trash2, KeyRound, Pencil, ClipboardList,
   Eye, Pencil as PencilIcon, Trash, RotateCcw, ChevronDown, ChevronRight,
+  Ban, ShieldCheck,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -45,6 +46,8 @@ export default function AdminPage() {
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [banTarget, setBanTarget] = useState<{ id: string; name: string; isBanned: boolean } | null>(null);
+  const [banReason, setBanReason] = useState('');
 
   const users = analytics?.users || [];
   
@@ -351,16 +354,28 @@ export default function AdminPage() {
 
                     return (
                       <tr key={user.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium text-sm truncate max-w-[200px]">
-                              {user.name || 'Unnamed'}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                              {user.email}
-                            </p>
-                          </div>
-                        </td>
+                         <td className="p-3">
+                           <div>
+                             <div className="flex items-center gap-1.5 flex-wrap">
+                               <p className="font-medium text-sm truncate max-w-[180px]">
+                                 {user.name || 'Unnamed'}
+                               </p>
+                               {user.isBanned && (
+                                 <Badge variant="destructive" className="text-[10px] h-4 px-1 shrink-0">
+                                   <Ban className="w-2.5 h-2.5 mr-0.5" />Suspended
+                                 </Badge>
+                               )}
+                             </div>
+                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                               {user.email}
+                             </p>
+                             {user.isBanned && user.banReason && (
+                               <p className="text-xs text-destructive/70 truncate max-w-[200px]" title={user.banReason}>
+                                 Reason: {user.banReason}
+                               </p>
+                             )}
+                           </div>
+                         </td>
                         <td className="p-3 hidden sm:table-cell">
                           <span className="text-sm text-muted-foreground">
                             {formatDate(user.createdAt)}
@@ -415,30 +430,38 @@ export default function AdminPage() {
                               {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : isPro ? <><ArrowDownCircle className="w-3 h-3 mr-1" />Downgrade</> : <><ArrowUpCircle className="w-3 h-3 mr-1" />Upgrade</>}
                             </Button>
                             <Button
-                              size="sm" variant="outline"
-                              className="text-xs h-7 px-2"
-                              title="Edit user"
-                              onClick={() => { setEditTarget({ id: user.id, name: user.name, email: user.email }); setEditName(user.name === 'Unknown' ? '' : user.name); setEditEmail(user.email === 'Unknown' ? '' : user.email); }}
-                            >
-                              <Pencil className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm" variant="outline"
-                              className="text-xs h-7 px-2"
-                              title="Send password reset"
-                              onClick={async () => { await manageUser.mutateAsync({ action: 'reset_password', targetUserId: user.id }); }}
-                              disabled={manageUser.isPending}
-                            >
-                              <KeyRound className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm" variant="outline"
-                              className="text-xs h-7 px-2 text-destructive hover:text-destructive"
-                              title="Delete user"
-                              onClick={() => setDeleteTarget({ id: user.id, name: user.name })}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                               size="sm" variant="outline"
+                               className="text-xs h-7 px-2"
+                               title="Edit user"
+                               onClick={() => { setEditTarget({ id: user.id, name: user.name, email: user.email }); setEditName(user.name === 'Unknown' ? '' : user.name); setEditEmail(user.email === 'Unknown' ? '' : user.email); }}
+                             >
+                               <Pencil className="w-3 h-3" />
+                             </Button>
+                             <Button
+                               size="sm" variant="outline"
+                               className="text-xs h-7 px-2"
+                               title="Send password reset"
+                               onClick={async () => { await manageUser.mutateAsync({ action: 'reset_password', targetUserId: user.id }); }}
+                               disabled={manageUser.isPending}
+                             >
+                               <KeyRound className="w-3 h-3" />
+                             </Button>
+                             <Button
+                               size="sm" variant="outline"
+                               className={cn("text-xs h-7 px-2", user.isBanned ? "text-success hover:text-success" : "text-warning hover:text-warning")}
+                               title={user.isBanned ? "Lift suspension" : "Suspend user"}
+                               onClick={() => { setBanTarget({ id: user.id, name: user.name, isBanned: user.isBanned }); setBanReason(''); }}
+                             >
+                               {user.isBanned ? <ShieldCheck className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                             </Button>
+                             <Button
+                               size="sm" variant="outline"
+                               className="text-xs h-7 px-2 text-destructive hover:text-destructive"
+                               title="Delete user"
+                               onClick={() => setDeleteTarget({ id: user.id, name: user.name })}
+                             >
+                               <Trash2 className="w-3 h-3" />
+                             </Button>
                           </div>
                         </td>
                       </tr>
@@ -554,15 +577,63 @@ export default function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Ban / Unban Confirmation Dialog */}
+      <AlertDialog open={!!banTarget} onOpenChange={(open) => !open && setBanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {banTarget?.isBanned ? `Lift suspension for "${banTarget?.name}"?` : `Suspend "${banTarget?.name}"?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {banTarget?.isBanned
+                ? 'This will restore the user\'s ability to log in immediately.'
+                : 'This will block the user from logging in without deleting their account or data.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!banTarget?.isBanned && (
+            <div className="px-1 pb-1">
+              <Label className="text-sm">Reason (optional)</Label>
+              <Input
+                className="mt-1.5"
+                placeholder="e.g. Terms of service violation"
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+              />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={banTarget?.isBanned ? '' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+              onClick={async () => {
+                if (!banTarget) return;
+                await manageUser.mutateAsync({
+                  action: banTarget.isBanned ? 'unban' : 'ban',
+                  targetUserId: banTarget.id,
+                  banReason: banReason || undefined,
+                });
+                setBanTarget(null);
+              }}
+            >
+              {manageUser.isPending
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : banTarget?.isBanned ? 'Lift Suspension' : 'Suspend User'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
 
 const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  view_users:     { label: 'Viewed users',       icon: Eye,       color: 'text-blue-500' },
-  delete:         { label: 'Deleted user',        icon: Trash,     color: 'text-destructive' },
-  reset_password: { label: 'Reset password',      icon: RotateCcw, color: 'text-amber-500' },
-  edit:           { label: 'Edited user',         icon: PencilIcon,color: 'text-primary' },
+  view_users:     { label: 'Viewed users',       icon: Eye,        color: 'text-blue-500' },
+  delete:         { label: 'Deleted user',        icon: Trash,      color: 'text-destructive' },
+  reset_password: { label: 'Reset password',      icon: RotateCcw,  color: 'text-amber-500' },
+  edit:           { label: 'Edited user',         icon: PencilIcon, color: 'text-primary' },
+  ban:            { label: 'Suspended user',      icon: Ban,        color: 'text-destructive' },
+  unban:          { label: 'Lifted suspension',   icon: ShieldCheck,color: 'text-success' },
 };
 
 function AuditLogRow({ log, users }: { log: AuditLog; users: { id: string; name: string; email: string }[] }) {

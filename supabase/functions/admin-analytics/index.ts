@@ -61,10 +61,10 @@ serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip") ?? null,
     }).then(() => {}).catch((e: unknown) => console.warn("[audit] Failed to write log:", e));
 
-    // Fetch all profiles
+    // Fetch all profiles (including ban state)
     const { data: profiles, error: allProfilesError } = await supabaseAdmin
       .from("profiles")
-      .select("id, user_id, full_name, created_at");
+      .select("id, user_id, full_name, created_at, is_banned, banned_at, ban_reason");
 
     if (allProfilesError) {
       throw new Error(`Error fetching profiles: ${allProfilesError.message}`);
@@ -131,6 +131,9 @@ serve(async (req) => {
         closedDeals: userDeals.closed,
         yearlyGciGoal: (userSettings as any)?.yearly_gci_goal || 0,
         yearlyRevshareGoal: (userSettings as any)?.yearly_revshare_goal || 0,
+        isBanned: (profile as any).is_banned ?? false,
+        bannedAt: (profile as any).banned_at ?? null,
+        banReason: (profile as any).ban_reason ?? null,
       };
     }) || [];
 
