@@ -63,7 +63,8 @@ export function UpcomingRevenue({ syncedTransactions }: UpcomingRevenueProps) {
         ) : upcomingItems.map((item: any) => (
           <div
             key={item.id}
-            className="p-3.5 rounded-xl border border-border/30 bg-muted/20"
+            onClick={() => navigate(`/deals/${item.id}`)}
+            className="p-3.5 rounded-xl border border-border/30 bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">
