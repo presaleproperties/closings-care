@@ -48,9 +48,12 @@ serve(async (req) => {
         );
       }
     } else if (!webhookSecret) {
-      // Fallback: no webhook secret configured yet — log warning
-      console.warn("STRIPE_WEBHOOK_SECRET not configured — processing without signature verification");
-      event = JSON.parse(body);
+      // No webhook secret configured — reject to prevent forged events
+      console.error("STRIPE_WEBHOOK_SECRET is not configured. Rejecting webhook.");
+      return new Response(
+        JSON.stringify({ error: "Webhook secret not configured" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     } else {
       return new Response(
         JSON.stringify({ error: "Missing stripe-signature header" }),
