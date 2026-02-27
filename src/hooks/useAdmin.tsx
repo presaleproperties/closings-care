@@ -87,6 +87,36 @@ export function useAdminAnalytics() {
   });
 }
 
+export function useAdminManageUser() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      action: 'delete' | 'reset_password' | 'edit';
+      targetUserId: string;
+      name?: string;
+      email?: string;
+    }) => {
+      const { data, error } = await supabase.functions.invoke('admin-manage-user', { body: payload });
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      const messages: Record<string, string> = {
+        delete: 'User deleted successfully.',
+        reset_password: 'Password reset email sent.',
+        edit: 'User updated successfully.',
+      };
+      toast({ title: 'Done', description: messages[variables.action] });
+      queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+}
+
 export function useAdminUpdateSubscription() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

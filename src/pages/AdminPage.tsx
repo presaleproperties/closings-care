@@ -1,20 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Users, 
-  Crown, 
-  TrendingUp, 
-  DollarSign, 
-  Briefcase, 
-  UserPlus,
-  Calendar,
-  Shield,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  Loader2,
-  Search,
-  X,
-  Bell,
+  Users, Crown, TrendingUp, DollarSign, Briefcase, UserPlus,
+  Calendar, Shield, ArrowUpCircle, ArrowDownCircle, Loader2,
+  Search, X, Bell, Trash2, KeyRound, Pencil,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -24,17 +13,20 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription } from '@/hooks/useAdmin';
+import { Label } from '@/components/ui/label';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription, useAdminManageUser } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { DataFlowMap } from '@/components/admin/DataFlowMap';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  ResponsiveContainer, 
-  Tooltip,
-  CartesianGrid
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -43,8 +35,13 @@ export default function AdminPage() {
   const { data: isAdmin, isLoading: isCheckingAdmin } = useIsAdmin();
   const { data: analytics, isLoading, error } = useAdminAnalytics();
   const updateSubscription = useAdminUpdateSubscription();
+  const manageUser = useAdminManageUser();
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editTarget, setEditTarget] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
 
   const users = analytics?.users || [];
   
@@ -321,6 +318,7 @@ export default function AdminPage() {
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Deals</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">GCI Goal</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
@@ -402,31 +400,43 @@ export default function AdminPage() {
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-center">
-                          <Button
-                            size="sm"
-                            variant={isPro ? "outline" : "default"}
-                            className={cn(
-                              "text-xs h-7 px-2",
-                              !isPro && "bg-amber-500 hover:bg-amber-600 text-white"
-                            )}
-                            onClick={handleSubscriptionChange}
-                            disabled={isUpdating}
-                          >
-                            {isUpdating ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : isPro ? (
-                              <>
-                                <ArrowDownCircle className="w-3 h-3 mr-1" />
-                                Downgrade
-                              </>
-                            ) : (
-                              <>
-                                <ArrowUpCircle className="w-3 h-3 mr-1" />
-                                Upgrade
-                              </>
-                            )}
-                          </Button>
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-1 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant={isPro ? "outline" : "default"}
+                              className={cn("text-xs h-7 px-2", !isPro && "bg-amber-500 hover:bg-amber-600 text-white")}
+                              onClick={handleSubscriptionChange}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : isPro ? <><ArrowDownCircle className="w-3 h-3 mr-1" />Downgrade</> : <><ArrowUpCircle className="w-3 h-3 mr-1" />Upgrade</>}
+                            </Button>
+                            <Button
+                              size="sm" variant="outline"
+                              className="text-xs h-7 px-2"
+                              title="Edit user"
+                              onClick={() => { setEditTarget({ id: user.id, name: user.name, email: user.email }); setEditName(user.name === 'Unknown' ? '' : user.name); setEditEmail(user.email === 'Unknown' ? '' : user.email); }}
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm" variant="outline"
+                              className="text-xs h-7 px-2"
+                              title="Send password reset"
+                              onClick={async () => { await manageUser.mutateAsync({ action: 'reset_password', targetUserId: user.id }); }}
+                              disabled={manageUser.isPending}
+                            >
+                              <KeyRound className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm" variant="outline"
+                              className="text-xs h-7 px-2 text-destructive hover:text-destructive"
+                              title="Delete user"
+                              onClick={() => setDeleteTarget({ id: user.id, name: user.name })}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -440,6 +450,64 @@ export default function AdminPage() {
         {/* Data Flow Map */}
         <DataFlowMap />
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the user and all their data (deals, expenses, settings, etc.). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteTarget) return;
+                await manageUser.mutateAsync({ action: 'delete', targetUserId: deleteTarget.id });
+                setDeleteTarget(null);
+              }}
+            >
+              {manageUser.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delete User'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>Full Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Full name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email address" type="email" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!editTarget) return;
+                await manageUser.mutateAsync({ action: 'edit', targetUserId: editTarget.id, name: editName, email: editEmail });
+                setEditTarget(null);
+              }}
+              disabled={manageUser.isPending}
+            >
+              {manageUser.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
