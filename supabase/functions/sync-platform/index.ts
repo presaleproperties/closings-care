@@ -727,6 +727,7 @@ Deno.serve(async (req) => {
       })
     }
 
+    // User-scoped client for JWT validation
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -755,7 +756,15 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { data: connection, error: connError } = await supabase
+    // Service-role client — needed to call decrypt_api_credential
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+
+    // Fetch the connection using service role so we can decrypt
+    const { data: connection, error: connError } = await supabaseAdmin
       .from('platform_connections')
       .select('*')
       .eq('id', connection_id)
@@ -774,13 +783,25 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Decrypt the api_key server-side — never passes through the client
+    const passphrase = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const { data: decryptedKey, error: decryptError } = await supabaseAdmin
+      .rpc('decrypt_api_credential', { ciphertext: connection.api_key, passphrase })
+    if (decryptError) {
+      console.error('[sync-platform] Failed to decrypt api_key:', decryptError)
+      return new Response(JSON.stringify({ error: 'Failed to decrypt API key' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const apiKey = decryptedKey as string
+
     let syncPromise: Promise<any>
     switch (platform) {
       case 'lofty':
-        syncPromise = syncLofty(supabase, userId, connection.api_key, connection_id)
+        syncPromise = syncLofty(supabase, userId, apiKey, connection_id)
         break
       case 'real_broker':
-        syncPromise = syncRealBroker(supabase, userId, connection.api_key, connection_id, syncPrefs)
+        syncPromise = syncRealBroker(supabase, userId, apiKey, connection_id, syncPrefs)
         break
       default:
         return new Response(JSON.stringify({ error: `Platform '${platform}' sync not yet supported` }), {
