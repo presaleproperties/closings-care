@@ -884,6 +884,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_api_credential: {
+        Args: { ciphertext: string; passphrase: string }
+        Returns: string
+      }
+      encrypt_api_credential: {
+        Args: { passphrase: string; plaintext: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

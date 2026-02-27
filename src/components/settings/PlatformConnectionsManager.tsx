@@ -287,7 +287,6 @@ export function PlatformConnectionsManager() {
 // ─── Connection Card ──────────────────────────────────────────────────────────
 
 function ConnectionCard({ connection, prefs }: { connection: PlatformConnection; prefs: SyncPreferences }) {
-  const [showKey, setShowKey] = useState(false);
   const syncPlatform = useSyncPlatform();
   const deleteConnection = useDeleteConnection();
   const platformInfo = PLATFORMS.find(p => p.id === connection.platform);
@@ -326,12 +325,10 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
           </div>
 
           <div className="flex items-center gap-1.5 mt-1">
+            {/* api_key is always returned masked from the edge function */}
             <span className="text-[11px] font-mono text-muted-foreground">
-              {showKey ? connection.api_key : '••••  ••••  ••••  ' + (connection.api_key?.slice(-4) || '????')}
+              {connection.api_key || '••••  ••••  ••••  ????'}
             </span>
-            <button onClick={() => setShowKey(!showKey)} className="text-muted-foreground/50 hover:text-muted-foreground">
-              {showKey ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
-            </button>
           </div>
 
           {connection.last_synced_at && (

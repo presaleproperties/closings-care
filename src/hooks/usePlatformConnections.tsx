@@ -92,13 +92,13 @@ export function usePlatformConnections() {
     queryKey: ['platform_connections', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await (supabase as any)
-        .from('platform_connections')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
+      // Route through edge function — api_key/api_secret are never exposed in plaintext
+      const { data, error } = await supabase.functions.invoke('manage-connection', {
+        body: { action: 'list' },
+      });
       if (error) throw error;
-      return (data || []) as PlatformConnection[];
+      if (data?.error) throw new Error(data.error);
+      return (data?.data || []) as PlatformConnection[];
     },
     enabled: !!user,
   });
@@ -168,20 +168,19 @@ export function useUpsertConnection() {
   return useMutation({
     mutationFn: async (data: { platform: string; api_key: string; api_secret?: string; base_url?: string }) => {
       if (!user) throw new Error('Not authenticated');
-      const { data: result, error } = await (supabase as any)
-        .from('platform_connections')
-        .upsert({
-          user_id: user.id,
+      // Route through edge function — api_key is encrypted before hitting the DB
+      const { data: result, error } = await supabase.functions.invoke('manage-connection', {
+        body: {
+          action: 'upsert',
           platform: data.platform,
           api_key: data.api_key,
           api_secret: data.api_secret || null,
           base_url: data.base_url || null,
-          is_active: true,
-        }, { onConflict: 'user_id,platform' })
-        .select()
-        .single();
+        },
+      });
       if (error) throw error;
-      return result as PlatformConnection;
+      if (result?.error) throw new Error(result.error);
+      return result?.data as PlatformConnection;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
@@ -197,11 +196,12 @@ export function useDeleteConnection() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (connectionId: string) => {
-      const { error } = await (supabase as any)
-        .from('platform_connections')
-        .delete()
-        .eq('id', connectionId);
+      // Route through edge function for ownership verification
+      const { data, error } = await supabase.functions.invoke('manage-connection', {
+        body: { action: 'delete', connection_id: connectionId },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform_connections'] });
