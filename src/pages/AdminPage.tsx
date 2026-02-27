@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, Crown, TrendingUp, DollarSign, Briefcase, UserPlus,
   Calendar, Shield, ArrowUpCircle, ArrowDownCircle, Loader2,
-  Search, X, Bell, Trash2, KeyRound, Pencil,
+  Search, X, Bell, Trash2, KeyRound, Pencil, ClipboardList,
+  Eye, Pencil as PencilIcon, Trash, RotateCcw, ChevronDown, ChevronRight,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription, useAdminManageUser } from '@/hooks/useAdmin';
+import { useIsAdmin, useAdminAnalytics, useAdminUpdateSubscription, useAdminManageUser, useAdminAuditLogs, type AuditLog } from '@/hooks/useAdmin';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { DataFlowMap } from '@/components/admin/DataFlowMap';
 import { 
@@ -36,12 +37,14 @@ export default function AdminPage() {
   const { data: analytics, isLoading, error } = useAdminAnalytics();
   const updateSubscription = useAdminUpdateSubscription();
   const manageUser = useAdminManageUser();
+  const { data: auditLogs = [], isLoading: isLoadingAudit } = useAdminAuditLogs();
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [editTarget, setEditTarget] = useState<{ id: string; name: string; email: string } | null>(null);
   const [editName, setEditName] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   const users = analytics?.users || [];
   
@@ -449,6 +452,49 @@ export default function AdminPage() {
 
         {/* Data Flow Map */}
         <DataFlowMap />
+
+        {/* Admin Audit Log */}
+        <Card>
+          <CardHeader>
+            <button
+              onClick={() => setShowAuditLog(v => !v)}
+              className="flex items-center gap-2 w-full text-left"
+            >
+              <ClipboardList className="w-4 h-4 text-muted-foreground" />
+              <CardTitle className="text-base flex-1">Admin Audit Log</CardTitle>
+              <span className="text-xs text-muted-foreground font-normal">{auditLogs.length} entries</span>
+              {showAuditLog ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+            </button>
+          </CardHeader>
+          {showAuditLog && (
+            <CardContent className="p-0">
+              {isLoadingAudit ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">Loading audit logs...</div>
+              ) : auditLogs.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">No audit log entries yet.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/50">
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">When</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground">Action</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Target User</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Details</th>
+                        <th className="text-left p-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">IP</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {auditLogs.slice(0, 50).map((log) => (
+                        <AuditLogRow key={log.id} log={log} users={users} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -512,7 +558,45 @@ export default function AdminPage() {
   );
 }
 
-function SummaryCard({ 
+const ACTION_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  view_users:     { label: 'Viewed users',       icon: Eye,       color: 'text-blue-500' },
+  delete:         { label: 'Deleted user',        icon: Trash,     color: 'text-destructive' },
+  reset_password: { label: 'Reset password',      icon: RotateCcw, color: 'text-amber-500' },
+  edit:           { label: 'Edited user',         icon: PencilIcon,color: 'text-primary' },
+};
+
+function AuditLogRow({ log, users }: { log: AuditLog; users: { id: string; name: string; email: string }[] }) {
+  const cfg = ACTION_CONFIG[log.action] ?? { label: log.action, icon: ClipboardList, color: 'text-muted-foreground' };
+  const Icon = cfg.icon;
+  const target = users.find(u => u.id === log.target_user_id);
+  const targetLabel = target ? (target.name !== 'Unknown' ? target.name : target.email) : log.target_user_id ? log.target_user_id.slice(0, 8) + '…' : '—';
+  const details = log.details ? Object.entries(log.details).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ') : '—';
+
+  return (
+    <tr className="border-b border-border/40 hover:bg-muted/20 transition-colors">
+      <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+        {format(new Date(log.created_at), 'MMM d, HH:mm')}
+      </td>
+      <td className="p-3">
+        <span className={`flex items-center gap-1.5 text-xs font-medium ${cfg.color}`}>
+          <Icon className="w-3 h-3 shrink-0" />
+          {cfg.label}
+        </span>
+      </td>
+      <td className="p-3 hidden sm:table-cell">
+        <span className="text-xs text-muted-foreground font-mono truncate max-w-[140px] block">{targetLabel}</span>
+      </td>
+      <td className="p-3 hidden md:table-cell">
+        <span className="text-xs text-muted-foreground truncate max-w-[200px] block">{details}</span>
+      </td>
+      <td className="p-3 hidden lg:table-cell">
+        <span className="text-xs text-muted-foreground font-mono">{log.ip_address || '—'}</span>
+      </td>
+    </tr>
+  );
+}
+
+function SummaryCard({
   title, 
   value, 
   icon: Icon, 

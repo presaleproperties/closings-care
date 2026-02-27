@@ -47,6 +47,17 @@ serve(async (req) => {
     if (!targetUserId) throw new Error("targetUserId is required");
     if (targetUserId === user.id) throw new Error("Cannot modify your own account via admin panel");
 
+    // Helper: write an immutable audit log entry via service role
+    const writeAuditLog = async (details?: Record<string, unknown>) => {
+      await supabaseAdmin.from("admin_audit_logs").insert({
+        admin_user_id: user.id,
+        target_user_id: targetUserId,
+        action,
+        details: details ?? null,
+        ip_address: req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip") ?? null,
+      });
+    };
+
     if (action === "delete") {
       // Delete all user data in dependency order
       await supabaseAdmin.from("payouts").delete().eq("user_id", targetUserId);
@@ -63,6 +74,7 @@ serve(async (req) => {
       await supabaseAdmin.from("user_roles").delete().eq("user_id", targetUserId);
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
       if (deleteError) throw new Error(`Failed to delete auth user: ${deleteError.message}`);
+      await writeAuditLog();
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -75,11 +87,13 @@ serve(async (req) => {
         { redirectTo: `${req.headers.get("origin") || "https://commissioniq.lovable.app"}/reset-password` }
       );
       if (resetError) throw new Error(`Failed to send reset email: ${resetError.message}`);
+      await writeAuditLog({ email: authUserData.user.email });
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (action === "edit") {
       if (!name && !email) throw new Error("name or email is required for edit");
+      const changedFields: Record<string, unknown> = {};
 
       if (name) {
         const { error: profileError } = await supabaseAdmin
@@ -87,13 +101,16 @@ serve(async (req) => {
           .update({ full_name: name.trim() })
           .eq("user_id", targetUserId);
         if (profileError) throw new Error(`Failed to update profile: ${profileError.message}`);
+        changedFields.name = name.trim();
       }
 
       if (email) {
         const { error: emailError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { email: email.trim() });
         if (emailError) throw new Error(`Failed to update email: ${emailError.message}`);
+        changedFields.email = email.trim();
       }
 
+      await writeAuditLog({ changed_fields: changedFields });
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

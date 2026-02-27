@@ -150,3 +150,32 @@ export function useAdminUpdateSubscription() {
     },
   });
 }
+
+export interface AuditLog {
+  id: string;
+  admin_user_id: string;
+  target_user_id: string | null;
+  action: string;
+  details: Record<string, unknown> | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export function useAdminAuditLogs() {
+  const { data: isAdmin } = useIsAdmin();
+  return useQuery<AuditLog[]>({
+    queryKey: ['adminAuditLogs'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('admin_audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as unknown as AuditLog[];
+    },
+    enabled: isAdmin === true,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+}
