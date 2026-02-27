@@ -55,18 +55,6 @@ serve(async (req) => {
       throw new Error("Invalid tier. Must be 'free' or 'pro'");
     }
 
-    // Create admin Supabase client for full access
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
     // Update the user's subscription tier
     const updateData: Record<string, unknown> = {
       subscription_tier: tier,
