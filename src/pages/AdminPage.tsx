@@ -13,8 +13,10 @@ import {
   ArrowDownCircle,
   Loader2,
   Search,
-  X
+  X,
+  Bell,
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -215,6 +217,65 @@ export default function AdminPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Signups Feed */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bell className="w-4 h-4 text-muted-foreground" />
+              Recent Signups
+              {(() => {
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                const newToday = users.filter(u => new Date(u.createdAt) >= oneDayAgo).length;
+                return newToday > 0 ? (
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                    {newToday}
+                  </span>
+                ) : null;
+              })()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {users.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No signups yet</p>
+            ) : (
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {users.slice(0, 20).map((user) => {
+                  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                  const isNew = new Date(user.createdAt) >= oneDayAgo;
+                  return (
+                    <div key={user.id} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-primary">
+                            {(user.name !== 'Unknown' ? user.name : user.email)?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{user.name !== 'Unknown' ? user.name : user.email}</p>
+                          {user.name !== 'Unknown' && (
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        {isNew && (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-primary/10 text-primary">NEW</span>
+                        )}
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
+                        </span>
+                        <Badge variant="outline" className={cn("text-[10px] h-5 px-1.5", user.subscriptionTier === 'pro' ? "bg-amber-500/10 text-amber-500 border-amber-500/30" : "")}>
+                          {user.subscriptionTier === 'pro' ? <><Crown className="w-2.5 h-2.5 mr-0.5" />Pro</> : 'Free'}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
