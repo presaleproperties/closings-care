@@ -52,6 +52,15 @@ serve(async (req) => {
       throw new Error("Unauthorized: Admin access required");
     }
 
+    // Write audit log — admin viewed user list (fire-and-forget, don't block response)
+    supabaseAdmin.from("admin_audit_logs").insert({
+      admin_user_id: user.id,
+      target_user_id: null,
+      action: "view_users",
+      details: null,
+      ip_address: req.headers.get("x-forwarded-for") ?? req.headers.get("cf-connecting-ip") ?? null,
+    }).then(() => {}).catch((e: unknown) => console.warn("[audit] Failed to write log:", e));
+
     // Fetch all profiles
     const { data: profiles, error: allProfilesError } = await supabaseAdmin
       .from("profiles")
