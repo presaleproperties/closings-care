@@ -42,7 +42,7 @@ serve(async (req) => {
 
     if (!adminRole) throw new Error("Unauthorized: Admin access required");
 
-    const { action, targetUserId, name, email } = await req.json();
+    const { action, targetUserId, name, email, banReason } = await req.json();
 
     if (!targetUserId) throw new Error("targetUserId is required");
     if (targetUserId === user.id) throw new Error("Cannot modify your own account via admin panel");
@@ -88,6 +88,28 @@ serve(async (req) => {
       );
       if (resetError) throw new Error(`Failed to send reset email: ${resetError.message}`);
       await writeAuditLog({ email: authUserData.user.email });
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "ban" || action === "unban") {
+      const isBanning = action === "ban";
+      const { error: banError } = await supabaseAdmin
+        .from("profiles")
+        .update({
+          is_banned: isBanning,
+          banned_at: isBanning ? new Date().toISOString() : null,
+          ban_reason: isBanning ? (banReason ?? null) : null,
+        })
+        .eq("user_id", targetUserId);
+      if (banError) throw new Error(`Failed to ${action} user: ${banError.message}`);
+
+      // Also disable/enable Supabase Auth login via admin API
+      const { error: authBanError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+        ban_duration: isBanning ? "876600h" : "none", // ~100 years = effectively permanent
+      });
+      if (authBanError) throw new Error(`Failed to update auth ban: ${authBanError.message}`);
+
+      await writeAuditLog({ reason: banReason ?? null });
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

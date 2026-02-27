@@ -542,23 +542,32 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ban_reason: string | null
+          banned_at: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_banned: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_banned?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          ban_reason?: string | null
+          banned_at?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_banned?: boolean
           updated_at?: string
           user_id?: string
         }
