@@ -10,6 +10,17 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // ── CRON SECRET VALIDATION ───────────────────────────────────────────────
+  // Only Supabase's pg_cron job (or another trusted caller) should trigger this.
+  // The cron job must pass: Authorization: Bearer <CRON_SECRET>
+  const cronSecret = Deno.env.get('CRON_SECRET')
+  const authHeader = req.headers.get('Authorization')
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  }
+
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
