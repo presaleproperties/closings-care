@@ -11,12 +11,10 @@ const corsHeaders = {
  * manage-connection — secure proxy for platform_connections CRUD.
  *
  * Actions:
- *  - upsert  { platform, api_key, api_secret?, base_url? }
- *            Encrypts api_key/api_secret before writing. Returns masked record.
- *  - list    {}
- *            Returns connections with api_key MASKED (last 4 chars only).
- *  - delete  { connection_id }
- *            Deletes the connection row.
+ *  - upsert        { platform, api_key, api_secret?, base_url? }
+ *  - list          {}
+ *  - delete        { connection_id }
+ *  - encrypt-all   {} (admin: re-encrypt any legacy plaintext rows for the calling user)
  *
  * All writes use the service-role client so pgp_sym_encrypt can run.
  * Reads via service role, but data returned to the client is always masked.
@@ -166,6 +164,60 @@ Deno.serve(async (req) => {
       if (error) throw error
 
       return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── ENCRYPT-ALL ──────────────────────────────────────────────────────────
+    // Re-encrypt any legacy plaintext api_key / api_secret for the calling user.
+    // A value is considered plaintext if pgp_sym_decrypt throws (not valid pgp ciphertext).
+    if (action === 'encrypt-all') {
+      const { data: rows, error: fetchErr } = await supabaseAdmin
+        .from('platform_connections')
+        .select('id, api_key, api_secret')
+        .eq('user_id', userId)
+
+      if (fetchErr) throw fetchErr
+
+      let migrated = 0
+      for (const row of (rows || [])) {
+        const updates: Record<string, string | null> = {}
+
+        // Check api_key
+        if (row.api_key) {
+          const { data: decrypted } = await supabaseAdmin
+            .rpc('decrypt_api_credential', { ciphertext: row.api_key, passphrase })
+          // decrypt_api_credential returns the value as-is for legacy plaintext.
+          // If the decrypted value equals the stored value, it was plaintext — re-encrypt it.
+          if (decrypted === row.api_key) {
+            const { data: enc } = await supabaseAdmin
+              .rpc('encrypt_api_credential', { plaintext: row.api_key, passphrase })
+            updates.api_key = enc as string
+          }
+        }
+
+        // Check api_secret
+        if (row.api_secret) {
+          const { data: decrypted } = await supabaseAdmin
+            .rpc('decrypt_api_credential', { ciphertext: row.api_secret, passphrase })
+          if (decrypted === row.api_secret) {
+            const { data: enc } = await supabaseAdmin
+              .rpc('encrypt_api_credential', { plaintext: row.api_secret, passphrase })
+            updates.api_secret = enc as string
+          }
+        }
+
+        if (Object.keys(updates).length > 0) {
+          const { error: upErr } = await supabaseAdmin
+            .from('platform_connections')
+            .update(updates)
+            .eq('id', row.id)
+          if (upErr) throw upErr
+          migrated++
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, migrated }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
