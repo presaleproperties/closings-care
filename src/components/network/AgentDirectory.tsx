@@ -326,13 +326,14 @@ function AgentCard({
         {agent.email && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Mail className="h-3 w-3 shrink-0" />
-            <span className="truncate">{agent.email}</span>
+            {/* Mask contact info — these are other agents' details, not the viewer's */}
+            <span className="truncate">{'•'.repeat(4) + agent.email.slice(agent.email.indexOf('@'))}</span>
           </div>
         )}
         {agent.phone && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Phone className="h-3 w-3 shrink-0" />
-            <span>{agent.phone}</span>
+            <span>{'•'.repeat(6) + String(agent.phone).slice(-2)}</span>
           </div>
         )}
         <div className="flex items-center justify-between">

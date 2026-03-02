@@ -1,8 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const ALLOWED_ORIGIN = "https://commissioniq.lovable.app";
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 /**
@@ -56,8 +58,8 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } },
     )
 
-    // Passphrase: SERVICE_ROLE_KEY is unique per project and never accessible client-side
-    const passphrase = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    // Passphrase: dedicated ENCRYPTION_KEY secret, never the service role key
+    const passphrase = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
     const { action, ...payload } = await req.json()
 

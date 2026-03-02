@@ -1,12 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
+const ALLOWED_ORIGIN = "https://commissioniq.lovable.app";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Tool definitions for the AI to use
+const DAILY_REQUEST_LIMIT = 50;
+
 const tools = [
   {
     type: "function",
@@ -153,11 +156,7 @@ const tools = [
     function: {
       name: "get_deals_summary",
       description: "Get a summary of the user's deals and transactions",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: [],
-      },
+      parameters: { type: "object", properties: {}, required: [] },
     },
   },
   {
@@ -165,11 +164,7 @@ const tools = [
     function: {
       name: "get_payouts_summary",
       description: "Get a summary of upcoming and past payouts/commissions",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: [],
-      },
+      parameters: { type: "object", properties: {}, required: [] },
     },
   },
   {
@@ -270,6 +265,11 @@ Key context:
 
 Keep it brief and friendly!`;
 
+/** Escape special ILIKE metacharacters: %, _, \ */
+function escapeLike(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -289,9 +289,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
+      global: { headers: { Authorization: authHeader } },
     });
 
     // Verify the user is authenticated
@@ -305,7 +303,80 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    console.log("Authenticated user:", userId);
+
+    // ── Per-user rate limiting (50 requests/day) ─────────────────────────────
+    const supabaseAdmin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    // Upsert ai_usage row for today
+    const { data: usageRow, error: usageError } = await supabaseAdmin
+      .from("ai_usage")
+      .upsert(
+        { user_id: userId, date: today, request_count: 1 },
+        { onConflict: "user_id,date", ignoreDuplicates: false }
+      )
+      .select("request_count")
+      .single();
+
+    // If the row already existed, increment it atomically via RPC-style update
+    if (usageError || !usageRow) {
+      // Row already exists — increment
+      const { data: updated, error: incError } = await supabaseAdmin.rpc
+        ? await (async () => {
+            const { data, error } = await supabaseAdmin
+              .from("ai_usage")
+              .select("request_count")
+              .eq("user_id", userId)
+              .eq("date", today)
+              .single();
+            if (error || !data) return { data: null, error };
+            const newCount = (data.request_count || 0) + 1;
+            if (newCount > DAILY_REQUEST_LIMIT) {
+              return { data: { request_count: newCount }, error: null };
+            }
+            const { error: updateError } = await supabaseAdmin
+              .from("ai_usage")
+              .update({ request_count: newCount })
+              .eq("user_id", userId)
+              .eq("date", today);
+            return { data: { request_count: newCount }, error: updateError };
+          })()
+        : { data: null, error: new Error("rpc not available") };
+
+      if (updated && updated.request_count > DAILY_REQUEST_LIMIT) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. You have reached your 50 AI requests per day limit." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      // Fresh upsert succeeded — check if we need to increment (upsert with ignoreDuplicates=false
+      // updates the row; if request_count was already set it returns the new value)
+      // Re-fetch to get current count
+      const { data: current } = await supabaseAdmin
+        .from("ai_usage")
+        .select("request_count")
+        .eq("user_id", userId)
+        .eq("date", today)
+        .single();
+
+      if (current && current.request_count > DAILY_REQUEST_LIMIT) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. You have reached your 50 AI requests per day limit." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Increment
+      await supabaseAdmin
+        .from("ai_usage")
+        .update({ request_count: (current?.request_count || 1) + 1 })
+        .eq("user_id", userId)
+        .eq("date", today);
+    }
 
     const { messages, imageData } = await req.json();
     
@@ -316,30 +387,19 @@ serve(async (req) => {
 
     // Prepare messages for AI - handle multimodal content if image is provided
     const preparedMessages = messages.map((msg: any, index: number) => {
-      // If this is the last user message and we have image data, make it multimodal
       if (index === messages.length - 1 && msg.role === 'user' && imageData) {
         return {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: msg.content || 'Please extract all deal information from this screenshot and create the deal.',
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageData, // base64 data URL
-              },
-            },
+            { type: 'text', text: msg.content || 'Please extract all deal information from this screenshot and create the deal.' },
+            { type: 'image_url', image_url: { url: imageData } },
           ],
         };
       }
       return msg;
     });
 
-    // Use vision-capable model when image is present
     const model = imageData ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
-    
     console.log("Using model:", model, "Image attached:", !!imageData);
 
     // First AI call with tools
@@ -351,10 +411,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...preparedMessages,
-        ],
+        messages: [{ role: "system", content: systemPrompt }, ...preparedMessages],
         tools,
         tool_choice: "auto",
       }),
@@ -393,14 +450,12 @@ serve(async (req) => {
         try {
           switch (functionName) {
             case "preview_deal": {
-              // Auto-calculate gross commission if advance + completion provided
               const advanceComm = args.advance_commission || 0;
               const completionComm = args.completion_commission || 0;
-              const calculatedGross = (advanceComm > 0 || completionComm > 0) 
-                ? advanceComm + completionComm 
+              const calculatedGross = (advanceComm > 0 || completionComm > 0)
+                ? advanceComm + completionComm
                 : args.gross_commission_est || null;
 
-              // Return deal details for user approval - don't create yet
               const previewData = {
                 client_name: args.client_name,
                 deal_type: args.deal_type,
@@ -421,9 +476,9 @@ serve(async (req) => {
                 buyer_type: args.buyer_type || null,
               };
 
-              result = { 
+              result = {
                 type: "deal_preview",
-                success: true, 
+                success: true,
                 preview: previewData,
                 message: "Please review the extracted deal details and approve to create."
               };
@@ -431,11 +486,10 @@ serve(async (req) => {
             }
 
             case "create_deal": {
-              // Auto-calculate gross commission if advance + completion provided
               const advanceCommission = args.advance_commission || 0;
               const completionCommission = args.completion_commission || 0;
-              const grossCommission = (advanceCommission > 0 || completionCommission > 0) 
-                ? advanceCommission + completionCommission 
+              const grossCommission = (advanceCommission > 0 || completionCommission > 0)
+                ? advanceCommission + completionCommission
                 : args.gross_commission_est || null;
 
               const dealData = {
@@ -460,100 +514,42 @@ serve(async (req) => {
                 user_id: userId,
               };
 
-              const { data: deal, error } = await supabase
-                .from("deals")
-                .insert(dealData)
-                .select()
-                .single();
-
+              const { data: deal, error } = await supabase.from("deals").insert(dealData).select().single();
               if (error) throw error;
 
-              // Create payouts for the deal
               const payouts = [];
               if (args.property_type === "PRESALE") {
                 if (args.advance_commission && args.advance_date) {
-                  payouts.push({
-                    deal_id: deal.id,
-                    user_id: userId,
-                    payout_type: "Advance",
-                    amount: args.advance_commission,
-                    due_date: args.advance_date,
-                    status: "PROJECTED",
-                  });
+                  payouts.push({ deal_id: deal.id, user_id: userId, payout_type: "Advance", amount: args.advance_commission, due_date: args.advance_date, status: "PROJECTED" });
                 }
                 if (args.completion_commission && args.completion_date) {
-                  payouts.push({
-                    deal_id: deal.id,
-                    user_id: userId,
-                    payout_type: "Completion",
-                    amount: args.completion_commission,
-                    due_date: args.completion_date,
-                    status: "PROJECTED",
-                  });
+                  payouts.push({ deal_id: deal.id, user_id: userId, payout_type: "Completion", amount: args.completion_commission, due_date: args.completion_date, status: "PROJECTED" });
                 }
               } else if (args.gross_commission_est && args.close_date_est) {
-                payouts.push({
-                  deal_id: deal.id,
-                  user_id: userId,
-                  payout_type: "Completion",
-                  amount: args.gross_commission_est,
-                  due_date: args.close_date_est,
-                  status: "PROJECTED",
-                });
+                payouts.push({ deal_id: deal.id, user_id: userId, payout_type: "Completion", amount: args.gross_commission_est, due_date: args.close_date_est, status: "PROJECTED" });
               }
 
-              if (payouts.length > 0) {
-                await supabase.from("payouts").insert(payouts);
-              }
-
+              if (payouts.length > 0) await supabase.from("payouts").insert(payouts);
               result = { success: true, deal_id: deal.id, client_name: deal.client_name, message: "Deal created successfully" };
               break;
             }
 
             case "update_deal": {
               const { deal_id, ...updateFields } = args;
-              
-              // Remove undefined/null values
               const cleanedData = Object.entries(updateFields).reduce((acc, [key, value]) => {
-                if (value !== undefined && value !== null && value !== '') {
-                  acc[key] = value;
-                }
+                if (value !== undefined && value !== null && value !== '') acc[key] = value;
                 return acc;
               }, {} as Record<string, unknown>);
 
-              const { data: deal, error } = await supabase
-                .from("deals")
-                .update(cleanedData)
-                .eq("id", deal_id)
-                .select()
-                .single();
-
+              const { data: deal, error } = await supabase.from("deals").update(cleanedData).eq("id", deal_id).select().single();
               if (error) throw error;
 
-              // Auto-sync payout dates if deal dates changed
               if (deal.property_type === "RESALE" && cleanedData.close_date_est) {
-                await supabase
-                  .from("payouts")
-                  .update({ due_date: cleanedData.close_date_est as string })
-                  .eq("deal_id", deal_id)
-                  .eq("payout_type", "Completion");
+                await supabase.from("payouts").update({ due_date: cleanedData.close_date_est as string }).eq("deal_id", deal_id).eq("payout_type", "Completion");
               }
-
               if (deal.property_type === "PRESALE") {
-                if (cleanedData.advance_date) {
-                  await supabase
-                    .from("payouts")
-                    .update({ due_date: cleanedData.advance_date as string })
-                    .eq("deal_id", deal_id)
-                    .eq("payout_type", "Advance");
-                }
-                if (cleanedData.completion_date) {
-                  await supabase
-                    .from("payouts")
-                    .update({ due_date: cleanedData.completion_date as string })
-                    .eq("deal_id", deal_id)
-                    .eq("payout_type", "Completion");
-                }
+                if (cleanedData.advance_date) await supabase.from("payouts").update({ due_date: cleanedData.advance_date as string }).eq("deal_id", deal_id).eq("payout_type", "Advance");
+                if (cleanedData.completion_date) await supabase.from("payouts").update({ due_date: cleanedData.completion_date as string }).eq("deal_id", deal_id).eq("payout_type", "Completion");
               }
 
               result = { success: true, deal_id: deal.id, client_name: deal.client_name, message: "Deal updated successfully", updated_fields: Object.keys(cleanedData) };
@@ -561,7 +557,10 @@ serve(async (req) => {
             }
 
             case "search_deals": {
-              const searchTerm = `%${args.query}%`;
+              // Sanitize ILIKE input — escape %, _, and \ before passing to query
+              const rawQuery = String(args.query || "").slice(0, 200);
+              const sanitized = escapeLike(rawQuery);
+              const searchTerm = `%${sanitized}%`;
               const { data: deals, error } = await supabase
                 .from("deals")
                 .select("id, client_name, address, project_name, deal_type, property_type, status, gross_commission_est, close_date_est")
@@ -570,141 +569,69 @@ serve(async (req) => {
                 .limit(5);
 
               if (error) throw error;
-              
               result = {
                 found: deals?.length || 0,
                 deals: deals?.map(d => ({
-                  id: d.id,
-                  client_name: d.client_name,
-                  address: d.address,
-                  project_name: d.project_name,
-                  deal_type: d.deal_type,
-                  property_type: d.property_type,
-                  status: d.status,
-                  commission: d.gross_commission_est,
-                  closing_date: d.close_date_est,
+                  id: d.id, client_name: d.client_name, address: d.address,
+                  project_name: d.project_name, deal_type: d.deal_type,
+                  property_type: d.property_type, status: d.status,
+                  commission: d.gross_commission_est, closing_date: d.close_date_est,
                 })) || [],
               };
               break;
             }
 
             case "create_expense": {
-              const expenseData = {
-                category: args.category,
-                amount: args.amount,
-                month: args.month,
-                recurrence: args.recurrence || "one-time",
-                notes: args.notes || null,
-                user_id: userId,
-              };
-
-              const { data: expense, error } = await supabase
-                .from("expenses")
-                .insert(expenseData)
-                .select()
-                .single();
-
+              const expenseData = { category: args.category, amount: args.amount, month: args.month, recurrence: args.recurrence || "one-time", notes: args.notes || null, user_id: userId };
+              const { data: expense, error } = await supabase.from("expenses").insert(expenseData).select().single();
               if (error) throw error;
               result = { success: true, expense_id: expense.id, category: expense.category, amount: expense.amount };
               break;
             }
 
             case "create_other_income": {
-              const incomeData = {
-                name: args.name,
-                amount: args.amount,
-                recurrence: args.recurrence,
-                start_month: args.start_month,
-                end_month: args.end_month || null,
-                notes: args.notes || null,
-                user_id: userId,
-              };
-
-              const { data: income, error } = await supabase
-                .from("other_income")
-                .insert(incomeData)
-                .select()
-                .single();
-
+              const incomeData = { name: args.name, amount: args.amount, recurrence: args.recurrence, start_month: args.start_month, end_month: args.end_month || null, notes: args.notes || null, user_id: userId };
+              const { data: income, error } = await supabase.from("other_income").insert(incomeData).select().single();
               if (error) throw error;
               result = { success: true, income_id: income.id, name: income.name, amount: income.amount };
               break;
             }
 
             case "get_deals_summary": {
-              const { data: deals, error } = await supabase
-                .from("deals")
-                .select("*")
-                .order("created_at", { ascending: false })
-                .limit(10);
-
+              const { data: deals, error } = await supabase.from("deals").select("*").order("created_at", { ascending: false }).limit(10);
               if (error) throw error;
-              
               const totalDeals = deals?.length || 0;
               const pendingDeals = deals?.filter(d => d.status === "PENDING").length || 0;
               const closedDeals = deals?.filter(d => d.status === "CLOSED").length || 0;
-              
               result = {
-                total_deals: totalDeals,
-                pending: pendingDeals,
-                closed: closedDeals,
-                recent_deals: deals?.slice(0, 5).map(d => ({
-                  client: d.client_name,
-                  type: d.deal_type,
-                  status: d.status,
-                  commission: d.gross_commission_est,
-                })),
+                total_deals: totalDeals, pending: pendingDeals, closed: closedDeals,
+                recent_deals: deals?.slice(0, 5).map(d => ({ client: d.client_name, type: d.deal_type, status: d.status, commission: d.gross_commission_est })),
               };
               break;
             }
 
             case "get_payouts_summary": {
-              const { data: payouts, error } = await supabase
-                .from("payouts")
-                .select("*, deal:deals(client_name)")
-                .order("due_date", { ascending: true });
-
+              const { data: payouts, error } = await supabase.from("payouts").select("*, deal:deals(client_name)").order("due_date", { ascending: true });
               if (error) throw error;
-
               const upcoming = payouts?.filter(p => p.status === "PROJECTED" && new Date(p.due_date) >= new Date()) || [];
               const paid = payouts?.filter(p => p.status === "PAID") || [];
-              
               result = {
                 upcoming_count: upcoming.length,
                 upcoming_total: upcoming.reduce((sum, p) => sum + Number(p.amount), 0),
                 paid_count: paid.length,
                 paid_total: paid.reduce((sum, p) => sum + Number(p.amount), 0),
-                next_payouts: upcoming.slice(0, 3).map(p => ({
-                  client: p.deal?.client_name,
-                  amount: p.amount,
-                  due_date: p.due_date,
-                  type: p.payout_type,
-                })),
+                next_payouts: upcoming.slice(0, 3).map(p => ({ client: p.deal?.client_name, amount: p.amount, due_date: p.due_date, type: p.payout_type })),
               };
               break;
             }
 
             case "get_expenses_summary": {
               const targetMonth = args.month || new Date().toISOString().slice(0, 7);
-              const { data: expenses, error } = await supabase
-                .from("expenses")
-                .select("*")
-                .eq("month", targetMonth);
-
+              const { data: expenses, error } = await supabase.from("expenses").select("*").eq("month", targetMonth);
               if (error) throw error;
-
               const total = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-              const byCategory = expenses?.reduce((acc, e) => {
-                acc[e.category] = (acc[e.category] || 0) + Number(e.amount);
-                return acc;
-              }, {} as Record<string, number>) || {};
-
-              result = {
-                month: targetMonth,
-                total_expenses: total,
-                by_category: byCategory,
-                expense_count: expenses?.length || 0,
-              };
+              const byCategory = expenses?.reduce((acc, e) => { acc[e.category] = (acc[e.category] || 0) + Number(e.amount); return acc; }, {} as Record<string, number>) || {};
+              result = { month: targetMonth, total_expenses: total, by_category: byCategory, expense_count: expenses?.length || 0 };
               break;
             }
 
@@ -716,54 +643,34 @@ serve(async (req) => {
           result = { error: err instanceof Error ? err.message : "Unknown error" };
         }
 
-        toolResults.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: JSON.stringify(result),
-        });
+        toolResults.push({ role: "tool", tool_call_id: toolCall.id, content: JSON.stringify(result) });
       }
 
-      // Check if any tool call was a deal preview
-      const previewToolCall = assistantMessage.tool_calls.find(
-        (tc: any) => tc.function.name === "preview_deal"
-      );
+      const previewToolCall = assistantMessage.tool_calls.find((tc: any) => tc.function.name === "preview_deal");
       let dealPreview = null;
       if (previewToolCall) {
         const previewResult = toolResults.find(tr => tr.tool_call_id === previewToolCall.id);
         if (previewResult) {
           try {
             const parsed = JSON.parse(previewResult.content);
-            if (parsed.type === "deal_preview" && parsed.preview) {
-              dealPreview = parsed.preview;
-            }
+            if (parsed.type === "deal_preview" && parsed.preview) dealPreview = parsed.preview;
           } catch {}
         }
       }
 
-      // Second AI call with tool results
       const followUpResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...messages,
-            assistantMessage,
-            ...toolResults,
-          ],
+          messages: [{ role: "system", content: systemPrompt }, ...messages, assistantMessage, ...toolResults],
         }),
       });
 
-      if (!followUpResponse.ok) {
-        throw new Error("Failed to get follow-up response");
-      }
+      if (!followUpResponse.ok) throw new Error("Failed to get follow-up response");
 
       const followUpData = await followUpResponse.json();
-      
+
       return new Response(JSON.stringify({
         message: followUpData.choices[0].message.content,
         dealPreview,
@@ -771,23 +678,16 @@ serve(async (req) => {
           name: tc.function.name,
           result: toolResults.find(tr => tr.tool_call_id === tc.id)?.content,
         })),
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // No tool calls, just return the message
-    return new Response(JSON.stringify({
-      message: assistantMessage.content,
-    }), {
+    return new Response(JSON.stringify({ message: assistantMessage.content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
     console.error("AI Assistant error:", error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "An error occurred" 
-    }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "An error occurred" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

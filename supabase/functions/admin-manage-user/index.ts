@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const ALLOWED_ORIGIN = "https://commissioniq.lovable.app";
+
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
@@ -60,18 +62,24 @@ serve(async (req) => {
 
     if (action === "delete") {
       // Delete all user data in dependency order
-      await supabaseAdmin.from("payouts").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("deals").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("expenses").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("revenue_share").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("synced_transactions").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("platform_connections").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("pipeline_prospects").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("properties").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("other_income").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("settings").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("profiles").delete().eq("user_id", targetUserId);
-      await supabaseAdmin.from("user_roles").delete().eq("user_id", targetUserId);
+      const deletionTables = [
+        'payouts', 'expenses', 'expense_budgets', 'pipeline_prospects', 'deals',
+        'other_income', 'properties', 'revenue_share', 'network_agents', 'network_summary',
+        'synced_transactions', 'sync_logs', 'platform_connections', 'chat_messages',
+        'ai_usage', 'user_roles', 'settings', 'profiles',
+      ];
+      for (const table of deletionTables) {
+        try {
+          const { error } = await supabaseAdmin.from(table).delete().eq('user_id', targetUserId);
+          if (error) console.warn(`[admin-delete] Warning for ${table}: ${error.message}`);
+        } catch (e) {
+          console.warn(`[admin-delete] Exception for ${table}:`, e);
+        }
+      }
+      // Also remove audit logs targeting this user
+      try {
+        await supabaseAdmin.from('admin_audit_logs').delete().eq('target_user_id', targetUserId);
+      } catch (_) { /* non-fatal */ }
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
       if (deleteError) throw new Error(`Failed to delete auth user: ${deleteError.message}`);
       await writeAuditLog();
