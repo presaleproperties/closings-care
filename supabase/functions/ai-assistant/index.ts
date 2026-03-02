@@ -379,14 +379,67 @@ serve(async (req) => {
     }
 
     const { messages, imageData } = await req.json();
-    
+
+    // ── INPUT VALIDATION ─────────────────────────────────────────────────────
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Messages array is required and cannot be empty." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate and sanitize each message
+    const MAX_MESSAGE_LENGTH = 2000;
+    const sanitizedMessages = [];
+    for (const msg of messages) {
+      if (!msg || typeof msg.role !== "string" || !["user", "assistant", "system"].includes(msg.role)) {
+        return new Response(JSON.stringify({ error: "Invalid message format." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Handle multimodal content (array) vs plain string
+      let sanitizedContent = msg.content;
+      if (typeof msg.content === "string") {
+        // Reject empty/whitespace-only user messages
+        if (msg.role === "user" && msg.content.trim().length === 0) {
+          return new Response(JSON.stringify({ error: "Message content cannot be empty." }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        // Enforce max length
+        if (msg.content.length > MAX_MESSAGE_LENGTH) {
+          return new Response(
+            JSON.stringify({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters.` }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        // Strip HTML/script tags
+        sanitizedContent = msg.content
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/<style[\s\S]*?<\/style>/gi, "")
+          .replace(/<[^>]+>/g, "")
+          .trim();
+
+        // Prompt injection defense: wrap user content in clear delimiters
+        if (msg.role === "user") {
+          sanitizedContent = `[USER INPUT START]\n${sanitizedContent}\n[USER INPUT END]`;
+        }
+      }
+
+      sanitizedMessages.push({ ...msg, content: sanitizedContent });
+    }
+    // ── END INPUT VALIDATION ──────────────────────────────────────────────────
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Prepare messages for AI - handle multimodal content if image is provided
-    const preparedMessages = messages.map((msg: any, index: number) => {
+    const preparedMessages = sanitizedMessages.map((msg: any, index: number) => {
       if (index === messages.length - 1 && msg.role === 'user' && imageData) {
         return {
           role: 'user',
