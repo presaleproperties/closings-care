@@ -82,7 +82,22 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">4. Data Sharing and Disclosure</h2>
+            <h2 className="text-xl font-semibold mb-3">4. Administrator Access & Audit Logging</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Platform administrators may access your account data for purposes of providing customer support, 
+              investigating security incidents, resolving billing disputes, or enforcing our Terms of Service. 
+              All such access is subject to strict internal controls:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground mt-2 space-y-1">
+              <li><strong>Every administrative action is automatically recorded</strong> in an immutable audit trail, including which admin accessed the data, what action was taken, the timestamp, and the originating IP address.</li>
+              <li>Administrator access is limited to personnel with a business need to know.</li>
+              <li>Audit logs are retained for a minimum of 12 months and cannot be modified or deleted by administrators.</li>
+              <li>You may request a summary of administrative access to your account by contacting privacy@dealzflow.ca.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-3">5. Data Sharing and Disclosure</h2>
             <p className="text-muted-foreground leading-relaxed">
               We do not sell, trade, or rent your personal information to third parties. We may share information only in the following circumstances:
             </p>
@@ -95,7 +110,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">5. Your Rights and Choices</h2>
+            <h2 className="text-xl font-semibold mb-3">6. Your Rights and Choices</h2>
             <p className="text-muted-foreground leading-relaxed">
               You have the following rights regarding your personal data:
             </p>
