@@ -745,15 +745,14 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     )
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !data?.claims) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const userId = data.claims.sub as string;
+    const userId = userData.user.id;
     const { platform, connection_id, preferences } = await req.json()
     const syncPrefs = {
       transactions: preferences?.transactions !== false,
@@ -795,7 +794,7 @@ Deno.serve(async (req) => {
     }
 
     // Decrypt the api_key server-side — never passes through the client
-    const passphrase = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const passphrase = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const { data: decryptedKey, error: decryptError } = await supabaseAdmin
       .rpc('decrypt_api_credential', { ciphertext: connection.api_key, passphrase })
     if (decryptError) {
