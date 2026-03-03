@@ -42,9 +42,24 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Use NetworkFirst for HTML so users always get the latest version
         runtimeCaching: [
+          {
+            urlPattern: /\.html$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "html-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 0 // Never use stale HTML
+              },
+              networkTimeoutSeconds: 5,
+            }
+          },
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
