@@ -738,7 +738,32 @@ Deno.serve(async (req) => {
       })
     }
 
-    // User-scoped client for JWT validation
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`
+
+    // Service-role client — always needed for decryption
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      serviceRoleKey,
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    )
+
+    let userId: string
+
+    if (isServiceRole) {
+      // Called from scheduled-sync — trust the scheduled_user_id in the body
+      const body = await req.json()
+      const { platform, connection_id, preferences, scheduled_user_id } = body
+      if (!scheduled_user_id) {
+        return new Response(JSON.stringify({ error: 'scheduled_user_id required for service-role calls' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      userId = scheduled_user_id
+      return await handleSync(supabaseAdmin, userId, platform, connection_id, preferences, corsHeaders)
+    }
+
+    // Regular user JWT validation
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -752,80 +777,9 @@ Deno.serve(async (req) => {
       })
     }
 
-    const userId = userData.user.id;
+    userId = userData.user.id;
     const { platform, connection_id, preferences } = await req.json()
-    const syncPrefs = {
-      transactions: preferences?.transactions !== false,
-      revshare: preferences?.revshare !== false,
-      network: preferences?.network !== false,
-    }
-
-    if (!platform || !connection_id) {
-      return new Response(JSON.stringify({ error: 'platform and connection_id required' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Service-role client — needed to call decrypt_api_credential
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-      { auth: { autoRefreshToken: false, persistSession: false } },
-    )
-
-    // Fetch the connection using service role so we can decrypt
-    const { data: connection, error: connError } = await supabaseAdmin
-      .from('platform_connections')
-      .select('*')
-      .eq('id', connection_id)
-      .eq('user_id', userId)
-      .single()
-
-    if (connError || !connection) {
-      return new Response(JSON.stringify({ error: 'Connection not found' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    if (!connection.api_key) {
-      return new Response(JSON.stringify({ error: 'API key missing. Please reconnect by removing and re-adding your ReZen connection with your API key.' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    // Decrypt the api_key server-side — never passes through the client
-    const passphrase = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const { data: decryptedKey, error: decryptError } = await supabaseAdmin
-      .rpc('decrypt_api_credential', { ciphertext: connection.api_key, passphrase })
-    if (decryptError) {
-      console.error('[sync-platform] Failed to decrypt api_key:', decryptError)
-      return new Response(JSON.stringify({ error: 'Failed to decrypt API key' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-    const apiKey = decryptedKey as string
-
-    let syncPromise: Promise<any>
-    switch (platform) {
-      case 'lofty':
-        syncPromise = syncLofty(supabase, userId, apiKey, connection_id)
-        break
-      case 'real_broker':
-        syncPromise = syncRealBroker(supabase, userId, apiKey, connection_id, syncPrefs)
-        break
-      default:
-        return new Response(JSON.stringify({ error: `Platform '${platform}' sync not yet supported` }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-    }
-
-    // Run sync in the background — returns immediately so navigation away won't cancel it
-    // @ts-ignore
-    EdgeRuntime.waitUntil(syncPromise.catch((err) => console.error('Background sync error:', err)))
-
-    return new Response(JSON.stringify({ success: true, message: 'Sync started in background' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return await handleSync(supabaseAdmin, userId, platform, connection_id, preferences, corsHeaders)
   } catch (error) {
     console.error('Sync error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to sync'
@@ -834,3 +788,80 @@ Deno.serve(async (req) => {
     })
   }
 })
+
+// ── Core sync handler (shared by user JWT calls and scheduled service-role calls) ──
+
+async function handleSync(
+  supabaseAdmin: any,
+  userId: string,
+  platform: string,
+  connection_id: string,
+  preferences: any,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  const syncPrefs = {
+    transactions: preferences?.transactions !== false,
+    revshare: preferences?.revshare !== false,
+    network: preferences?.network !== false,
+  }
+
+  if (!platform || !connection_id) {
+    return new Response(JSON.stringify({ error: 'platform and connection_id required' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Fetch the connection using service role so we can decrypt
+  const { data: connection, error: connError } = await supabaseAdmin
+    .from('platform_connections')
+    .select('*')
+    .eq('id', connection_id)
+    .eq('user_id', userId)
+    .single()
+
+  if (connError || !connection) {
+    return new Response(JSON.stringify({ error: 'Connection not found' }), {
+      status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!connection.api_key) {
+    return new Response(JSON.stringify({ error: 'API key missing. Please reconnect by re-entering your API key in Settings → Integrations.' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Decrypt the api_key server-side — never passes through the client
+  const passphrase = Deno.env.get('ENCRYPTION_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const { data: decryptedKey, error: decryptError } = await supabaseAdmin
+    .rpc('decrypt_api_credential', { ciphertext: connection.api_key, passphrase })
+  if (decryptError) {
+    console.error('[sync-platform] Failed to decrypt api_key:', decryptError)
+    return new Response(JSON.stringify({ error: 'Failed to decrypt API key' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+  const apiKey = decryptedKey as string
+
+  let syncPromise: Promise<any>
+  switch (platform) {
+    case 'lofty':
+      syncPromise = syncLofty(supabaseAdmin, userId, apiKey, connection_id)
+      break
+    case 'real_broker':
+      syncPromise = syncRealBroker(supabaseAdmin, userId, apiKey, connection_id, syncPrefs)
+      break
+    default:
+      return new Response(JSON.stringify({ error: `Platform '${platform}' sync not yet supported` }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+  }
+
+  // Run sync in the background — returns immediately so navigation away won't cancel it
+  // @ts-ignore
+  EdgeRuntime.waitUntil(syncPromise.catch((err) => console.error('Background sync error:', err)))
+
+  return new Response(JSON.stringify({ success: true, message: 'Sync started in background' }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+}
