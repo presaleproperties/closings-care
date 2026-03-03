@@ -24,7 +24,7 @@ export function UpdateBanner() {
       >
         <div className="flex items-center gap-2">
           <RefreshCw className="w-4 h-4 flex-shrink-0 animate-spin" style={{ animationDuration: "2s" }} />
-          <span>A new version is available</span>
+          <span>A new version is available — refresh for the latest</span>
         </div>
         <div className="flex items-center gap-2">
           <button
