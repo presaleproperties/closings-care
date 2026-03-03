@@ -1,10 +1,18 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const ALLOWED_ORIGIN = "https://commissioniq.lovable.app";
+const ALLOWED_ORIGINS = [
+  "https://commissioniq.lovable.app",
+  "https://4a1d5535-c719-4b90-8789-4be05903a331.lovableproject.com",
+  "https://id-preview--4a1d5535-c719-4b90-8789-4be05903a331.lovable.app",
+];
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") ?? "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
 }
 
 // ─── ReZen API Base URLs ──────────────────────────────────────────────────────
@@ -717,6 +725,7 @@ async function syncLofty(supabase: any, userId: string, apiKey: string, connecti
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
