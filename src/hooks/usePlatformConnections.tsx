@@ -289,7 +289,12 @@ export function useSyncPlatform() {
       startSyncPolling(connectionId);
     },
     onError: (error) => {
-      toast.error(`Sync failed: ${error.message}`);
+      const isApiKeyMissing = error.message?.toLowerCase().includes('api key missing') || error.message?.toLowerCase().includes('api key not configured');
+      if (isApiKeyMissing) {
+        toast.error('API key missing — go to Settings → Integrations and click Reconnect to re-enter your ReZen API key.', { duration: 8000 });
+      } else {
+        toast.error(`Sync failed: ${error.message}`);
+      }
     },
   });
 }
