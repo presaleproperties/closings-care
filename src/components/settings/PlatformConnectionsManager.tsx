@@ -295,8 +295,10 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
   const [newApiKey, setNewApiKey] = useState('');
 
   const isSyncing = connection.sync_status === 'syncing' || syncPlatform.isPending;
-  // api_key is null when the connection was saved before encryption was set up
-  const needsReconnect = !connection.api_key || connection.api_key.includes('????');
+  // api_key is null in DB when saved before encryption was set up.
+  // The list endpoint always returns a masked value (e.g. "••••  ••••  ••••  ????") for any non-null key,
+  // so we only need reconnect when the field itself is null/empty.
+  const needsReconnect = !connection.api_key;
 
   const statusConfig: Record<string, { color: string; label: string }> = {
     success: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Synced' },
