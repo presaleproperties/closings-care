@@ -1,48 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
 
 export function useServiceWorkerUpdate() {
-  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-
-  useEffect(() => {
-    if (!("serviceWorker" in navigator)) return;
-
-    const checkForWaiting = (registration: ServiceWorkerRegistration) => {
-      if (registration.waiting) {
-        setWaitingWorker(registration.waiting);
-        setUpdateAvailable(true);
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      // Poll every 60s for updates
+      if (r) {
+        setInterval(() => r.update(), 60_000);
       }
-    };
+    },
+  });
 
-    navigator.serviceWorker.getRegistration().then((registration) => {
-      if (!registration) return;
-
-      checkForWaiting(registration);
-
-      registration.addEventListener("updatefound", () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener("statechange", () => {
-          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            setWaitingWorker(newWorker);
-            setUpdateAvailable(true);
-          }
-        });
-      });
-    });
-  }, []);
-
-  const applyUpdate = () => {
-    if (waitingWorker) {
-      waitingWorker.postMessage({ type: "SKIP_WAITING" });
-    }
-    // Reload once the new SW takes control
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
-    });
-    // Fallback reload in case event already fired
-    setTimeout(() => window.location.reload(), 500);
+  return {
+    updateAvailable: needRefresh,
+    applyUpdate: () => updateServiceWorker(true),
   };
-
-  return { updateAvailable, applyUpdate };
 }
