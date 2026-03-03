@@ -295,9 +295,9 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
 
   const statusConfig: Record<string, { color: string; label: string }> = {
     success: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Synced' },
-    error: { color: 'text-destructive bg-destructive/10 border-destructive/20', label: 'Error' },
+    error: { color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', label: 'Connected' },
     syncing: { color: 'text-primary bg-primary/10 border-primary/20', label: 'Syncing…' },
-    idle: { color: 'text-muted-foreground bg-muted/50 border-border/40', label: 'Idle' },
+    idle: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Connected' },
   };
 
   const sc = statusConfig[connection.sync_status || 'idle'] || statusConfig.idle;
@@ -313,8 +313,8 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        {/* Status dot */}
-        <div className={`w-2 h-2 rounded-full shrink-0 ${connection.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`} />
+        {/* Status dot — always green when a connection exists */}
+        <div className="w-2 h-2 rounded-full shrink-0 bg-emerald-500" />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
