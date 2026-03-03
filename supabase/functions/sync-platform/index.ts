@@ -788,7 +788,7 @@ Deno.serve(async (req) => {
     }
 
     if (!connection.api_key) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+      return new Response(JSON.stringify({ error: 'API key missing. Please reconnect by removing and re-adding your ReZen connection with your API key.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

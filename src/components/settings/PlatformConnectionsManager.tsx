@@ -289,9 +289,14 @@ export function PlatformConnectionsManager() {
 function ConnectionCard({ connection, prefs }: { connection: PlatformConnection; prefs: SyncPreferences }) {
   const syncPlatform = useSyncPlatform();
   const deleteConnection = useDeleteConnection();
+  const upsertConnection = useUpsertConnection();
   const platformInfo = PLATFORMS.find(p => p.id === connection.platform);
+  const [showRekey, setShowRekey] = useState(false);
+  const [newApiKey, setNewApiKey] = useState('');
 
   const isSyncing = connection.sync_status === 'syncing' || syncPlatform.isPending;
+  // api_key is null when the connection was saved before encryption was set up
+  const needsReconnect = !connection.api_key || connection.api_key.includes('????');
 
   const statusConfig: Record<string, { color: string; label: string }> = {
     success: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Synced' },
@@ -306,6 +311,13 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
     .filter(([, v]) => v)
     .map(([k]) => k);
 
+  const handleRekey = async () => {
+    if (!newApiKey.trim()) return;
+    await upsertConnection.mutateAsync({ platform: connection.platform, api_key: newApiKey.trim() });
+    setShowRekey(false);
+    setNewApiKey('');
+  };
+
   return (
     <motion.div
       className="rounded-xl border border-border/50 bg-card/80 overflow-hidden"
@@ -314,22 +326,33 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Status dot — always green when a connection exists */}
-        <div className="w-2 h-2 rounded-full shrink-0 bg-emerald-500" />
+        <div className={`w-2 h-2 rounded-full shrink-0 ${needsReconnect ? 'bg-amber-500' : 'bg-emerald-500'}`} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm">{platformInfo?.name || connection.platform}</span>
-            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${sc.color}`}>
-              {sc.label}
-            </Badge>
+            {needsReconnect ? (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 text-amber-500 bg-amber-500/10 border-amber-500/20">
+                Re-enter API Key
+              </Badge>
+            ) : (
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-4 ${sc.color}`}>
+                {sc.label}
+              </Badge>
+            )}
           </div>
 
-          <div className="flex items-center gap-1.5 mt-1">
-            {/* api_key is always returned masked from the edge function */}
-            <span className="text-[11px] font-mono text-muted-foreground">
-              {connection.api_key || '••••  ••••  ••••  ????'}
-            </span>
-          </div>
+          {needsReconnect ? (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+              API key needs to be re-entered to enable syncing.
+            </p>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className="text-[11px] font-mono text-muted-foreground">
+                {connection.api_key}
+              </span>
+            </div>
+          )}
 
           {connection.last_synced_at && (
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">
@@ -337,13 +360,23 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
             </p>
           )}
 
-          {connection.sync_error && (
+          {connection.sync_error && !needsReconnect && (
             <p className="text-[10px] text-destructive mt-0.5 line-clamp-2">{connection.sync_error}</p>
           )}
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {platformInfo?.hasApi && (
+          {needsReconnect ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 text-xs px-2.5 border-amber-500/40 text-amber-600 hover:text-amber-700"
+              onClick={() => setShowRekey(v => !v)}
+            >
+              <Zap className="w-3 h-3" />
+              Reconnect
+            </Button>
+          ) : platformInfo?.hasApi && (
             <Button
               size="sm"
               variant="outline"
@@ -366,8 +399,33 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
         </div>
       </div>
 
+      {/* Re-key inline form */}
+      {showRekey && (
+        <div className="px-4 pb-3 flex gap-2 items-center border-t border-border/30 pt-3">
+          <Input
+            type="password"
+            placeholder="Paste your API key"
+            value={newApiKey}
+            onChange={e => setNewApiKey(e.target.value)}
+            className="h-7 text-xs flex-1"
+            autoFocus
+          />
+          <Button
+            size="sm"
+            className="h-7 text-xs px-3"
+            onClick={handleRekey}
+            disabled={!newApiKey.trim() || upsertConnection.isPending}
+          >
+            {upsertConnection.isPending ? 'Saving…' : 'Save'}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={() => setShowRekey(false)}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {/* Enabled types pill row */}
-      {enabledTypes.length > 0 && (
+      {!needsReconnect && enabledTypes.length > 0 && (
         <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
           {enabledTypes.map(type => {
             const dt = DATA_TYPES.find(d => d.key === type);
