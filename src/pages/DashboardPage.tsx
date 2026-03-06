@@ -280,8 +280,8 @@ export default function DashboardPage() {
               </div>
 
               <TabsContent value="insights" className="px-5 space-y-3 mt-0">
-                <PipelinePreview layout="horizontal" />
                 <UpcomingRevenue syncedTransactions={syncedTransactions} />
+                <PipelinePreview layout="horizontal" />
                 <NeedsAttention syncedTransactions={syncedTransactions} />
               </TabsContent>
 
