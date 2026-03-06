@@ -66,8 +66,8 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden [&>button]:hidden flex flex-col max-h-[90dvh] sm:max-h-none">
-        {/* Progress bar */}
+      <DialogContent className="max-w-lg p-0 [&>button]:hidden flex flex-col max-h-[90dvh] overflow-hidden">
+        {/* Progress bar — pinned at top, never scrolls */}
         <div className="h-1 bg-muted shrink-0">
           <div
             className="h-full bg-primary transition-all duration-500"
@@ -75,7 +75,8 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
           />
         </div>
 
-        <div className="p-5 sm:p-8 overflow-y-auto">
+        {/* Scrollable body */}
+        <div className="p-5 sm:p-8 overflow-y-auto flex-1 min-h-0">
           {/* Step 1: Welcome */}
           {step === 1 && (
             <div className="text-center animate-fade-in">
