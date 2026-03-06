@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { lovable } from '@/integrations/lovable/index';
 import { Button } from '@/components/ui/button';
@@ -62,8 +62,11 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('');
   const [socialLoading, setSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
 
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, resendConfirmation } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -72,6 +75,35 @@ export default function AuthPage() {
       setShowEmailForm(true);
     }
   }, [searchParams]);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResendConfirmation = async () => {
+    if (!email || resendCooldown > 0 || resendLoading) return;
+    setResendLoading(true);
+    setError('');
+    try {
+      const { error } = await resendConfirmation(email.trim().toLowerCase());
+      if (error) throw error;
+      setSuccess('Confirmation email resent! Check your inbox.');
+      setResendCooldown(45);
+    } catch (err: any) {
+      const msg = err.message || '';
+      if (msg.includes('rate limit') || msg.includes('after')) {
+        setResendCooldown(45);
+        setError('Please wait a moment before requesting another email.');
+      } else {
+        setError(msg || 'Failed to resend email. Try again shortly.');
+      }
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const handleSocialLogin = async (provider: 'google' | 'apple') => {
     setSocialLoading(provider);
@@ -128,7 +160,8 @@ export default function AuthPage() {
         }
         const { error } = await signUp(sanitizedEmail, password, sanitizedName);
         if (error) throw error;
-        navigate('/dashboard');
+        setAwaitingConfirmation(true);
+        setResendCooldown(45);
       } else if (mode === 'forgot') {
         const { error } = await resetPassword(sanitizedEmail);
         if (error) throw error;
@@ -255,8 +288,77 @@ export default function AuthPage() {
             </div>
           )}
 
+          {/* Email confirmation pending screen */}
+          {awaitingConfirmation && (
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <h1 className="text-2xl font-bold mb-2">Check your email</h1>
+              <p className="text-muted-foreground text-[15px] mb-1">
+                We sent a confirmation link to
+              </p>
+              <p className="font-semibold text-foreground mb-6 break-all">{email}</p>
+
+              <p className="text-sm text-muted-foreground mb-6">
+                Click the link in the email to activate your account. It may take a minute to arrive — check your spam folder if you don't see it.
+              </p>
+
+              {error && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive text-left">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="mb-4 p-3 bg-success/10 border border-success/20 rounded-xl text-sm text-success flex items-center gap-2 text-left">
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  {success}
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 text-[15px]"
+                onClick={handleResendConfirmation}
+                disabled={resendCooldown > 0 || resendLoading}
+              >
+                {resendLoading ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </span>
+                ) : resendCooldown > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Resend in {resendCooldown}s
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4" />
+                    Resend confirmation email
+                  </span>
+                )}
+              </Button>
+
+              <button
+                type="button"
+                className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => {
+                  setAwaitingConfirmation(false);
+                  setMode('login');
+                  setShowEmailForm(true);
+                  setError('');
+                  setSuccess('');
+                }}
+              >
+                Back to sign in
+              </button>
+            </div>
+          )}
+
           {/* Social-first view */}
-          {!showEmailForm && (mode === 'login' || mode === 'signup') && (
+          {!awaitingConfirmation && !showEmailForm && (mode === 'login' || mode === 'signup') && (
             <div className="space-y-3">
               {/* Google */}
               <Button
@@ -345,7 +447,7 @@ export default function AuthPage() {
           )}
 
           {/* Email form (secondary) */}
-          {(showEmailForm || mode === 'forgot' || mode === 'reset') && (
+          {!awaitingConfirmation && (showEmailForm || mode === 'forgot' || mode === 'reset') && (
             <>
               <form onSubmit={handleSubmit} className="space-y-5">
                 {mode === 'signup' && (

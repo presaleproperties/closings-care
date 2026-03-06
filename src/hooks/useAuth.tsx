@@ -13,6 +13,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   deleteAccount: () => Promise<{ error: Error | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,6 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    return { error };
+  };
+
   const deleteAccount = async () => {
     if (!user) return { error: new Error('Not authenticated') };
 
@@ -112,7 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut, 
       resetPassword,
       updatePassword,
-      deleteAccount 
+      deleteAccount,
+      resendConfirmation,
     }}>
       {children}
     </AuthContext.Provider>
