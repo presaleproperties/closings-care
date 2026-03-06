@@ -251,29 +251,34 @@ export default function DashboardPage() {
 
           {/* Mobile Dashboard */}
           <div className="sm:hidden">
-            <div className="px-5 pt-3 pb-4">
-              <p className="text-[11px] text-muted-foreground">{format(now, 'EEEE, MMMM d')}</p>
-              <h1 className="text-xl font-bold tracking-tight mt-0.5">Dashboard</h1>
+            <div className="px-5 pt-3 pb-3">
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">{format(now, 'EEEE, MMMM d')}</p>
+              <h1 className="text-[22px] font-bold tracking-tight mt-0.5 text-foreground">Dashboard</h1>
             </div>
 
-            <div className="px-5 mb-4">
+            <div className="px-5 mb-3">
               <QuickStats {...quickStatsProps} />
             </div>
 
-            <div className="px-5 mb-4">
+            <div className="px-5 mb-3">
               <GCIGoalTracker {...goalTrackerProps} />
             </div>
 
             <Tabs defaultValue="insights" className="pb-8">
-              <div className="px-5 mb-4">
-                <TabsList className="w-full grid grid-cols-4 h-10 bg-muted/50 rounded-xl p-0.5">
-                  {['insights', 'cashflow', 'taxes', 'analytics'].map((tab) => (
-                    <TabsTrigger 
-                      key={tab}
-                      value={tab}
-                      className="text-[11px] font-medium rounded-lg capitalize data-[state=active]:bg-card data-[state=active]:shadow-sm"
+              <div className="px-5 mb-3">
+                <TabsList className="w-full grid grid-cols-4 h-9 bg-muted/40 rounded-xl p-0.5 border border-border/30">
+                  {[
+                    { value: 'insights', label: 'Insights' },
+                    { value: 'cashflow', label: 'Cashflow' },
+                    { value: 'taxes', label: 'Taxes' },
+                    { value: 'analytics', label: 'Analytics' },
+                  ].map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className="text-[11px] font-semibold rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground"
                     >
-                      {tab === 'insights' ? 'Insights' : tab === 'cashflow' ? 'Cashflow' : tab === 'taxes' ? 'Taxes' : 'Analytics'}
+                      {tab.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -323,21 +328,21 @@ export default function DashboardPage() {
 
             <GCIGoalTracker {...goalTrackerProps} />
             <Tabs defaultValue="insights" className="space-y-5">
-              <TabsList className="w-auto inline-flex h-10 p-1 bg-muted/50 rounded-lg border border-border/30">
-                <TabsTrigger value="insights" className="text-sm font-medium gap-2 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">
-                  <Lightbulb className="h-3.5 w-3.5" />
+              <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/40 rounded-xl border border-border/30">
+                <TabsTrigger value="insights" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
+                  <Lightbulb className="h-3 w-3" />
                   Insights
                 </TabsTrigger>
-                <TabsTrigger value="cashflow" className="text-sm font-medium gap-2 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">
-                  <TrendingUp className="h-3.5 w-3.5" />
+                <TabsTrigger value="cashflow" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
                   Cashflow
                 </TabsTrigger>
-                <TabsTrigger value="taxes" className="text-sm font-medium gap-2 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">
-                  <Calculator className="h-3.5 w-3.5" />
+                <TabsTrigger value="taxes" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
+                  <Calculator className="h-3 w-3" />
                   Taxes
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="text-sm font-medium gap-2 px-4 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">
-                  <BarChart3 className="h-3.5 w-3.5" />
+                <TabsTrigger value="analytics" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
+                  <BarChart3 className="h-3 w-3" />
                   Analytics
                 </TabsTrigger>
               </TabsList>
