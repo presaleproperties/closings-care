@@ -66,16 +66,16 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden [&>button]:hidden">
+      <DialogContent className="max-w-lg p-0 overflow-hidden [&>button]:hidden flex flex-col max-h-[90dvh] sm:max-h-none">
         {/* Progress bar */}
-        <div className="h-1 bg-muted">
+        <div className="h-1 bg-muted shrink-0">
           <div
             className="h-full bg-primary transition-all duration-500"
             style={{ width: `${(step / totalSteps) * 100}%` }}
           />
         </div>
 
-        <div className="p-8">
+        <div className="p-5 sm:p-8 overflow-y-auto">
           {/* Step 1: Welcome */}
           {step === 1 && (
             <div className="text-center animate-fade-in">
@@ -122,7 +122,7 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-8 max-h-[300px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-2 gap-2 mb-6 max-h-[200px] sm:max-h-[300px] overflow-y-auto pr-2">
                 {PROVINCES.map((prov) => (
                   <button
                     key={prov}
@@ -234,7 +234,7 @@ export function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
           {/* Step 4: All set */}
           {step === 4 && (
             <div className="text-center animate-fade-in">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-accent to-amber-400 flex items-center justify-center shadow-lg shadow-accent/20">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-accent to-warning flex items-center justify-center shadow-lg shadow-accent/20">
                 <Sparkles className="w-10 h-10 text-accent-foreground" />
               </div>
               <h2 className="text-2xl font-bold mb-3">You're all set!</h2>
