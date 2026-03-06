@@ -153,7 +153,10 @@ export default function DashboardPage() {
     );
   }
 
-  const isEmpty = syncedTransactions.length === 0;
+  // Show EmptyDashboard only when there is no connection AND no synced data.
+  // If a connection exists (even mid-first-sync), show the full dashboard + inline banner.
+  const hasConnection = connections.length > 0;
+  const isEmpty = !hasConnection && syncedTransactions.length === 0;
   const activePipeline = pipelineProspects.filter(p => p.status === 'active');
 
   const quickStatsProps = {
