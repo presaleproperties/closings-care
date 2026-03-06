@@ -1,6 +1,7 @@
 import { Banknote, ArrowUpRight, Receipt, Users } from 'lucide-react';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface QuickStatsProps {
   receivedYTD: number;
@@ -13,7 +14,13 @@ interface QuickStatsProps {
   comingInDateRange?: string;
 }
 
-function StatCard({ icon: Icon, label, value, subtitle, color, gradientFrom, gradientTo, borderColor, iconBg, iconColor, glowColor }: {
+// Breathing pulse — handled via animate prop directly on the primary card
+
+function StatCard({
+  icon: Icon, label, value, subtitle, color,
+  gradientFrom, gradientTo, borderColor, iconBg, iconColor, glowColor,
+  index, isPrimary = false,
+}: {
   icon: any;
   label: string;
   value: number;
@@ -25,34 +32,68 @@ function StatCard({ icon: Icon, label, value, subtitle, color, gradientFrom, gra
   iconBg: string;
   iconColor: string;
   glowColor: string;
+  index: number;
+  isPrimary?: boolean;
 }) {
   return (
-    <div
-      className="rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all duration-300 hover:-translate-y-[3px] cursor-default relative overflow-hidden"
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={isPrimary
+        ? {
+            opacity: 1, y: 0, scale: 1,
+            boxShadow: [
+              '0 1px 2px 0 hsl(220 25% 10% / 0.05), 0 4px 14px -3px hsl(220 25% 10% / 0.08)',
+              '0 2px 20px -3px hsl(158 72% 34% / 0.22), 0 8px 28px -6px hsl(158 72% 34% / 0.14)',
+              '0 1px 2px 0 hsl(220 25% 10% / 0.05), 0 4px 14px -3px hsl(220 25% 10% / 0.08)',
+            ],
+          }
+        : { opacity: 1, y: 0, scale: 1 }
+      }
+      transition={isPrimary
+        ? { duration: 0.4, delay: index * 0.07, ease: [0.16, 1, 0.3, 1],
+            boxShadow: { duration: 3, repeat: Infinity, repeatDelay: 4, delay: 1.5, ease: 'easeInOut' as const } }
+        : { duration: 0.4, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }
+      }
+      className="rounded-2xl p-3.5 sm:p-4 space-y-2 transition-[border-color,transform] duration-300 hover:-translate-y-[3px] cursor-default relative overflow-hidden"
       style={{
         background: `linear-gradient(145deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
         border: `1px solid ${borderColor}`,
-        boxShadow: `0 1px 2px 0 hsl(220 25% 10% / 0.05), 0 4px 14px -3px hsl(220 25% 10% / 0.08), 0 0 0 0.5px ${borderColor}`,
       }}
     >
-      {/* Subtle inner highlight */}
-      <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.45) 50%, transparent)' }} />
+      {/* Inner top highlight */}
+      <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5) 50%, transparent)' }} />
+
+      {/* Primary card: subtle shimmer sweep on mount */}
+      {isPrimary && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          initial={{ x: '-100%', opacity: 0.6 }}
+          animate={{ x: '200%', opacity: 0 }}
+          transition={{ duration: 1.1, delay: 0.5, ease: 'easeInOut' }}
+          style={{ background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%)' }}
+        />
+      )}
+
       <div className="flex items-center gap-1.5">
-        <div
+        <motion.div
           className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center"
+          initial={{ scale: 0.7, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.35, delay: index * 0.07 + 0.15, ease: [0.16, 1, 0.3, 1] }}
           style={{ background: iconBg, boxShadow: `0 2px 8px -2px ${glowColor}` }}
         >
           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: iconColor }} />
-        </div>
+        </motion.div>
         <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
+
       <AnimatedCurrency
         value={value}
         className={cn("text-lg sm:text-xl font-bold block tracking-tight truncate", color)}
-        duration={0.8}
+        duration={0.9 + index * 0.08}
       />
       <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-snug truncate">{subtitle}</p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -70,6 +111,8 @@ export function QuickStats({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
       <StatCard
+        index={0}
+        isPrimary
         icon={Banknote}
         label="Earned YTD"
         value={receivedYTD}
@@ -83,6 +126,7 @@ export function QuickStats({
         glowColor="hsl(158 72% 34% / 0.5)"
       />
       <StatCard
+        index={1}
         icon={ArrowUpRight}
         label="Coming In"
         value={comingIn}
@@ -96,6 +140,7 @@ export function QuickStats({
         glowColor="hsl(217 91% 50% / 0.45)"
       />
       <StatCard
+        index={2}
         icon={Receipt}
         label="Expenses"
         value={monthlyExpenses}
@@ -109,6 +154,7 @@ export function QuickStats({
         glowColor="hsl(0 74% 50% / 0.4)"
       />
       <StatCard
+        index={3}
         icon={Users}
         label="Pipeline"
         value={pipelinePotential}

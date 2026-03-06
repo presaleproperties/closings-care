@@ -4,6 +4,7 @@ import { formatCurrency } from '@/lib/format';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/hooks/useSettings';
+import { motion } from 'framer-motion';
 
 interface GCIGoalTrackerProps {
   gciYTD: number;
@@ -32,7 +33,10 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
   }, [gciYTD, revShareYTD, gciGoal, revShareGoal]);
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
       className="rounded-2xl px-4 sm:px-5 py-3.5 space-y-2.5 relative overflow-hidden dark:[background:linear-gradient(145deg,hsl(222_22%_10%)_0%,hsl(222_20%_8%)_100%)]"
       style={{
         background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%)',
@@ -156,6 +160,6 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
           </div>
         </>
       )}
-    </div>
+    </motion.div>
   );
 }

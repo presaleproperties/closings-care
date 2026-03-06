@@ -15,17 +15,17 @@ export function AnimatedNumber({
   prefix = '',
   suffix = '',
   decimals = 0,
-  duration = 1.2,
+  duration = 1.0,
   className = '',
 }: AnimatedNumberProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: false, margin: '-50px' });
+  const isInView = useInView(ref, { once: true, margin: '-20px' });
   const [hasAnimated, setHasAnimated] = useState(false);
   
   const spring = useSpring(0, {
-    mass: 0.8,
-    stiffness: 75,
-    damping: 15,
+    mass: 0.6,
+    stiffness: 90,
+    damping: 18,
     duration: duration * 1000,
   });
 
@@ -38,13 +38,12 @@ export function AnimatedNumber({
   });
 
   useEffect(() => {
-    if (isInView) {
+    if (isInView && !hasAnimated) {
       spring.set(value);
       setHasAnimated(true);
     }
-  }, [isInView, value, spring]);
+  }, [isInView, value, spring, hasAnimated]);
 
-  // When value changes after initial animation, animate to new value
   useEffect(() => {
     if (hasAnimated) {
       spring.set(value);
@@ -71,17 +70,18 @@ export function AnimatedCurrency({
   value,
   currency = 'CAD',
   locale = 'en-CA',
-  duration = 1.2,
+  duration = 1.0,
   className = '',
 }: AnimatedCurrencyProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const isInView = useInView(ref, { once: false, margin: '-50px' });
+  const isInView = useInView(ref, { once: true, margin: '-20px' });
   const [hasAnimated, setHasAnimated] = useState(false);
   
+  // Snappier spring with a satisfying overshoot feel
   const spring = useSpring(0, {
-    mass: 0.8,
-    stiffness: 75,
-    damping: 15,
+    mass: 0.5,
+    stiffness: 100,
+    damping: 16,
     duration: duration * 1000,
   });
 
@@ -91,15 +91,15 @@ export function AnimatedCurrency({
       currency: currency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(Math.round(current));
+    }).format(Math.round(Math.max(current, 0)));
   });
 
   useEffect(() => {
-    if (isInView) {
+    if (isInView && !hasAnimated) {
       spring.set(value);
       setHasAnimated(true);
     }
-  }, [isInView, value, spring]);
+  }, [isInView, value, spring, hasAnimated]);
 
   useEffect(() => {
     if (hasAnimated) {
