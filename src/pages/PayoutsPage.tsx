@@ -468,7 +468,7 @@ export default function PayoutsPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
         <motion.div 
-          className="p-5 md:p-6 lg:p-6 space-y-5"
+          className="p-4 sm:p-5 md:p-6 lg:p-6 space-y-4 sm:space-y-5"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -484,17 +484,17 @@ export default function PayoutsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
                   >
-                    <div className="flex items-center gap-2">
-                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconTint)}>
-                        <stat.icon className="h-3.5 w-3.5" />
+                   <div className="flex items-center gap-1.5">
+                      <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0", stat.iconTint)}>
+                        <stat.icon className="h-3 w-3 sm:h-3.5 sm:h-3.5" />
                       </div>
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
                         {stat.label}
                       </span>
                     </div>
                     <AnimatedNumber
                       value={stat.value}
-                      className={cn("text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                      className={cn("text-lg sm:text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
                       duration={0.8}
                     />
                     <p className="text-[11px] text-muted-foreground leading-tight">
