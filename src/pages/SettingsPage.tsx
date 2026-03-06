@@ -171,27 +171,19 @@ export default function SettingsPage() {
         transition={springConfig}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full justify-start overflow-x-auto bg-card/80 border border-border/50 p-1.5">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              <span className="hidden sm:inline">General</span>
-            </TabsTrigger>
-            <TabsTrigger value="tax" className="flex items-center gap-2">
-              <PiggyBank className="w-4 h-4" />
-              <span className="hidden sm:inline">Tax & Finance</span>
-            </TabsTrigger>
-            <TabsTrigger value="subscription" className="flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              <span className="hidden sm:inline">Plan</span>
-            </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-2">
-              <Database className="w-4 h-4" />
-              <span className="hidden sm:inline">Data</span>
-            </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
-              <Plug className="w-4 h-4" />
-              <span className="hidden sm:inline">Integrations</span>
-            </TabsTrigger>
+          <TabsList className="w-full flex overflow-x-auto no-scrollbar bg-card/80 border border-border/50 p-1 h-auto gap-0.5">
+            {[
+              { value: 'general', icon: Palette, label: 'General' },
+              { value: 'tax', icon: PiggyBank, label: 'Tax & Finance' },
+              { value: 'subscription', icon: Crown, label: 'Plan' },
+              { value: 'data', icon: Database, label: 'Data' },
+              { value: 'integrations', icon: Plug, label: 'Integrations' },
+            ].map(({ value, icon: Icon, label }) => (
+              <TabsTrigger key={value} value={value} className="flex-1 min-w-[52px] flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 whitespace-nowrap text-xs sm:text-sm">
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">{label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* General Tab */}
@@ -209,63 +201,55 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div className="space-y-3">
                   <Label>Monthly Income Goal</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Set a target to track against your actual income
-                  </p>
-                  <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">Set a target to track against your actual income</p>
+                  <div className="flex items-center gap-3">
                     <Input
                       type="number"
                       min="0"
                       step="1000"
                       value={monthlyIncomeGoal}
                       onChange={(e) => setMonthlyIncomeGoal(parseFloat(e.target.value) || 0)}
-                      className="w-40"
+                      className="flex-1 max-w-[200px]"
                       placeholder="e.g., 15000"
                     />
-                    <span className="text-sm text-muted-foreground">/month</span>
+                    <span className="text-sm text-muted-foreground shrink-0">/month</span>
                   </div>
                   {monthlyIncomeGoal > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Annual target: {formatCurrency(monthlyIncomeGoal * 12)}
-                    </p>
+                    <p className="text-xs text-muted-foreground">Annual target: {formatCurrency(monthlyIncomeGoal * 12)}</p>
                   )}
                 </div>
 
                 <div className="border-t border-border/50 pt-4 space-y-3">
                   <Label>Yearly GCI Goal</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Gross Commission Income target for the current year
-                  </p>
-                  <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">Gross Commission Income target for the current year</p>
+                  <div className="flex items-center gap-3">
                     <Input
                       type="number"
                       min="0"
                       step="5000"
                       value={yearlyGciGoal}
                       onChange={(e) => setYearlyGciGoal(parseFloat(e.target.value) || 0)}
-                      className="w-40"
+                      className="flex-1 max-w-[200px]"
                       placeholder="e.g., 200000"
                     />
-                    <span className="text-sm text-muted-foreground">/year</span>
+                    <span className="text-sm text-muted-foreground shrink-0">/year</span>
                   </div>
                 </div>
 
                 <div className="border-t border-border/50 pt-4 space-y-3">
                   <Label>Yearly RevShare Goal</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Revenue Share income target for the current year
-                  </p>
-                  <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">Revenue Share income target for the current year</p>
+                  <div className="flex items-center gap-3">
                     <Input
                       type="number"
                       min="0"
                       step="1000"
                       value={yearlyRevshareGoal}
                       onChange={(e) => setYearlyRevshareGoal(parseFloat(e.target.value) || 0)}
-                      className="w-40"
+                      className="flex-1 max-w-[200px]"
                       placeholder="e.g., 50000"
                     />
-                    <span className="text-sm text-muted-foreground">/year</span>
+                    <span className="text-sm text-muted-foreground shrink-0">/year</span>
                   </div>
                 </div>
               </div>
@@ -440,18 +424,18 @@ export default function SettingsPage() {
                     className="space-y-3 pt-4"
                   >
                     <Label>Flat Tax Rate</Label>
-                    <div className="flex items-center gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Set-aside percentage</span>
+                        <span className="text-xl font-bold">{taxPercent}<span className="text-sm text-muted-foreground ml-0.5">%</span></span>
+                      </div>
                       <Slider
                         value={[taxPercent]}
                         onValueChange={([v]) => setTaxPercent(v)}
                         max={50}
                         step={0.5}
-                        className="flex-1"
+                        className="w-full"
                       />
-                      <div className="w-20 text-right">
-                        <span className="text-2xl font-bold">{taxPercent}</span>
-                        <span className="text-muted-foreground">%</span>
-                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -460,21 +444,17 @@ export default function SettingsPage() {
               {/* Conservative Buffer */}
               <div className="space-y-3 pt-4 border-t border-border/50">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Conservative Buffer</Label>
-                    <p className="text-sm text-muted-foreground">Extra safety margin</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Slider
-                      value={[taxBuffer]}
-                      onValueChange={([v]) => setTaxBuffer(v)}
-                      max={25}
-                      step={1}
-                      className="w-32"
-                    />
-                    <span className="w-12 text-right font-bold">{taxBuffer}%</span>
-                  </div>
+                  <Label>Conservative Buffer</Label>
+                  <span className="text-sm font-bold">{taxBuffer}%</span>
                 </div>
+                <p className="text-sm text-muted-foreground">Extra safety margin on top of calculated tax</p>
+                <Slider
+                  value={[taxBuffer]}
+                  onValueChange={([v]) => setTaxBuffer(v)}
+                  max={25}
+                  step={1}
+                  className="w-full"
+                />
               </div>
 
               {/* GST Settings */}
@@ -530,7 +510,7 @@ export default function SettingsPage() {
                   step="100"
                   value={taxSavedAmount}
                   onChange={(e) => setTaxSavedAmount(parseFloat(e.target.value) || 0)}
-                  className="w-40"
+                  className="w-full max-w-[200px]"
                   placeholder="0"
                 />
               </div>
@@ -601,18 +581,18 @@ function SettingsCard({
       animate={{ opacity: 1, y: 0 }}
       transition={springConfig}
     >
-      <div className={cn("px-6 py-4 border-b border-border/50 bg-gradient-to-r", gradient, "to-transparent")}>
+      <div className={cn("px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 bg-gradient-to-r", gradient, "to-transparent")}>
         <div className="flex items-center gap-3">
-          <div className={cn("w-10 h-10 rounded-xl bg-background/80 border border-border/50 flex items-center justify-center", iconColor)}>
-            <Icon className="w-5 h-5" />
+          <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-background/80 border border-border/50 flex items-center justify-center shrink-0", iconColor)}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <h3 className="font-bold">{title}</h3>
-            <p className="text-xs text-muted-foreground">{description}</p>
+          <div className="min-w-0">
+            <h3 className="font-bold text-sm sm:text-base">{title}</h3>
+            <p className="text-xs text-muted-foreground truncate">{description}</p>
           </div>
         </div>
       </div>
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         {children}
       </div>
     </motion.div>
@@ -827,7 +807,7 @@ function SubscriptionSection() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-5">
               {PRO_FEATURES.map((f) => (
                 <div key={f} className="flex items-center gap-2 text-sm">
                   <Check className="w-4 h-4 text-success shrink-0" />
@@ -870,7 +850,7 @@ function SubscriptionSection() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             {PRO_FEATURES.map((f) => (
               <div key={f} className="flex items-center gap-2 text-sm p-2.5 rounded-xl bg-muted/50">
                 <Check className="w-4 h-4 text-success shrink-0" />
