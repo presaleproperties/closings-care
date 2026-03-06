@@ -42,12 +42,13 @@ export function Header({
   return (
     <header className="sticky top-0 z-40 safe-area-inset-top">
       <div 
-        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
+        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-200"
         style={{
-          background: 'hsl(var(--background) / 0.8)',
+          background: 'hsl(var(--background) / 0.85)',
         }}
       />
-      <div className="absolute inset-x-0 bottom-0 h-px bg-border/50" />
+      {/* Bottom border — gradient for premium feel */}
+      <div className="absolute inset-x-0 bottom-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--border) / 0.8) 15%, hsl(var(--border) / 0.8) 85%, transparent)' }} />
       
       <div className="relative flex items-center justify-between h-12 sm:h-12 md:h-13 lg:h-14 px-4 sm:px-5 md:px-6 lg:px-6">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">

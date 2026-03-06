@@ -24,18 +24,23 @@ function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }:
 }) {
   return (
     <div className={cn(
-      "liquid-glass rounded-2xl p-3 sm:p-4 space-y-1.5 sm:space-y-2 transition-all duration-300",
+      "rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all duration-300 hover:-translate-y-0.5 cursor-default",
+      "border",
       tint
-    )}>
+    )}
+    style={{
+      boxShadow: '0 1px 2px 0 hsl(220 25% 10% / 0.04), 0 4px 12px -2px hsl(220 25% 10% / 0.06)',
+    }}
+    >
       <div className="flex items-center gap-1.5">
-        <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center", iconTint)}>
-          <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        <div className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center", iconTint)}>
+          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
         <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
       <AnimatedCurrency
         value={value}
-        className={cn("text-base sm:text-xl font-bold block tracking-tight truncate", color)}
+        className={cn("text-lg sm:text-xl font-bold block tracking-tight truncate", color)}
         duration={0.8}
       />
       <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-snug truncate">{subtitle}</p>
