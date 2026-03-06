@@ -92,30 +92,34 @@ export function Sidebar() {
         isCollapsed ? "w-[68px]" : "w-60"
       )}
     >
-      {/* iOS frosted glass background */}
+      {/* Premium dark sidebar background */}
       <div 
         className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
         style={{
-          background: 'hsl(var(--sidebar-background) / 0.92)',
+          background: 'hsl(var(--sidebar-background))',
+          boxShadow: '1px 0 0 0 hsl(var(--sidebar-border)), 4px 0 24px -4px hsl(0 0% 0% / 0.2)',
         }}
       />
-      {/* Single right edge separator */}
-      <div className="absolute inset-y-0 right-0 w-px bg-border/30" />
+      {/* Right edge — subtle gradient separator */}
+      <div className="absolute inset-y-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, transparent, hsl(var(--sidebar-border) / 0.8) 20%, hsl(var(--sidebar-border) / 0.8) 80%, transparent)' }} />
 
       {/* Logo */}
-      <div className="relative px-4 py-3.5 border-b border-border/20">
+      <div className="relative px-4 py-4 border-b" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
-          <img 
-            src={logoMark} 
-            alt="Dealzflow" 
-            className="w-8 h-8 rounded-[10px] transition-all duration-200 group-hover:scale-105 flex-shrink-0"
-          />
+          <div className="relative flex-shrink-0">
+            <img 
+              src={logoMark} 
+              alt="Dealzflow" 
+              className="w-8 h-8 rounded-[10px] transition-all duration-200 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 rounded-[10px] transition-opacity duration-200 opacity-0 group-hover:opacity-100" style={{ boxShadow: '0 0 16px 2px hsl(158 72% 46% / 0.4)' }} />
+          </div>
           <div className={cn(
             "overflow-hidden transition-all duration-300",
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
-            <h1 className="font-semibold text-sidebar-foreground text-[15px] leading-tight tracking-[-0.02em] whitespace-nowrap">
-              dealz<span className="text-primary">flow</span>
+            <h1 className="font-bold text-sidebar-foreground text-[15px] leading-tight tracking-[-0.02em] whitespace-nowrap">
+              commission<span style={{ color: 'hsl(var(--sidebar-primary))' }}>IQ</span>
             </h1>
           </div>
         </Link>
@@ -180,16 +184,19 @@ export function Sidebar() {
                       key={item.path}
                       to={item.path}
                       className={cn(
-                        'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200',
+                        'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 relative',
                         isCollapsed && 'justify-center px-0',
                         isActive 
-                          ? 'bg-sidebar-accent text-sidebar-foreground' 
-                          : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                          : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/70'
                       )}
                     >
+                      {isActive && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-sidebar-primary" />
+                      )}
                       <item.icon className={cn(
                         "w-[18px] h-[18px] transition-all duration-200 flex-shrink-0",
-                        isActive ? "text-sidebar-primary" : "opacity-70"
+                        isActive ? "text-sidebar-primary" : "opacity-50"
                       )} />
                       <span className={cn(
                         "transition-all duration-300 whitespace-nowrap",
@@ -221,7 +228,7 @@ export function Sidebar() {
         })}
 
         {/* Standalone items (Settings) */}
-        <div className="border-t border-border/20 my-1 mx-1" />
+        <div className="border-t border-sidebar-border/40 my-1 mx-1" />
         {standaloneItems.map((item) => {
           const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
           const linkContent = (
@@ -229,16 +236,19 @@ export function Sidebar() {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200',
+                'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 relative',
                 isCollapsed && 'justify-center px-0',
                 isActive 
-                  ? 'bg-sidebar-accent text-sidebar-foreground' 
-                  : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+                  : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/70'
               )}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-sidebar-primary" />
+              )}
               <item.icon className={cn(
                 "w-[18px] h-[18px] transition-all duration-200 flex-shrink-0",
-                isActive ? "text-sidebar-primary" : "opacity-70"
+                isActive ? "text-sidebar-primary" : "opacity-50"
               )} />
               <span className={cn(
                 "transition-all duration-300 whitespace-nowrap",
@@ -263,7 +273,7 @@ export function Sidebar() {
         {isAdmin && (
           <>
             <div className={cn(
-              "border-t border-sidebar-border/30 my-2",
+              "border-t border-sidebar-border/40 my-2",
               isCollapsed && "mx-2"
             )} />
             {isCollapsed ? (
@@ -274,8 +284,8 @@ export function Sidebar() {
                     className={cn(
                       'flex items-center justify-center py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
                       location.pathname === '/admin'
-                        ? 'bg-amber-500/20 text-amber-400' 
-                        : 'text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10'
+                        ? 'bg-warning/15 text-warning' 
+                        : 'text-warning/50 hover:text-warning hover:bg-warning/10'
                     )}
                   >
                     <Shield className="w-[18px] h-[18px]" />
@@ -289,16 +299,16 @@ export function Sidebar() {
               <Link
                 to="/admin"
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative',
                   location.pathname === '/admin'
-                    ? 'bg-amber-500/20 text-amber-400' 
-                    : 'text-amber-500/60 hover:text-amber-400 hover:bg-amber-500/10'
+                    ? 'bg-warning/15 text-warning' 
+                    : 'text-warning/50 hover:text-warning hover:bg-warning/10'
                 )}
               >
                 <Shield className="w-[18px] h-[18px]" />
                 <span>Admin</span>
                 {location.pathname === '/admin' && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-warning" />
                 )}
               </Link>
             )}
@@ -307,13 +317,13 @@ export function Sidebar() {
       </nav>
 
       {/* Sign out */}
-      <div className="relative px-2.5 py-2.5 border-t border-border/20">
+      <div className="relative px-2.5 py-2.5 border-t" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
                 onClick={signOut}
-                className="flex items-center justify-center w-full py-2 rounded-[10px] text-[13px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+                className="flex items-center justify-center w-full py-2 rounded-[10px] text-[13px] font-medium text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/15 transition-all duration-200"
               >
                 <LogOut className="w-[18px] h-[18px]" />
               </button>
@@ -325,7 +335,7 @@ export function Sidebar() {
         ) : (
           <button
             onClick={signOut}
-            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[10px] text-[13px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[10px] text-[13px] font-medium text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/15 transition-all duration-200"
           >
             <LogOut className="w-[18px] h-[18px]" />
             <span>Sign Out</span>
