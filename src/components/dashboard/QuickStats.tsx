@@ -13,28 +13,36 @@ interface QuickStatsProps {
   comingInDateRange?: string;
 }
 
-function StatCard({ icon: Icon, label, value, subtitle, color, tint, iconTint }: {
+function StatCard({ icon: Icon, label, value, subtitle, color, gradientFrom, gradientTo, borderColor, iconBg, iconColor, glowColor }: {
   icon: any;
   label: string;
   value: number;
   subtitle: string;
   color: string;
-  tint: string;
-  iconTint: string;
+  gradientFrom: string;
+  gradientTo: string;
+  borderColor: string;
+  iconBg: string;
+  iconColor: string;
+  glowColor: string;
 }) {
   return (
-    <div className={cn(
-      "rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all duration-300 hover:-translate-y-0.5 cursor-default",
-      "border",
-      tint
-    )}
-    style={{
-      boxShadow: '0 1px 2px 0 hsl(220 25% 10% / 0.04), 0 4px 12px -2px hsl(220 25% 10% / 0.06)',
-    }}
+    <div
+      className="rounded-2xl p-3.5 sm:p-4 space-y-2 transition-all duration-300 hover:-translate-y-[3px] cursor-default relative overflow-hidden"
+      style={{
+        background: `linear-gradient(145deg, ${gradientFrom} 0%, ${gradientTo} 100%)`,
+        border: `1px solid ${borderColor}`,
+        boxShadow: `0 1px 2px 0 hsl(220 25% 10% / 0.05), 0 4px 14px -3px hsl(220 25% 10% / 0.08), 0 0 0 0.5px ${borderColor}`,
+      }}
     >
+      {/* Subtle inner highlight */}
+      <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.45) 50%, transparent)' }} />
       <div className="flex items-center gap-1.5">
-        <div className={cn("w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center", iconTint)}>
-          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        <div
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center"
+          style={{ background: iconBg, boxShadow: `0 2px 8px -2px ${glowColor}` }}
+        >
+          <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: iconColor }} />
         </div>
         <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
@@ -67,8 +75,12 @@ export function QuickStats({
         value={receivedYTD}
         subtitle={`${closedDealsYTD} closed deals`}
         color="text-emerald-700 dark:text-emerald-400"
-        tint="bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30"
-        iconTint="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400"
+        gradientFrom="hsl(145 60% 97%)"
+        gradientTo="hsl(152 55% 93%)"
+        borderColor="hsl(152 50% 82% / 0.7)"
+        iconBg="linear-gradient(145deg, hsl(158 72% 40%), hsl(158 72% 30%))"
+        iconColor="white"
+        glowColor="hsl(158 72% 34% / 0.5)"
       />
       <StatCard
         icon={ArrowUpRight}
@@ -76,8 +88,12 @@ export function QuickStats({
         value={comingIn}
         subtitle={`${activeDeals} pending deals · ${comingInDateRange || 'upcoming'}`}
         color="text-blue-700 dark:text-blue-400"
-        tint="bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30"
-        iconTint="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400"
+        gradientFrom="hsl(214 80% 97%)"
+        gradientTo="hsl(217 70% 93%)"
+        borderColor="hsl(217 60% 82% / 0.7)"
+        iconBg="linear-gradient(145deg, hsl(217 91% 54%), hsl(217 91% 44%))"
+        iconColor="white"
+        glowColor="hsl(217 91% 50% / 0.45)"
       />
       <StatCard
         icon={Receipt}
@@ -85,8 +101,12 @@ export function QuickStats({
         value={monthlyExpenses}
         subtitle="Monthly recurring"
         color="text-rose-700 dark:text-rose-400"
-        tint="bg-rose-50/50 dark:bg-rose-950/15 border-rose-200/50 dark:border-rose-800/25"
-        iconTint="bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400"
+        gradientFrom="hsl(355 80% 97%)"
+        gradientTo="hsl(0 65% 94%)"
+        borderColor="hsl(0 55% 84% / 0.65)"
+        iconBg="linear-gradient(145deg, hsl(0 74% 54%), hsl(0 74% 44%))"
+        iconColor="white"
+        glowColor="hsl(0 74% 50% / 0.4)"
       />
       <StatCard
         icon={Users}
@@ -94,8 +114,12 @@ export function QuickStats({
         value={pipelinePotential}
         subtitle={`${pipelineCount} prospect${pipelineCount !== 1 ? 's' : ''}`}
         color="text-violet-700 dark:text-violet-400"
-        tint="bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25"
-        iconTint="bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400"
+        gradientFrom="hsl(270 75% 97%)"
+        gradientTo="hsl(275 65% 93%)"
+        borderColor="hsl(275 55% 82% / 0.65)"
+        iconBg="linear-gradient(145deg, hsl(275 65% 54%), hsl(275 65% 44%))"
+        iconColor="white"
+        glowColor="hsl(275 65% 50% / 0.4)"
       />
     </div>
   );

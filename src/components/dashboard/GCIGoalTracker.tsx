@@ -32,7 +32,26 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
   }, [gciYTD, revShareYTD, gciGoal, revShareGoal]);
 
   return (
-    <div className="liquid-glass rounded-2xl px-4 sm:px-5 py-3 space-y-2.5">
+    <div
+      className="rounded-2xl px-4 sm:px-5 py-3.5 space-y-2.5 relative overflow-hidden dark:[background:linear-gradient(145deg,hsl(222_22%_10%)_0%,hsl(222_20%_8%)_100%)]"
+      style={{
+        background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%)',
+        border: '1px solid hsl(var(--border) / 0.7)',
+        boxShadow: '0 1px 3px 0 hsl(220 25% 10% / 0.05), 0 6px 20px -4px hsl(220 25% 10% / 0.08), inset 0 1px 0 0 rgba(255,255,255,0.8)',
+      }}
+    >
+      {/* Rich ambient glow top-right */}
+      <div
+        className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, hsl(38 92% 50% / 0.12) 0%, transparent 70%)' }}
+      />
+      <div
+        className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, hsl(158 70% 34% / 0.08) 0%, transparent 70%)' }}
+      />
+      {/* Inner top highlight */}
+      <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 40%, rgba(255,255,255,0.9) 60%, transparent)' }} />
+
       {/* Top row: Projected total + stacked bar */}
       {(() => {
         const revShareAnnual = revShareMonthlyAvg * 12;
@@ -41,8 +60,14 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
           <>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-100/80 dark:bg-amber-900/30 flex items-center justify-center">
-                  <CalendarClock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: 'linear-gradient(145deg, hsl(38 90% 56%) 0%, hsl(32 92% 46%) 100%)',
+                    boxShadow: '0 3px 10px -2px hsl(38 90% 50% / 0.45), inset 0 1px 0 0 rgba(255,255,255,0.25)',
+                  }}
+                >
+                  <CalendarClock className="h-4 w-4 text-white" />
                 </div>
                 <div>
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{thisYear} Projected</p>
@@ -54,26 +79,37 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
                 </div>
               </div>
             </div>
-            {/* Stacked proportion bar */}
-            <div className="space-y-1">
-              <div className="h-2 rounded-full overflow-hidden flex bg-muted/40">
+            {/* Stacked proportion bar — thicker, glowing */}
+            <div className="space-y-1.5">
+              <div
+                className="h-2.5 rounded-full overflow-hidden flex"
+                style={{ background: 'hsl(var(--muted) / 0.5)' }}
+              >
                 <div
-                  className="h-full rounded-l-full transition-all duration-700 ease-out bg-emerald-500 dark:bg-emerald-400"
-                  style={{ width: `${commPct}%` }}
+                  className="h-full rounded-l-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${commPct}%`,
+                    background: 'linear-gradient(90deg, hsl(158 72% 34%), hsl(158 72% 44%))',
+                    boxShadow: '2px 0 8px 0 hsl(158 70% 34% / 0.4)',
+                  }}
                 />
                 <div
-                  className="h-full rounded-r-full transition-all duration-700 ease-out bg-blue-500 dark:bg-blue-400"
-                  style={{ width: `${100 - commPct}%` }}
+                  className="h-full rounded-r-full transition-all duration-700 ease-out"
+                  style={{
+                    width: `${100 - commPct}%`,
+                    background: 'linear-gradient(90deg, hsl(217 91% 50%), hsl(217 91% 62%))',
+                    boxShadow: '-2px 0 8px 0 hsl(217 91% 50% / 0.35)',
+                  }}
                 />
               </div>
               <div className="flex items-center justify-between text-[11px]">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block" />
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'hsl(158 72% 38%)', boxShadow: '0 0 6px hsl(158 70% 38% / 0.6)' }} />
                   <span className="text-muted-foreground">Commissions</span>
                   <span className="font-semibold text-foreground">{formatCurrency(projectedRevenue)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 dark:bg-blue-400 inline-block" />
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: 'hsl(217 91% 52%)', boxShadow: '0 0 6px hsl(217 91% 52% / 0.5)' }} />
                   <span className="text-muted-foreground">RevShare</span>
                   <span className="font-semibold text-foreground">{formatCurrency(revShareAnnual)}</span>
                 </div>
