@@ -197,6 +197,63 @@ function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data
     </div>
   );
 }
+// ── Mobile prospect card (list view) ──────────────────────────────────
+function MobileProspectCard({ p, handleSave, deleteProspect }: {
+  p: PipelineProspect;
+  handleSave: (id: string, field: string, value: string) => void;
+  deleteProspect: { mutate: (id: string) => void };
+}) {
+  const tempConfig: Record<string, { icon: any; color: string; label: string }> = {
+    hot: { icon: Flame, color: 'text-rose-500', label: 'Hot' },
+    warm: { icon: Thermometer, color: 'text-amber-600', label: 'Warm' },
+    cold: { icon: Snowflake, color: 'text-sky-500', label: 'Cold' },
+  };
+  const tc = tempConfig[p.temperature || 'warm'] || tempConfig.warm;
+  const TIcon = tc.icon;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20 bg-card active:bg-muted/20 transition-colors group">
+      {/* Temp icon — tap to cycle */}
+      <button
+        onClick={() => {
+          const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length];
+          handleSave(p.id, 'temperature', next);
+          triggerHaptic('light');
+        }}
+        className="shrink-0 w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center"
+      >
+        <TIcon className={cn("h-4 w-4", tc.color)} />
+      </button>
+
+      {/* Main info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate">{p.client_name}</p>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <span className="text-[10px] text-muted-foreground">{p.home_type}</span>
+          <span className="text-[10px] text-muted-foreground/40">·</span>
+          <span className={cn("text-[10px] font-semibold border px-1.5 py-0.5 rounded-full", STATUS_COLORS[p.status] || STATUS_COLORS.active)}>
+            {STATUS_LABELS[p.status] || p.status}
+          </span>
+        </div>
+      </div>
+
+      {/* Commission */}
+      <div className="shrink-0 text-right">
+        <p className="text-sm font-bold text-primary">{p.potential_commission > 0 ? formatCurrency(p.potential_commission) : '—'}</p>
+        <p className="text-[10px] text-muted-foreground">Est. GCI</p>
+      </div>
+
+      {/* Delete */}
+      <button
+        onClick={() => deleteProspect.mutate(p.id)}
+        className="shrink-0 opacity-0 group-active:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive transition-opacity ml-1"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 // ── Temperature sub-group (list view) ─────────────────────────────────
 function TempSubGroup({
   temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp,
@@ -260,60 +317,69 @@ function TempSubGroup({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.12 }}
-                  draggable
-                  onDragStart={(e: any) => {
-                    e.dataTransfer?.setData('prospect-id', p.id);
-                    e.currentTarget.style.opacity = '0.4';
-                  }}
-                  onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-                  className={cn(
-                    "flex items-stretch border-b border-border/30 group transition-colors cursor-grab active:cursor-grabbing",
-                    idx % 2 === 0 ? 'bg-card' : 'bg-muted/10',
-                    'hover:bg-primary/[0.03]'
-                  )}
                 >
-                  <div className="w-8 shrink-0 px-2 flex items-center justify-center text-muted-foreground/20 group-hover:text-muted-foreground/40">
-                    <GripVertical className="h-3 w-3" />
+                  {/* ── Mobile card (< sm) ── */}
+                  <div className="sm:hidden">
+                    <MobileProspectCard p={p} handleSave={handleSave} deleteProspect={deleteProspect} />
                   </div>
-                  <div className="flex-[3] min-w-[160px] border-l border-border/10">
-                    <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
-                  </div>
-                  <div className="w-[70px] shrink-0 border-l border-border/10 flex items-center justify-center">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; handleSave(p.id, 'temperature', next); triggerHaptic('light'); }}
-                      className="cursor-pointer hover:opacity-80 transition-opacity"
-                    >
-                      <TempBadge temp={p.temperature || 'warm'} compact />
-                    </button>
-                  </div>
-                  <div className="flex-1 min-w-[100px] border-l border-border/10">
-                    {isEditing(p.id, 'home_type') ? (
-                      <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
-                    ) : (
-                      <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
+
+                  {/* ── Desktop table row (≥ sm) ── */}
+                  <div
+                    draggable
+                    onDragStart={(e: any) => {
+                      e.dataTransfer?.setData('prospect-id', p.id);
+                      e.currentTarget.style.opacity = '0.4';
+                    }}
+                    onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
+                    className={cn(
+                      "hidden sm:flex items-stretch border-b border-border/30 group transition-colors cursor-grab active:cursor-grabbing",
+                      idx % 2 === 0 ? 'bg-card' : 'bg-muted/10',
+                      'hover:bg-primary/[0.03]'
                     )}
-                  </div>
-                  <div className="flex-1 min-w-[120px] border-l border-border/10">
-                    {isEditing(p.id, 'potential_commission') ? (
-                      <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
-                    ) : (
-                      <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2 text-sm cursor-text font-bold text-primary min-h-[36px] flex items-center">{formatCurrency(p.potential_commission)}</div>
-                    )}
-                  </div>
-                  <div className="w-[90px] shrink-0 border-l border-border/10">
-                    {isEditing(p.id, 'status') ? (
-                      <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
-                    ) : (
-                      <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
-                    )}
-                  </div>
-                  <div className="flex-[2] min-w-[120px] border-l border-border/10">
-                    <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
-                  </div>
-                  <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
-                    <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                  >
+                    <div className="w-8 shrink-0 px-2 flex items-center justify-center text-muted-foreground/20 group-hover:text-muted-foreground/40">
+                      <GripVertical className="h-3 w-3" />
+                    </div>
+                    <div className="flex-[3] min-w-[160px] border-l border-border/10">
+                      <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                    </div>
+                    <div className="w-[70px] shrink-0 border-l border-border/10 flex items-center justify-center">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length]; handleSave(p.id, 'temperature', next); triggerHaptic('light'); }}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                      >
+                        <TempBadge temp={p.temperature || 'warm'} compact />
+                      </button>
+                    </div>
+                    <div className="flex-1 min-w-[100px] border-l border-border/10">
+                      {isEditing(p.id, 'home_type') ? (
+                        <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
+                      ) : (
+                        <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-[120px] border-l border-border/10">
+                      {isEditing(p.id, 'potential_commission') ? (
+                        <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
+                      ) : (
+                        <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2 text-sm cursor-text font-bold text-primary min-h-[36px] flex items-center">{formatCurrency(p.potential_commission)}</div>
+                      )}
+                    </div>
+                    <div className="w-[90px] shrink-0 border-l border-border/10">
+                      {isEditing(p.id, 'status') ? (
+                        <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
+                      ) : (
+                        <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
+                      )}
+                    </div>
+                    <div className="flex-[2] min-w-[120px] border-l border-border/10">
+                      <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
+                    </div>
+                    <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                      <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -670,27 +736,28 @@ export default function PipelinePage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-card p-5"
+          className="rounded-2xl border border-border bg-card p-4 sm:p-5"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <h1 className="text-lg font-bold tracking-tight">Pipeline</h1>
-                <p className="text-xs text-muted-foreground">First contact → Close</p>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight">Pipeline</h1>
+                <p className="text-xs text-muted-foreground hidden sm:block">First contact → Close</p>
               </div>
             </div>
 
-            <div className="hidden sm:flex items-center gap-5">
+            {/* Stats — always visible, compact on mobile */}
+            <div className="flex items-center gap-3 sm:gap-5">
               <div className="text-right">
-                <p className="text-lg font-bold text-primary">{formatCurrency(totalPotential)}</p>
+                <p className="text-sm sm:text-lg font-bold text-primary">{formatCurrency(totalPotential)}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Potential</p>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="text-right">
-                <p className="text-lg font-bold">{activeProspects.length}</p>
+                <p className="text-sm sm:text-lg font-bold">{activeProspects.length}</p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</p>
               </div>
               {hotCount > 0 && (
@@ -698,8 +765,8 @@ export default function PipelinePage() {
                   <div className="h-8 w-px bg-border" />
                   <div className="text-right">
                     <div className="flex items-center gap-1 justify-end">
-                      <Flame className="h-3.5 w-3.5 text-rose-500" />
-                      <p className="text-lg font-bold text-rose-500">{hotCount}</p>
+                      <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-rose-500" />
+                      <p className="text-sm sm:text-lg font-bold text-rose-500">{hotCount}</p>
                     </div>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Hot</p>
                   </div>
@@ -807,7 +874,7 @@ export default function PipelinePage() {
                       </div>
 
                       {/* Column headers */}
-                      <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                      <div className="hidden sm:flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                         <div className="w-8 shrink-0 px-2 py-2" />
                         <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
                         <div className="w-[70px] shrink-0 px-3 py-2 border-l border-border/15">Temp</div>
