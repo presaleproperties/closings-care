@@ -382,11 +382,11 @@ export default function ForecastPage() {
                   />
                   <YAxis 
                     stroke="hsl(var(--muted-foreground))" 
-                    fontSize={10}
-                    tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+                    fontSize={9}
+                    tickFormatter={(v) => v >= 1000000 ? `$${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
                     tickLine={false}
                     axisLine={false}
-                    width={50}
+                    width={36}
                   />
                   <Tooltip
                     contentStyle={{
@@ -495,20 +495,20 @@ export default function ForecastPage() {
                         </div>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
-                        <span className="text-[11px] sm:text-sm text-emerald-600 font-medium">{formatCurrency(month.commissions)}</span>
+                        <span className="text-[10px] sm:text-sm text-emerald-600 font-medium">{month.commissions > 0 ? (month.commissions >= 1000 ? `$${Math.round(month.commissions/1000)}k` : formatCurrency(month.commissions)) : '—'}</span>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
-                        <span className="text-[11px] sm:text-sm text-blue-600 font-medium">{month.revShare > 0 ? formatCurrency(month.revShare) : '—'}</span>
+                        <span className="text-[10px] sm:text-sm text-blue-600 font-medium">{month.revShare > 0 ? (month.revShare >= 1000 ? `$${Math.round(month.revShare/1000)}k` : formatCurrency(month.revShare)) : '—'}</span>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
-                        <span className="text-[11px] sm:text-sm text-rose-600">{formatCurrency(month.expenses)}</span>
+                        <span className="text-[10px] sm:text-sm text-rose-600">{month.expenses >= 1000 ? `$${Math.round(month.expenses/1000)}k` : formatCurrency(month.expenses)}</span>
                       </td>
                       <td className="p-2 sm:p-3 text-right">
                         <span className={cn(
-                          "inline-flex items-center gap-0.5 text-[11px] sm:text-sm font-semibold",
+                          "inline-flex items-center gap-0.5 text-[10px] sm:text-sm font-semibold",
                           month.net >= 0 ? "text-emerald-600" : "text-rose-600"
                         )}>
-                          {formatCurrency(month.net)}
+                          {Math.abs(month.net) >= 1000 ? `${month.net < 0 ? '-' : ''}$${Math.round(Math.abs(month.net)/1000)}k` : formatCurrency(month.net)}
                         </span>
                       </td>
                       <td className="p-2 sm:p-3 text-right hidden sm:table-cell">
