@@ -37,24 +37,19 @@ export function GCIGoalTracker({ gciYTD, revShareYTD, projectedRevenue, revShare
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-2xl px-4 sm:px-5 py-3.5 space-y-2.5 relative overflow-hidden dark:[background:linear-gradient(145deg,hsl(222_22%_10%)_0%,hsl(222_20%_8%)_100%)]"
+      className="rounded-2xl px-4 sm:px-5 py-3.5 space-y-2.5 relative overflow-hidden bg-card border border-border/70"
       style={{
-        background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(220 20% 97%) 100%)',
-        border: '1px solid hsl(var(--border) / 0.7)',
-        boxShadow: '0 1px 3px 0 hsl(220 25% 10% / 0.05), 0 6px 20px -4px hsl(220 25% 10% / 0.08), inset 0 1px 0 0 rgba(255,255,255,0.8)',
+        boxShadow: '0 1px 3px 0 hsl(220 25% 10% / 0.05), 0 6px 20px -4px hsl(220 25% 10% / 0.08)',
       }}
     >
-      {/* Rich ambient glow top-right */}
-      <div
-        className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, hsl(38 92% 50% / 0.12) 0%, transparent 70%)' }}
-      />
-      <div
-        className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, hsl(158 70% 34% / 0.08) 0%, transparent 70%)' }}
-      />
-      {/* Inner top highlight */}
-      <div className="absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 40%, rgba(255,255,255,0.9) 60%, transparent)' }} />
+      {/* Ambient glow decorations */}
+      <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full pointer-events-none opacity-60 dark:opacity-40"
+        style={{ background: 'radial-gradient(circle, hsl(38 92% 50% / 0.15) 0%, transparent 70%)' }} />
+      <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full pointer-events-none opacity-60 dark:opacity-40"
+        style={{ background: 'radial-gradient(circle, hsl(158 70% 34% / 0.1) 0%, transparent 70%)' }} />
+      {/* Inner top highlight — only visible in light mode */}
+      <div className="absolute inset-x-0 top-0 h-px dark:opacity-20"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 40%, rgba(255,255,255,0.9) 60%, transparent)' }} />
 
       {/* Top row: Projected total + stacked bar */}
       {(() => {
