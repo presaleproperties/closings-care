@@ -138,14 +138,14 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* ── Filters ── */}
-        <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 mr-1">
+        <motion.div variants={itemVariants} className="flex items-center gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+          <div className="flex items-center gap-1 shrink-0">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground">Filter:</span>
           </div>
           <Select value={dealTypeFilter} onValueChange={(v: any) => setDealTypeFilter(v)}>
-            <SelectTrigger className="w-[110px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
-              <Home className="h-3 w-3 mr-1 text-muted-foreground/50" />
+            <SelectTrigger className="w-[105px] h-8 rounded-full bg-muted/30 border-border/30 text-xs shrink-0">
+              <Home className="h-3 w-3 mr-1 text-muted-foreground/50 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-lg">
@@ -155,8 +155,8 @@ export default function AnalyticsPage() {
             </SelectContent>
           </Select>
           <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="w-[130px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
-              <MapPin className="h-3 w-3 mr-1 text-muted-foreground/50" />
+            <SelectTrigger className="w-[120px] h-8 rounded-full bg-muted/30 border-border/30 text-xs shrink-0">
+              <MapPin className="h-3 w-3 mr-1 text-muted-foreground/50 shrink-0" />
               <SelectValue placeholder="All Cities" />
             </SelectTrigger>
             <SelectContent className="rounded-lg max-h-[300px]">
@@ -168,8 +168,8 @@ export default function AnalyticsPage() {
           </Select>
           {filterDimensions.agents.length > 1 && (
             <Select value={agentFilter} onValueChange={setAgentFilter}>
-              <SelectTrigger className="w-[150px] h-8 rounded-full bg-muted/30 border-border/30 text-xs">
-                <UserCheck className="h-3 w-3 mr-1 text-muted-foreground/50" />
+              <SelectTrigger className="w-[140px] h-8 rounded-full bg-muted/30 border-border/30 text-xs shrink-0">
+                <UserCheck className="h-3 w-3 mr-1 text-muted-foreground/50 shrink-0" />
                 <SelectValue placeholder="All Agents" />
               </SelectTrigger>
               <SelectContent className="rounded-lg max-h-[300px]">
@@ -181,22 +181,22 @@ export default function AnalyticsPage() {
             </Select>
           )}
           {hasFilters && (
-            <>
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => { setDealTypeFilter('all'); setCityFilter('all'); setAgentFilter('all'); }}
-                className="text-xs text-primary hover:underline font-medium ml-1"
+                className="text-xs text-primary hover:underline font-medium"
               >
                 Clear
               </button>
-              <span className="text-[10px] text-muted-foreground ml-1">
-                {filteredTransactions.length} of {syncedTransactions.length}
+              <span className="text-[10px] text-muted-foreground">
+                {filteredTransactions.length}/{syncedTransactions.length}
               </span>
-            </>
+            </div>
           )}
         </motion.div>
 
         {/* ── Hero Stats ── */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {/* Total Deals */}
           <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-primary/8 to-primary/3 border-primary/15">
             <div className="flex items-center gap-1.5 mb-1">
@@ -269,12 +269,12 @@ export default function AnalyticsPage() {
         {/* ── Tabs ── */}
         <Tabs defaultValue="overview" className="space-y-4">
           <motion.div variants={itemVariants}>
-            <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/30 rounded-xl border border-border/30 overflow-x-auto max-w-full">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Overview</TabsTrigger>
-              <TabsTrigger value="sources" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Sources</TabsTrigger>
-              <TabsTrigger value="deals" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Deal Flow</TabsTrigger>
-              <TabsTrigger value="team" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Team</TabsTrigger>
-              <TabsTrigger value="revshare" className="text-xs sm:text-sm font-medium px-2.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">RevShare</TabsTrigger>
+            <TabsList className="w-full flex h-9 p-0.5 bg-muted/30 rounded-xl border border-border/30">
+              <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm font-medium px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Overview</TabsTrigger>
+              <TabsTrigger value="sources" className="flex-1 text-xs sm:text-sm font-medium px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Sources</TabsTrigger>
+              <TabsTrigger value="deals" className="flex-1 text-xs sm:text-sm font-medium px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Deal Flow</TabsTrigger>
+              <TabsTrigger value="team" className="flex-1 text-xs sm:text-sm font-medium px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">Team</TabsTrigger>
+              <TabsTrigger value="revshare" className="flex-1 text-xs sm:text-sm font-medium px-1.5 sm:px-3 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm whitespace-nowrap">RevShare</TabsTrigger>
             </TabsList>
           </motion.div>
 
