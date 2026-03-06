@@ -119,16 +119,16 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
 
             {/* Sort pills */}
-            <div className="flex gap-1 mr-2">
+            <div className="flex gap-1 mr-2 shrink-0">
               {(['name', 'tier', 'network'] as const).map(sort => (
                 <button
                   key={sort}
                   onClick={() => setSortBy(sort)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
                     sortBy === sort
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'bg-muted/60 text-muted-foreground hover:bg-muted'
@@ -139,11 +139,11 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
               ))}
             </div>
 
-            <div className="h-4 w-px bg-border/50" />
+            <div className="h-4 w-px bg-border/50 shrink-0" />
 
             {/* Tier filter */}
             <Select value={filterTier?.toString() || 'all'} onValueChange={(v) => setFilterTier(v === 'all' ? null : parseInt(v))}>
-              <SelectTrigger className="h-8 w-[120px] text-[11px] border-border/40">
+              <SelectTrigger className="h-8 w-[110px] shrink-0 text-[11px] border-border/40">
                 <SelectValue placeholder="All Tiers" />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +159,7 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
             {/* Status pills */}
             <button
               onClick={() => setFilterStatus(filterStatus === 'active' ? null : 'active')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all shrink-0 whitespace-nowrap ${
                 filterStatus === 'active'
                   ? 'bg-success/15 text-success ring-1 ring-success/30'
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted'
@@ -169,7 +169,7 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
             </button>
             <button
               onClick={() => setFilterStatus(filterStatus === 'departed' ? null : 'departed')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all shrink-0 whitespace-nowrap ${
                 filterStatus === 'departed'
                   ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/30'
                   : 'bg-muted/60 text-muted-foreground hover:bg-muted'
@@ -180,7 +180,7 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
 
             {/* Tenure filter */}
             <Select value={filterTenure || 'all'} onValueChange={(v) => setFilterTenure(v === 'all' ? null : (v as any))}>
-              <SelectTrigger className="h-8 w-[130px] text-[11px] border-border/40">
+              <SelectTrigger className="h-8 w-[120px] shrink-0 text-[11px] border-border/40">
                 <SelectValue placeholder="All Tenure" />
               </SelectTrigger>
               <SelectContent>
@@ -195,7 +195,7 @@ export function AgentDirectory({ agents }: AgentDirectoryProps) {
             {hasFilters && (
               <button
                 onClick={() => { setFilterTier(null); setFilterStatus(null); setFilterTenure(null); }}
-                className="px-2 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all flex items-center gap-1"
+                className="px-2 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all flex items-center gap-1 shrink-0"
               >
                 <X className="h-3 w-3" />
                 Clear

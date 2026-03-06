@@ -181,12 +181,12 @@ export default function NetworkPage() {
     <AppLayout>
       <Header title="Network" subtitle="Agent network & revenue share" showAddDeal={false} />
       <PullToRefresh onRefresh={handleRefresh} className="min-h-[calc(100vh-56px)]">
-      <div className="p-5 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
+      <div className="p-4 sm:p-5 md:p-6 lg:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto">
         {/* Hero Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/8 via-background to-accent/5 border border-border/40 p-6 lg:p-8"
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/8 via-background to-accent/5 border border-border/40 p-4 sm:p-6 lg:p-8"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
@@ -203,7 +203,7 @@ export default function NetworkPage() {
             </div>
 
             {/* Hero Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 mt-6">
+            <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3.5 mt-4 sm:mt-6">
               {[
                 { label: 'Total Agents', value: agents.length.toString(), icon: Users, color: 'text-primary' },
                 { label: 'Active', value: activeAgents.length.toString(), icon: UserPlus, color: 'text-success' },
@@ -216,13 +216,13 @@ export default function NetworkPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/30 p-4 hover:border-border/60 transition-colors"
+                  className="rounded-xl bg-card/60 backdrop-blur-sm border border-border/30 p-3 sm:p-4 hover:border-border/60 transition-colors"
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <stat.icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${stat.color}`} />
+                    <span className="text-[9px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wider leading-tight">{stat.label}</span>
                   </div>
-                  <p className="text-xl lg:text-2xl font-bold text-foreground tracking-tight">{stat.value}</p>
+                  <p className="text-base sm:text-xl lg:text-2xl font-bold text-foreground tracking-tight">{stat.value}</p>
                 </motion.div>
               ))}
             </div>
@@ -231,7 +231,7 @@ export default function NetworkPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
-          <TabsList className="bg-muted/50 border border-border/30 p-1 h-auto flex-wrap">
+          <TabsList className="bg-muted/50 border border-border/30 p-1 h-auto w-full flex overflow-x-auto no-scrollbar gap-0.5">
             {[
               { value: 'overview', label: 'Overview', icon: BarChart3 },
               { value: 'performers', label: 'Performers', icon: Trophy },
@@ -242,10 +242,10 @@ export default function NetworkPage() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm px-3 py-2"
+                className="flex-1 min-w-[56px] gap-1 sm:gap-1.5 text-[11px] sm:text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm px-2 sm:px-3 py-2 whitespace-nowrap"
               >
-                <tab.icon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <tab.icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline sm:inline">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -265,12 +265,12 @@ export default function NetworkPage() {
                   {top10Revenue.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[220px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={top10Revenue} layout="vertical" margin={{ left: 80, right: 20, top: 5, bottom: 5 }}>
+                        <BarChart data={top10Revenue} layout="vertical" margin={{ left: 4, right: 8, top: 5, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} horizontal={false} />
-                          <XAxis type="number" tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} width={75} />
+                          <XAxis type="number" tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={40} />
+                          <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={90} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
                           <Bar dataKey="total" fill="hsl(158, 64%, 32%)" radius={[0, 8, 8, 0]} />
                         </BarChart>
@@ -292,15 +292,15 @@ export default function NetworkPage() {
                   {tierData.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No network data yet</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[220px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={tierData}
                             cx="50%"
                             cy="50%"
-                            innerRadius={65}
-                            outerRadius={105}
+                            innerRadius={55}
+                            outerRadius={85}
                             paddingAngle={4}
                             dataKey="value"
                             strokeWidth={0}
@@ -335,12 +335,12 @@ export default function NetworkPage() {
                   {movementData.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No movement data yet</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[200px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={movementData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <BarChart data={movementData} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                          <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                          <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} interval={1} />
+                          <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={24} />
                           <Tooltip {...tooltipStyle} />
                           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} />
                           <Bar dataKey="additions" name="Joined" fill="hsl(158, 64%, 38%)" radius={[4, 4, 0, 0]} />
@@ -367,12 +367,12 @@ export default function NetworkPage() {
                   {daysDistribution.every(b => b.value === 0) ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No tenure data available</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[200px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={daysDistribution} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <BarChart data={daysDistribution} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                          <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                          <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} width={24} />
                           <Tooltip
                             content={({ active, payload }) => {
                               if (!active || !payload?.length) return null;
@@ -428,9 +428,9 @@ export default function NetworkPage() {
                   {revShareByMonth.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No revenue share data yet</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[220px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={revShareByMonth} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <AreaChart data={revShareByMonth} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
                           <defs>
                             <linearGradient id="revShareGrad" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="5%" stopColor="hsl(158, 64%, 32%)" stopOpacity={0.3} />
@@ -438,8 +438,8 @@ export default function NetworkPage() {
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                          <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                          <XAxis dataKey="month" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} interval={2} />
+                          <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={36} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
                           <Area
                             type="monotone"
@@ -466,12 +466,12 @@ export default function NetworkPage() {
                   {revShareByYear.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-8 text-center">No yearly data yet</p>
                   ) : (
-                    <div className="h-[300px]">
+                    <div className="h-[220px] sm:h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={revShareByYear} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <BarChart data={revShareByYear} margin={{ top: 5, right: 8, bottom: 5, left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                           <XAxis dataKey="year" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                          <YAxis tickFormatter={(v) => fmt(v)} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                          <YAxis tickFormatter={(v) => `$${Math.round(v/1000)}k`} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} width={36} />
                           <Tooltip formatter={(v: number) => fmt(v)} {...tooltipStyle} />
                           <Bar dataKey="amount" name="RevShare" fill="hsl(38, 75%, 50%)" radius={[8, 8, 0, 0]} />
                         </BarChart>
