@@ -182,15 +182,16 @@ function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data
         placeholder="Client name..."
         className="flex-1 bg-transparent border-0 outline-none text-sm font-medium placeholder:text-muted-foreground/30 min-w-0"
       />
+      {/* Commission + temp only on sm+ */}
       <input
         type="number"
         value={commission}
         onChange={(e) => setCommission(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
         placeholder="$0"
-        className="w-24 bg-transparent border-0 outline-none text-sm text-right placeholder:text-muted-foreground/30"
+        className="hidden sm:block w-24 bg-transparent border-0 outline-none text-sm text-right placeholder:text-muted-foreground/30"
       />
-      <select value={temp} onChange={(e) => setTemp(e.target.value)} className="bg-transparent border-0 outline-none text-xs text-muted-foreground">
+      <select value={temp} onChange={(e) => setTemp(e.target.value)} className="hidden sm:block bg-transparent border-0 outline-none text-xs text-muted-foreground">
         {TEMP_OPTIONS.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
       </select>
       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-primary font-semibold shrink-0" onClick={handleSubmit} disabled={!name.trim()}>Add</Button>
@@ -777,12 +778,13 @@ export default function PipelinePage() {
         </motion.div>
 
         {/* ── Status Pills + View Toggle ────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="flex items-center gap-3">
+          {/* Pills — single scrollable row on mobile */}
+          <div className="flex-1 flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
             {STATUS_OPTIONS.map(status => {
               const items = prospects.filter(p => p.status === status);
               return (
-                <div key={status} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium", STATUS_COLORS[status])}>
+                <div key={status} className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium shrink-0", STATUS_COLORS[status])}>
                   <div className={cn("w-1.5 h-1.5 rounded-full", STATUS_DOT_COLORS[status])} />
                   <span>{STATUS_LABELS[status]}</span>
                   <span className="font-bold">{items.length}</span>
@@ -867,8 +869,8 @@ export default function PipelinePage() {
                         <div className={cn("w-2 h-2 rounded-full shrink-0", group.dotColor)} />
                         <span className="text-sm font-bold tracking-tight">{group.label}</span>
                         <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} leads</span>
-                        <div className="ml-auto flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                          <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
                           <span className="text-sm font-bold text-primary">{formatCurrency(groupGCI)}</span>
                         </div>
                       </div>
@@ -923,12 +925,13 @@ export default function PipelinePage() {
                         <div className="w-2 h-2 rounded-full shrink-0 bg-emerald-500" />
                         <span className="text-sm font-bold tracking-tight">Closed Deals</span>
                         <span className="text-[10px] text-muted-foreground font-medium">{closedItems.length} deals</span>
-                        <div className="ml-auto flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                          <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
                           <span className="text-sm font-bold text-emerald-600">{formatCurrency(closedGCI)}</span>
                         </div>
                       </div>
-                      <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                      {/* Desktop table headers */}
+                      <div className="hidden sm:flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                         <div className="w-8 shrink-0 px-2 py-2">#</div>
                         <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
                         <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
@@ -939,40 +942,53 @@ export default function PipelinePage() {
                       </div>
                       <div>
                         {closedItems.map((p, idx) => (
-                          <div
-                            key={p.id}
-                            className={cn(
-                              "flex border-b border-border/20 group transition-colors",
-                              idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
-                              'hover:bg-primary/[0.02]'
-                            )}
-                          >
-                            <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
-                            <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground line-through decoration-muted-foreground/30">{p.client_name}</div>
-                            <div className="flex-1 min-w-[100px] border-l border-border/10">
-                              {isEditing(p.id, 'home_type') ? (
-                                <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
-                              ) : (
-                                <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-emerald-600">{formatCurrency(p.potential_commission)}</div>
-                            <div className="w-[80px] shrink-0 border-l border-border/10">
-                              {isEditing(p.id, 'deal_type') ? (
-                                <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
-                              ) : (
-                                <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
-                                  <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
-                                    {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.notes || '—'}</div>
-                            <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
-                              <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
-                                <Trash2 className="h-3 w-3" />
+                          <div key={p.id}>
+                            {/* Mobile card */}
+                            <div className="sm:hidden flex items-center gap-3 px-4 py-3 border-b border-border/20 group">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-muted-foreground line-through decoration-muted-foreground/30 truncate">{p.client_name}</p>
+                                <p className="text-[10px] text-muted-foreground/50 mt-0.5">{p.home_type}</p>
+                              </div>
+                              <span className="text-sm font-bold text-emerald-600 shrink-0">{formatCurrency(p.potential_commission)}</span>
+                              <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-active:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive shrink-0">
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
+                            </div>
+                            {/* Desktop row */}
+                            <div
+                              className={cn(
+                                "hidden sm:flex border-b border-border/20 group transition-colors",
+                                idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
+                                'hover:bg-primary/[0.02]'
+                              )}
+                            >
+                              <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
+                              <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground line-through decoration-muted-foreground/30">{p.client_name}</div>
+                              <div className="flex-1 min-w-[100px] border-l border-border/10">
+                                {isEditing(p.id, 'home_type') ? (
+                                  <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
+                                ) : (
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-emerald-600">{formatCurrency(p.potential_commission)}</div>
+                              <div className="w-[80px] shrink-0 border-l border-border/10">
+                                {isEditing(p.id, 'deal_type') ? (
+                                  <InlineCell value={p.deal_type || 'buyer'} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'deal_type', v)} type="select" options={DEAL_TYPE_OPTIONS} optionLabels={DEAL_TYPE_LABELS} />
+                                ) : (
+                                  <div onClick={() => setEditingCell({ id: p.id, field: 'deal_type' })} className="px-3 py-2 cursor-pointer">
+                                    <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                                      {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.notes || '—'}</div>
+                              <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                                <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -997,12 +1013,13 @@ export default function PipelinePage() {
                         <div className="w-2 h-2 rounded-full shrink-0 bg-destructive" />
                         <span className="text-sm font-bold tracking-tight">Lost Deals</span>
                         <span className="text-[10px] text-muted-foreground font-medium">{lostItems.length} deals</span>
-                        <div className="ml-auto flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                          <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
                           <span className="text-sm font-bold text-destructive">{formatCurrency(lostGCI)}</span>
                         </div>
                       </div>
-                      <div className="flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                      {/* Desktop column headers */}
+                      <div className="hidden sm:flex bg-muted/20 border-b border-border/50 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                         <div className="w-8 shrink-0 px-2 py-2">#</div>
                         <div className="flex-[3] min-w-[160px] px-3 py-2 border-l border-border/15">Client</div>
                         <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
@@ -1020,26 +1037,41 @@ export default function PipelinePage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -20 }}
                             transition={{ duration: 0.15 }}
-                            className={cn(
-                              "flex border-b border-border/20 group transition-colors",
-                              idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
-                              'hover:bg-primary/[0.02]'
-                            )}
                           >
-                            <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
-                            <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground/50 line-through decoration-destructive/30">{p.client_name}</div>
-                            <div className="flex-1 min-w-[100px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/50">{p.home_type}</div>
-                            <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-muted-foreground/40">{formatCurrency(p.potential_commission)}</div>
-                            <div className="w-[80px] shrink-0 border-l border-border/10 px-3 py-2">
-                              <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border opacity-50", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
-                                {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
-                              </span>
-                            </div>
-                            <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.notes || '—'}</div>
-                            <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
-                              <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
-                                <Trash2 className="h-3 w-3" />
+                            {/* Mobile card */}
+                            <div className="sm:hidden flex items-center gap-3 px-4 py-3 border-b border-border/20 group">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-muted-foreground/50 line-through decoration-destructive/30 truncate">{p.client_name}</p>
+                                <p className="text-[10px] text-muted-foreground/40 mt-0.5">{p.home_type}</p>
+                              </div>
+                              <span className="text-sm font-bold text-muted-foreground/40 shrink-0">{formatCurrency(p.potential_commission)}</span>
+                              <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-active:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive shrink-0">
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
+                            </div>
+                            {/* Desktop row */}
+                            <div
+                              className={cn(
+                                "hidden sm:flex border-b border-border/20 group transition-colors",
+                                idx % 2 === 0 ? 'bg-card/30' : 'bg-muted/5',
+                                'hover:bg-primary/[0.02]'
+                              )}
+                            >
+                              <div className="w-8 shrink-0 px-2 py-2 text-[10px] text-muted-foreground/30 font-mono flex items-center">{idx + 1}</div>
+                              <div className="flex-[3] min-w-[160px] border-l border-border/10 px-3 py-2 text-sm font-medium text-muted-foreground/50 line-through decoration-destructive/30">{p.client_name}</div>
+                              <div className="flex-1 min-w-[100px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/50">{p.home_type}</div>
+                              <div className="flex-1 min-w-[120px] border-l border-border/10 px-3 py-2 text-sm font-bold text-muted-foreground/40">{formatCurrency(p.potential_commission)}</div>
+                              <div className="w-[80px] shrink-0 border-l border-border/10 px-3 py-2">
+                                <span className={cn("inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border opacity-50", DEAL_TYPE_COLORS[p.deal_type || 'buyer'])}>
+                                  {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
+                                </span>
+                              </div>
+                              <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.notes || '—'}</div>
+                              <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                                <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
                             </div>
                           </motion.div>
                         ))}
