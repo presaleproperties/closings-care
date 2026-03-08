@@ -408,8 +408,7 @@ export default function AnalyticsPage() {
 
               {/* Client Type (Buyer vs Seller) */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <UserCheck className="w-3.5 h-3.5 text-primary" />
+                <h3 className="metric-label mb-2">
                   Client Type
                 </h3>
                 {(() => {
