@@ -738,6 +738,10 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Read body ONCE — prevents "body already consumed" errors
+    const body = await req.json()
+    const { platform, connection_id, preferences, scheduled_user_id } = body
+
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`
 
@@ -752,8 +756,6 @@ Deno.serve(async (req) => {
 
     if (isServiceRole) {
       // Called from scheduled-sync — trust the scheduled_user_id in the body
-      const body = await req.json()
-      const { platform, connection_id, preferences, scheduled_user_id } = body
       if (!scheduled_user_id) {
         return new Response(JSON.stringify({ error: 'scheduled_user_id required for service-role calls' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -778,7 +780,6 @@ Deno.serve(async (req) => {
     }
 
     userId = userData.user.id;
-    const { platform, connection_id, preferences } = await req.json()
     return await handleSync(supabaseAdmin, userId, platform, connection_id, preferences, corsHeaders)
   } catch (error) {
     console.error('Sync error:', error)
