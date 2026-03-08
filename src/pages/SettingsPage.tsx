@@ -5,7 +5,8 @@ import {
   Save, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
   Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles, 
   Target, Palette, CreditCard, Database, Settings2, 
-  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug
+  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug, Bell,
+  ExternalLink, Send, CheckCircle2, Phone
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +45,10 @@ export default function SettingsPage() {
   const refreshData = useRefreshData();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'general');
+  const [zapierWebhookUrl, setZapierWebhookUrl] = useState('');
+  const [notificationPhone, setNotificationPhone] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [testSent, setTestSent] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
 
@@ -71,7 +76,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setTaxPercent(settings.tax_set_aside_percent || 0);
-      
       setApplyTaxToForecasts(settings.apply_tax_to_forecasts || false);
       setCountry((settings as any).country || 'CA');
       setProvince(((settings as any).province || 'BC') as Province);
@@ -84,6 +88,8 @@ export default function SettingsPage() {
       setMonthlyIncomeGoal((settings as any).monthly_income_goal || 0);
       setYearlyGciGoal((settings as any).yearly_gci_goal || 0);
       setYearlyRevshareGoal((settings as any).yearly_revshare_goal || 0);
+      setZapierWebhookUrl((settings as any).zapier_webhook_url || '');
+      setNotificationPhone((settings as any).notification_phone || '');
     }
   }, [settings]);
 
@@ -92,7 +98,6 @@ export default function SettingsPage() {
     if (settings) {
       const changed = 
         taxPercent !== (settings.tax_set_aside_percent || 0) ||
-        
         applyTaxToForecasts !== (settings.apply_tax_to_forecasts || false) ||
         country !== ((settings as any).country || 'CA') ||
         province !== (((settings as any).province || 'BC') as Province) ||
@@ -104,17 +109,18 @@ export default function SettingsPage() {
         taxSavedAmount !== ((settings as any).tax_saved_amount || 0) ||
         monthlyIncomeGoal !== ((settings as any).monthly_income_goal || 0) ||
         yearlyGciGoal !== ((settings as any).yearly_gci_goal || 0) ||
-        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0);
+        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0) ||
+        zapierWebhookUrl !== ((settings as any).zapier_webhook_url || '') ||
+        notificationPhone !== ((settings as any).notification_phone || '');
       setHasChanges(changed);
     }
   }, [settings, taxPercent, applyTaxToForecasts, country, province, taxType, 
       gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount,
-      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal]);
+      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal, zapierWebhookUrl, notificationPhone]);
 
   const handleSave = async () => {
     await updateSettings.mutateAsync({
       tax_set_aside_percent: taxPercent,
-      
       apply_tax_to_forecasts: applyTaxToForecasts,
       country,
       province,
@@ -127,8 +133,42 @@ export default function SettingsPage() {
       monthly_income_goal: monthlyIncomeGoal,
       yearly_gci_goal: yearlyGciGoal,
       yearly_revshare_goal: yearlyRevshareGoal,
+      zapier_webhook_url: zapierWebhookUrl || null,
+      notification_phone: notificationPhone || null,
     } as any);
     setHasChanges(false);
+  };
+
+  const handleTestReminder = async () => {
+    if (!zapierWebhookUrl) return;
+    setTestSending(true);
+    setTestSent(false);
+    try {
+      await fetch(zapierWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
+        body: JSON.stringify({
+          type: 'pipeline_reminder_test',
+          date: new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }),
+          message: '🔥 HOT CLIENTS (1) — Follow up today:\n  • Test Client — Condo ($25,000)',
+          phone: notificationPhone || '',
+          hot_count: 1,
+          warm_count: 0,
+          total_count: 1,
+          hot_clients: [{ name: 'Test Client', home_type: 'Condo', deal_type: 'buyer', potential_commission: 25000, notes: 'This is a test reminder' }],
+          warm_clients: [],
+        }),
+      });
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 4000);
+    } catch {
+      // no-cors mode won't throw on success
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 4000);
+    } finally {
+      setTestSending(false);
+    }
   };
 
 
@@ -178,6 +218,7 @@ export default function SettingsPage() {
               { value: 'subscription', icon: Crown, label: 'Plan' },
               { value: 'data', icon: Database, label: 'Data' },
               { value: 'integrations', icon: Plug, label: 'Integrations' },
+              { value: 'notifications', icon: Bell, label: 'Reminders' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger key={value} value={value} className="flex-1 min-w-[52px] flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 whitespace-nowrap text-xs sm:text-sm">
                 <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -549,6 +590,111 @@ export default function SettingsPage() {
               gradient="from-primary/10 to-primary/5"
             >
               <PlatformConnectionsManager />
+            </SettingsCard>
+          </TabsContent>
+
+          {/* Notifications / Reminders Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <SettingsCard
+              icon={Bell}
+              title="Pipeline Follow-Up Reminders"
+              description="Get SMS or WhatsApp reminders via Zapier when it's time to follow up"
+              iconColor="text-primary"
+              gradient="from-primary/10 to-primary/5"
+            >
+              <div className="space-y-5">
+                {/* How it works */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">How it works</p>
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2"><span className="text-primary mt-0.5">🔥</span><span><strong className="text-foreground">Hot clients</strong> — Daily reminder at 9 AM</span></li>
+                    <li className="flex items-start gap-2"><span className="text-amber-500 mt-0.5">☀️</span><span><strong className="text-foreground">Warm clients</strong> — Weekly reminder every Monday at 9 AM</span></li>
+                    <li className="flex items-start gap-2"><span className="text-muted-foreground mt-0.5">📲</span><span>Your Zapier Zap receives client data and sends you a text or WhatsApp message</span></li>
+                  </ul>
+                </div>
+
+                {/* Setup steps */}
+                <div className="p-4 rounded-xl border border-border/50 space-y-3">
+                  <p className="text-sm font-semibold">Setup in Zapier (3 steps)</p>
+                  <ol className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                      <span>Create a new Zap with a <strong className="text-foreground">Webhooks by Zapier</strong> trigger (Catch Hook)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                      <span>Add an action: <strong className="text-foreground">SMS by Zapier</strong> or <strong className="text-foreground">WhatsApp</strong> — map the <code className="bg-muted px-1 rounded text-xs">message</code> and <code className="bg-muted px-1 rounded text-xs">phone</code> fields</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                      <span>Copy the webhook URL from Zapier and paste it below</span>
+                    </li>
+                  </ol>
+                  <a
+                    href="https://zapier.com/apps/webhook/integrations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
+                  >
+                    Open Zapier <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                {/* Phone number */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    Your Phone Number
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Include country code (e.g., +16041234567). Passed to Zapier so it can send to the right number.</p>
+                  <Input
+                    type="tel"
+                    value={notificationPhone}
+                    onChange={(e) => setNotificationPhone(e.target.value)}
+                    placeholder="+16041234567"
+                    className="max-w-xs"
+                  />
+                </div>
+
+                {/* Webhook URL */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-muted-foreground" />
+                    Zapier Webhook URL
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Paste the "Catch Hook" URL from your Zapier trigger step.</p>
+                  <Input
+                    type="url"
+                    value={zapierWebhookUrl}
+                    onChange={(e) => setZapierWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.zapier.com/hooks/catch/..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+
+                {/* Test button */}
+                {zapierWebhookUrl && (
+                  <div className="pt-2 border-t border-border/50">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestReminder}
+                      disabled={testSending}
+                      className="gap-2"
+                    >
+                      {testSent ? (
+                        <><CheckCircle2 className="w-4 h-4 text-success" /> Test sent to Zapier!</>
+                      ) : testSending ? (
+                        <><div className="w-3.5 h-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> Sending...</>
+                      ) : (
+                        <><Send className="w-4 h-4" /> Send Test Reminder</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">Sends a sample payload to your Zapier webhook. Check your Zap history to confirm it fired.</p>
+                  </div>
+                )}
+              </div>
             </SettingsCard>
           </TabsContent>
         </Tabs>

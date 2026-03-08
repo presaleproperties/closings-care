@@ -1,0 +1,3 @@
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS zapier_webhook_url TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS notification_phone TEXT DEFAULT NULL;

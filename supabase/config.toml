@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.create-portal-session]
 verify_jwt = false
+
+[functions.send-pipeline-reminders]
+verify_jwt = false

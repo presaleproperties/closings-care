@@ -713,6 +713,7 @@ export type Database = {
           gst_registered: boolean | null
           id: string
           monthly_income_goal: number | null
+          notification_phone: string | null
           onboarding_completed: boolean | null
           presale_template: Json | null
           province: string | null
@@ -729,6 +730,7 @@ export type Database = {
           user_id: string
           yearly_gci_goal: number | null
           yearly_revshare_goal: number | null
+          zapier_webhook_url: string | null
         }
         Insert: {
           apply_tax_to_forecasts?: boolean
@@ -743,6 +745,7 @@ export type Database = {
           gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
+          notification_phone?: string | null
           onboarding_completed?: boolean | null
           presale_template?: Json | null
           province?: string | null
@@ -759,6 +762,7 @@ export type Database = {
           user_id: string
           yearly_gci_goal?: number | null
           yearly_revshare_goal?: number | null
+          zapier_webhook_url?: string | null
         }
         Update: {
           apply_tax_to_forecasts?: boolean
@@ -773,6 +777,7 @@ export type Database = {
           gst_registered?: boolean | null
           id?: string
           monthly_income_goal?: number | null
+          notification_phone?: string | null
           onboarding_completed?: boolean | null
           presale_template?: Json | null
           province?: string | null
@@ -789,6 +794,7 @@ export type Database = {
           user_id?: string
           yearly_gci_goal?: number | null
           yearly_revshare_goal?: number | null
+          zapier_webhook_url?: string | null
         }
         Relationships: []
       }
