@@ -198,71 +198,46 @@ export default function AnalyticsPage() {
         {/* ── Hero Stats ── */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {/* Total Deals */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-primary/8 to-primary/3 border-primary/15">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-primary/15">
-                <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">All Deals</span>
-            </div>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">All Deals</p>
             <div className="flex items-baseline gap-2">
-              <AnimatedNumber value={metrics.totalDeals} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1} />
+              <AnimatedNumber value={metrics.totalDeals} className="text-xl sm:text-2xl font-bold text-foreground" duration={1} />
               <ChangeIndicator current={metrics.totalDeals} previous={previousMetrics.totalDeals} />
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">
               {metrics.closedDeals} closed · {metrics.activeDeals} pending
             </p>
           </div>
 
           {/* Earned */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
-                <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Earned (Closed)</span>
-            </div>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">Earned (Closed)</p>
             <div className="flex items-baseline gap-2">
-              <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600" duration={1.2} />
+              <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-xl sm:text-2xl font-bold text-success" duration={1.2} />
               <ChangeIndicator current={metrics.closedEffectiveCommission} previous={previousMetrics.totalGCI} />
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">From {metrics.closedDeals} closed deals</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">From {metrics.closedDeals} closed deals</p>
           </div>
 
           {/* Pipeline */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-blue-500/20">
-                <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</span>
-            </div>
-            <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{metrics.activeDeals} pending deals</p>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">Pending</p>
+            <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">{metrics.activeDeals} pending deals</p>
           </div>
 
           {/* Avg Sale Price */}
           <div className="landing-card p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
-                <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Price</span>
-            </div>
-            <AnimatedNumber value={metrics.avgSalePrice} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per transaction</p>
+            <p className="metric-label mb-2">Avg Price</p>
+            <AnimatedNumber value={metrics.avgSalePrice} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Per transaction</p>
           </div>
 
           {/* Avg Commission */}
           <div className="landing-card p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
-                <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Comm.</span>
-            </div>
-            <AnimatedNumber value={metrics.avgCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per deal (effective)</p>
+            <p className="metric-label mb-2">Avg Comm.</p>
+            <AnimatedNumber value={metrics.avgCommission} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Per deal (effective)</p>
           </div>
         </motion.div>
 
@@ -284,11 +259,8 @@ export default function AnalyticsPage() {
             <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                    GCI Trend
-                  </h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Monthly + cumulative effective commission (all deals)</p>
+                  <h3 className="text-sm font-semibold text-foreground">GCI Trend</h3>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Monthly + cumulative effective commission (all deals)</p>
                 </div>
               </div>
               <div className="h-52 sm:h-64 lg:h-72">
@@ -383,10 +355,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Lead Sources */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <PieChart className="w-3.5 h-3.5 text-primary" />
-                  Lead Sources
-                </h3>
+                <h3 className="metric-label mb-2">Lead Sources</h3>
                 {leadSourceData.filter(s => s.name !== 'Unknown').length > 0 ? (
                   <div className="space-y-1.5">
                     {leadSourceData.filter(s => s.name !== 'Unknown').slice(0, 5).map((source, i) => (
@@ -408,10 +377,7 @@ export default function AnalyticsPage() {
 
               {/* Property Types (Presale vs Resale) */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <Building2 className="w-3.5 h-3.5 text-primary" />
-                  Property Types
-                </h3>
+                <h3 className="metric-label mb-2">Property Types</h3>
                 {presaleResaleData.presale.count + presaleResaleData.resale.count > 0 ? (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
@@ -439,8 +405,7 @@ export default function AnalyticsPage() {
 
               {/* Client Type (Buyer vs Seller) */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <UserCheck className="w-3.5 h-3.5 text-primary" />
+                <h3 className="metric-label mb-2">
                   Client Type
                 </h3>
                 {(() => {
@@ -474,10 +439,7 @@ export default function AnalyticsPage() {
 
               {/* Buyer Type */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <Target className="w-3.5 h-3.5 text-primary" />
-                  Buyer Type
-                </h3>
+                <h3 className="metric-label mb-2">Buyer Type</h3>
                 {(() => {
                   const types: Record<string, number> = {};
                   filteredTransactions.forEach(tx => {
@@ -508,10 +470,7 @@ export default function AnalyticsPage() {
 
               {/* Cities */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <MapPin className="w-3.5 h-3.5 text-primary" />
-                  Cities
-                </h3>
+                <h3 className="metric-label mb-2">Cities</h3>
                 {cityData.length > 0 ? (
                   <div className="space-y-1.5">
                     {cityData.slice(0, 5).map((city, i) => (
@@ -531,10 +490,7 @@ export default function AnalyticsPage() {
 
               {/* Solo vs Team */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <Users className="w-3.5 h-3.5 text-primary" />
-                  Solo vs Team
-                </h3>
+                <h3 className="metric-label mb-2">Solo vs Team</h3>
                 {metrics.soloDeals + metrics.teamDeals > 0 ? (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
@@ -608,10 +564,7 @@ export default function AnalyticsPage() {
             <div className="grid lg:grid-cols-2 gap-4">
               {/* Deals by Month */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                  <Calendar className="w-3.5 h-3.5 text-primary" />
-                  Deals by Month
-                </h3>
+                <h3 className="text-sm font-semibold text-foreground mb-0.5">Deals by Month</h3>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Closed vs pending by firm date</p>
                 <div className="h-56 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -639,10 +592,7 @@ export default function AnalyticsPage() {
 
               {/* Monthly GCI Area */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                  <DollarSign className="w-3.5 h-3.5 text-primary" />
-                  Monthly GCI
-                </h3>
+                <h3 className="text-sm font-semibold text-foreground mb-0.5">Monthly GCI</h3>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Commission earned from closed deals</p>
                 <div className="h-56 sm:h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -670,14 +620,14 @@ export default function AnalyticsPage() {
             {/* Team Summary Stats */}
             <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {[
-                { label: 'Solo', value: metrics.soloDeals, color: 'from-emerald-500/8 border-emerald-500/15' },
-                { label: 'Team', value: metrics.teamDeals, color: 'from-blue-500/8 border-blue-500/15' },
-                { label: 'Members', value: teamMemberData.length, color: '' },
-                { label: 'Team Rev', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)), color: 'from-emerald-500/8 border-emerald-500/15' },
+                { label: 'Solo', value: metrics.soloDeals },
+                { label: 'Team', value: metrics.teamDeals },
+                { label: 'Members', value: teamMemberData.length },
+                { label: 'Team Rev', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)) },
               ].map(stat => (
-                <div key={stat.label} className={cn("landing-card p-3 sm:p-4 bg-gradient-to-br", stat.color)}>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
-                  <p className="text-lg sm:text-xl font-bold mt-1">{stat.value}</p>
+                <div key={stat.label} className="landing-card p-3 sm:p-4">
+                  <p className="metric-label mb-1">{stat.label}</p>
+                  <p className="text-lg sm:text-xl font-bold">{stat.value}</p>
                 </div>
               ))}
             </motion.div>
@@ -686,10 +636,7 @@ export default function AnalyticsPage() {
               <div className="grid lg:grid-cols-2 gap-4">
                 {/* Performance Chart */}
                 <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                    <Users className="w-3.5 h-3.5 text-primary" />
-                    GCI Split
-                  </h3>
+                  <h3 className="text-sm font-semibold text-foreground mb-0.5">GCI Split</h3>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Your portion vs theirs</p>
                   <div className="h-56 sm:h-64">
                     <ResponsiveContainer width="100%" height="100%">
@@ -776,10 +723,7 @@ export default function AnalyticsPage() {
 
                 {/* YoY Comparison Chart */}
                 <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                    RevShare by Month
-                  </h3>
+                  <h3 className="text-sm font-semibold text-foreground mb-0.5">RevShare by Month</h3>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Year-over-year comparison</p>
                   <div className="h-56 sm:h-72">
                     <ResponsiveContainer width="100%" height="100%">
@@ -807,10 +751,7 @@ export default function AnalyticsPage() {
                 {/* Cumulative + Tier */}
                 <div className="grid lg:grid-cols-2 gap-4">
                   <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                    <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                      Cumulative RevShare
-                    </h3>
+                    <h3 className="text-sm font-semibold text-foreground mb-0.5">Cumulative RevShare</h3>
                     <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">All-time growth</p>
                     {(() => {
                       const sorted = [...revenueShares].filter(r => r.period && r.period !== 'unknown').sort((a, b) => a.period.localeCompare(b.period));
@@ -844,10 +785,7 @@ export default function AnalyticsPage() {
 
                   {revShareByTier.length > 0 && (
                     <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                      <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                        <Users className="w-3.5 h-3.5 text-primary" />
-                        By Tier
-                      </h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-0.5">By Tier</h3>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Earned vs missed by tier</p>
                       <div className="h-48 sm:h-52">
                         <ResponsiveContainer width="100%" height="100%">

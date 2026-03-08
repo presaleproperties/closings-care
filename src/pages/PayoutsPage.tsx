@@ -419,37 +419,25 @@ export default function PayoutsPage() {
       label: 'Pending', 
       value: stats.pending.total, 
       count: stats.pending.count,
-      icon: Clock,
-      tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30',
-      iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
-      valueColor: 'text-blue-700 dark:text-blue-400'
+      valueColor: 'text-foreground'
     },
     { 
       label: 'Needs Review', 
       value: stats.flagged.total, 
       count: stats.flagged.count,
-      icon: AlertTriangle,
-      tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30',
-      iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
-      valueColor: 'text-amber-700 dark:text-amber-400'
+      valueColor: 'text-warning'
     },
     { 
       label: 'Received', 
       value: stats.received.total, 
       count: stats.received.count,
-      icon: CheckCircle2,
-      tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30',
-      iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
-      valueColor: 'text-emerald-700 dark:text-emerald-400'
+      valueColor: 'text-success'
     },
     { 
       label: 'Total Pipeline', 
       value: stats.all.total, 
       count: stats.all.count,
-      icon: Banknote,
-      tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25',
-      iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
-      valueColor: 'text-violet-700 dark:text-violet-400'
+      valueColor: 'text-primary'
     },
   ];
 
@@ -473,31 +461,24 @@ export default function PayoutsPage() {
           initial="hidden"
           animate="visible"
         >
-           {/* Stats Grid - Collapsible */}
+           {/* Stats Grid */}
            <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
-             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {statCards.map((stat, index) => (
                   <motion.div
                     key={stat.label}
-                    className={cn("rounded-xl border p-4 space-y-1.5 transition-colors", stat.tint)}
+                    className="rounded-xl border border-border/50 bg-card p-4 space-y-1"
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
                   >
-                   <div className="flex items-center gap-1.5">
-                      <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0", stat.iconTint)}>
-                        <stat.icon className="h-3 w-3 sm:h-3.5 sm:h-3.5" />
-                      </div>
-                      <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
-                        {stat.label}
-                      </span>
-                    </div>
+                    <p className="metric-label">{stat.label}</p>
                     <AnimatedNumber
                       value={stat.value}
-                      className={cn("text-lg sm:text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                      className={cn("text-xl sm:text-2xl font-bold tracking-tight", stat.valueColor)}
                       duration={0.8}
                     />
-                    <p className="text-[11px] text-muted-foreground leading-tight">
+                    <p className="text-[11px] text-muted-foreground">
                       {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
                     </p>
                   </motion.div>
