@@ -5,7 +5,7 @@ import {
   Save, MapPin, Building2, User, Info, Moon, Sun, Monitor, 
   Download, Trash2, AlertTriangle, PiggyBank, Crown, Check, Sparkles, 
   Target, Palette, CreditCard, Database, Settings2, 
-  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug, Bell,
+  DollarSign, Percent, Calendar, Shield, TrendingUp, Wallet, Plug, Bell, BellRing,
   ExternalLink, Send, CheckCircle2, Phone
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
