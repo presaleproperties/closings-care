@@ -241,7 +241,21 @@ function startSyncPolling(connectionId: string) {
         .eq('id', connectionId)
         .single();
 
+      // Broadcast step updates so the UI can react without a full query invalidation
+      if (data?.sync_status === 'syncing' && data?.sync_error) {
+        try {
+          const stepInfo = JSON.parse(data.sync_error);
+          if (stepInfo?.__step) {
+            // Emit to global sync step store
+            _syncStep = stepInfo;
+            _syncStepListeners.forEach(fn => fn({ ...stepInfo }));
+          }
+        } catch {}
+      }
+
       if (data?.sync_status === 'success') {
+        _syncStep = null;
+        _syncStepListeners.forEach(fn => fn(null));
         stopSyncPolling();
         if (_syncQueryClient) {
           _syncQueryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
@@ -251,11 +265,16 @@ function startSyncPolling(connectionId: string) {
         }
         toast.success('Sync complete! Your data is up to date.');
       } else if (data?.sync_status === 'error') {
+        _syncStep = null;
+        _syncStepListeners.forEach(fn => fn(null));
         stopSyncPolling();
         if (_syncQueryClient) {
           _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
         }
-        toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
+        // Don't show step-marker JSON as an error message
+        let errMsg = data.sync_error || 'Unknown error';
+        try { const p = JSON.parse(errMsg); if (p?.__step) errMsg = 'Sync failed unexpectedly.'; } catch {}
+        toast.error(`Sync failed: ${errMsg}`);
       } else if (data?.sync_status === 'syncing' && Date.now() - syncStartedAt > STUCK_THRESHOLD_MS) {
         // Sync has been running too long — reset stuck state in DB and notify user
         stopSyncPolling();
