@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { DealDraftProvider } from "@/contexts/DealDraftContext";
 
 import AuthPage from "./pages/AuthPage";
-import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import DealsPage from "./pages/DealsPage";
 import NewDealPage from "./pages/NewDealPage";
