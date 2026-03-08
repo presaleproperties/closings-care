@@ -442,10 +442,7 @@ export default function AnalyticsPage() {
 
               {/* Buyer Type */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <Target className="w-3.5 h-3.5 text-primary" />
-                  Buyer Type
-                </h3>
+                <h3 className="metric-label mb-2">Buyer Type</h3>
                 {(() => {
                   const types: Record<string, number> = {};
                   filteredTransactions.forEach(tx => {
