@@ -212,18 +212,17 @@ export default function SettingsPage() {
         transition={springConfig}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full flex overflow-x-auto no-scrollbar bg-card/80 border border-border/50 p-1 h-auto gap-0.5">
+          <TabsList className="w-full flex overflow-x-auto no-scrollbar bg-muted/40 border border-border/50 p-1 h-auto gap-0.5 rounded-xl">
             {[
-              { value: 'general', icon: Palette, label: 'General' },
-              { value: 'tax', icon: PiggyBank, label: 'Tax & Finance' },
-              { value: 'subscription', icon: Crown, label: 'Plan' },
-              { value: 'data', icon: Database, label: 'Data' },
-              { value: 'integrations', icon: Plug, label: 'Integrations' },
-              { value: 'notifications', icon: Bell, label: 'Reminders' },
-            ].map(({ value, icon: Icon, label }) => (
-              <TabsTrigger key={value} value={value} className="flex-1 min-w-[52px] flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 whitespace-nowrap text-xs sm:text-sm">
-                <Icon className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline">{label}</span>
+              { value: 'general', label: 'General' },
+              { value: 'tax', label: 'Tax & Finance' },
+              { value: 'subscription', label: 'Plan' },
+              { value: 'data', label: 'Data' },
+              { value: 'integrations', label: 'Integrations' },
+              { value: 'notifications', label: 'Reminders' },
+            ].map(({ value, label }) => (
+              <TabsTrigger key={value} value={value} className="flex-1 min-w-fit py-2 px-3 whitespace-nowrap text-xs sm:text-sm font-medium rounded-lg">
+                {label}
               </TabsTrigger>
             ))}
           </TabsList>

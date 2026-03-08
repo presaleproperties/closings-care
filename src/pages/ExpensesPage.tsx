@@ -287,40 +287,35 @@ export default function ExpensesPage() {
         animate="visible"
       >
          {/* Month Navigator & Total */}
-         <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border backdrop-blur-sm p-4 sm:p-6 bg-gradient-to-br from-card/60 to-card/40 border-border/50">
-           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5 opacity-60" />
-           <div className="relative z-10">
-             <div className="flex items-center justify-between mb-4 sm:mb-6">
-               <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
-                 <ChevronLeft className="w-4 h-4" />
-               </Button>
-               <h2 className="text-base sm:text-lg font-bold">
-                 {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
-               </h2>
-               <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
-                 <ChevronRight className="w-4 h-4" />
-               </Button>
-             </div>
-
-             {/* Total Display */}
-             <div className="py-4 sm:py-6 px-4 sm:px-6 rounded-xl bg-gradient-to-br from-rose-500/10 to-orange-500/5 border border-rose-500/20 backdrop-blur-sm">
-               <p className="text-[10px] sm:text-xs text-muted-foreground mb-2 uppercase tracking-widest font-semibold">Total Monthly</p>
-               <AnimatedNumber
-                 value={grandTotalExpenses}
-                 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-rose-500"
-                 duration={1}
-               />
-             </div>
+         <motion.div variants={itemVariants} className="card-premium p-4 sm:p-5">
+           <div className="flex items-center justify-between mb-4">
+             <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
+               <ChevronLeft className="w-4 h-4" />
+             </Button>
+             <p className="text-sm font-semibold tracking-tight text-foreground">
+               {format(parseISO(`${currentMonth}-01`), 'MMMM yyyy')}
+             </p>
+             <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-lg hover:bg-muted/50 transition-colors">
+               <ChevronRight className="w-4 h-4" />
+             </Button>
+           </div>
+           <div className="text-center pt-1">
+             <p className="metric-label mb-1.5">Total Monthly</p>
+             <AnimatedNumber
+               value={grandTotalExpenses}
+               className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground"
+               duration={1}
+             />
            </div>
          </motion.div>
 
          {/* Category Cards */}
-         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-3.5">
+         <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {([
-              { type: 'personal' as ExpenseType, tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30', iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400', valueColor: 'text-blue-700 dark:text-blue-400', activeTint: 'bg-blue-100/80 dark:bg-blue-950/30 border-blue-300/70 dark:border-blue-700/40' },
-              { type: 'business' as ExpenseType, tint: 'bg-violet-50/50 dark:bg-violet-950/15 border-violet-200/50 dark:border-violet-800/25', iconTint: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400', valueColor: 'text-violet-700 dark:text-violet-400', activeTint: 'bg-violet-100/80 dark:bg-violet-950/30 border-violet-300/70 dark:border-violet-700/40' },
-              { type: 'rental' as ExpenseType, tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30', iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400', valueColor: 'text-emerald-700 dark:text-emerald-400', activeTint: 'bg-emerald-100/80 dark:bg-emerald-950/30 border-emerald-300/70 dark:border-emerald-700/40' },
-              { type: 'taxes' as ExpenseType, tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30', iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400', valueColor: 'text-amber-700 dark:text-amber-400', activeTint: 'bg-amber-100/80 dark:bg-amber-950/30 border-amber-300/70 dark:border-amber-700/40' },
+              { type: 'personal' as ExpenseType },
+              { type: 'business' as ExpenseType },
+              { type: 'rental' as ExpenseType },
+              { type: 'taxes' as ExpenseType },
             ]).map((item, index) => {
               const config = typeConfig[item.type];
               const total = getTypeTotal(item.type);
@@ -331,33 +326,19 @@ export default function ExpensesPage() {
                 <motion.button
                   key={item.type}
                   onClick={() => setActiveFilter(isActive ? 'all' : item.type)}
-                  initial={{ opacity: 0, y: 12 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
-                    className={cn(
-                    "rounded-xl border p-4 space-y-2 transition-colors text-left",
-                    isActive ? item.activeTint : item.tint
+                  transition={{ delay: index * 0.04, type: 'spring', stiffness: 240, damping: 28 }}
+                  className={cn(
+                    "card-premium p-4 space-y-1.5 text-left transition-all duration-200",
+                    isActive && "ring-2 ring-primary/30"
                   )}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", item.iconTint)}>
-                      <config.icon className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      {config.label}
-                    </span>
-                  </div>
-                  <p className={cn("font-bold text-xl lg:text-2xl tracking-tight", item.valueColor)}>{formatCurrency(total)}</p>
-                  <p className="text-[11px] text-muted-foreground leading-tight">
-                    {count} expense{count !== 1 ? 's' : ''}
+                  <p className="metric-label">{config.label}</p>
+                  <p className="text-xl font-bold tracking-tight text-foreground">{formatCurrency(total)}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {count} item{count !== 1 ? 's' : ''}
                   </p>
-
-                  {isActive && (
-                    <motion.div 
-                      layoutId="activeIndicator"
-                      className={cn("absolute top-2 right-2 w-2 h-2 rounded-full", config.bg, config.text)}
-                    />
-                  )}
                 </motion.button>
               );
             })}

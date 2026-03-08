@@ -2,9 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Building2, Home, MapPin,
-  ArrowUpDown, SlidersHorizontal, X, TrendingUp,
-  DollarSign, BarChart3, Filter, ChevronDown, ChevronRight, AlertTriangle,
+  Plus, Search, X, ChevronDown, ChevronRight, AlertTriangle, ArrowUpDown, SlidersHorizontal, Filter, Building2, Home, MapPin,
 } from 'lucide-react';
 import { format, parseISO, isBefore, isAfter, addDays, startOfDay } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -40,10 +38,10 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'address-desc', label: 'Z → A' },
 ];
 
-const TABS: { key: TabKey; label: string; icon: typeof Building2 }[] = [
-  { key: 'active', label: 'Active', icon: Building2 },
-  { key: 'closed', label: 'Closed', icon: Home },
-  { key: 'listings', label: 'Listings', icon: MapPin },
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'closed', label: 'Closed' },
+  { key: 'listings', label: 'Listings' },
 ];
 
 function getSortFn(key: SortKey) {
@@ -233,63 +231,22 @@ export default function DealsPage() {
               )}
 
               {/* ── Stats Row ── */}
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  {
-                    label: 'Total Deals',
-                    value: stats.totalDeals.toString(),
-                    sub: `${stats.active} active · ${stats.closed} closed`,
-                    icon: BarChart3,
-                    color: 'text-slate-700 dark:text-slate-300',
-                    tint: 'bg-slate-50/70 dark:bg-slate-900/20 border-slate-200/60 dark:border-slate-700/30',
-                    iconTint: 'bg-slate-100 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400',
-                  },
-                  {
-                    label: 'Earned',
-                    value: formatCurrency(stats.closedNet),
-                    sub: `Deals · ${stats.closed} closed`,
-                    icon: DollarSign,
-                    color: 'text-emerald-700 dark:text-emerald-400',
-                    tint: 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-800/30',
-                    iconTint: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
-                  },
-                  {
-                    label: 'Pipeline',
-                    value: formatCurrency(stats.activeNet),
-                    sub: `${stats.active} pending`,
-                    icon: TrendingUp,
-                    color: 'text-blue-700 dark:text-blue-400',
-                    tint: 'bg-blue-50/70 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-800/30',
-                    iconTint: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
-                  },
-                  {
-                    label: 'Listings',
-                    value: formatCurrency(stats.listingsNet),
-                    sub: `${stats.listings} total · ${stats.closedListings} closed`,
-                    icon: MapPin,
-                    color: 'text-amber-700 dark:text-amber-400',
-                    tint: 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/30',
-                    iconTint: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
-                  },
+                  { label: 'Total', value: stats.totalDeals.toString(), sub: `${stats.active} active · ${stats.closed} closed` },
+                  { label: 'Earned', value: formatCurrencyCompact(stats.closedNet), sub: `${stats.closed} closed deals` },
+                  { label: 'Pipeline', value: formatCurrencyCompact(stats.activeNet), sub: `${stats.active} pending` },
+                  { label: 'Listings', value: formatCurrencyCompact(stats.listingsNet), sub: `${stats.listings} total` },
                 ].map((stat, i) => (
                   <motion.div
                     key={stat.label}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
-                    className={cn("rounded-xl border p-4 sm:p-4 space-y-2 transition-colors", stat.tint)}
+                    transition={{ delay: i * 0.04, type: 'spring', stiffness: 240, damping: 28 }}
+                    className="card-premium p-4 space-y-1"
                   >
-                    <div className="flex items-center gap-2">
-                      <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", stat.iconTint)}>
-                        <stat.icon className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                        {stat.label}
-                      </span>
-                    </div>
-                    <p className={cn("text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate", stat.color)}>
-                      {stat.value}
-                    </p>
+                    <p className="metric-label">{stat.label}</p>
+                    <p className="text-xl font-bold tracking-tight text-foreground truncate">{stat.value}</p>
                     <p className="text-[11px] text-muted-foreground leading-tight">{stat.sub}</p>
                   </motion.div>
                 ))}
@@ -333,11 +290,10 @@ export default function DealsPage() {
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        <tab.icon className="h-3.5 w-3.5" />
                         <span>{tab.label}</span>
                         <span className={cn(
-                          "text-[10px] font-bold ml-0.5 min-w-[18px] text-center",
-                          isActive ? "text-primary" : "text-muted-foreground/60"
+                          "text-[10px] font-bold ml-0.5 min-w-[16px] text-center",
+                          isActive ? "text-primary" : "text-muted-foreground/50"
                         )}>
                           {tabCounts[tab.key]}
                         </span>
