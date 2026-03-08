@@ -76,7 +76,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setTaxPercent(settings.tax_set_aside_percent || 0);
-      
       setApplyTaxToForecasts(settings.apply_tax_to_forecasts || false);
       setCountry((settings as any).country || 'CA');
       setProvince(((settings as any).province || 'BC') as Province);
@@ -89,6 +88,8 @@ export default function SettingsPage() {
       setMonthlyIncomeGoal((settings as any).monthly_income_goal || 0);
       setYearlyGciGoal((settings as any).yearly_gci_goal || 0);
       setYearlyRevshareGoal((settings as any).yearly_revshare_goal || 0);
+      setZapierWebhookUrl((settings as any).zapier_webhook_url || '');
+      setNotificationPhone((settings as any).notification_phone || '');
     }
   }, [settings]);
 
@@ -97,7 +98,6 @@ export default function SettingsPage() {
     if (settings) {
       const changed = 
         taxPercent !== (settings.tax_set_aside_percent || 0) ||
-        
         applyTaxToForecasts !== (settings.apply_tax_to_forecasts || false) ||
         country !== ((settings as any).country || 'CA') ||
         province !== (((settings as any).province || 'BC') as Province) ||
@@ -109,17 +109,18 @@ export default function SettingsPage() {
         taxSavedAmount !== ((settings as any).tax_saved_amount || 0) ||
         monthlyIncomeGoal !== ((settings as any).monthly_income_goal || 0) ||
         yearlyGciGoal !== ((settings as any).yearly_gci_goal || 0) ||
-        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0);
+        yearlyRevshareGoal !== ((settings as any).yearly_revshare_goal || 0) ||
+        zapierWebhookUrl !== ((settings as any).zapier_webhook_url || '') ||
+        notificationPhone !== ((settings as any).notification_phone || '');
       setHasChanges(changed);
     }
   }, [settings, taxPercent, applyTaxToForecasts, country, province, taxType, 
       gstRegistered, gstRate, taxBuffer, taxCalculationMethod, taxSavedAmount,
-      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal]);
+      monthlyIncomeGoal, yearlyGciGoal, yearlyRevshareGoal, zapierWebhookUrl, notificationPhone]);
 
   const handleSave = async () => {
     await updateSettings.mutateAsync({
       tax_set_aside_percent: taxPercent,
-      
       apply_tax_to_forecasts: applyTaxToForecasts,
       country,
       province,
@@ -132,8 +133,42 @@ export default function SettingsPage() {
       monthly_income_goal: monthlyIncomeGoal,
       yearly_gci_goal: yearlyGciGoal,
       yearly_revshare_goal: yearlyRevshareGoal,
+      zapier_webhook_url: zapierWebhookUrl || null,
+      notification_phone: notificationPhone || null,
     } as any);
     setHasChanges(false);
+  };
+
+  const handleTestReminder = async () => {
+    if (!zapierWebhookUrl) return;
+    setTestSending(true);
+    setTestSent(false);
+    try {
+      await fetch(zapierWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
+        body: JSON.stringify({
+          type: 'pipeline_reminder_test',
+          date: new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' }),
+          message: '🔥 HOT CLIENTS (1) — Follow up today:\n  • Test Client — Condo ($25,000)',
+          phone: notificationPhone || '',
+          hot_count: 1,
+          warm_count: 0,
+          total_count: 1,
+          hot_clients: [{ name: 'Test Client', home_type: 'Condo', deal_type: 'buyer', potential_commission: 25000, notes: 'This is a test reminder' }],
+          warm_clients: [],
+        }),
+      });
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 4000);
+    } catch {
+      // no-cors mode won't throw on success
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 4000);
+    } finally {
+      setTestSending(false);
+    }
   };
 
 
