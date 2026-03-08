@@ -97,7 +97,7 @@ export function Sidebar() {
         className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
         style={{
           background: 'hsl(var(--sidebar-background))',
-          boxShadow: '1px 0 0 0 hsl(var(--sidebar-border)), 4px 0 24px -4px hsl(0 0% 0% / 0.2)',
+          boxShadow: '1px 0 0 0 hsl(var(--sidebar-border)), 4px 0 24px -4px hsl(var(--sidebar-border) / 0.4)',
         }}
       />
       {/* Right edge — subtle gradient separator */}
