@@ -617,7 +617,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     }
     } // end if (prefs.network)
 
-    // Update connection status
+    // Update connection status — clear step marker on success
     await supabase.from('platform_connections').update({
       sync_status: 'success',
       last_synced_at: new Date().toISOString(),
