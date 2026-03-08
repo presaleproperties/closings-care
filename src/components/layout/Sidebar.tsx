@@ -86,9 +86,16 @@ export function Sidebar() {
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
           <img
             src={logoMark}
-            alt="Logo"
+            alt="Dealzflow"
             className="w-7 h-7 rounded-lg flex-shrink-0 transition-opacity duration-200 group-hover:opacity-80"
           />
+          <span className={cn(
+            "transition-all duration-300 overflow-hidden font-semibold text-[14px] tracking-[-0.02em] whitespace-nowrap",
+            "text-sidebar-foreground/90",
+            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+          )}>
+            Dealz<span style={{ color: 'hsl(var(--sidebar-primary))' }}>flow</span>
+          </span>
         </Link>
       </div>
 
