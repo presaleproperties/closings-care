@@ -232,12 +232,13 @@ Deno.serve(async (req) => {
 })
 
 /**
- * Attempt to decrypt and return last 4 chars for masking display.
- * Falls back to last 4 chars of the ciphertext if decrypt fails.
+ * Return last 4 chars of the stored (encrypted) value as a visual hint.
+ * We can't async-decrypt here, so we show last 4 of the ciphertext — good enough
+ * to let users distinguish between keys without exposing anything sensitive.
  */
-function maskKey(storedValue: string, passphrase: string): string {
-  // We can't call async DB functions here — just return last 4 of the stored (encrypted) value
-  // The full masking is done at DB level via the RPC call in list action above
-  // For the mask we just show a placeholder
-  return '????'
+function maskKey(storedValue: string, _passphrase: string): string {
+  if (!storedValue || storedValue.length < 4) return '????'
+  // Strip base64 padding chars for a cleaner display
+  const clean = storedValue.replace(/[=\n\r]/g, '')
+  return clean.slice(-4).toUpperCase()
 }
