@@ -9,18 +9,14 @@ import {
   DollarSign,
   Clock,
   AlertCircle,
-  Building2,
-  Home,
-  TrendingUp,
-  Calendar,
+  AlertTriangle,
   CheckCircle2,
+  TrendingUp,
   ArrowUpRight,
   Timer,
   Wallet,
   Banknote,
   Sparkles,
-  AlertTriangle,
-  MapPin,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
@@ -60,7 +56,6 @@ interface PayoutCardProps {
 
 function PayoutCard({ payout }: PayoutCardProps) {
   const now = new Date();
-  const DealIcon = payout.isPresale ? Building2 : Home;
   const tx = payout.rawTransaction;
 
   const getDueBadge = (closeDate: string | null, status: string) => {
@@ -118,49 +113,41 @@ function PayoutCard({ payout }: PayoutCardProps) {
           {/* Header Row */}
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <div className={cn(
-                  "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                  payout.isPresale ? "bg-violet-500/10" : "bg-blue-500/10"
-                )}>
-                  <DealIcon className={cn("h-4 w-4", payout.isPresale ? "text-violet-500" : "text-blue-500")} />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-bold text-sm truncate">{displayName}</h4>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                    <span>{payout.isPresale ? 'Presale' : 'Resale'}</span>
-                    {displayCity && (
-                      <>
-                        <span className="text-border">·</span>
-                        <span className="truncate">{displayCity}</span>
-                      </>
-                    )}
-                    {payout.agent_name && (
-                      <>
-                        <span className="text-border">·</span>
-                        <span className="truncate">{payout.agent_name}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+              <h4 className="font-semibold text-sm truncate tracking-[-0.01em]">{displayName}</h4>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap mt-0.5">
+                <span>{payout.isPresale ? 'Presale' : 'Resale'}</span>
+                {displayCity && (
+                  <>
+                    <span className="text-border/60">·</span>
+                    <span className="truncate">{displayCity}</span>
+                  </>
+                )}
+                {payout.agent_name && (
+                  <>
+                    <span className="text-border/60">·</span>
+                    <span className="truncate">{payout.agent_name}</span>
+                  </>
+                )}
               </div>
-              
+
               {/* Deal Details Row */}
-              <div className="flex items-center gap-2 flex-wrap ml-10 mt-1">
+              <div className="flex items-center gap-2 flex-wrap mt-1.5">
                 {payout.sale_price > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground font-medium">
-                    Sale: {formatCurrency(payout.sale_price)}
+                  <span className="text-[11px] text-muted-foreground">
+                    Sale {formatCurrency(payout.sale_price)}
                   </span>
                 )}
                 {mls && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground font-medium">
-                    MLS: {mls}
-                  </span>
+                  <>
+                    {payout.sale_price > 0 && <span className="text-border/60 text-[11px]">·</span>}
+                    <span className="text-[11px] font-mono text-muted-foreground">{mls}</span>
+                  </>
                 )}
                 {lifecycleState && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                    {lifecycleState}
-                  </span>
+                  <>
+                    {(payout.sale_price > 0 || mls) && <span className="text-border/60 text-[11px]">·</span>}
+                    <span className="text-[11px] text-primary/80">{lifecycleState}</span>
+                  </>
                 )}
               </div>
             </div>
@@ -168,13 +155,16 @@ function PayoutCard({ payout }: PayoutCardProps) {
             <div className="text-right shrink-0">
               <p className={cn(
                 "font-bold text-xl tracking-tight",
-                isReceived ? "text-emerald-600" : "text-foreground"
+                isReceived ? "text-success" : "text-foreground"
               )}>
                 {formatCurrency(payout.netAmount)}
               </p>
               <span className={cn(
-                "text-[10px] px-2 py-0.5 rounded-full font-semibold inline-block mt-1",
-                badge.color
+                "text-[10px] font-medium inline-block mt-1",
+                badge.color.includes('emerald') ? "text-success" :
+                badge.color.includes('destructive') ? "text-destructive" :
+                badge.color.includes('amber') ? "text-warning" :
+                "text-muted-foreground"
               )}>
                 {badge.label}
               </span>
@@ -182,29 +172,23 @@ function PayoutCard({ payout }: PayoutCardProps) {
           </div>
           
           {/* Footer Row */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/40 mt-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={cn(
-                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-medium",
-                typeStyle.bg, typeStyle.text
-              )}>
-                <TrendingUp className="h-3 w-3" />
+          <div className="flex items-center justify-between pt-2 border-t border-border/30 mt-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className={cn("text-xs font-medium", typeStyle.text)}>
                 {payout.payoutType}
               </span>
               
               {payout.close_date && (
                 <span className={cn(
-                  "text-xs flex items-center gap-1 px-2 py-1 rounded-lg",
-                  isReceived ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-muted/40"
+                  "text-xs",
+                  isReceived ? "text-success" : "text-muted-foreground"
                 )}>
-                  {isReceived ? <CheckCircle2 className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
                   {format(parseISO(payout.close_date), 'MMM d, yyyy')}
                 </span>
               )}
 
               {isFlagged && (
-                <span className="text-xs text-amber-600 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg">
-                  <AlertTriangle className="h-3 w-3" />
+                <span className="text-xs text-warning">
                   Past close date, still active
                 </span>
               )}
@@ -212,7 +196,7 @@ function PayoutCard({ payout }: PayoutCardProps) {
             
             {payout.grossAmount !== payout.netAmount && (
               <span className="text-xs text-muted-foreground">
-                Gross: {formatCurrency(payout.grossAmount)}
+                Gross {formatCurrency(payout.grossAmount)}
               </span>
             )}
           </div>
