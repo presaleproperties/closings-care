@@ -46,8 +46,7 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // Inject push notification handlers into the generated service worker
-        additionalManifestEntries: [],
+        importScripts: ["/sw-push.js"],
         runtimeCaching: [
           {
             urlPattern: /\.html$/i,
@@ -75,11 +74,7 @@ export default defineConfig(({ mode }) => ({
               }
             }
           }
-        ],
-        // Append push notification code to the generated SW
-        importScripts: [],
-        // Inline the push event handlers
-        additionalManifestEntries: undefined,
+        ]
       }
     })
   ].filter(Boolean),
