@@ -490,9 +490,9 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
       )}
 
       {/* Enabled types pill row */}
-      {!needsReconnect && enabledTypes.length > 0 && (
+      {!needsReconnect && !isSyncing && (
         <div className="px-4 pb-3 flex gap-1.5 flex-wrap">
-          {enabledTypes.map(type => {
+          {Object.entries(prefs).filter(([, v]) => v).map(([type]) => {
             const dt = DATA_TYPES.find(d => d.key === type);
             if (!dt) return null;
             return (
