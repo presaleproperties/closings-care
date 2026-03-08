@@ -290,6 +290,7 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
   const syncPlatform = useSyncPlatform();
   const deleteConnection = useDeleteConnection();
   const upsertConnection = useUpsertConnection();
+  const syncStep = useSyncStep();
   const platformInfo = PLATFORMS.find(p => p.id === connection.platform);
   const [showRekey, setShowRekey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
@@ -311,9 +312,17 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
 
   const sc = statusConfig[connection.sync_status || 'idle'] || statusConfig.idle;
 
-  const enabledTypes = Object.entries(prefs)
-    .filter(([, v]) => v)
-    .map(([k]) => k);
+  // Map step keys to a 0-100 progress value and ordered steps list
+  const STEPS = [
+    { key: 'identity',     label: 'Connecting…',             icon: '🔗' },
+    { key: 'transactions', label: 'Fetching transactions',   icon: '🏠' },
+    { key: 'revshare',     label: 'Fetching revenue share',  icon: '💰' },
+    { key: 'network',      label: 'Fetching network',        icon: '🌐' },
+  ];
+  const currentStepIdx = syncStep ? STEPS.findIndex(s => s.key === syncStep.__step) : -1;
+  const progressPct = isSyncing
+    ? (currentStepIdx < 0 ? 5 : Math.round(((currentStepIdx + 1) / STEPS.length) * 90))
+    : 0;
 
   const handleRekey = async () => {
     if (!newApiKey.trim()) return;
@@ -321,6 +330,13 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
     setShowRekey(false);
     setNewApiKey('');
   };
+
+  // Don't render step-marker JSON as a user-visible error
+  const displayError = (() => {
+    if (!connection.sync_error) return null;
+    try { const p = JSON.parse(connection.sync_error); if (p?.__step) return null; } catch {}
+    return connection.sync_error;
+  })();
 
   return (
     <motion.div
@@ -358,14 +374,14 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
             </div>
           )}
 
-          {connection.last_synced_at && (
+          {connection.last_synced_at && !isSyncing && (
             <p className="text-[10px] text-muted-foreground/60 mt-0.5">
               Last synced {formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}
             </p>
           )}
 
-          {connection.sync_error && !needsReconnect && (
-            <p className="text-[10px] text-destructive mt-0.5 line-clamp-2">{connection.sync_error}</p>
+          {displayError && !needsReconnect && (
+            <p className="text-[10px] text-destructive mt-0.5 line-clamp-2">{displayError}</p>
           )}
         </div>
 
@@ -383,7 +399,7 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
           ) : platformInfo?.hasApi && (
             <Button
               size="sm"
-              variant={isStuckSyncing ? "outline" : "outline"}
+              variant="outline"
               className={`h-7 gap-1.5 text-xs px-2.5 ${isStuckSyncing ? 'border-amber-500/40 text-amber-600 hover:text-amber-700' : ''}`}
               onClick={() => syncPlatform.mutate({ platform: connection.platform, connectionId: connection.id })}
               disabled={isSyncing}
@@ -402,6 +418,51 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
           </Button>
         </div>
       </div>
+
+      {/* ── Sync Progress Indicator ── */}
+      {isSyncing && (
+        <div className="px-4 pb-3 border-t border-border/30 pt-2.5 space-y-2">
+          {/* Step label */}
+          <div className="flex items-center gap-1.5">
+            <RefreshCw className="w-3 h-3 text-primary animate-spin shrink-0" />
+            <span className="text-[11px] text-primary font-medium">
+              {syncStep?.label || 'Connecting to ReZen…'}
+            </span>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-1 rounded-full bg-border/40 overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-primary"
+              initial={{ width: '5%' }}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.6, ease: 'easeInOut' }}
+            />
+          </div>
+
+          {/* Step pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {STEPS.map((s, i) => {
+              const isActive = s.key === syncStep?.__step;
+              const isDone = currentStepIdx > i;
+              return (
+                <span
+                  key={s.key}
+                  className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border transition-all duration-300 ${
+                    isDone
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600'
+                      : isActive
+                      ? 'border-primary/40 bg-primary/10 text-primary font-semibold'
+                      : 'border-border/30 bg-muted/30 text-muted-foreground/50'
+                  }`}
+                >
+                  {isDone ? '✓' : s.icon} {s.label}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Re-key inline form */}
       {showRekey && (
