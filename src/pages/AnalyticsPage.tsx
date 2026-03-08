@@ -791,10 +791,7 @@ export default function AnalyticsPage() {
 
                   {revShareByTier.length > 0 && (
                     <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                      <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                        <Users className="w-3.5 h-3.5 text-primary" />
-                        By Tier
-                      </h3>
+                      <h3 className="text-sm font-semibold text-foreground mb-0.5">By Tier</h3>
                       <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Earned vs missed by tier</p>
                       <div className="h-48 sm:h-52">
                         <ResponsiveContainer width="100%" height="100%">
