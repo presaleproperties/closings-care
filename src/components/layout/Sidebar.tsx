@@ -119,7 +119,7 @@ export function Sidebar() {
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
             <h1 className="font-bold text-sidebar-foreground text-[15px] leading-tight tracking-[-0.02em] whitespace-nowrap">
-              commission<span style={{ color: 'hsl(var(--sidebar-primary))' }}>IQ</span>
+              dealz<span style={{ color: 'hsl(var(--sidebar-primary))' }}>flow</span>
             </h1>
           </div>
         </Link>
