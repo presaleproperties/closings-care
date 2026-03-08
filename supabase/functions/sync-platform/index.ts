@@ -207,8 +207,9 @@ function buildTransactionRecord(tx: any, userId: string, agentName: string, yent
 // ─── Sync Real Broker ─────────────────────────────────────────────────────────
 
 async function syncRealBroker(supabase: any, userId: string, apiKey: string, connectionId: string, prefs = { transactions: true, revshare: true, network: true }) {
+  // Reset any stale state from a previous run before starting fresh
   await supabase.from('platform_connections').update({
-    sync_status: 'syncing', sync_error: null,
+    sync_status: 'syncing', sync_error: null, last_synced_at: null,
   }).eq('id', connectionId)
 
   const { data: syncLog } = await supabase.from('sync_logs').insert({
