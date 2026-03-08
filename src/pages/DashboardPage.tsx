@@ -29,7 +29,7 @@ import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw, Plug, ArrowRight } from 'lucide-react';
+import { Plus, Receipt, RefreshCw, Plug, ArrowRight } from 'lucide-react';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare, usePlatformConnections, useSyncPlatform } from '@/hooks/usePlatformConnections';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
