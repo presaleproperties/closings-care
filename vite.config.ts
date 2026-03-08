@@ -41,12 +41,14 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        // Use NetworkFirst for HTML so users always get the latest version
         runtimeCaching: [
           {
             urlPattern: /\.html$/i,
@@ -55,7 +57,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "html-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 0 // Never use stale HTML
+                maxAgeSeconds: 0
               },
               networkTimeoutSeconds: 5,
             }
@@ -67,7 +69,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: "google-fonts-cache",
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
