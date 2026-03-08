@@ -218,6 +218,7 @@ export default function SettingsPage() {
               { value: 'subscription', icon: Crown, label: 'Plan' },
               { value: 'data', icon: Database, label: 'Data' },
               { value: 'integrations', icon: Plug, label: 'Integrations' },
+              { value: 'notifications', icon: Bell, label: 'Reminders' },
             ].map(({ value, icon: Icon, label }) => (
               <TabsTrigger key={value} value={value} className="flex-1 min-w-[52px] flex items-center justify-center gap-1.5 py-2 px-2 sm:px-3 whitespace-nowrap text-xs sm:text-sm">
                 <Icon className="w-3.5 h-3.5 shrink-0" />
