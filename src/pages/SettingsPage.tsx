@@ -35,6 +35,7 @@ import { PROVINCES, PROVINCE_NAMES, Province, TaxType, getTaxBrackets } from '@/
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { PlatformConnectionsManager } from '@/components/settings/PlatformConnectionsManager';
+import { PushNotificationSetup } from '@/components/settings/PushNotificationSetup';
 
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
@@ -595,6 +596,18 @@ export default function SettingsPage() {
 
           {/* Notifications / Reminders Tab */}
           <TabsContent value="notifications" className="space-y-6">
+
+            {/* In-App Push Notifications */}
+            <SettingsCard
+              icon={BellRing}
+              title="Push Notifications"
+              description="Get alerts directly on your phone — works when the app is installed"
+              iconColor="text-primary"
+              gradient="from-primary/10 to-primary/5"
+            >
+              <PushNotificationSetup />
+            </SettingsCard>
+
             <SettingsCard
               icon={Bell}
               title="Pipeline Follow-Up Reminders"
