@@ -40,10 +40,10 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'address-desc', label: 'Z → A' },
 ];
 
-const TABS: { key: TabKey; label: string; icon: typeof Building2 }[] = [
-  { key: 'active', label: 'Active', icon: Building2 },
-  { key: 'closed', label: 'Closed', icon: Home },
-  { key: 'listings', label: 'Listings', icon: MapPin },
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'active', label: 'Active' },
+  { key: 'closed', label: 'Closed' },
+  { key: 'listings', label: 'Listings' },
 ];
 
 function getSortFn(key: SortKey) {
