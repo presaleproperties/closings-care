@@ -22,7 +22,7 @@ import {
   usePlatformConnections, useSyncedTransactions, useRevenueShare,
   useSyncLogs, useUpsertConnection, useDeleteConnection,
   useSyncPlatform, useAddRevenueShare, useDeleteRevenueShare,
-  PLATFORMS, type PlatformConnection,
+  useSyncStep, PLATFORMS, type PlatformConnection,
 } from '@/hooks/usePlatformConnections';
 
 // ─── Sync Preferences ────────────────────────────────────────────────────────
