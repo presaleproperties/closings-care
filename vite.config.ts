@@ -41,14 +41,13 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
-      strategies: "injectManifest",
-      srcDir: "src",
-      filename: "sw.ts",
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Inject push notification handlers into the generated service worker
+        additionalManifestEntries: [],
         runtimeCaching: [
           {
             urlPattern: /\.html$/i,
@@ -76,7 +75,11 @@ export default defineConfig(({ mode }) => ({
               }
             }
           }
-        ]
+        ],
+        // Append push notification code to the generated SW
+        importScripts: [],
+        // Inline the push event handlers
+        additionalManifestEntries: undefined,
       }
     })
   ].filter(Boolean),
