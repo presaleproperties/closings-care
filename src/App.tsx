@@ -9,7 +9,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { DealDraftProvider } from "@/contexts/DealDraftContext";
 
 import AuthPage from "./pages/AuthPage";
-import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import DealsPage from "./pages/DealsPage";
 import NewDealPage from "./pages/NewDealPage";
@@ -75,7 +74,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
