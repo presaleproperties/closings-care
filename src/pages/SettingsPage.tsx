@@ -35,6 +35,7 @@ import { PROVINCES, PROVINCE_NAMES, Province, TaxType, getTaxBrackets } from '@/
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { PlatformConnectionsManager } from '@/components/settings/PlatformConnectionsManager';
+import { PushNotificationSetup } from '@/components/settings/PushNotificationSetup';
 
 
 const springConfig = { type: "spring" as const, stiffness: 120, damping: 20 };
