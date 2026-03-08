@@ -592,6 +592,111 @@ export default function SettingsPage() {
               <PlatformConnectionsManager />
             </SettingsCard>
           </TabsContent>
+
+          {/* Notifications / Reminders Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <SettingsCard
+              icon={Bell}
+              title="Pipeline Follow-Up Reminders"
+              description="Get SMS or WhatsApp reminders via Zapier when it's time to follow up"
+              iconColor="text-primary"
+              gradient="from-primary/10 to-primary/5"
+            >
+              <div className="space-y-5">
+                {/* How it works */}
+                <div className="p-4 rounded-xl bg-muted/50 border border-border/50 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">How it works</p>
+                  <ul className="space-y-1.5 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2"><span className="text-primary mt-0.5">🔥</span><span><strong className="text-foreground">Hot clients</strong> — Daily reminder at 9 AM</span></li>
+                    <li className="flex items-start gap-2"><span className="text-amber-500 mt-0.5">☀️</span><span><strong className="text-foreground">Warm clients</strong> — Weekly reminder every Monday at 9 AM</span></li>
+                    <li className="flex items-start gap-2"><span className="text-muted-foreground mt-0.5">📲</span><span>Your Zapier Zap receives client data and sends you a text or WhatsApp message</span></li>
+                  </ul>
+                </div>
+
+                {/* Setup steps */}
+                <div className="p-4 rounded-xl border border-border/50 space-y-3">
+                  <p className="text-sm font-semibold">Setup in Zapier (3 steps)</p>
+                  <ol className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                      <span>Create a new Zap with a <strong className="text-foreground">Webhooks by Zapier</strong> trigger (Catch Hook)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                      <span>Add an action: <strong className="text-foreground">SMS by Zapier</strong> or <strong className="text-foreground">WhatsApp</strong> — map the <code className="bg-muted px-1 rounded text-xs">message</code> and <code className="bg-muted px-1 rounded text-xs">phone</code> fields</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                      <span>Copy the webhook URL from Zapier and paste it below</span>
+                    </li>
+                  </ol>
+                  <a
+                    href="https://zapier.com/apps/webhook/integrations"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
+                  >
+                    Open Zapier <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+
+                {/* Phone number */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    Your Phone Number
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Include country code (e.g., +16041234567). Passed to Zapier so it can send to the right number.</p>
+                  <Input
+                    type="tel"
+                    value={notificationPhone}
+                    onChange={(e) => setNotificationPhone(e.target.value)}
+                    placeholder="+16041234567"
+                    className="max-w-xs"
+                  />
+                </div>
+
+                {/* Webhook URL */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-muted-foreground" />
+                    Zapier Webhook URL
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Paste the "Catch Hook" URL from your Zapier trigger step.</p>
+                  <Input
+                    type="url"
+                    value={zapierWebhookUrl}
+                    onChange={(e) => setZapierWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.zapier.com/hooks/catch/..."
+                    className="font-mono text-xs"
+                  />
+                </div>
+
+                {/* Test button */}
+                {zapierWebhookUrl && (
+                  <div className="pt-2 border-t border-border/50">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestReminder}
+                      disabled={testSending}
+                      className="gap-2"
+                    >
+                      {testSent ? (
+                        <><CheckCircle2 className="w-4 h-4 text-success" /> Test sent to Zapier!</>
+                      ) : testSending ? (
+                        <><div className="w-3.5 h-3.5 border-2 border-primary/40 border-t-primary rounded-full animate-spin" /> Sending...</>
+                      ) : (
+                        <><Send className="w-4 h-4" /> Send Test Reminder</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">Sends a sample payload to your Zapier webhook. Check your Zap history to confirm it fired.</p>
+                  </div>
+                )}
+              </div>
+            </SettingsCard>
+          </TabsContent>
         </Tabs>
       </motion.div>
       </PullToRefresh>
