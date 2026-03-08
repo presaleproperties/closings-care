@@ -294,16 +294,18 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
   const [showRekey, setShowRekey] = useState(false);
   const [newApiKey, setNewApiKey] = useState('');
 
-  const isSyncing = connection.sync_status === 'syncing' || syncPlatform.isPending;
-  // api_key is null in DB when saved before encryption was set up.
-  // The list endpoint always returns a masked value (e.g. "••••  ••••  ••••  ????") for any non-null key,
-  // so we only need reconnect when the field itself is null/empty.
+  // Detect stuck syncing: status is 'syncing' but updated_at is >8 minutes ago
+  const isStuckSyncing = connection.sync_status === 'syncing' &&
+    connection.updated_at &&
+    (Date.now() - new Date(connection.updated_at).getTime()) > 8 * 60 * 1000;
+
+  const isSyncing = (connection.sync_status === 'syncing' && !isStuckSyncing) || syncPlatform.isPending;
   const needsReconnect = !connection.api_key;
 
   const statusConfig: Record<string, { color: string; label: string }> = {
     success: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Synced' },
     error: { color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', label: 'Connected' },
-    syncing: { color: 'text-primary bg-primary/10 border-primary/20', label: 'Syncing…' },
+    syncing: { color: 'text-primary bg-primary/10 border-primary/20', label: isStuckSyncing ? 'Sync Stalled' : 'Syncing…' },
     idle: { color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20', label: 'Connected' },
   };
 
