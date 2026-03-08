@@ -56,7 +56,6 @@ interface PayoutCardProps {
 
 function PayoutCard({ payout }: PayoutCardProps) {
   const now = new Date();
-  const DealIcon = payout.isPresale ? Building2 : Home;
   const tx = payout.rawTransaction;
 
   const getDueBadge = (closeDate: string | null, status: string) => {
