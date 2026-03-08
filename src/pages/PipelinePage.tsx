@@ -735,41 +735,26 @@ export default function PipelinePage() {
       <div className="p-5 lg:p-6 space-y-5">
         {/* ── Hero Stats Bar ────────────────────────────────── */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-border bg-card p-4 sm:p-5"
+          className="card-premium p-4 sm:p-5"
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight">Pipeline</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">First contact → Close</p>
-              </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="metric-label mb-1">Potential GCI</p>
+              <p className="text-2xl font-bold tracking-tight text-foreground">{formatCurrency(totalPotential)}</p>
             </div>
-
-            {/* Stats — always visible, compact on mobile */}
-            <div className="flex items-center gap-3 sm:gap-5">
+            <div className="flex items-center gap-4 sm:gap-6 shrink-0">
               <div className="text-right">
-                <p className="text-sm sm:text-lg font-bold text-primary">{formatCurrency(totalPotential)}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Potential</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-right">
-                <p className="text-sm sm:text-lg font-bold">{activeProspects.length}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active</p>
+                <p className="text-lg font-bold text-foreground">{activeProspects.length}</p>
+                <p className="metric-label">Active</p>
               </div>
               {hotCount > 0 && (
                 <>
-                  <div className="h-8 w-px bg-border" />
+                  <div className="h-8 w-px bg-border/60" />
                   <div className="text-right">
-                    <div className="flex items-center gap-1 justify-end">
-                      <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-rose-500" />
-                      <p className="text-sm sm:text-lg font-bold text-rose-500">{hotCount}</p>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Hot</p>
+                    <p className="text-lg font-bold text-foreground">{hotCount}</p>
+                    <p className="metric-label">Hot</p>
                   </div>
                 </>
               )}
