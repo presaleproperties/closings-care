@@ -853,11 +853,26 @@ async function handleSync(
       })
   }
 
-  // Run sync in the background — returns immediately so navigation away won't cancel it
+  // Run sync — try background mode first, fall back to awaiting directly
   // @ts-ignore
-  EdgeRuntime.waitUntil(syncPromise.catch((err) => console.error('Background sync error:', err)))
+  if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(syncPromise.catch((err) => console.error('Background sync error:', err)))
+    return new Response(JSON.stringify({ success: true, message: 'Sync started in background' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
 
-  return new Response(JSON.stringify({ success: true, message: 'Sync started in background' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+  // Fallback: await directly (sync completes before response)
+  try {
+    const result = await syncPromise
+    return new Response(JSON.stringify({ success: true, ...result }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Sync failed'
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
 }
