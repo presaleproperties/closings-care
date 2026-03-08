@@ -1,59 +1,43 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Building2,
-  Wallet, 
-  Receipt, 
-  TrendingUp,
-  BarChart3,
-  Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Shield,
-  Network,
-  Users
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logoMark from '@/assets/logo-mark.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface NavSection {
   label: string;
-  items: { icon: any; label: string; path: string }[];
+  items: { label: string; path: string; short?: string }[];
 }
 
 const navSections: NavSection[] = [
   {
     label: 'Production',
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-      { icon: Users, label: 'Pipeline', path: '/pipeline' },
-      { icon: Building2, label: 'Deals', path: '/deals' },
-      { icon: Wallet, label: 'Payouts', path: '/payouts' },
-      { icon: Receipt, label: 'Expenses', path: '/expenses' },
-      { icon: TrendingUp, label: 'Forecast', path: '/forecast' },
-      { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+      { label: 'Dashboard', path: '/dashboard', short: 'D' },
+      { label: 'Pipeline', path: '/pipeline', short: 'P' },
+      { label: 'Deals', path: '/deals', short: 'De' },
+      { label: 'Payouts', path: '/payouts', short: 'Pa' },
+      { label: 'Expenses', path: '/expenses', short: 'Ex' },
+      { label: 'Forecast', path: '/forecast', short: 'F' },
+      { label: 'Analytics', path: '/analytics', short: 'An' },
     ],
   },
   {
     label: 'Network',
     items: [
-      { icon: Network, label: 'Network', path: '/network' },
+      { label: 'Network', path: '/network', short: 'N' },
     ],
   },
 ];
 
 const standaloneItems = [
-  { icon: Settings, label: 'Settings', path: '/settings' },
+  { label: 'Settings', path: '/settings', short: 'S' },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
-
 const SECTION_COLLAPSED_KEY = 'sidebar-sections';
 
 export function Sidebar() {
@@ -79,237 +63,187 @@ export function Sidebar() {
     localStorage.setItem(SECTION_COLLAPSED_KEY, JSON.stringify(collapsedSections));
   }, [collapsedSections]);
 
-  const toggleSection = (label: string) => {
-    setCollapsedSections(prev => ({ ...prev, [label]: !prev[label] }));
-  };
-
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <aside 
+    <aside
       className={cn(
         "hidden lg:flex flex-col h-screen fixed left-0 top-0 transition-all duration-300 ease-in-out z-40",
-        isCollapsed ? "w-[68px]" : "w-60"
+        isCollapsed ? "w-[56px]" : "w-56"
       )}
     >
-      {/* Premium dark sidebar background */}
-      <div 
-        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
+      {/* Background */}
+      <div
+        className="absolute inset-0"
         style={{
           background: 'hsl(var(--sidebar-background))',
-          boxShadow: '1px 0 0 0 hsl(var(--sidebar-border)), 4px 0 24px -4px hsl(var(--sidebar-border) / 0.4)',
+          boxShadow: '1px 0 0 0 hsl(var(--sidebar-border))',
         }}
       />
-      {/* Right edge — subtle gradient separator */}
-      <div className="absolute inset-y-0 right-0 w-px" style={{ background: 'linear-gradient(180deg, transparent, hsl(var(--sidebar-border) / 0.8) 20%, hsl(var(--sidebar-border) / 0.8) 80%, transparent)' }} />
 
       {/* Logo */}
-      <div className="relative px-4 py-4 border-b" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
+      <div className="relative px-3.5 pt-5 pb-4 flex items-center gap-2.5">
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="relative flex-shrink-0">
-            <img 
-              src={logoMark} 
-              alt="Dealzflow" 
-              className="w-8 h-8 rounded-[10px] transition-all duration-200 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 rounded-[10px] transition-opacity duration-200 opacity-0 group-hover:opacity-100" style={{ boxShadow: '0 0 16px 2px hsl(158 72% 46% / 0.4)' }} />
-          </div>
-          <div className={cn(
-            "overflow-hidden transition-all duration-300",
+          <img
+            src={logoMark}
+            alt="CommissionIQ"
+            className="w-7 h-7 rounded-lg flex-shrink-0 transition-opacity duration-200 group-hover:opacity-80"
+          />
+          <span className={cn(
+            "transition-all duration-300 overflow-hidden font-semibold text-[14px] tracking-[-0.02em] whitespace-nowrap",
+            "text-sidebar-foreground/90",
             isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
           )}>
-            <h1 className="font-bold text-sidebar-foreground text-[15px] leading-tight tracking-[-0.02em] whitespace-nowrap">
-              dealz<span style={{ color: 'hsl(var(--sidebar-primary))' }}>flow</span>
-            </h1>
-          </div>
+            Commission<span style={{ color: 'hsl(var(--sidebar-primary))' }}>IQ</span>
+          </span>
         </Link>
       </div>
 
       {/* Collapse toggle */}
       <button
         onClick={toggleCollapse}
-        className="absolute -right-3 top-[62px] w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground bg-background border border-border/40 shadow-sm transition-all duration-200 z-10"
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="absolute -right-3 top-[52px] w-5.5 h-5.5 w-5 h-5 rounded-full flex items-center justify-center bg-sidebar-background border border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground transition-all duration-200 z-10"
+        aria-label={isCollapsed ? "Expand" : "Collapse"}
       >
-        {isCollapsed ? (
-          <ChevronRight className="w-3 h-3" />
-        ) : (
-          <ChevronLeft className="w-3 h-3" />
-        )}
+        {isCollapsed ? <ChevronRight className="w-2.5 h-2.5" /> : <ChevronLeft className="w-2.5 h-2.5" />}
       </button>
 
       {/* Navigation */}
-      <nav className="relative flex-1 px-2.5 py-2 space-y-0.5 overflow-y-auto">
+      <nav className="relative flex-1 px-2 py-1 space-y-0.5 overflow-y-auto">
         {navSections.map((section) => {
-          const isSectionCollapsed = collapsedSections[section.label] ?? false;
-          const hasActiveItem = section.items.some(item => 
-            location.pathname === item.path || 
-            (item.path !== '/dashboard' && location.pathname.startsWith(item.path))
-          );
-
           return (
-            <div key={section.label}>
-              {/* Section header */}
-              {!isCollapsed ? (
-                <button
-                  onClick={() => toggleSection(section.label)}
-                  className={cn(
-                    "flex items-center justify-between w-full px-2.5 py-1.5 text-[11px] font-medium tracking-tight transition-colors duration-200",
-                    hasActiveItem ? "text-sidebar-primary" : "text-muted-foreground/50 hover:text-muted-foreground/70"
-                  )}
-                >
+            <div key={section.label} className="mb-3">
+              {!isCollapsed && (
+                <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/30">
                   {section.label}
-                  <ChevronDown className={cn(
-                    "w-3 h-3 transition-transform duration-200",
-                    isSectionCollapsed && "-rotate-90"
-                  )} />
-                </button>
-              ) : (
-                <div className="border-t border-sidebar-border/20 my-1.5 mx-2" />
+                </div>
               )}
+              {isCollapsed && <div className="border-t border-sidebar-border/40 mx-2 my-2" />}
 
-              {/* Section items */}
-              <div className={cn(
-                "space-y-0.5 overflow-hidden transition-all duration-200",
-                !isCollapsed && isSectionCollapsed && "max-h-0 opacity-0",
-                !isCollapsed && !isSectionCollapsed && "max-h-[500px] opacity-100",
-                isCollapsed && "max-h-[500px] opacity-100"
-              )}>
+              <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = location.pathname === item.path || 
+                  const isActive = location.pathname === item.path ||
                     (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
-                  
-                  const linkContent = (
+
+                  const linkEl = (
                     <Link
                       key={item.path}
                       to={item.path}
                       className={cn(
-                        'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 relative',
+                        'relative flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150',
                         isCollapsed && 'justify-center px-0',
-                        isActive 
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
-                          : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/70'
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/60'
                       )}
                     >
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-sidebar-primary" />
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-sidebar-primary" />
                       )}
-                      <item.icon className={cn(
-                        "w-[18px] h-[18px] transition-all duration-200 flex-shrink-0",
-                        isActive ? "text-sidebar-primary" : "opacity-50"
-                      )} />
-                      <span className={cn(
-                        "transition-all duration-300 whitespace-nowrap",
-                        isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100"
-                      )}>
-                        {item.label}
-                      </span>
+                      {isCollapsed ? (
+                        <span className={cn(
+                          "text-[11px] font-semibold tracking-tight w-6 text-center",
+                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                        )}>
+                          {item.short}
+                        </span>
+                      ) : (
+                        <span>{item.label}</span>
+                      )}
                     </Link>
                   );
 
                   if (isCollapsed) {
                     return (
                       <Tooltip key={item.path} delayDuration={0}>
-                        <TooltipTrigger asChild>
-                          {linkContent}
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="font-medium">
-                          {item.label}
-                        </TooltipContent>
+                        <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                        <TooltipContent side="right" className="font-medium">{item.label}</TooltipContent>
                       </Tooltip>
                     );
                   }
-
-                  return linkContent;
+                  return linkEl;
                 })}
               </div>
             </div>
           );
         })}
 
-        {/* Standalone items (Settings) */}
-        <div className="border-t border-sidebar-border/40 my-1 mx-1" />
+        {/* Separator */}
+        <div className="border-t border-sidebar-border/30 mx-1 my-1" />
+
+        {/* Standalone */}
         {standaloneItems.map((item) => {
-          const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
-          const linkContent = (
+          const isActive = location.pathname.startsWith(item.path);
+          const linkEl = (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-[10px] text-[13px] font-medium transition-all duration-200 relative',
+                'relative flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150',
                 isCollapsed && 'justify-center px-0',
-                isActive 
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
-                  : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/70'
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/50 hover:text-sidebar-foreground/80 hover:bg-sidebar-accent/60'
               )}
             >
               {isActive && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-sidebar-primary" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-sidebar-primary" />
               )}
-              <item.icon className={cn(
-                "w-[18px] h-[18px] transition-all duration-200 flex-shrink-0",
-                isActive ? "text-sidebar-primary" : "opacity-50"
-              )} />
-              <span className={cn(
-                "transition-all duration-300 whitespace-nowrap",
-                isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100"
-              )}>
-                {item.label}
-              </span>
+              {isCollapsed ? (
+                <span className={cn(
+                  "text-[11px] font-semibold tracking-tight w-6 text-center",
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                )}>
+                  {item.short}
+                </span>
+              ) : (
+                <span>{item.label}</span>
+              )}
             </Link>
           );
           if (isCollapsed) {
             return (
               <Tooltip key={item.path} delayDuration={0}>
-                <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">{item.label}</TooltipContent>
               </Tooltip>
             );
           }
-          return linkContent;
+          return linkEl;
         })}
 
-        {/* Admin link - only show for admins */}
+        {/* Admin */}
         {isAdmin && (
           <>
-            <div className={cn(
-              "border-t border-sidebar-border/40 my-2",
-              isCollapsed && "mx-2"
-            )} />
+            <div className="border-t border-sidebar-border/30 mx-1 my-1" />
             {isCollapsed ? (
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Link
                     to="/admin"
                     className={cn(
-                      'flex items-center justify-center py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                      'flex items-center justify-center py-2 rounded-lg text-[11px] font-semibold w-6 mx-auto tracking-tight transition-all duration-150',
                       location.pathname === '/admin'
-                        ? 'bg-warning/15 text-warning' 
-                        : 'text-warning/50 hover:text-warning hover:bg-warning/10'
+                        ? 'text-warning bg-warning/10'
+                        : 'text-warning/40 hover:text-warning hover:bg-warning/8'
                     )}
                   >
-                    <Shield className="w-[18px] h-[18px]" />
+                    A
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
-                  Admin Dashboard
-                </TooltipContent>
+                <TooltipContent side="right" className="font-medium">Admin</TooltipContent>
               </Tooltip>
             ) : (
               <Link
                 to="/admin"
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative',
+                  'flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150',
                   location.pathname === '/admin'
-                    ? 'bg-warning/15 text-warning' 
-                    : 'text-warning/50 hover:text-warning hover:bg-warning/10'
+                    ? 'bg-warning/10 text-warning'
+                    : 'text-warning/40 hover:text-warning hover:bg-warning/8'
                 )}
               >
-                <Shield className="w-[18px] h-[18px]" />
-                <span>Admin</span>
-                {location.pathname === '/admin' && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-warning" />
-                )}
+                Admin
               </Link>
             )}
           </>
@@ -317,28 +251,25 @@ export function Sidebar() {
       </nav>
 
       {/* Sign out */}
-      <div className="relative px-2.5 py-2.5 border-t" style={{ borderColor: 'hsl(var(--sidebar-border))' }}>
+      <div className="relative px-2 py-3 border-t border-sidebar-border/40">
         {isCollapsed ? (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
                 onClick={signOut}
-                className="flex items-center justify-center w-full py-2 rounded-[10px] text-[13px] font-medium text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/15 transition-all duration-200"
+                className="flex items-center justify-center w-full py-1.5 rounded-lg text-[11px] font-semibold tracking-tight text-sidebar-foreground/25 hover:text-destructive/70 hover:bg-destructive/8 transition-all duration-150"
               >
-                <LogOut className="w-[18px] h-[18px]" />
+                ↑
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="font-medium">
-              Sign Out
-            </TooltipContent>
+            <TooltipContent side="right" className="font-medium">Sign Out</TooltipContent>
           </Tooltip>
         ) : (
           <button
             onClick={signOut}
-            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[10px] text-[13px] font-medium text-sidebar-foreground/40 hover:text-destructive hover:bg-destructive/15 transition-all duration-200"
+            className="flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] font-medium text-sidebar-foreground/30 hover:text-destructive/80 hover:bg-destructive/8 transition-all duration-150"
           >
-            <LogOut className="w-[18px] h-[18px]" />
-            <span>Sign Out</span>
+            Sign out
           </button>
         )}
       </div>
@@ -357,13 +288,9 @@ export function useSidebarCollapsed() {
       const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
       setIsCollapsed(saved === 'true');
     };
-    
     window.addEventListener('storage', handleStorage);
-    
-    // Also listen for custom event for same-tab updates
     const handleCustomEvent = () => handleStorage();
     window.addEventListener('sidebar-toggle', handleCustomEvent);
-    
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('sidebar-toggle', handleCustomEvent);

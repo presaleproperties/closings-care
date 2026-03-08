@@ -18,7 +18,6 @@ import { TaxProjection } from '@/components/dashboard/TaxProjection';
 import { TaxSafetyCard } from '@/components/dashboard/TaxSafetyCard';
 import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { ExpenseCommandCenter } from '@/components/dashboard/ExpenseCommandCenter';
-
 import { AIBusinessInsights } from '@/components/dashboard/AIBusinessInsights';
 import { PipelinePreview } from '@/components/dashboard/PipelinePreview';
 import { EmptyDashboard } from '@/components/dashboard/EmptyDashboard';
@@ -29,7 +28,7 @@ import { NeedsAttention } from '@/components/dashboard/NeedsAttention';
 import { RevShareSummaryCard } from '@/components/dashboard/RevShareSummaryCard';
 import { BusinessAnalytics } from '@/components/dashboard/BusinessAnalytics';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calculator, TrendingUp, BarChart3, Lightbulb, Plus, Receipt, RefreshCw, Plug, ArrowRight } from 'lucide-react';
+import { RefreshCw, Plug, ArrowRight, Sparkles } from 'lucide-react';
 import { getMonthlyRecurringExpenses, getAnnualExpenses } from '@/lib/expenseCalculations';
 import { useSyncedTransactions, useRevenueShare, usePlatformConnections, useSyncPlatform } from '@/hooks/usePlatformConnections';
 import { useSyncedIncome } from '@/hooks/useSyncedIncome';
@@ -38,7 +37,6 @@ import { calculateTax, Province, TaxType } from '@/lib/taxCalculator';
 import { GCIGoalTracker } from '@/components/dashboard/GCIGoalTracker';
 import { DealsWrittenCard } from '@/components/dashboard/DealsWrittenCard';
 import { NotificationCenter } from '@/components/dashboard/NotificationCenter';
-import { Sparkles } from 'lucide-react';
 
 export default function DashboardPage() {
   const { data: expenses = [] } = useExpenses();
@@ -66,7 +64,7 @@ export default function DashboardPage() {
       setIsSyncing(false);
     }
   };
-  
+
   const userName = (settings as any)?.full_name?.split(' ')[0] || undefined;
   const now = new Date();
   const thisYear = now.getFullYear();
@@ -107,7 +105,7 @@ export default function DashboardPage() {
 
   const dealCounts = useMemo(() => {
     const active = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
-    const closedYTD = syncedTransactions.filter((tx: any) => 
+    const closedYTD = syncedTransactions.filter((tx: any) =>
       tx.status === 'closed' && tx.close_date && new Date(tx.close_date).getFullYear() === thisYear
     ).length;
     return { active, closedYTD };
@@ -145,7 +143,7 @@ export default function DashboardPage() {
       <AppLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+            <Sparkles className="h-5 w-5 text-primary animate-pulse" />
             <p className="text-muted-foreground text-sm">Loading...</p>
           </div>
         </div>
@@ -153,8 +151,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Show EmptyDashboard only when there is no connection AND no synced data.
-  // If a connection exists (even mid-first-sync), show the full dashboard + inline banner.
   const hasConnection = connections.length > 0;
   const isEmpty = !hasConnection && syncedTransactions.length === 0;
   const activePipeline = pipelineProspects.filter(p => p.status === 'active');
@@ -177,47 +173,48 @@ export default function DashboardPage() {
     revShareMonthlyAvg,
   };
 
+  const tabTriggerClass = "text-[13px] font-semibold px-4 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground/70";
+
   return (
     <AppLayout>
       <OnboardingWizard open={showOnboarding} onComplete={completeOnboarding} />
-      
+
       <Header
-        title="Dashboard" 
+        title="Dashboard"
         subtitle={format(now, 'EEEE, MMMM d, yyyy')}
         showAddDeal={false}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <NotificationCenter syncedTransactions={syncedTransactions} pipelineProspects={pipelineProspects} />
             {activeConnection && (
               <button
                 onClick={handleResync}
                 disabled={isSyncing}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
-                  "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50",
-                  isSyncing && "opacity-60 pointer-events-none"
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 active:scale-[0.97]",
+                  "bg-secondary/60 text-secondary-foreground hover:bg-secondary border border-border/40",
+                  isSyncing && "opacity-50 pointer-events-none"
                 )}
               >
-                <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
-                {isSyncing ? 'Syncing...' : 'Resync'}
+                <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
+                {isSyncing ? 'Syncing...' : 'Sync'}
               </button>
             )}
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5">
               {[
-                { icon: Plus, label: 'New Deal', path: '/deals/new', primary: true },
-                { icon: Receipt, label: 'Add Expense', path: '/expenses' },
-                { icon: TrendingUp, label: 'View Forecast', path: '/forecast' },
+                { label: 'New Deal', path: '/deals/new', primary: true },
+                { label: 'Expenses', path: '/expenses' },
+                { label: 'Forecast', path: '/forecast' },
               ].map((action) => (
                 <Link key={action.path} to={action.path}>
                   <button
                     className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
-                      action.primary 
-                        ? "btn-premium" 
-                        : "bg-secondary/80 text-secondary-foreground hover:bg-secondary border border-border/50"
+                      "inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-200 active:scale-[0.97]",
+                      action.primary
+                        ? "btn-premium"
+                        : "bg-secondary/60 text-secondary-foreground hover:bg-secondary border border-border/40"
                     )}
                   >
-                    <action.icon className="h-3.5 w-3.5" />
                     {action.label}
                   </button>
                 </Link>
@@ -231,19 +228,17 @@ export default function DashboardPage() {
         <EmptyDashboard />
       ) : (
         <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
-          {/* ReZen connect banner — shown when user has no active connection */}
+          {/* Connect banner */}
           {connections.length === 0 && (
             <div className="px-4 lg:px-6 pt-4">
               <Link to="/settings?tab=integrations">
-                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/8 border border-primary/20 hover:bg-primary/12 transition-colors cursor-pointer">
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                    <Plug className="w-4 h-4 text-primary" />
-                  </div>
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-primary/6 border border-primary/15 hover:bg-primary/10 transition-colors cursor-pointer">
+                  <Plug className="w-3.5 h-3.5 text-primary shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">Connect ReZen to auto-sync your deals</p>
-                    <p className="text-xs text-muted-foreground">Go to Settings → Integrations to add your API key</p>
+                    <p className="text-[13px] font-semibold">Connect ReZen to auto-sync your deals</p>
+                    <p className="text-[11px] text-muted-foreground">Settings → Integrations</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
                 </div>
               </Link>
             </div>
@@ -252,8 +247,8 @@ export default function DashboardPage() {
           {/* Mobile Dashboard */}
           <div className="sm:hidden">
             <div className="px-5 pt-3 pb-3">
-              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">{format(now, 'EEEE, MMMM d')}</p>
-              <h1 className="text-[22px] font-bold tracking-tight mt-0.5 text-foreground">Dashboard</h1>
+              <p className="text-[10px] font-semibold text-muted-foreground/45 uppercase tracking-widest">{format(now, 'EEEE, MMMM d')}</p>
+              <h1 className="text-[20px] font-bold tracking-[-0.03em] mt-0.5 text-foreground">Dashboard</h1>
             </div>
 
             <div className="px-5 mb-3">
@@ -301,12 +296,12 @@ export default function DashboardPage() {
                   monthlyExpenses={expenseTotals.monthly}
                   taxSetAsideRequired={taxSetAsideRequired}
                 />
-                <TaxSafetyCard 
+                <TaxSafetyCard
                   paidIncome={incomeTotals.paid}
                   projectedIncome={incomeTotals.projected}
                   deductibleExpenses={expenseTotals.annual}
                 />
-                <TaxProjection 
+                <TaxProjection
                   projectedIncome={incomeTotals.projected}
                   paidIncome={incomeTotals.paid}
                   totalExpenses={expenseTotals.annual}
@@ -325,26 +320,14 @@ export default function DashboardPage() {
           {/* Desktop Layout */}
           <div className="hidden sm:block p-5 md:p-6 lg:p-6 space-y-5">
             <QuickStats {...quickStatsProps} />
-
             <GCIGoalTracker {...goalTrackerProps} />
+
             <Tabs defaultValue="insights" className="space-y-5">
               <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/40 rounded-xl border border-border/30">
-                <TabsTrigger value="insights" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                  <Lightbulb className="h-3 w-3" />
-                  Insights
-                </TabsTrigger>
-                <TabsTrigger value="cashflow" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                  <TrendingUp className="h-3 w-3" />
-                  Cashflow
-                </TabsTrigger>
-                <TabsTrigger value="taxes" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                  <Calculator className="h-3 w-3" />
-                  Taxes
-                </TabsTrigger>
-                <TabsTrigger value="analytics" className="text-[13px] font-semibold gap-1.5 px-3.5 rounded-[10px] tracking-tight data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm text-muted-foreground">
-                  <BarChart3 className="h-3 w-3" />
-                  Analytics
-                </TabsTrigger>
+                <TabsTrigger value="insights" className={tabTriggerClass}>Insights</TabsTrigger>
+                <TabsTrigger value="cashflow" className={tabTriggerClass}>Cashflow</TabsTrigger>
+                <TabsTrigger value="taxes" className={tabTriggerClass}>Taxes</TabsTrigger>
+                <TabsTrigger value="analytics" className={tabTriggerClass}>Analytics</TabsTrigger>
               </TabsList>
 
               {/* Insights Tab */}
@@ -356,22 +339,18 @@ export default function DashboardPage() {
                   receivedYTD={receivedYTD}
                   revShareMonthlyAvg={revShareMonthlyAvg}
                 />
-
                 <PipelinePreview layout="horizontal" />
-
                 <div className="grid lg:grid-cols-2 gap-4 items-start">
                   <UpcomingRevenue syncedTransactions={syncedTransactions} />
                   <NeedsAttention syncedTransactions={syncedTransactions} />
                 </div>
-
                 <RevShareSummaryCard revenueShare={revenueShare} />
               </TabsContent>
 
               {/* Cashflow Tab */}
               <TabsContent value="cashflow" className="mt-0 space-y-5">
                 <IncomeProjection payouts={[]} expenses={expenses} revShareMonthlyAvg={revShareMonthlyAvg} properties={properties} syncedPayouts={syncedPayouts} />
-
-                <ExpenseCommandCenter 
+                <ExpenseCommandCenter
                   expenses={expenses}
                   properties={properties}
                   monthlyExpenses={expenseTotals.monthly}
@@ -387,13 +366,13 @@ export default function DashboardPage() {
                     monthlyExpenses={expenseTotals.monthly}
                     taxSetAsideRequired={taxSetAsideRequired}
                   />
-                  <TaxSafetyCard 
+                  <TaxSafetyCard
                     paidIncome={incomeTotals.paid}
                     projectedIncome={incomeTotals.projected}
                     deductibleExpenses={expenseTotals.annual}
                   />
                 </div>
-                <TaxProjection 
+                <TaxProjection
                   projectedIncome={incomeTotals.projected}
                   paidIncome={incomeTotals.paid}
                   totalExpenses={expenseTotals.annual}
