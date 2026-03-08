@@ -85,13 +85,13 @@ export default {
         sm: "0.375rem",
       },
         boxShadow: {
-          'ios': '0 0 0 1px hsl(var(--border) / 0.3), 0 2px 4px 0 hsl(220 25% 10% / 0.05), 0 4px 12px -2px hsl(220 25% 10% / 0.08), 0 10px 24px -6px hsl(220 25% 10% / 0.06)',
-          'ios-lg': '0 0 0 1px hsl(var(--border) / 0.25), 0 4px 8px -2px hsl(220 25% 10% / 0.1), 0 16px 32px -8px hsl(220 25% 10% / 0.14), 0 24px 48px -10px hsl(220 25% 10% / 0.1)',
-          'ios-xl': '0 0 0 1px hsl(var(--border) / 0.2), 0 8px 20px -4px hsl(220 25% 10% / 0.12), 0 24px 48px -12px hsl(220 25% 10% / 0.18), 0 40px 80px -16px hsl(220 25% 10% / 0.14)',
-          'premium': 'inset 0 1px 0 0 rgba(255,255,255,0.2), 0 4px 16px -2px hsl(158 70% 28% / 0.4), 0 16px 36px -8px hsl(158 70% 28% / 0.25)',
-          'premium-lg': 'inset 0 1px 0 0 rgba(255,255,255,0.25), 0 8px 24px -4px hsl(158 70% 28% / 0.45), 0 24px 48px -10px hsl(158 70% 28% / 0.3)',
-          'glow-primary': '0 0 32px -6px hsl(158 70% 34% / 0.5)',
-          'glow-accent': '0 0 32px -6px hsl(217 91% 50% / 0.45)',
+          'ios': '0 0 0 1px hsl(var(--border) / 0.4), 0 1px 2px 0 hsl(220 15% 8% / 0.04), 0 4px 12px -2px hsl(220 15% 8% / 0.07), 0 10px 24px -6px hsl(220 15% 8% / 0.05)',
+          'ios-lg': '0 0 0 1px hsl(var(--border) / 0.3), 0 4px 8px -2px hsl(220 15% 8% / 0.08), 0 16px 32px -8px hsl(220 15% 8% / 0.12), 0 24px 48px -10px hsl(220 15% 8% / 0.08)',
+          'ios-xl': '0 0 0 1px hsl(var(--border) / 0.25), 0 8px 20px -4px hsl(220 15% 8% / 0.1), 0 24px 48px -12px hsl(220 15% 8% / 0.15), 0 40px 80px -16px hsl(220 15% 8% / 0.1)',
+          'premium': 'inset 0 1px 0 0 rgba(255,255,255,0.18), 0 4px 16px -2px hsl(158 42% 20% / 0.3), 0 16px 36px -8px hsl(158 42% 20% / 0.18)',
+          'premium-lg': 'inset 0 1px 0 0 rgba(255,255,255,0.22), 0 8px 24px -4px hsl(158 42% 20% / 0.35), 0 24px 48px -10px hsl(158 42% 20% / 0.22)',
+          'glow-primary': '0 0 32px -6px hsl(158 42% 34% / 0.35)',
+          'glow-accent': '0 0 32px -6px hsl(220 60% 50% / 0.35)',
         },
       keyframes: {
         "accordion-down": {
