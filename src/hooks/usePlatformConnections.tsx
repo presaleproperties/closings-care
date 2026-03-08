@@ -227,14 +227,17 @@ function stopSyncPolling() {
 function startSyncPolling(connectionId: string) {
   stopSyncPolling();
   let attempts = 0;
-  const MAX_ATTEMPTS = 60; // 5 minutes max (60 × 5s)
+  const MAX_ATTEMPTS = 72; // 6 minutes max (72 × 5s)
+  // Track when syncing state started to detect stuck syncs
+  const syncStartedAt = Date.now();
+  const STUCK_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
   _syncPollingInterval = setInterval(async () => {
     attempts++;
     try {
       const { data } = await (supabase as any)
         .from('platform_connections')
-        .select('sync_status, sync_error, last_synced_at')
+        .select('sync_status, sync_error, last_synced_at, updated_at')
         .eq('id', connectionId)
         .single();
 
@@ -253,6 +256,18 @@ function startSyncPolling(connectionId: string) {
           _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
         }
         toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
+      } else if (data?.sync_status === 'syncing' && Date.now() - syncStartedAt > STUCK_THRESHOLD_MS) {
+        // Sync has been running too long — reset stuck state in DB and notify user
+        stopSyncPolling();
+        await (supabase as any)
+          .from('platform_connections')
+          .update({ sync_status: 'idle', sync_error: 'Sync timed out. Please try again.' })
+          .eq('id', connectionId);
+        if (_syncQueryClient) {
+          _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
+          _syncQueryClient.invalidateQueries({ queryKey: ['sync_logs'] });
+        }
+        toast.error('Sync timed out. Your data may be partially updated — please sync again.', { duration: 8000 });
       } else if (attempts >= MAX_ATTEMPTS) {
         stopSyncPolling();
         toast.warning('Sync is taking longer than expected. Check back soon.');
