@@ -51,15 +51,15 @@
 
     --radius: 0.75rem;
 
-    /* Sidebar — deep navy/charcoal in light, ultra-dark in dark */
-    --sidebar-background: 222 30% 10%;
-    --sidebar-foreground: 220 20% 82%;
-    --sidebar-primary: 158 72% 46%;
+    /* Sidebar — clean light in light mode */
+    --sidebar-background: 210 20% 97%;
+    --sidebar-foreground: 222 25% 18%;
+    --sidebar-primary: 158 70% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 28% 16%;
-    --sidebar-accent-foreground: 220 18% 90%;
-    --sidebar-border: 222 22% 18%;
-    --sidebar-ring: 158 72% 46%;
+    --sidebar-accent: 220 16% 91%;
+    --sidebar-accent-foreground: 222 25% 12%;
+    --sidebar-border: 220 16% 86%;
+    --sidebar-ring: 158 70% 28%;
 
     /* Charts */
     --chart-1: 158 70% 34%;
