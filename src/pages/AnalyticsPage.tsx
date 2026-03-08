@@ -729,10 +729,7 @@ export default function AnalyticsPage() {
 
                 {/* YoY Comparison Chart */}
                 <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
-                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5 mb-1">
-                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                    RevShare by Month
-                  </h3>
+                  <h3 className="text-sm font-semibold text-foreground mb-0.5">RevShare by Month</h3>
                   <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">Year-over-year comparison</p>
                   <div className="h-56 sm:h-72">
                     <ResponsiveContainer width="100%" height="100%">
