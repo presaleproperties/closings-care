@@ -324,7 +324,7 @@ export default function AdminPage() {
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Deals</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">GCI Goal</th>
-                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Plan</th>
+                     <th className="text-center p-3 text-xs font-medium text-muted-foreground">Change Plan</th>
                      <th className="text-center p-3 text-xs font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
