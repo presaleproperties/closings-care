@@ -292,11 +292,10 @@ export default function DealsPage() {
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        <tab.icon className="h-3.5 w-3.5" />
                         <span>{tab.label}</span>
                         <span className={cn(
-                          "text-[10px] font-bold ml-0.5 min-w-[18px] text-center",
-                          isActive ? "text-primary" : "text-muted-foreground/60"
+                          "text-[10px] font-bold ml-0.5 min-w-[16px] text-center",
+                          isActive ? "text-primary" : "text-muted-foreground/50"
                         )}>
                           {tabCounts[tab.key]}
                         </span>
