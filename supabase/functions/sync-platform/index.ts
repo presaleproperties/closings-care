@@ -200,10 +200,18 @@ function buildTransactionRecord(tx: any, userId: string, agentName: string, yent
 
 // ─── Sync Real Broker ─────────────────────────────────────────────────────────
 
+// Helper: write current sync step into sync_error as a JSON marker (overwritten on real error)
+async function setSyncStep(supabase: any, connectionId: string, step: string, label: string) {
+  await supabase.from('platform_connections').update({
+    sync_error: JSON.stringify({ __step: step, label }),
+    updated_at: new Date().toISOString(),
+  }).eq('id', connectionId)
+}
+
 async function syncRealBroker(supabase: any, userId: string, apiKey: string, connectionId: string, prefs = { transactions: true, revshare: true, network: true }) {
   // Reset any stale state from a previous run before starting fresh
   await supabase.from('platform_connections').update({
-    sync_status: 'syncing', sync_error: null, last_synced_at: null,
+    sync_status: 'syncing', sync_error: JSON.stringify({ __step: 'identity', label: 'Connecting to ReZen…' }), last_synced_at: null,
   }).eq('id', connectionId)
 
   const { data: syncLog } = await supabase.from('sync_logs').insert({
@@ -224,6 +232,8 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     // 2. Sync transactions - multiple lifecycle groups
     if (!prefs.transactions) {
       console.log('[ReZen] Skipping transactions (disabled by user preferences)')
+    } else {
+      await setSyncStep(supabase, connectionId, 'transactions', 'Fetching transactions…')
     }
     for (const group of ['OPEN', 'CLOSED'].filter(() => prefs.transactions)) {
       try {
@@ -329,6 +339,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
 
     // 3. Sync revenue share payments (AFTER listings - don't block listings with slow revshare calls)
     if (prefs.revshare) {
+    await setSyncStep(supabase, connectionId, 'revshare', 'Fetching revenue share…')
     try {
       console.log('[ReZen] Fetching revshare payments...')
       const rsData = await rezenGet(ARRAKIS,
@@ -491,6 +502,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
 
     // 6. Sync front-line agents (Tier 1 network) — now with avatar + network_size
     if (prefs.network) {
+    await setSyncStep(supabase, connectionId, 'network', 'Fetching network & downline…')
     try {
       console.log('[ReZen] Fetching frontline agents...')
       const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
@@ -605,7 +617,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
     }
     } // end if (prefs.network)
 
-    // Update connection status
+    // Update connection status — clear step marker on success
     await supabase.from('platform_connections').update({
       sync_status: 'success',
       last_synced_at: new Date().toISOString(),

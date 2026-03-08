@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -217,6 +218,21 @@ export function useDeleteConnection() {
 let _syncPollingInterval: ReturnType<typeof setInterval> | null = null;
 let _syncQueryClient: any = null;
 
+// Module-level sync step state — shared across components
+type SyncStep = { __step: string; label: string } | null;
+let _syncStep: SyncStep = null;
+const _syncStepListeners = new Set<(step: SyncStep) => void>();
+
+export function useSyncStep(): SyncStep {
+  const [step, setStep] = useState<SyncStep>(_syncStep);
+  useEffect(() => {
+    const handler = (s: SyncStep) => setStep(s);
+    _syncStepListeners.add(handler);
+    return () => { _syncStepListeners.delete(handler); };
+  }, []);
+  return step;
+}
+
 function stopSyncPolling() {
   if (_syncPollingInterval) {
     clearInterval(_syncPollingInterval);
@@ -241,7 +257,21 @@ function startSyncPolling(connectionId: string) {
         .eq('id', connectionId)
         .single();
 
+      // Broadcast step updates so the UI can react without a full query invalidation
+      if (data?.sync_status === 'syncing' && data?.sync_error) {
+        try {
+          const stepInfo = JSON.parse(data.sync_error);
+          if (stepInfo?.__step) {
+            // Emit to global sync step store
+            _syncStep = stepInfo;
+            _syncStepListeners.forEach(fn => fn({ ...stepInfo }));
+          }
+        } catch {}
+      }
+
       if (data?.sync_status === 'success') {
+        _syncStep = null;
+        _syncStepListeners.forEach(fn => fn(null));
         stopSyncPolling();
         if (_syncQueryClient) {
           _syncQueryClient.invalidateQueries({ queryKey: ['synced_transactions'] });
@@ -251,11 +281,16 @@ function startSyncPolling(connectionId: string) {
         }
         toast.success('Sync complete! Your data is up to date.');
       } else if (data?.sync_status === 'error') {
+        _syncStep = null;
+        _syncStepListeners.forEach(fn => fn(null));
         stopSyncPolling();
         if (_syncQueryClient) {
           _syncQueryClient.invalidateQueries({ queryKey: ['platform_connections'] });
         }
-        toast.error(`Sync failed: ${data.sync_error || 'Unknown error'}`);
+        // Don't show step-marker JSON as an error message
+        let errMsg = data.sync_error || 'Unknown error';
+        try { const p = JSON.parse(errMsg); if (p?.__step) errMsg = 'Sync failed unexpectedly.'; } catch {}
+        toast.error(`Sync failed: ${errMsg}`);
       } else if (data?.sync_status === 'syncing' && Date.now() - syncStartedAt > STUCK_THRESHOLD_MS) {
         // Sync has been running too long — reset stuck state in DB and notify user
         stopSyncPolling();
