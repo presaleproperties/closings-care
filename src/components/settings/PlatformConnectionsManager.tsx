@@ -383,13 +383,13 @@ function ConnectionCard({ connection, prefs }: { connection: PlatformConnection;
           ) : platformInfo?.hasApi && (
             <Button
               size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 text-xs px-2.5"
+              variant={isStuckSyncing ? "outline" : "outline"}
+              className={`h-7 gap-1.5 text-xs px-2.5 ${isStuckSyncing ? 'border-amber-500/40 text-amber-600 hover:text-amber-700' : ''}`}
               onClick={() => syncPlatform.mutate({ platform: connection.platform, connectionId: connection.id })}
               disabled={isSyncing}
             >
               <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Syncing…' : 'Sync'}
+              {isSyncing ? 'Syncing…' : isStuckSyncing ? 'Retry Sync' : 'Sync'}
             </Button>
           )}
           <Button
