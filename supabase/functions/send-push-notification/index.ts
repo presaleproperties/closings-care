@@ -34,10 +34,22 @@ async function makeVapidJwt(vapidPrivateKeyB64: string, audience: string): Promi
   const encPayload = toBase64url(encoder.encode(JSON.stringify(payload)));
   const signingInput = `${encHeader}.${encPayload}`;
 
-  const privateKeyBytes = fromBase64url(vapidPrivateKeyB64);
+  // vapidPrivateKeyB64 is a raw 32-byte P-256 scalar — wrap it in PKCS#8
+  const rawPrivateKey = new Uint8Array(fromBase64url(vapidPrivateKeyB64));
+  const pkcs8Header = new Uint8Array([
+    0x30, 0x41, 0x02, 0x01, 0x00, 0x30, 0x13, 0x06,
+    0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
+    0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03,
+    0x01, 0x07, 0x04, 0x27, 0x30, 0x25, 0x02, 0x01,
+    0x01, 0x04, 0x20,
+  ]);
+  const pkcs8 = new Uint8Array(pkcs8Header.length + 32);
+  pkcs8.set(pkcs8Header);
+  pkcs8.set(rawPrivateKey, pkcs8Header.length);
+
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
-    privateKeyBytes,
+    pkcs8.buffer,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
