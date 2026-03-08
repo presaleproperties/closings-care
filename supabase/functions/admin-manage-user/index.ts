@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const ALLOWED_ORIGINS = [
-  "https://commissioniq.lovable.app",
+  "https://dealzflow.lovable.app",
   "https://4a1d5535-c719-4b90-8789-4be05903a331.lovableproject.com",
   "https://id-preview--4a1d5535-c719-4b90-8789-4be05903a331.lovable.app",
 ];
@@ -101,7 +101,7 @@ serve(async (req) => {
       if (!authUserData?.user?.email) throw new Error("Could not find user email");
       const { error: resetError } = await supabaseAdmin.auth.resetPasswordForEmail(
         authUserData.user.email,
-        { redirectTo: `${req.headers.get("origin") || "https://commissioniq.lovable.app"}/reset-password` }
+        { redirectTo: `${req.headers.get("origin") || "https://dealzflow.lovable.app"}/reset-password` }
       );
       if (resetError) throw new Error(`Failed to send reset email: ${resetError.message}`);
       await writeAuditLog({ email: authUserData.user.email });
