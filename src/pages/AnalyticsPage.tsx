@@ -377,10 +377,7 @@ export default function AnalyticsPage() {
 
               {/* Property Types (Presale vs Resale) */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <Building2 className="w-3.5 h-3.5 text-primary" />
-                  Property Types
-                </h3>
+                <h3 className="metric-label mb-2">Property Types</h3>
                 {presaleResaleData.presale.count + presaleResaleData.resale.count > 0 ? (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
