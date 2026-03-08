@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const ALLOWED_ORIGINS = [
-  "https://commissioniq.lovable.app",
+  "https://dealzflow.lovable.app",
   "https://4a1d5535-c719-4b90-8789-4be05903a331.lovableproject.com",
   "https://id-preview--4a1d5535-c719-4b90-8789-4be05903a331.lovable.app",
 ];

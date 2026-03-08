@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const ALLOWED_ORIGIN = "https://commissioniq.lovable.app";
+const ALLOWED_ORIGIN = "https://dealzflow.lovable.app";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
