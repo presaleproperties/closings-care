@@ -9,18 +9,11 @@ import {
   DollarSign,
   Clock,
   AlertCircle,
-  Building2,
-  Home,
-  TrendingUp,
-  Calendar,
-  CheckCircle2,
   ArrowUpRight,
   Timer,
   Wallet,
   Banknote,
   Sparkles,
-  AlertTriangle,
-  MapPin,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Header } from '@/components/layout/Header';
