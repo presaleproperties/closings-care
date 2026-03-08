@@ -502,6 +502,7 @@ async function syncRealBroker(supabase: any, userId: string, apiKey: string, con
 
     // 6. Sync front-line agents (Tier 1 network) — now with avatar + network_size
     if (prefs.network) {
+    await setSyncStep(supabase, connectionId, 'network', 'Fetching network & downline…')
     try {
       console.log('[ReZen] Fetching frontline agents...')
       const frontLine = await rezenGet(YENTA, `agents/${yentaId}/front-line-agents-info`, apiKey)
