@@ -198,71 +198,46 @@ export default function AnalyticsPage() {
         {/* ── Hero Stats ── */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {/* Total Deals */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-primary/8 to-primary/3 border-primary/15">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-primary/15">
-                <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">All Deals</span>
-            </div>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">All Deals</p>
             <div className="flex items-baseline gap-2">
-              <AnimatedNumber value={metrics.totalDeals} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1} />
+              <AnimatedNumber value={metrics.totalDeals} className="text-xl sm:text-2xl font-bold text-foreground" duration={1} />
               <ChangeIndicator current={metrics.totalDeals} previous={previousMetrics.totalDeals} />
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">
               {metrics.closedDeals} closed · {metrics.activeDeals} pending
             </p>
           </div>
 
           {/* Earned */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border-emerald-500/20">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-emerald-500/20">
-                <DollarSign className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Earned (Closed)</span>
-            </div>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">Earned (Closed)</p>
             <div className="flex items-baseline gap-2">
-              <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-emerald-600" duration={1.2} />
+              <AnimatedNumber value={metrics.closedEffectiveCommission} className="text-xl sm:text-2xl font-bold text-success" duration={1.2} />
               <ChangeIndicator current={metrics.closedEffectiveCommission} previous={previousMetrics.totalGCI} />
             </div>
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">From {metrics.closedDeals} closed deals</p>
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">From {metrics.closedDeals} closed deals</p>
           </div>
 
           {/* Pipeline */}
-          <div className="landing-card p-3 sm:p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-blue-500/20">
-                <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Pending</span>
-            </div>
-            <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{metrics.activeDeals} pending deals</p>
+          <div className="landing-card p-3 sm:p-4">
+            <p className="metric-label mb-2">Pending</p>
+            <AnimatedNumber value={metrics.activeEffectiveCommission} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">{metrics.activeDeals} pending deals</p>
           </div>
 
           {/* Avg Sale Price */}
           <div className="landing-card p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
-                <Building2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Price</span>
-            </div>
-            <AnimatedNumber value={metrics.avgSalePrice} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per transaction</p>
+            <p className="metric-label mb-2">Avg Price</p>
+            <AnimatedNumber value={metrics.avgSalePrice} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Per transaction</p>
           </div>
 
           {/* Avg Commission */}
           <div className="landing-card p-3 sm:p-4">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="p-1 sm:p-1.5 rounded-lg bg-muted">
-                <Target className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Avg Comm.</span>
-            </div>
-            <AnimatedNumber value={metrics.avgCommission} className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground" duration={1.2} />
-            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Per deal (effective)</p>
+            <p className="metric-label mb-2">Avg Comm.</p>
+            <AnimatedNumber value={metrics.avgCommission} className="text-xl sm:text-2xl font-bold text-foreground" duration={1.2} />
+            <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Per deal (effective)</p>
           </div>
         </motion.div>
 
