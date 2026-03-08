@@ -259,11 +259,8 @@ export default function AnalyticsPage() {
             <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4 lg:p-6">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-xs sm:text-sm font-semibold flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                    GCI Trend
-                  </h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">Monthly + cumulative effective commission (all deals)</p>
+                  <h3 className="text-sm font-semibold text-foreground">GCI Trend</h3>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">Monthly + cumulative effective commission (all deals)</p>
                 </div>
               </div>
               <div className="h-52 sm:h-64 lg:h-72">
