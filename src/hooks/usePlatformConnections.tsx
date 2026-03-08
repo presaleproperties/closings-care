@@ -217,6 +217,21 @@ export function useDeleteConnection() {
 let _syncPollingInterval: ReturnType<typeof setInterval> | null = null;
 let _syncQueryClient: any = null;
 
+// Module-level sync step state — shared across components
+type SyncStep = { __step: string; label: string } | null;
+let _syncStep: SyncStep = null;
+const _syncStepListeners = new Set<(step: SyncStep) => void>();
+
+export function useSyncStep(): SyncStep {
+  const [step, setStep] = React.useState<SyncStep>(_syncStep);
+  React.useEffect(() => {
+    const handler = (s: SyncStep) => setStep(s);
+    _syncStepListeners.add(handler);
+    return () => { _syncStepListeners.delete(handler); };
+  }, []);
+  return step;
+}
+
 function stopSyncPolling() {
   if (_syncPollingInterval) {
     clearInterval(_syncPollingInterval);
