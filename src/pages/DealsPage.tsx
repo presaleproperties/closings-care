@@ -2,9 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Building2, Home, MapPin,
-  ArrowUpDown, SlidersHorizontal, X, TrendingUp,
-  DollarSign, BarChart3, Filter, ChevronDown, ChevronRight, AlertTriangle,
+  Plus, Search, X, ChevronDown, ChevronRight, AlertTriangle, ArrowUpDown, SlidersHorizontal, Filter,
 } from 'lucide-react';
 import { format, parseISO, isBefore, isAfter, addDays, startOfDay } from 'date-fns';
 import { AppLayout } from '@/components/layout/AppLayout';
