@@ -45,6 +45,10 @@ export default function SettingsPage() {
   const refreshData = useRefreshData();
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'general');
+  const [zapierWebhookUrl, setZapierWebhookUrl] = useState('');
+  const [notificationPhone, setNotificationPhone] = useState('');
+  const [testSending, setTestSending] = useState(false);
+  const [testSent, setTestSent] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
 
