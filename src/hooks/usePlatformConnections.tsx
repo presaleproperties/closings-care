@@ -224,8 +224,8 @@ let _syncStep: SyncStep = null;
 const _syncStepListeners = new Set<(step: SyncStep) => void>();
 
 export function useSyncStep(): SyncStep {
-  const [step, setStep] = React.useState<SyncStep>(_syncStep);
-  React.useEffect(() => {
+  const [step, setStep] = useState<SyncStep>(_syncStep);
+  useEffect(() => {
     const handler = (s: SyncStep) => setStep(s);
     _syncStepListeners.add(handler);
     return () => { _syncStepListeners.delete(handler); };
