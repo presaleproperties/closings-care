@@ -461,31 +461,24 @@ export default function PayoutsPage() {
           initial="hidden"
           animate="visible"
         >
-           {/* Stats Grid - Collapsible */}
+           {/* Stats Grid */}
            <CollapsibleSection icon={Wallet} title="Overview" badge={`${stats.all.count} payouts`} defaultOpen={true}>
-             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3.5">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {statCards.map((stat, index) => (
                   <motion.div
                     key={stat.label}
-                    className={cn("rounded-xl border p-4 space-y-1.5 transition-colors", stat.tint)}
+                    className="rounded-xl border border-border/50 bg-card p-4 space-y-1"
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, type: 'spring', stiffness: 200, damping: 25 }}
                   >
-                   <div className="flex items-center gap-1.5">
-                      <div className={cn("w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center shrink-0", stat.iconTint)}>
-                        <stat.icon className="h-3 w-3 sm:h-3.5 sm:h-3.5" />
-                      </div>
-                      <span className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wide leading-tight">
-                        {stat.label}
-                      </span>
-                    </div>
+                    <p className="metric-label">{stat.label}</p>
                     <AnimatedNumber
                       value={stat.value}
-                      className={cn("text-lg sm:text-xl lg:text-2xl font-bold tracking-tight", stat.valueColor)}
+                      className={cn("text-xl sm:text-2xl font-bold tracking-tight", stat.valueColor)}
                       duration={0.8}
                     />
-                    <p className="text-[11px] text-muted-foreground leading-tight">
+                    <p className="text-[11px] text-muted-foreground">
                       {stat.count} {stat.count === 1 ? 'payout' : 'payouts'}
                     </p>
                   </motion.div>
