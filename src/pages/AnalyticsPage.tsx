@@ -626,14 +626,14 @@ export default function AnalyticsPage() {
             {/* Team Summary Stats */}
             <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {[
-                { label: 'Solo', value: metrics.soloDeals, color: 'from-emerald-500/8 border-emerald-500/15' },
-                { label: 'Team', value: metrics.teamDeals, color: 'from-blue-500/8 border-blue-500/15' },
-                { label: 'Members', value: teamMemberData.length, color: '' },
-                { label: 'Team Rev', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)), color: 'from-emerald-500/8 border-emerald-500/15' },
+                { label: 'Solo', value: metrics.soloDeals },
+                { label: 'Team', value: metrics.teamDeals },
+                { label: 'Members', value: teamMemberData.length },
+                { label: 'Team Rev', value: formatCurrency(teamMemberData.reduce((s, m) => s + m.userPortion, 0)) },
               ].map(stat => (
-                <div key={stat.label} className={cn("landing-card p-3 sm:p-4 bg-gradient-to-br", stat.color)}>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{stat.label}</span>
-                  <p className="text-lg sm:text-xl font-bold mt-1">{stat.value}</p>
+                <div key={stat.label} className="landing-card p-3 sm:p-4">
+                  <p className="metric-label mb-1">{stat.label}</p>
+                  <p className="text-lg sm:text-xl font-bold">{stat.value}</p>
                 </div>
               ))}
             </motion.div>
