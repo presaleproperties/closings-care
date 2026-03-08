@@ -473,10 +473,7 @@ export default function AnalyticsPage() {
 
               {/* Cities */}
               <motion.div variants={itemVariants} className="landing-card p-3 sm:p-4">
-                <h3 className="text-xs font-semibold flex items-center gap-1.5 mb-2">
-                  <MapPin className="w-3.5 h-3.5 text-primary" />
-                  Cities
-                </h3>
+                <h3 className="metric-label mb-2">Cities</h3>
                 {cityData.length > 0 ? (
                   <div className="space-y-1.5">
                     {cityData.slice(0, 5).map((city, i) => (
