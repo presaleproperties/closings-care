@@ -1,4 +1,3 @@
-import { Banknote, ArrowUpRight, Receipt, Users } from 'lucide-react';
 import { AnimatedCurrency } from '@/components/ui/animated-number';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -17,61 +16,49 @@ interface QuickStatsProps {
 const CARDS = [
   {
     key: 'earned',
-    icon: Banknote,
     label: 'Earned YTD',
-    isPrimary: true,
     valueKey: 'receivedYTD' as const,
     subtitleFn: (p: QuickStatsProps) => `${p.closedDealsYTD} closed deal${p.closedDealsYTD !== 1 ? 's' : ''}`,
-    bg: 'bg-emerald-50/80 dark:bg-emerald-950/20',
-    border: 'border-emerald-200/60 dark:border-emerald-800/30',
-    valueColor: 'text-emerald-900 dark:text-emerald-300',
-    labelColor: 'text-emerald-700/70 dark:text-emerald-400/60',
-    iconBg: 'bg-emerald-500',
-    dotColor: 'bg-emerald-400',
+    accent: 'text-emerald-700 dark:text-emerald-400',
+    dot: 'bg-emerald-500 dark:bg-emerald-400',
+    border: 'border-emerald-200/50 dark:border-emerald-900/40',
+    bg: 'bg-emerald-50/60 dark:bg-emerald-950/15',
+    isPrimary: true,
   },
   {
     key: 'coming',
-    icon: ArrowUpRight,
     label: 'Coming In',
-    isPrimary: false,
     valueKey: 'comingIn' as const,
     subtitleFn: (p: QuickStatsProps) =>
       `${p.activeDeals} pending${p.comingInDateRange ? ' · ' + p.comingInDateRange : ''}`,
-    bg: 'bg-blue-50/80 dark:bg-blue-950/20',
-    border: 'border-blue-200/60 dark:border-blue-800/30',
-    valueColor: 'text-blue-900 dark:text-blue-300',
-    labelColor: 'text-blue-700/70 dark:text-blue-400/60',
-    iconBg: 'bg-blue-500',
-    dotColor: 'bg-blue-400',
+    accent: 'text-blue-700 dark:text-blue-400',
+    dot: 'bg-blue-500 dark:bg-blue-400',
+    border: 'border-blue-200/50 dark:border-blue-900/40',
+    bg: 'bg-blue-50/60 dark:bg-blue-950/15',
+    isPrimary: false,
   },
   {
     key: 'expenses',
-    icon: Receipt,
     label: 'Expenses / mo',
-    isPrimary: false,
     valueKey: 'monthlyExpenses' as const,
     subtitleFn: () => 'Monthly recurring',
-    bg: 'bg-rose-50/80 dark:bg-rose-950/20',
-    border: 'border-rose-200/60 dark:border-rose-800/30',
-    valueColor: 'text-rose-900 dark:text-rose-300',
-    labelColor: 'text-rose-700/70 dark:text-rose-400/60',
-    iconBg: 'bg-rose-500',
-    dotColor: 'bg-rose-400',
+    accent: 'text-rose-700 dark:text-rose-400',
+    dot: 'bg-rose-500 dark:bg-rose-400',
+    border: 'border-rose-200/50 dark:border-rose-900/40',
+    bg: 'bg-rose-50/60 dark:bg-rose-950/15',
+    isPrimary: false,
   },
   {
     key: 'pipeline',
-    icon: Users,
     label: 'Pipeline',
-    isPrimary: false,
     valueKey: 'pipelinePotential' as const,
     subtitleFn: (p: QuickStatsProps) =>
       `${p.pipelineCount ?? 0} prospect${(p.pipelineCount ?? 0) !== 1 ? 's' : ''}`,
-    bg: 'bg-violet-50/80 dark:bg-violet-950/20',
-    border: 'border-violet-200/60 dark:border-violet-800/30',
-    valueColor: 'text-violet-900 dark:text-violet-300',
-    labelColor: 'text-violet-700/70 dark:text-violet-400/60',
-    iconBg: 'bg-violet-500',
-    dotColor: 'bg-violet-400',
+    accent: 'text-violet-700 dark:text-violet-400',
+    dot: 'bg-violet-500 dark:bg-violet-400',
+    border: 'border-violet-200/50 dark:border-violet-900/40',
+    bg: 'bg-violet-50/60 dark:bg-violet-950/15',
+    isPrimary: false,
   },
 ] as const;
 
@@ -91,7 +78,7 @@ export function QuickStats({
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
       {CARDS.map((card, index) => {
         const value = props[card.valueKey] ?? 0;
         const subtitle = card.subtitleFn(props);
@@ -99,78 +86,36 @@ export function QuickStats({
         return (
           <motion.div
             key={card.key}
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={
-              card.isPrimary
-                ? {
-                    opacity: 1, y: 0, scale: 1,
-                    boxShadow: [
-                      '0 1px 2px 0 hsl(220 25% 10% / 0.04), 0 3px 12px -3px hsl(220 25% 10% / 0.07)',
-                      '0 2px 20px -3px hsl(158 72% 34% / 0.18), 0 8px 28px -6px hsl(158 72% 34% / 0.12)',
-                      '0 1px 2px 0 hsl(220 25% 10% / 0.04), 0 3px 12px -3px hsl(220 25% 10% / 0.07)',
-                    ],
-                  }
-                : { opacity: 1, y: 0, scale: 1 }
-            }
-            transition={
-              card.isPrimary
-                ? {
-                    duration: 0.45, delay: index * 0.06, ease: [0.16, 1, 0.3, 1],
-                    boxShadow: { duration: 3.5, repeat: Infinity, repeatDelay: 5, delay: 1.8, ease: 'easeInOut' as const },
-                  }
-                : { duration: 0.45, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }
-            }
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              'rounded-2xl p-4 sm:p-4.5 border relative overflow-hidden',
-              'transition-transform duration-300 hover:-translate-y-0.5 cursor-default',
+              'rounded-2xl p-4 border relative overflow-hidden cursor-default',
+              'transition-transform duration-300 hover:-translate-y-0.5',
               card.bg,
               card.border,
             )}
           >
-            {/* Subtle inner top shine */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/15" />
+            {/* Top shine */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-white/10" />
 
-            {/* Shimmer sweep on primary */}
-            {card.isPrimary && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                initial={{ x: '-110%', opacity: 0.6 }}
-                animate={{ x: '210%', opacity: 0 }}
-                transition={{ duration: 1.2, delay: 0.6, ease: 'easeInOut' }}
-                style={{ background: 'linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.35) 50%, transparent 62%)' }}
-              />
-            )}
-
-            {/* Label row */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-1.5">
-                <div className={cn('w-1.5 h-1.5 rounded-full', card.dotColor)} />
-                <span className={cn('text-[11px] font-semibold uppercase tracking-widest', card.labelColor)}>
-                  {card.label}
-                </span>
-              </div>
-              <motion.div
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3, delay: index * 0.06 + 0.18, ease: [0.16, 1, 0.3, 1] }}
-                className={cn(
-                  'w-7 h-7 rounded-[10px] flex items-center justify-center shrink-0',
-                  card.iconBg,
-                )}
-              >
-                <card.icon className="h-3.5 w-3.5 text-white" strokeWidth={2} />
-              </motion.div>
+            {/* Label */}
+            <div className="flex items-center gap-1.5 mb-3">
+              <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', card.dot)} />
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted-foreground/70">
+                {card.label}
+              </span>
             </div>
 
             {/* Value */}
             <AnimatedCurrency
               value={value}
-              className={cn('text-[22px] sm:text-2xl font-bold block tracking-tight leading-none mb-1.5', card.valueColor)}
-              duration={0.85 + index * 0.07}
+              className={cn('text-[21px] sm:text-[22px] font-bold block tracking-[-0.03em] leading-none mb-1.5', card.accent)}
+              duration={0.8 + index * 0.06}
             />
 
             {/* Subtitle */}
-            <p className="text-[11px] text-muted-foreground/70 leading-tight truncate font-medium">
+            <p className="text-[11px] text-muted-foreground/60 leading-tight truncate">
               {subtitle}
             </p>
           </motion.div>
