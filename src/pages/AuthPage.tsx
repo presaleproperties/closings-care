@@ -214,29 +214,58 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-500 to-teal-600 p-12 flex-col justify-between">
-        <div className="flex items-center gap-3">
-          <img 
-            src="/favicon.png" 
-            alt="dealzflow" 
-            className="w-11 h-11 rounded-xl shadow-lg shadow-black/10"
-          />
-          <span className="text-xl font-semibold text-white">dealzflow</span>
+      {/* Left side - premium branding panel */}
+      <div className="hidden lg:flex lg:w-[48%] bg-card border-r border-border p-12 flex-col justify-between relative overflow-hidden">
+        {/* Subtle background texture */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/3 pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-primary/4 blur-3xl pointer-events-none" />
+
+        {/* Logo + wordmark */}
+        <div className="relative flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <img src={logoMark} alt="Dealzflow" className="w-6 h-6 object-contain" />
+          </div>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-xl font-bold tracking-tight text-foreground">Dealz</span>
+            <span className="text-xl font-bold tracking-tight text-primary">flow</span>
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">
-            Track your real estate commissions with ease
-          </h2>
-          <p className="text-lg text-white/80">
-            Manage deals, forecast cashflow, and stay on top of your income — all in one place.
-          </p>
+        {/* Central hero copy */}
+        <div className="relative space-y-8">
+          {/* Feature pills */}
+          <div className="flex flex-col gap-3">
+            {[
+              { icon: DollarSign, label: 'Commission tracking', desc: 'Every deal, every dollar' },
+              { icon: BarChart3, label: 'Cashflow forecasting', desc: 'Know what\'s coming' },
+              { icon: TrendingUp, label: 'Safe-to-spend', desc: 'Always stay on budget' },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="flex items-center gap-4 p-4 rounded-xl bg-background/60 border border-border/60 backdrop-blur-sm">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{label}</p>
+                  <p className="text-xs text-muted-foreground">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight leading-snug">
+              Financial clarity for<br />real estate agents
+            </h2>
+            <p className="text-muted-foreground text-[15px] leading-relaxed">
+              Stop guessing. Start knowing exactly where your money is, where it's going, and what you can safely spend.
+            </p>
+          </div>
         </div>
 
-        <div className="flex gap-4 text-sm text-white/60">
-          <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-          <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+        <div className="relative flex gap-4 text-sm text-muted-foreground">
+          <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
         </div>
       </div>
 
