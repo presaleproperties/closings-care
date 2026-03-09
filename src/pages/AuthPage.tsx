@@ -274,12 +274,13 @@ export default function AuthPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex flex-col items-center gap-3 mb-10">
-            <img 
-              src="/favicon.png" 
-              alt="dealzflow" 
-              className="w-16 h-16 rounded-2xl shadow-lg shadow-emerald-500/20"
-            />
-            <span className="text-xl font-semibold tracking-tight">dealzflow</span>
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <img src={logoMark} alt="Dealzflow" className="w-9 h-9 object-contain" />
+            </div>
+            <div className="flex items-baseline gap-0.5">
+              <span className="text-2xl font-bold tracking-tight text-foreground">Dealz</span>
+              <span className="text-2xl font-bold tracking-tight text-primary">flow</span>
+            </div>
           </div>
 
           {/* Back button */}
