@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, CheckCircle, ShieldCheck, RefreshCw, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { lovable } from '@/integrations/lovable/index';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import logoMark from '@/assets/logo-mark.png';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 
