@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { Plus, Search, Building2, Home, Layers, Edit2, Trash2, MapPin, Calendar, DollarSign, User, Filter, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Building2, Home, Layers, Edit2, Trash2, MapPin, Calendar, DollarSign, Filter, AlertTriangle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
@@ -17,11 +18,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 const PROPERTY_TYPES = ['Condo', 'Townhome', 'Detached Home', 'Presale'] as const;
+// Quick-pick types shown in the inline popover (3 main options only)
+const QUICK_TYPES = ['Condo', 'Townhome', 'Detached'] as const;
 
 const propertyTypeIcon = {
   Condo: Building2,
   Townhome: Layers,
   'Detached Home': Home,
+  Detached: Home,
   Presale: Building2,
 };
 
@@ -29,6 +33,7 @@ const propertyTypeColor: Record<string, string> = {
   Condo: 'bg-info/10 text-info border-info/20',
   Townhome: 'bg-warning/10 text-warning border-warning/20',
   'Detached Home': 'bg-success/10 text-success border-success/20',
+  Detached: 'bg-success/10 text-success border-success/20',
   Presale: 'bg-primary/10 text-primary border-primary/20',
 };
 
@@ -196,6 +201,67 @@ function InventoryDialog({
   );
 }
 
+// ─── Quick Type Picker ─────────────────────────────────────────────────────────
+function QuickTypePicker({ item }: { item: ClientInventoryItem }) {
+  const [open, setOpen] = useState(false);
+  const upsert = useUpsertClientInventory();
+
+  const handleSelect = async (type: string) => {
+    setOpen(false);
+    await upsert.mutateAsync({
+      data: {
+        buyer_name: item.buyerName,
+        property_type: type,
+        synced_transaction_id: item.syncedTransactionId || undefined,
+        journey_id: item.journeyId || undefined,
+        is_manual: !item.syncedTransactionId,
+      },
+      existingId: item.id && !item.id.startsWith('journey-') && !item.id.startsWith('synced-') ? item.id : undefined,
+    });
+  };
+
+  const typeColor = item.propertyType ? (propertyTypeColor[item.propertyType] || 'bg-muted/50 text-muted-foreground border-border') : '';
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {item.propertyType ? (
+          <button className={cn(
+            "flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors hover:opacity-80",
+            typeColor
+          )}>
+            {item.propertyType}
+            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+          </button>
+        ) : (
+          <button className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground/60 hover:text-primary hover:border-primary/40 transition-colors">
+            + type
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-1.5" align="end" side="bottom">
+        <div className="flex gap-1">
+          {QUICK_TYPES.map(t => (
+            <button
+              key={t}
+              onClick={() => handleSelect(t)}
+              disabled={upsert.isPending}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                item.propertyType === t || (t === 'Detached' && item.propertyType === 'Detached Home')
+                  ? propertyTypeColor[t]
+                  : 'bg-muted/40 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Property Card ─────────────────────────────────────────────────────────────
 function InventoryCard({ item, onEdit, onDelete }: {
   item: ClientInventoryItem;
@@ -203,13 +269,12 @@ function InventoryCard({ item, onEdit, onDelete }: {
   onDelete?: () => void;
 }) {
   const Icon = item.propertyType ? (propertyTypeIcon[item.propertyType as keyof typeof propertyTypeIcon] || Building2) : Building2;
-  const typeColor = item.propertyType ? (propertyTypeColor[item.propertyType] || 'bg-muted text-muted-foreground border-border') : 'bg-muted text-muted-foreground border-border';
+  const typeColor = item.propertyType ? (propertyTypeColor[item.propertyType] || 'bg-muted text-muted-foreground border-border') : 'bg-muted/50 text-muted-foreground border-border';
   const isClosed = item.dealStatus === 'closed';
 
   return (
     <div className="group relative bg-card border border-border rounded-2xl p-4 hover:shadow-md transition-all duration-200 hover:border-border/80">
-      {/* Status indicator */}
-        <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className={cn("flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border", typeColor)}>
             <Icon className="w-4 h-4" />
@@ -239,18 +304,7 @@ function InventoryCard({ item, onEdit, onDelete }: {
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {item.propertyType ? (
-            <Badge variant="outline" className={cn("text-[10px] font-medium px-2 py-0.5 border", typeColor)}>
-              {item.propertyType}
-            </Badge>
-          ) : (
-            <button
-              onClick={onEdit}
-              className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground/60 hover:text-primary hover:border-primary/40 transition-colors"
-            >
-              + type
-            </button>
-          )}
+          <QuickTypePicker item={item} />
           {isClosed ? (
             <Badge variant="outline" className="text-[10px] font-medium px-2 py-0.5 bg-success/8 text-success border-success/20">Closed</Badge>
           ) : item.dealStatus === 'active' ? (
