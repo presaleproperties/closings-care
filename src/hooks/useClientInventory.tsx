@@ -109,38 +109,36 @@ export function useClientInventory() {
     return map;
   }, [inventoryRecords]);
 
-  // Merge synced deals into inventory items, deduplicating presale journeys
+  // Build inventory items from synced deals
   const syncedItems = useMemo((): ClientInventoryItem[] => {
-    // Group by journeyId for presale deduplication
-    const journeyMap = new Map<string, SyncedDeal[]>();
-    const standalone: SyncedDeal[] = [];
+    // Separate manual imports (platform === 'manual') from ReZen deals
+    // Manual imports: each deal is a separate client — show individually
+    // ReZen presales: group by journeyId (Part 1/2 + Part 2/2 = same property, same client)
+    const rezenJourneyMap = new Map<string, SyncedDeal[]>();
+    const individualDeals: SyncedDeal[] = [];
 
     deals.forEach(deal => {
-      if (deal.journeyId) {
-        if (!journeyMap.has(deal.journeyId)) journeyMap.set(deal.journeyId, []);
-        journeyMap.get(deal.journeyId)!.push(deal);
+      const isManualImport = deal.rawData?.source === 'manual_import';
+      if (deal.journeyId && !isManualImport) {
+        // Only group ReZen multi-part presales by journey
+        if (!rezenJourneyMap.has(deal.journeyId)) rezenJourneyMap.set(deal.journeyId, []);
+        rezenJourneyMap.get(deal.journeyId)!.push(deal);
       } else {
-        standalone.push(deal);
+        // Manual imports and all standalone deals show individually
+        individualDeals.push(deal);
       }
     });
 
     const items: ClientInventoryItem[] = [];
 
-    // Process journeyed (presale) deals — merge into one row per journey
-    journeyMap.forEach((groupDeals, journeyId) => {
-      // Use the most complete deal in the group as primary
+    // Process ReZen journeyed presales — merge Part 1/2 + Part 2/2 into one row
+    rezenJourneyMap.forEach((groupDeals, journeyId) => {
       const primary = groupDeals.sort((a, b) =>
         (b.salePrice || 0) - (a.salePrice || 0)
       )[0];
-
-      // Use enrichment from any deal in the group
-      const enrichment = groupDeals
-        .map(d => enrichmentMap.get(d.id))
-        .find(Boolean);
-
-      const extractedJourneyName = extractBuyerName(primary.participants);
-      const buyerName = extractedJourneyName !== 'Unknown' ? extractedJourneyName : (primary.clientName || 'Unknown');
-      // If any deal in the journey is flagged as potential duplicate
+      const enrichment = groupDeals.map(d => enrichmentMap.get(d.id)).find(Boolean);
+      const extractedName = extractBuyerName(primary.participants);
+      const buyerName = extractedName !== 'Unknown' ? extractedName : (primary.clientName || 'Unknown');
       const anyDupFlag = groupDeals.some(d => d.rawData?.potential_duplicate === true);
       const dupReason = groupDeals.find(d => d.rawData?.duplicate_reason)?.rawData?.duplicate_reason ?? null;
 
@@ -166,8 +164,8 @@ export function useClientInventory() {
       });
     });
 
-    // Process standalone deals
-    standalone.forEach(deal => {
+    // Process individual deals (manual imports + standalone ReZen deals)
+    individualDeals.forEach(deal => {
       const enrichment = enrichmentMap.get(deal.id);
       const extractedName = extractBuyerName(deal.participants);
       const buyerName = extractedName !== 'Unknown' ? extractedName : (deal.clientName || 'Unknown');
@@ -181,9 +179,9 @@ export function useClientInventory() {
         closeDate: enrichment?.close_date || deal.closeDate,
         closeDateEst: enrichment?.close_date_est || null,
         purchasePrice: enrichment?.purchase_price || deal.salePrice,
-        propertyType: enrichment?.property_type || (detectIsPresale(deal) ? 'Presale' : null),
+        propertyType: enrichment?.property_type || null,
         notes: enrichment?.notes || null,
-        isManual: false,
+        isManual: deal.rawData?.source === 'manual_import',
         journeyId: deal.journeyId,
         syncedTransactionId: deal.id,
         dealStatus: deal.status,
