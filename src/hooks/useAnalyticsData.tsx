@@ -310,7 +310,7 @@ export function useAnalyticsData() {
       const monthStart = startOfMonth(month);
       const monthEnd = endOfMonth(month);
       const monthTxs = filteredTransactions.filter(tx => {
-        const d = tx.close_date || tx.firm_date;
+        const d = getEffectiveDate(tx);
         if (!d) return false;
         return isWithinInterval(new Date(d), { start: monthStart, end: monthEnd });
       });
