@@ -138,7 +138,8 @@ export function useClientInventory() {
         .map(d => enrichmentMap.get(d.id))
         .find(Boolean);
 
-      const buyerName = extractBuyerName(primary.participants);
+      const extractedJourneyName = extractBuyerName(primary.participants);
+      const buyerName = extractedJourneyName !== 'Unknown' ? extractedJourneyName : (primary.clientName || 'Unknown');
       // If any deal in the journey is flagged as potential duplicate
       const anyDupFlag = groupDeals.some(d => d.rawData?.potential_duplicate === true);
       const dupReason = groupDeals.find(d => d.rawData?.duplicate_reason)?.rawData?.duplicate_reason ?? null;
@@ -168,7 +169,8 @@ export function useClientInventory() {
     // Process standalone deals
     standalone.forEach(deal => {
       const enrichment = enrichmentMap.get(deal.id);
-      const buyerName = extractBuyerName(deal.participants);
+      const extractedName = extractBuyerName(deal.participants);
+      const buyerName = extractedName !== 'Unknown' ? extractedName : (deal.clientName || 'Unknown');
 
       items.push({
         id: enrichment?.id || `synced-${deal.id}`,
