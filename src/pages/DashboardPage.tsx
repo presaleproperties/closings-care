@@ -110,12 +110,12 @@ export default function DashboardPage() {
   }, [expenses, properties]);
 
   const dealCounts = useMemo(() => {
-    const active = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
-    const closedYTD = syncedTransactions.filter((tx: any) =>
+    const active = rezenTransactions.filter((tx: any) => tx.status === 'active').length;
+    const closedYTD = rezenTransactions.filter((tx: any) =>
       tx.status === 'closed' && tx.close_date && new Date(tx.close_date).getFullYear() === thisYear
     ).length;
     return { active, closedYTD };
-  }, [syncedTransactions, thisYear]);
+  }, [rezenTransactions, thisYear]);
 
   const incomeTotals = useMemo(() => {
     return { paid: receivedYTD, projected: comingIn };
