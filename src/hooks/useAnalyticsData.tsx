@@ -89,7 +89,7 @@ export function useAnalyticsData() {
       const d = tx.close_date || tx.firm_date || tx.listing_date;
       if (d) years.add(String(d).substring(0, 4));
     });
-    for (let y = 2023; y <= thisYear; y++) years.add(String(y));
+    for (let y = 2021; y <= thisYear; y++) years.add(String(y));
     return Array.from(years).sort();
   }, [syncedTransactions, thisYear]);
 
