@@ -139,11 +139,14 @@ export function useClientInventory() {
         .find(Boolean);
 
       const buyerName = extractBuyerName(primary.participants);
+      // If any deal in the journey is flagged as potential duplicate
+      const anyDupFlag = groupDeals.some(d => d.rawData?.potential_duplicate === true);
+      const dupReason = groupDeals.find(d => d.rawData?.duplicate_reason)?.rawData?.duplicate_reason ?? null;
 
       items.push({
         id: enrichment?.id || `journey-${journeyId}`,
         buyerName: enrichment?.buyer_name || buyerName,
-        projectName: enrichment?.project_name || primary.rawData?.project?.name || null,
+        projectName: enrichment?.project_name || primary.rawData?.projectName || primary.rawData?.project?.name || null,
         propertyAddress: enrichment?.property_address || primary.propertyAddress,
         purchaseDate: enrichment?.purchase_date || primary.firmDate,
         closeDate: enrichment?.close_date || primary.closeDate,
@@ -156,6 +159,9 @@ export function useClientInventory() {
         syncedTransactionId: primary.id,
         dealStatus: primary.status,
         isPresale: true,
+        isPotentialDuplicate: anyDupFlag,
+        duplicateReason: dupReason,
+        commissionAmount: primary.commissionAmount,
       });
     });
 
@@ -167,7 +173,7 @@ export function useClientInventory() {
       items.push({
         id: enrichment?.id || `synced-${deal.id}`,
         buyerName: enrichment?.buyer_name || buyerName,
-        projectName: enrichment?.project_name || deal.rawData?.project?.name || null,
+        projectName: enrichment?.project_name || deal.rawData?.projectName || deal.rawData?.project?.name || null,
         propertyAddress: enrichment?.property_address || deal.propertyAddress,
         purchaseDate: enrichment?.purchase_date || deal.firmDate,
         closeDate: enrichment?.close_date || deal.closeDate,
@@ -180,6 +186,9 @@ export function useClientInventory() {
         syncedTransactionId: deal.id,
         dealStatus: deal.status,
         isPresale: detectIsPresale(deal),
+        isPotentialDuplicate: deal.rawData?.potential_duplicate === true,
+        duplicateReason: deal.rawData?.duplicate_reason ?? null,
+        commissionAmount: deal.commissionAmount,
       });
     });
 
