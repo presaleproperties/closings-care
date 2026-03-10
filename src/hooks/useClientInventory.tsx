@@ -138,7 +138,8 @@ export function useClientInventory() {
         .map(d => enrichmentMap.get(d.id))
         .find(Boolean);
 
-      const buyerName = extractBuyerName(primary.participants);
+      const extractedJourneyName = extractBuyerName(primary.participants);
+      const buyerName = extractedJourneyName !== 'Unknown' ? extractedJourneyName : (primary.clientName || 'Unknown');
       // If any deal in the journey is flagged as potential duplicate
       const anyDupFlag = groupDeals.some(d => d.rawData?.potential_duplicate === true);
       const dupReason = groupDeals.find(d => d.rawData?.duplicate_reason)?.rawData?.duplicate_reason ?? null;
