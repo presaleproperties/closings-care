@@ -1,89 +1,96 @@
 
-## Landing Page Refresh: Audience Clarity + Integration Showcase
+## Understanding the data & system
 
-### Goal
-Make it immediately clear the product is built exclusively for **Real Brokerage agents** (not just "Canadian realtors"), highlight the direct ReZen connection as the #1 differentiator, and add a dedicated integrations section showing ReZen (live), SkySlope (coming soon), and Lofty (coming soon).
+**GCI/Deal count tracking** lives in `synced_transactions` (what the Analytics page, DealsWrittenCard, and Dashboard use). The `deals` table is for manually entered deals but the analytics engine reads only `synced_transactions`. To make this data show up in GCI charts and deal counts, these historical entries need to go into `synced_transactions`, not the `deals` table.
 
----
+**Client Inventory** reads from both `synced_transactions` (via `useSyncedDeals` → `useClientInventory`) AND from `client_inventory` for manual-only entries. Since we're inserting into `synced_transactions`, they'll automatically flow into inventory too.
 
-### Changes Overview
+**Data I've extracted from the spreadsheet:**
 
-#### 1. Hero Section — Audience Signal
-- Change badge from `"BUILT FOR CANADIAN REALTORS"` → `"BUILT FOR REAL BROKERAGE AGENTS"`
-- Update headline to reinforce the Real Brokerage connection — e.g. *"Financial Clarity for Every Real Deal"*
-- Update sub-copy to call out the auto-sync: *"Connect your ReZen account once. Your deals, commissions, and rev share sync automatically."*
-- Add a third hero trust tag: `"Syncs directly with ReZen"`
-- Replace hero stat card's generic numbers with a "Connected to ReZen" badge/indicator in the card
+| # | Client | Project/Location | Firm Date | Sale Price | Commission | Notes |
+|---|--------|-----------------|-----------|------------|------------|-------|
+| 0 | Amar Parmar | The Grand | 2024-11-01 | $499,000 | $8,286 | Presale |
+| 1 | Amar Parmar | The Grand | 2024-11-01 | $498,000 | $8,201 | Presale |
+| 2 | Enamul Kazi | The Holland | 2023-11-01 | $499,500 | $10,145 | Presale |
+| 3 | Zeynah Khan | Surrey | 2021-09-16 | $360,000 | $6,552 | |
+| 4 | Shehzal Nisar | Surrey | 2021-10-22 | $740,000 | $11,130 | |
+| 5 | Ravish Passy | Quinn | 2023-06-01 | $379,000 | $8,350 | Presale |
+| 6 | Harman Cricket | Hendrix | 2023-06-01 | $464,900 | $10,578 | Presale |
+| 7 | Afzaal Pirzada | North Van | 2021-11-04 | $1,680,000 | $23,564 | |
+| 8 | Amrin Satani | Surrey | 2021-12-16 | $549,000 | $8,803 | |
+| 9 | Hafiz & Nazir Strata Conversion | — | 2022-03-01 | — | $4,100 | Special/commission-only |
+| 10 | Manpreet & Satwant | Holland 2 | 2025-05-01 | $484,900 | $10,401 | Presale |
+| 11 | Faroque | Holland 2 | 2025-05-01 | $632,900 | $12,900 | Presale |
+| 12 | Kuldip | Holland 2 | 2025-05-01 | $691,900 | $13,840 | Presale |
+| 13 | Kamrul Khan | Holland 2 | 2025-05-01 | $662,900 | $6,000 | Presale |
+| 14 | Holland 2 Bonus | — | — | — | $3,000 | Bonus payment only |
+| 15 | Akash Puri | Kelowna | 2022-01-28 | $700,000 | $13,125 | |
+| 16 | Mehreen Chuadry | Eastin | 2022-01-28 | $469,900 | $7,842 | Presale |
+| 17 | Ravish Passy | Abbotsford | 2022-01-15 | $365,090 | $5,933 | |
+| 18 | Manjinder Brar | Langley | 2022-03-15 | $981,000 | $13,452 | |
+| 19 | Tajinder Singh Gulati | Langley | 2022-01-19 | $660,000 | $10,143 | |
+| 20 | Hamza Khan | Squamish | 2022-02-28 | $675,000 | $9,791 | |
+| 21 | Akash Puri (LEASE) | Surrey | 2022-01-10 | $2,850 | $2,850 | Lease/rental |
+| 22 | Harsimran Sekhon | Surrey | — | $5,000 | $2,500 | No date |
 
-#### 2. New "Integrations" Section — placed after HowItWorks, before DealTypes
-A dedicated section with:
-- Header: *"Connects to the tools you already use"*
-- Three integration tiles in a row:
-  - **ReZen** — `LIVE` green badge — *"Auto-sync your deals, payouts, rev share, and network. Connect once and everything stays up to date."*
-  - **SkySlope** — `COMING SOON` amber badge — *"Transaction coordination data synced directly into your deal pipeline."*
-  - **Lofty (Chime)** — `COMING SOON` amber badge — *"CRM contacts and pipeline leads coming straight into your pipeline view."*
-- Each tile: platform logo placeholder (icon-based), name, badge, description, and a subtle animated pulse on the LIVE badge
+**Notes on ambiguous rows:**
+- Row 9 (Hafiz & Nazir Strata) and Row 14 (Holland 2 Bonus) are commission-only payments with no sale price — I'll insert them with `commission_amount` only, `sale_price` as null
+- Row 21 (Akash Puri LEASE) is a lease deal — I'll flag it as a listing/special type
+- Row 22 (Harsimran Sekhon) has no date — I'll insert with null firm_date so it appears in the inventory but not in time-based GCI charts
 
-#### 3. HowItWorks Section — Update Step 1
-- Change "Add your deals" → "Connect ReZen once"
-- Update description: *"Paste your ReZen API key in Settings. Deals, commissions, and rev share populate automatically — no manual entry."*
-- Keep Steps 2 & 3 as-is (the math, the clarity)
+**Data points that will be captured per record:**
+- `client_name` — Buyer's name
+- `project_name` — Project or area (from raw_data)
+- `property_address` — City/location
+- `city` — Normalized city
+- `firm_date` — The date shown in the spreadsheet (purchase/firm date)
+- `sale_price` — Purchase price
+- `commission_amount` — GCI earned
+- `status` — `'closed'` for all (these are historical completed deals)
+- `platform` — `'manual'` to distinguish from ReZen synced
+- `is_listing` — `false` for buyer deals
+- `transaction_type` — `'presale'` or `'resale'` based on project name context
 
-#### 4. Features Section — Add "ReZen Auto-Sync" Feature Card
-- Insert a new feature card at position 1 (before Safe-to-Spend):
-  - Icon: `Zap` or `RefreshCw`
-  - Title: "Auto-Sync from ReZen"
-  - Desc: *"Connect once and your deals, payouts, and rev share populate automatically. No manual entry."*
-  - Highlights: Auto-imports deals, Rev share tracking, Network data synced, Payouts auto-matched
-  - Gradient: `from-emerald-600 to-green-500`
-- This makes the grid 7 features — adjust to `lg:grid-cols-3 md:grid-cols-2` which already handles it by wrapping
+## Plan
 
-#### 5. Pain Section — Add a ReZen-specific pain
-- Replace one of the 4 generic pains with a more targeted one:
-  - Icon: `RefreshCw`
-  - Question: *"Why am I manually entering deals I already closed in ReZen?"*
-  - Detail: *"You close a deal in ReZen, then re-enter it somewhere else for tracking. That's wasted time on work you already did."*
+**Step 1 — Insert 23 records into `synced_transactions`**
 
-#### 6. Testimonials — Update brokerage names
-- Change all testimonials to reference **Real Brokerage** agents specifically:
-  - "Sarah M. — Real Brokerage, Vancouver"
-  - "David C. — Real Brokerage, Burnaby"  
-  - "Jennifer L. — Real Brokerage, Calgary"
-- This reinforces the product is purpose-built for this audience
+Use a database migration (INSERT SQL) with `platform = 'manual'`, `status = 'closed'`, using the data from the spreadsheet.
 
-#### 7. FAQ — Add ReZen-specific question
-- Add: *"Does it work with other brokerages?"* → *"Right now, dealzflow is purpose-built for Real Brokerage agents using ReZen. SkySlope and Lofty integrations are coming soon."*
+Presale records (have project names): Amar Parmar ×2 (The Grand), Enamul Kazi (The Holland), Ravish Passy (Quinn), Harman Cricket (Hendrix), Manpreet & Satwant (Holland 2), Faroque (Holland 2), Kuldip (Holland 2), Kamrul Khan (Holland 2), Mehreen Chuadry (Eastin)
 
----
+The `raw_data` JSONB column will store `{ "projectName": "The Grand" }` so the analytics engine correctly identifies presale deals and project grouping.
 
-### Technical Details
+**Step 2 — Update `useAnalyticsData` date filter**
 
-**Files changed:**
-- `src/pages/LandingPage.tsx` — all changes above in one file
+The current filter cuts off data before 2023-01-01 (hardcoded `minDate`). 2021 and 2022 deals won't appear. We need to either:
+- Lower the min date floor to 2021-01-01
+- Or make it dynamic (use earliest available data)
 
-**New imports needed:**
-- `RefreshCw`, `Wifi`, `Clock` from `lucide-react` (for new cards/icons)
+I'll update it to use the earliest transaction date dynamically so all inserted history appears.
 
-**New component added inside the file:**
-```tsx
-function IntegrationsSection() { ... }
-```
-Inserted between `<HowItWorksSection />` and `<DealTypesSection />` in the main render.
+**Step 3 — Update `DealsWrittenCard` similarly**
 
-**Integration tile structure:**
-```text
-┌─────────────────────────────────────┐
-│  [Icon]  ReZen          ● LIVE      │
-│  Auto-sync deals, payouts, rev...   │
-└─────────────────────────────────────┘
-┌─────────────────────────────────────┐
-│  [Icon]  SkySlope    ◌ COMING SOON  │
-│  Transaction coordination data...   │
-└─────────────────────────────────────┘
-┌─────────────────────────────────────┐
-│  [Icon]  Lofty (Chime) ◌ COMING SOON│
-│  CRM contacts and pipeline leads... │
-└─────────────────────────────────────┘
-```
+The dashboard DealsWrittenCard already uses min/max from data — this will auto-update once records are inserted. No change needed there.
 
-No database changes required. No new dependencies needed.
+**Step 4 — Update `availableYears` in analytics**
+
+Currently hardcodes start from 2023. Change to 2021 so 2021 and 2022 are selectable year filters.
+
+**What data points appear in Client Inventory from these records:**
+
+Since they go into `synced_transactions`, they'll flow through `useSyncedDeals` → `useClientInventory`. Each will show:
+- Buyer name (from `client_name`)
+- Project name (from `raw_data.projectName`)
+- Property address (from `property_address` / `city`)
+- Firm date → Purchase date
+- Sale price → Purchase price
+- Status → Closed
+- Platform badge → Manual
+
+**Files to change:**
+1. Database migration — INSERT 23 rows into `synced_transactions`
+2. `src/hooks/useAnalyticsData.tsx` — remove hard 2023 floor, make it dynamic from 2021
+3. `src/pages/AnalyticsPage.tsx` — verify available years starts from 2021
+
+No schema changes needed — `synced_transactions` already has all required columns.
