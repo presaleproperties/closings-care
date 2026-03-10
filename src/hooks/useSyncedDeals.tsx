@@ -90,10 +90,17 @@ export function useSyncedDeals() {
         ? (tx.my_net_payout || 0)
         : (tx.commission_amount || 0);
       
+      const projectName =
+        tx.raw_data?.projectName ||
+        tx.raw_data?.project?.name ||
+        extractProjectNameFromAddress(tx.property_address) ||
+        null;
+
       return {
         id: tx.id,
         clientName: tx.client_name || 'Unknown',
         propertyAddress: tx.property_address,
+        projectName,
         status: tx.status || 'pending',
         isListing: tx.is_listing || false,
         lifecycleState: tx.lifecycle_state,
