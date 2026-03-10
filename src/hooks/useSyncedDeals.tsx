@@ -2,6 +2,44 @@ import { useMemo } from 'react';
 import { useSyncedTransactions } from './usePlatformConnections';
 import { isTeamDeal as checkIsTeamDealShared } from '@/lib/transactionUtils';
 
+/**
+ * Extracts a project name from a ReZen property address that encodes
+ * presale project info in formats like:
+ *   "Walker House - Part 1/2 Unit 507 - 11989 93A Ave..."
+ *   "Part 2/2 - Jericho Park - 7883 199B Street..."
+ *   "North Village Part 2/2 - 20072 86 Avenue..."
+ *   "HAYER TOWN CENTRE, Unit 408 - 1/2 Commission..."
+ */
+export function extractProjectNameFromAddress(address: string | null): string | null {
+  if (!address) return null;
+
+  // Pattern 1: "Part N/N - ProjectName ..." — project name after "Part X/X -"
+  const afterPart = address.match(/^[Pp]ar[kt]\s*\d\/\d\s*[-–]\s*([A-Za-z][A-Za-z\s]+?)(?:\s*[-–,]|\s+(?:Unit|#|\d))/);
+  if (afterPart) return titleCase(afterPart[1].trim());
+
+  // Pattern 2: "ProjectName Part N/N ..." — project name before "Part X/X"
+  const beforePart = address.match(/^([A-Za-z][A-Za-z\s]+?)\s+[Pp]art\s+\d\/\d/);
+  if (beforePart) return titleCase(beforePart[1].trim());
+
+  // Pattern 3: "ProjectName - Part N/N ..." or "ProjectName, Part N/N ..."
+  const beforePartDash = address.match(/^([A-Za-z][A-Za-z\s]+?)\s*[-–,]\s*[Pp]art\s*\d\/\d/);
+  if (beforePartDash) return titleCase(beforePartDash[1].trim());
+
+  // Pattern 4: "ProjectName N/N - ..." (e.g. "Walker House 1/2 - #703")
+  const beforeFraction = address.match(/^([A-Za-z][A-Za-z\s]+?)\s+\d\/\d\s*[-–]/);
+  if (beforeFraction) return titleCase(beforeFraction[1].trim());
+
+  // Pattern 5: "PROJECT NAME, Unit NNN (1/2 commission...)" — HAYER style
+  const commaUnit = address.match(/^([A-Z][A-Z\s]+?),\s*[Uu]nit/);
+  if (commaUnit) return titleCase(commaUnit[1].trim());
+
+  return null;
+}
+
+function titleCase(str: string): string {
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export interface Participant {
   id: string;
   firstName?: string;
@@ -16,6 +54,7 @@ export interface SyncedDeal {
   id: string;
   clientName: string;
   propertyAddress: string | null;
+  projectName: string | null; // Extracted from raw_data or parsed from address
   status: 'active' | 'closed' | 'terminated' | 'pending';
   isListing: boolean;
   lifecycleState: string | null;
@@ -51,10 +90,17 @@ export function useSyncedDeals() {
         ? (tx.my_net_payout || 0)
         : (tx.commission_amount || 0);
       
+      const projectName =
+        tx.raw_data?.projectName ||
+        tx.raw_data?.project?.name ||
+        extractProjectNameFromAddress(tx.property_address) ||
+        null;
+
       return {
         id: tx.id,
         clientName: tx.client_name || 'Unknown',
         propertyAddress: tx.property_address,
+        projectName,
         status: tx.status || 'pending',
         isListing: tx.is_listing || false,
         lifecycleState: tx.lifecycle_state,
