@@ -168,7 +168,8 @@ export function useClientInventory() {
     // Process standalone deals
     standalone.forEach(deal => {
       const enrichment = enrichmentMap.get(deal.id);
-      const buyerName = extractBuyerName(deal.participants);
+      const extractedName = extractBuyerName(deal.participants);
+      const buyerName = extractedName !== 'Unknown' ? extractedName : (deal.clientName || 'Unknown');
 
       items.push({
         id: enrichment?.id || `synced-${deal.id}`,
