@@ -89,7 +89,7 @@ export function useAnalyticsData() {
       const d = tx.close_date || tx.firm_date || tx.listing_date;
       if (d) years.add(String(d).substring(0, 4));
     });
-    for (let y = 2023; y <= thisYear; y++) years.add(String(y));
+    for (let y = 2021; y <= thisYear; y++) years.add(String(y));
     return Array.from(years).sort();
   }, [syncedTransactions, thisYear]);
 
@@ -109,7 +109,7 @@ export function useAnalyticsData() {
   }, [syncedTransactions]);
 
    const filteredTransactions = useMemo(() => {
-     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
      let txs = syncedTransactions.filter(tx => {
        const d = tx.close_date || tx.firm_date || tx.listing_date;
        return d && new Date(d) >= minDate;
@@ -180,7 +180,7 @@ export function useAnalyticsData() {
 
    // Previous period metrics for YoY comparison
    const previousMetrics = useMemo(() => {
-     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
      let prevTxs = syncedTransactions.filter(tx => {
        const d = tx.close_date || tx.firm_date || tx.listing_date;
        return d && new Date(d) >= minDate;
