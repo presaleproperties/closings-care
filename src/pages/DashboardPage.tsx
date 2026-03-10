@@ -44,7 +44,13 @@ export default function DashboardPage() {
   const { data: settings } = useSettings();
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { data: revenueShare = [] } = useRevenueShare();
-  const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
+  // Dashboard projections (Coming In, Earned YTD, active deal counts) use ONLY ReZen-synced data.
+  // Manual historical imports are for records/inventory/analytics only — not live projections.
+  const rezenTransactions = useMemo(
+    () => syncedTransactions.filter((tx: any) => tx.platform !== 'manual'),
+    [syncedTransactions]
+  );
+  const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(rezenTransactions);
   const { data: pipelineProspects = [] } = usePipelineProspects();
   const { data: connections = [] } = usePlatformConnections();
   const syncPlatform = useSyncPlatform();
@@ -104,12 +110,12 @@ export default function DashboardPage() {
   }, [expenses, properties]);
 
   const dealCounts = useMemo(() => {
-    const active = syncedTransactions.filter((tx: any) => tx.status === 'active').length;
-    const closedYTD = syncedTransactions.filter((tx: any) =>
+    const active = rezenTransactions.filter((tx: any) => tx.status === 'active').length;
+    const closedYTD = rezenTransactions.filter((tx: any) =>
       tx.status === 'closed' && tx.close_date && new Date(tx.close_date).getFullYear() === thisYear
     ).length;
     return { active, closedYTD };
-  }, [syncedTransactions, thisYear]);
+  }, [rezenTransactions, thisYear]);
 
   const incomeTotals = useMemo(() => {
     return { paid: receivedYTD, projected: comingIn };
