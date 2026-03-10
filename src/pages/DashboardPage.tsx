@@ -44,7 +44,13 @@ export default function DashboardPage() {
   const { data: settings } = useSettings();
   const { data: syncedTransactions = [] } = useSyncedTransactions();
   const { data: revenueShare = [] } = useRevenueShare();
-  const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(syncedTransactions);
+  // Dashboard projections (Coming In, Earned YTD, active deal counts) use ONLY ReZen-synced data.
+  // Manual historical imports are for records/inventory/analytics only — not live projections.
+  const rezenTransactions = useMemo(
+    () => syncedTransactions.filter((tx: any) => tx.platform !== 'manual'),
+    [syncedTransactions]
+  );
+  const { syncedPayouts, receivedYTD, comingIn, projectedRevenue2026 } = useSyncedIncome(rezenTransactions);
   const { data: pipelineProspects = [] } = usePipelineProspects();
   const { data: connections = [] } = usePlatformConnections();
   const syncPlatform = useSyncPlatform();
