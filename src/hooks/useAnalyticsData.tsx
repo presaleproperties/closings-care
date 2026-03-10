@@ -185,40 +185,40 @@ export function useAnalyticsData() {
     };
   }, [filteredTransactions]);
 
-   // Previous period metrics for YoY comparison
-   const previousMetrics = useMemo(() => {
-     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
-     let prevTxs = syncedTransactions.filter(tx => {
-       const d = tx.close_date || tx.firm_date || tx.listing_date;
-       return d && new Date(d) >= minDate;
-     });
-     if (timeRange === 'year') {
-       const prevYear = String(parseInt(selectedYear) - 1);
-       prevTxs = prevTxs.filter(tx => {
-         const d = tx.close_date || tx.firm_date || tx.listing_date;
-         return d && String(d).startsWith(prevYear);
-       });
-     } else if (timeRange !== 'all') {
-       const offsets: Record<string, number> = { 'ytd': 12, '12m': 24, '6m': 12, '3m': 6 };
-       const offset = offsets[timeRange] || 12;
-       const prevStart = subMonths(now, offset);
-       const prevEnd = subMonths(now, offset - monthsToShow);
-       prevTxs = prevTxs.filter(tx => {
-         const d = tx.close_date || tx.firm_date || tx.listing_date;
-         if (!d) return false;
-         const date = new Date(d);
-         return date >= prevStart && date < prevEnd;
-       });
-     }
-     if (dealTypeFilter === 'presale') prevTxs = prevTxs.filter(isPresaleTransaction);
-     if (dealTypeFilter === 'resale') prevTxs = prevTxs.filter(tx => !isPresaleTransaction(tx));
-     if (cityFilter !== 'all') prevTxs = prevTxs.filter(tx => normalizeCity(tx.city) === cityFilter);
-     if (agentFilter !== 'all') prevTxs = prevTxs.filter(tx => getWritingAgents(tx).includes(agentFilter));
+  // Previous period metrics for YoY comparison
+  const previousMetrics = useMemo(() => {
+    const minDate = new Date(2021, 0, 1);
+    let prevTxs = syncedTransactions.filter(tx => {
+      const d = getEffectiveDate(tx);
+      return d && new Date(d) >= minDate;
+    });
+    if (timeRange === 'year') {
+      const prevYear = String(parseInt(selectedYear) - 1);
+      prevTxs = prevTxs.filter(tx => {
+        const d = getEffectiveDate(tx);
+        return d && String(d).startsWith(prevYear);
+      });
+    } else if (timeRange !== 'all') {
+      const offsets: Record<string, number> = { 'ytd': 12, '12m': 24, '6m': 12, '3m': 6 };
+      const offset = offsets[timeRange] || 12;
+      const prevStart = subMonths(now, offset);
+      const prevEnd = subMonths(now, offset - monthsToShow);
+      prevTxs = prevTxs.filter(tx => {
+        const d = getEffectiveDate(tx);
+        if (!d) return false;
+        const date = new Date(d);
+        return date >= prevStart && date < prevEnd;
+      });
+    }
+    if (dealTypeFilter === 'presale') prevTxs = prevTxs.filter(isPresaleTransaction);
+    if (dealTypeFilter === 'resale') prevTxs = prevTxs.filter(tx => !isPresaleTransaction(tx));
+    if (cityFilter !== 'all') prevTxs = prevTxs.filter(tx => normalizeCity(tx.city) === cityFilter);
+    if (agentFilter !== 'all') prevTxs = prevTxs.filter(tx => getWritingAgents(tx).includes(agentFilter));
 
-     const all = prevTxs;
-     const totalGCI = all.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
-     return { totalDeals: all.length, totalGCI, totalVolume: all.reduce((s, tx) => s + Number(tx.sale_price || 0), 0) };
-   }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, now, monthsToShow]);
+    const all = prevTxs;
+    const totalGCI = all.reduce((s, tx) => s + getEffectiveCommission(tx), 0);
+    return { totalDeals: all.length, totalGCI, totalVolume: all.reduce((s, tx) => s + Number(tx.sale_price || 0), 0) };
+  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, now, monthsToShow]);
 
   // Team member analytics
   const teamMemberData = useMemo(() => {
