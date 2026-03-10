@@ -5,7 +5,7 @@ import { triggerHaptic } from '@/lib/haptics';
 const navItems = [
   { label: 'Home', path: '/dashboard', short: 'H' },
   { label: 'Deals', path: '/deals', short: 'D' },
-  { label: 'Network', path: '/network', short: 'N' },
+  { label: 'Inventory', path: '/inventory', short: 'Inv' },
   { label: 'Analytics', path: '/analytics', short: 'A' },
   { label: 'Settings', path: '/settings', short: 'S' },
 ];
