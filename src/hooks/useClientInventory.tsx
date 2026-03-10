@@ -175,7 +175,7 @@ export function useClientInventory() {
       items.push({
         id: enrichment?.id || `synced-${deal.id}`,
         buyerName: enrichment?.buyer_name || buyerName,
-        projectName: enrichment?.project_name || deal.rawData?.projectName || deal.rawData?.project?.name || null,
+        projectName: enrichment?.project_name || deal.projectName || null,
         propertyAddress: enrichment?.property_address || deal.propertyAddress,
         purchaseDate: enrichment?.purchase_date || deal.firmDate,
         closeDate: enrichment?.close_date || deal.closeDate,
