@@ -425,6 +425,7 @@ export default function ClientInventoryPage() {
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="closed">Closed</SelectItem>
               <SelectItem value="manual">Manual</SelectItem>
+              <SelectItem value="duplicate">⚠️ Duplicates</SelectItem>
             </SelectContent>
           </Select>
 
