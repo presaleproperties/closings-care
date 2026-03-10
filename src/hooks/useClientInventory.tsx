@@ -147,7 +147,7 @@ export function useClientInventory() {
       items.push({
         id: enrichment?.id || `journey-${journeyId}`,
         buyerName: enrichment?.buyer_name || buyerName,
-        projectName: enrichment?.project_name || primary.rawData?.projectName || primary.rawData?.project?.name || null,
+        projectName: enrichment?.project_name || primary.projectName || null,
         propertyAddress: enrichment?.property_address || primary.propertyAddress,
         purchaseDate: enrichment?.purchase_date || primary.firmDate,
         closeDate: enrichment?.close_date || primary.closeDate,
