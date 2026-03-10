@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { Plus, Search, Building2, Home, Layers, Edit2, Trash2, MapPin, Calendar, DollarSign, User, Filter, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Building2, Home, Layers, Edit2, Trash2, MapPin, Calendar, DollarSign, Filter, AlertTriangle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import { useForm, Controller } from 'react-hook-form';
@@ -17,11 +18,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 const PROPERTY_TYPES = ['Condo', 'Townhome', 'Detached Home', 'Presale'] as const;
+// Quick-pick types shown in the inline popover (3 main options only)
+const QUICK_TYPES = ['Condo', 'Townhome', 'Detached'] as const;
 
 const propertyTypeIcon = {
   Condo: Building2,
   Townhome: Layers,
   'Detached Home': Home,
+  Detached: Home,
   Presale: Building2,
 };
 
@@ -29,6 +33,7 @@ const propertyTypeColor: Record<string, string> = {
   Condo: 'bg-info/10 text-info border-info/20',
   Townhome: 'bg-warning/10 text-warning border-warning/20',
   'Detached Home': 'bg-success/10 text-success border-success/20',
+  Detached: 'bg-success/10 text-success border-success/20',
   Presale: 'bg-primary/10 text-primary border-primary/20',
 };
 
