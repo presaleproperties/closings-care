@@ -109,7 +109,7 @@ export function useAnalyticsData() {
   }, [syncedTransactions]);
 
    const filteredTransactions = useMemo(() => {
-     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
      let txs = syncedTransactions.filter(tx => {
        const d = tx.close_date || tx.firm_date || tx.listing_date;
        return d && new Date(d) >= minDate;
