@@ -209,13 +209,30 @@ function InventoryCard({ item, onEdit, onDelete }: {
   return (
     <div className="group relative bg-card border border-border rounded-2xl p-4 hover:shadow-md transition-all duration-200 hover:border-border/80">
       {/* Status indicator */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <div className={cn("flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center border", typeColor)}>
             <Icon className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm text-foreground truncate">{item.buyerName}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-semibold text-sm text-foreground truncate">{item.buyerName}</p>
+              {item.isPotentialDuplicate && (
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex-shrink-0">
+                        <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <p className="font-semibold text-warning mb-0.5">Potential Duplicate</p>
+                      <p>{item.duplicateReason || 'This entry may already exist in your ReZen sync.'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
             {item.projectName && (
               <p className="text-xs text-muted-foreground truncate">{item.projectName}</p>
             )}
