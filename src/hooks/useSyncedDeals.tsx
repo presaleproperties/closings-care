@@ -54,6 +54,7 @@ export interface SyncedDeal {
   id: string;
   clientName: string;
   propertyAddress: string | null;
+  projectName: string | null; // Extracted from raw_data or parsed from address
   status: 'active' | 'closed' | 'terminated' | 'pending';
   isListing: boolean;
   lifecycleState: string | null;
