@@ -23,6 +23,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import NetworkPage from "./pages/NetworkPage";
 import PipelinePage from "./pages/PipelinePage";
+import ClientInventoryPage from "./pages/ClientInventoryPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

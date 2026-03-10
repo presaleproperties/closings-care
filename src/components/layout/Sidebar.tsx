@@ -23,6 +23,7 @@ const navSections: NavSection[] = [
       { label: 'Expenses', path: '/expenses', short: 'Ex' },
       { label: 'Forecast', path: '/forecast', short: 'F' },
       { label: 'Analytics', path: '/analytics', short: 'An' },
+      { label: 'Client Inventory', path: '/inventory', short: 'CI' },
     ],
   },
   {
