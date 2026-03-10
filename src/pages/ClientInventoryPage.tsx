@@ -325,7 +325,8 @@ export default function ClientInventoryPage() {
       const matchStatus = filterStatus === 'all' ||
         (filterStatus === 'active' && item.dealStatus === 'active') ||
         (filterStatus === 'closed' && item.dealStatus === 'closed') ||
-        (filterStatus === 'manual' && item.isManual);
+        (filterStatus === 'manual' && item.isManual) ||
+        (filterStatus === 'duplicate' && item.isPotentialDuplicate === true);
 
       return matchSearch && matchType && matchStatus;
     });
