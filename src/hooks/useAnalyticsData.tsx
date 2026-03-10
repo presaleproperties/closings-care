@@ -180,7 +180,7 @@ export function useAnalyticsData() {
 
    // Previous period metrics for YoY comparison
    const previousMetrics = useMemo(() => {
-     const minDate = new Date(2023, 0, 1); // Jan 1, 2023
+     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
      let prevTxs = syncedTransactions.filter(tx => {
        const d = tx.close_date || tx.firm_date || tx.listing_date;
        return d && new Date(d) >= minDate;
