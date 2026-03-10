@@ -108,38 +108,45 @@ export function useAnalyticsData() {
     };
   }, [syncedTransactions]);
 
-   const filteredTransactions = useMemo(() => {
-     const minDate = new Date(2021, 0, 1); // Jan 1, 2021 — includes manual historical data
-     let txs = syncedTransactions.filter(tx => {
-       const d = tx.close_date || tx.firm_date || tx.listing_date;
-       return d && new Date(d) >= minDate;
-     });
-     if (timeRange === 'year') {
-       txs = txs.filter(tx => {
-         const d = tx.close_date || tx.firm_date || tx.listing_date;
-         return d && String(d).startsWith(selectedYear);
-       });
-     } else if (timeRange !== 'all') {
-       const ranges: Record<string, Date> = {
-         'ytd': new Date(thisYear, 0, 1),
-         '12m': subMonths(now, 12),
-         '6m': subMonths(now, 6),
-         '3m': subMonths(now, 3),
-       };
-       const startDate = ranges[timeRange];
-       if (startDate) {
-         txs = txs.filter(tx => {
-           const d = tx.close_date || tx.firm_date || tx.listing_date;
-           return d && new Date(d) >= startDate;
-         });
-       }
-     }
-     if (dealTypeFilter === 'presale') txs = txs.filter(isPresaleTransaction);
-     if (dealTypeFilter === 'resale') txs = txs.filter(tx => !isPresaleTransaction(tx));
-     if (cityFilter !== 'all') txs = txs.filter(tx => normalizeCity(tx.city) === cityFilter);
-     if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
-     return txs;
-   }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
+  // For manual deals, always use firm_date for year bucketing (historical record data)
+  // For ReZen deals, use close_date first (earned date), then firm_date
+  const getEffectiveDate = (tx: any): string | null => {
+    if (tx.platform === 'manual') return tx.firm_date || null;
+    return tx.close_date || tx.firm_date || tx.listing_date || null;
+  };
+
+  const filteredTransactions = useMemo(() => {
+    const minDate = new Date(2021, 0, 1);
+    let txs = syncedTransactions.filter(tx => {
+      const d = getEffectiveDate(tx);
+      return d && new Date(d) >= minDate;
+    });
+    if (timeRange === 'year') {
+      txs = txs.filter(tx => {
+        const d = getEffectiveDate(tx);
+        return d && String(d).startsWith(selectedYear);
+      });
+    } else if (timeRange !== 'all') {
+      const ranges: Record<string, Date> = {
+        'ytd': new Date(thisYear, 0, 1),
+        '12m': subMonths(now, 12),
+        '6m': subMonths(now, 6),
+        '3m': subMonths(now, 3),
+      };
+      const startDate = ranges[timeRange];
+      if (startDate) {
+        txs = txs.filter(tx => {
+          const d = getEffectiveDate(tx);
+          return d && new Date(d) >= startDate;
+        });
+      }
+    }
+    if (dealTypeFilter === 'presale') txs = txs.filter(isPresaleTransaction);
+    if (dealTypeFilter === 'resale') txs = txs.filter(tx => !isPresaleTransaction(tx));
+    if (cityFilter !== 'all') txs = txs.filter(tx => normalizeCity(tx.city) === cityFilter);
+    if (agentFilter !== 'all') txs = txs.filter(tx => getWritingAgents(tx).includes(agentFilter));
+    return txs;
+  }, [syncedTransactions, timeRange, selectedYear, dealTypeFilter, cityFilter, agentFilter, thisYear, now]);
 
   const monthsToShow = useMemo(() => {
     switch (timeRange) {
