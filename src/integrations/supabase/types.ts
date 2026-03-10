@@ -95,6 +95,71 @@ export type Database = {
         }
         Relationships: []
       }
+      client_inventory: {
+        Row: {
+          buyer_name: string | null
+          close_date: string | null
+          close_date_est: string | null
+          created_at: string
+          id: string
+          is_manual: boolean
+          journey_id: string | null
+          notes: string | null
+          project_name: string | null
+          property_address: string | null
+          property_type: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          synced_transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          buyer_name?: string | null
+          close_date?: string | null
+          close_date_est?: string | null
+          created_at?: string
+          id?: string
+          is_manual?: boolean
+          journey_id?: string | null
+          notes?: string | null
+          project_name?: string | null
+          property_address?: string | null
+          property_type?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          synced_transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          buyer_name?: string | null
+          close_date?: string | null
+          close_date_est?: string | null
+          created_at?: string
+          id?: string
+          is_manual?: boolean
+          journey_id?: string | null
+          notes?: string | null
+          project_name?: string | null
+          property_address?: string | null
+          property_type?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          synced_transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_inventory_synced_transaction_id_fkey"
+            columns: ["synced_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "synced_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           address: string | null
