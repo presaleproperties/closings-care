@@ -43,6 +43,9 @@ export interface ClientInventoryItem {
   // Enriched from synced deal
   dealStatus?: string;
   isPresale?: boolean;
+  isPotentialDuplicate?: boolean;
+  duplicateReason?: string | null;
+  commissionAmount?: number | null;
 }
 
 export interface ClientInventoryFormData {
