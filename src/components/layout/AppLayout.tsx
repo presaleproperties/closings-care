@@ -33,9 +33,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      {/* md+: sidebar always visible with full labels */}
+      {/* md: sidebar + bottom nav both visible; lg+: sidebar only */}
       <main 
-        className={`pb-[82px] md:pb-6 min-h-screen transition-all duration-300 ${
+        className={`pb-[82px] md:pb-[90px] lg:pb-6 min-h-screen transition-all duration-300 ${
           isCollapsed ? 'md:ml-[56px]' : 'md:ml-56'
         }`}
       >
