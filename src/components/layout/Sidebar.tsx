@@ -213,8 +213,8 @@ export function Sidebar() {
               )}
               {isCollapsed ? (
                 <span className={cn(
-                  "text-[11px] font-semibold tracking-tight w-6 text-center",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                  "text-[16px] w-7 text-center leading-none select-none",
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
                 )}>
                   {item.short}
                 </span>
