@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Header } from '@/components/layout/Header';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useClientInventory, useUpsertClientInventory, useDeleteClientInventory, ClientInventoryItem } from '@/hooks/useClientInventory';
 import { Button } from '@/components/ui/button';
