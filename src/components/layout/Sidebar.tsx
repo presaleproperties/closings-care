@@ -16,26 +16,26 @@ const navSections: NavSection[] = [
   {
     label: 'Production',
     items: [
-      { label: 'Dashboard', path: '/dashboard', short: 'D' },
-      { label: 'Pipeline', path: '/pipeline', short: 'P' },
-      { label: 'Deals', path: '/deals', short: 'De' },
-      { label: 'Payouts', path: '/payouts', short: 'Pa' },
-      { label: 'Expenses', path: '/expenses', short: 'Ex' },
-      { label: 'Forecast', path: '/forecast', short: 'F' },
-      { label: 'Analytics', path: '/analytics', short: 'An' },
-      { label: 'Client Inventory', path: '/inventory', short: 'CI' },
+      { label: 'Dashboard', path: '/dashboard', short: '⌂' },
+      { label: 'Pipeline', path: '/pipeline', short: '◈' },
+      { label: 'Deals', path: '/deals', short: '◇' },
+      { label: 'Payouts', path: '/payouts', short: '$' },
+      { label: 'Expenses', path: '/expenses', short: '−' },
+      { label: 'Forecast', path: '/forecast', short: '↗' },
+      { label: 'Analytics', path: '/analytics', short: '∿' },
+      { label: 'Client Inventory', path: '/inventory', short: '⊞' },
     ],
   },
   {
     label: 'Network',
     items: [
-      { label: 'Network', path: '/network', short: 'N' },
+      { label: 'Network', path: '/network', short: '⬡' },
     ],
   },
 ];
 
 const standaloneItems = [
-  { label: 'Settings', path: '/settings', short: 'S' },
+  { label: 'Settings', path: '/settings', short: '⚙' },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
@@ -164,8 +164,8 @@ export function Sidebar() {
                       )}
                       {isCollapsed ? (
                         <span className={cn(
-                          "text-[11px] font-semibold tracking-tight w-6 text-center",
-                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                          "text-[16px] w-7 text-center leading-none select-none",
+                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
                         )}>
                           {item.short}
                         </span>
@@ -213,8 +213,8 @@ export function Sidebar() {
               )}
               {isCollapsed ? (
                 <span className={cn(
-                  "text-[11px] font-semibold tracking-tight w-6 text-center",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                  "text-[16px] w-7 text-center leading-none select-none",
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
                 )}>
                   {item.short}
                 </span>
