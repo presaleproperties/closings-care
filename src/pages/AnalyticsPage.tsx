@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div
-        className="p-4 sm:p-5 md:p-6 lg:p-6 space-y-5"
+        className="p-4 sm:p-5 md:p-6 lg:p-6 space-y-5 md:max-w-none"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
