@@ -196,7 +196,7 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* ── Hero Stats ── */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           {/* Total Deals */}
           <div className="landing-card p-3 sm:p-4">
             <p className="metric-label mb-2">All Deals</p>
