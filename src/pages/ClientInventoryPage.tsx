@@ -421,21 +421,16 @@ export default function ClientInventoryPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 pb-8">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Client Inventory</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">All properties you've helped clients buy</p>
-          </div>
-          <Button size="sm" onClick={openAdd} className="gap-1.5 flex-shrink-0">
-            <Plus className="w-3.5 h-3.5" />
-            Add Property
-          </Button>
-        </div>
+      <Header title="Client Inventory" subtitle="All properties you've helped clients buy" showAddDeal={false} action={
+        <Button size="sm" onClick={openAdd} className="gap-1.5">
+          <Plus className="w-3.5 h-3.5" />
+          Add Property
+        </Button>
+      } />
+      <div className="p-5 md:p-7 lg:p-6 space-y-5 pb-8">
 
         {/* Stats bar */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
           {[
             { label: 'Total Properties', value: totalCount },
             { label: 'Closed', value: closedCount },
@@ -443,14 +438,14 @@ export default function ClientInventoryPage() {
           ].map(stat => (
             <div key={stat.label} className="bg-card border border-border rounded-2xl px-4 py-3">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">{stat.label}</p>
-              <p className="text-lg font-bold text-foreground mt-0.5">{stat.value}</p>
+              <p className="text-lg md:text-xl font-bold text-foreground mt-0.5">{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Filters + Search */}
         <div className="flex flex-wrap gap-2 items-center">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <div className="relative flex-1 min-w-[200px] md:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
               value={search}
@@ -503,7 +498,7 @@ export default function ClientInventoryPage() {
 
         {/* Content */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-card border border-border rounded-2xl h-36 animate-pulse" />
             ))}
@@ -537,7 +532,7 @@ export default function ClientInventoryPage() {
                     <div className="flex-1 border-t border-border/40" />
                   </div>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {items.map(item => (
                     <InventoryCard
                       key={item.id}
