@@ -5,37 +5,40 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight,
+  LayoutDashboard, GitBranch, Handshake, DollarSign,
+  Receipt, TrendingUp, BarChart2, Building2, Network, Settings2, ShieldAlert,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-interface NavSection {
-  label: string;
-  items: { label: string; path: string; short?: string }[];
-}
+interface NavItem { label: string; path: string; icon: LucideIcon; }
+interface NavSection { label: string; items: NavItem[]; }
 
 const navSections: NavSection[] = [
   {
     label: 'Production',
     items: [
-      { label: 'Dashboard', path: '/dashboard', short: '⌂' },
-      { label: 'Pipeline', path: '/pipeline', short: '◈' },
-      { label: 'Deals', path: '/deals', short: '◇' },
-      { label: 'Payouts', path: '/payouts', short: '$' },
-      { label: 'Expenses', path: '/expenses', short: '−' },
-      { label: 'Forecast', path: '/forecast', short: '↗' },
-      { label: 'Analytics', path: '/analytics', short: '∿' },
-      { label: 'Client Inventory', path: '/inventory', short: '⊞' },
+      { label: 'Dashboard',       path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Pipeline',        path: '/pipeline',  icon: GitBranch },
+      { label: 'Deals',           path: '/deals',     icon: Handshake },
+      { label: 'Payouts',         path: '/payouts',   icon: DollarSign },
+      { label: 'Expenses',        path: '/expenses',  icon: Receipt },
+      { label: 'Forecast',        path: '/forecast',  icon: TrendingUp },
+      { label: 'Analytics',       path: '/analytics', icon: BarChart2 },
+      { label: 'Client Inventory',path: '/inventory', icon: Building2 },
     ],
   },
   {
     label: 'Network',
     items: [
-      { label: 'Network', path: '/network', short: '⬡' },
+      { label: 'Network', path: '/network', icon: Network },
     ],
   },
 ];
 
-const standaloneItems = [
-  { label: 'Settings', path: '/settings', short: '⚙' },
+const standaloneItems: NavItem[] = [
+  { label: 'Settings', path: '/settings', icon: Settings2 },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
@@ -145,12 +148,10 @@ export function Sidebar() {
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-sidebar-primary" />
                       )}
                       {isCollapsed ? (
-                        <span className={cn(
-                          "text-[16px] w-7 text-center leading-none select-none",
-                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
-                        )}>
-                          {item.short}
-                        </span>
+                        <item.icon className={cn(
+                          "w-[18px] h-[18px] flex-shrink-0",
+                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                        )} strokeWidth={1.75} />
                       ) : (
                         <span>{item.label}</span>
                       )}
@@ -194,12 +195,10 @@ export function Sidebar() {
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-sidebar-primary" />
               )}
               {isCollapsed ? (
-                <span className={cn(
-                  "text-[16px] w-7 text-center leading-none select-none",
-                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
-                )}>
-                  {item.short}
-                </span>
+                <item.icon className={cn(
+                  "w-[18px] h-[18px] flex-shrink-0",
+                  isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                )} strokeWidth={1.75} />
               ) : (
                 <span>{item.label}</span>
               )}
@@ -226,13 +225,13 @@ export function Sidebar() {
                   <Link
                     to="/admin"
                     className={cn(
-                      'flex items-center justify-center py-2 rounded-lg text-[11px] font-semibold w-6 mx-auto tracking-tight transition-all duration-150',
+                      'flex items-center justify-center py-2 rounded-lg transition-all duration-150',
                       location.pathname === '/admin'
                         ? 'text-warning bg-warning/10'
                         : 'text-warning/40 hover:text-warning hover:bg-warning/8'
                     )}
                   >
-                    A
+                    <ShieldAlert className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">Admin</TooltipContent>
