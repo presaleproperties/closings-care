@@ -33,10 +33,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      {/* Bottom padding accounts for mobile/tablet nav bar + safe area */}
+      {/* Bottom padding accounts for mobile nav bar + safe area; md+ uses sidebar so no bottom nav */}
       <main 
-        className={`pb-[82px] md:pb-[90px] lg:pb-0 min-h-screen transition-all duration-300 ${
-          isCollapsed ? 'lg:ml-[56px]' : 'lg:ml-60'
+        className={`pb-[82px] md:pb-6 min-h-screen transition-all duration-300 ${
+          isCollapsed ? 'md:ml-[56px]' : 'md:ml-56'
         }`}
       >
         {children}
