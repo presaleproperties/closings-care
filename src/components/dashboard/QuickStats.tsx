@@ -78,7 +78,7 @@ export function QuickStats({
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
       {CARDS.map((card, index) => {
         const value = props[card.valueKey] ?? 0;
         const subtitle = card.subtitleFn(props);
