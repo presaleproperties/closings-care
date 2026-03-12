@@ -75,14 +75,17 @@ export function Sidebar() {
   });
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
+    // Only persist collapse state on desktop — tablet is always collapsed by default
+    if (window.innerWidth >= 1024) {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isCollapsed));
+    }
   }, [isCollapsed]);
 
   useEffect(() => {
     localStorage.setItem(SECTION_COLLAPSED_KEY, JSON.stringify(collapsedSections));
   }, [collapsedSections]);
 
-  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
+  const toggleCollapse = () => setIsCollapsed(prev => !prev);
 
   return (
     <aside
