@@ -206,7 +206,7 @@ export default function SettingsPage() {
 
       <PullToRefresh onRefresh={refreshData} className="min-h-[calc(100vh-56px)]">
       <motion.div 
-        className="p-4 md:p-5 lg:p-6 max-w-4xl"
+        className="p-4 md:p-6 lg:p-6 max-w-5xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={springConfig}
