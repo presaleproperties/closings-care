@@ -209,7 +209,7 @@ export default function DealsPage() {
 
         <PullToRefresh onRefresh={refreshData}>
           <div className="flex-1 overflow-y-auto">
-            <div className="p-5 md:p-6 lg:p-6 space-y-5 pb-24 md:pb-24 lg:pb-6">
+            <div className="p-5 md:p-7 lg:p-6 space-y-5 pb-24 md:pb-24 lg:pb-6">
 
               {/* ── Filter banner ── */}
               {(monthParam || filterParam) && (
@@ -483,7 +483,7 @@ export default function DealsPage() {
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
                               className="overflow-hidden"
                             >
-                              <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
                                 {groupDeals.map((deal, idx) => (
                                   <Link key={deal.id} to={`/deals/${deal.id}`}>
                                     <SyncedDealCard deal={deal} index={idx} />

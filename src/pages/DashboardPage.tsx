@@ -323,13 +323,22 @@ export default function DashboardPage() {
             </Tabs>
           </div>
 
-          {/* Desktop Layout */}
+          {/* Tablet + Desktop Layout */}
           <div className="hidden sm:block p-5 md:p-6 lg:p-6 space-y-5">
-            <QuickStats {...quickStatsProps} />
-            <GCIGoalTracker {...goalTrackerProps} />
+            {/* On tablet, show 2-col QuickStats + Goals side by side */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-1 gap-5">
+              <div className="space-y-5">
+                <QuickStats {...quickStatsProps} />
+              </div>
+              <div className="md:flex md:items-stretch">
+                <div className="w-full">
+                  <GCIGoalTracker {...goalTrackerProps} />
+                </div>
+              </div>
+            </div>
 
             <Tabs defaultValue="insights" className="space-y-5">
-              <TabsList className="w-auto inline-flex h-9 p-0.5 bg-muted/40 rounded-xl border border-border/30">
+              <TabsList className="w-auto inline-flex h-10 p-0.5 bg-muted/40 rounded-xl border border-border/30">
                 <TabsTrigger value="insights" className={tabTriggerClass}>Insights</TabsTrigger>
                 <TabsTrigger value="cashflow" className={tabTriggerClass}>Cashflow</TabsTrigger>
                 <TabsTrigger value="taxes" className={tabTriggerClass}>Taxes</TabsTrigger>
@@ -346,7 +355,7 @@ export default function DashboardPage() {
                   revShareMonthlyAvg={revShareMonthlyAvg}
                 />
                 <PipelinePreview layout="horizontal" />
-                <div className="grid lg:grid-cols-2 gap-4 items-start">
+                <div className="grid md:grid-cols-2 gap-4 items-start">
                   <UpcomingRevenue syncedTransactions={syncedTransactions} />
                   <NeedsAttention syncedTransactions={syncedTransactions} />
                 </div>
@@ -366,7 +375,7 @@ export default function DashboardPage() {
 
               {/* Taxes Tab */}
               <TabsContent value="taxes" className="mt-0 space-y-5">
-                <div className="grid lg:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <SafeToSpendCard
                     projectedCashIn={incomeTotals.projected}
                     monthlyExpenses={expenseTotals.monthly}
@@ -387,8 +396,10 @@ export default function DashboardPage() {
 
               {/* Analytics Tab */}
               <TabsContent value="analytics" className="mt-0 space-y-5">
-                <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
-                <ExpenseAnalytics expenses={expenses} />
+                <div className="grid md:grid-cols-2 gap-5">
+                  <DealsWrittenCard syncedTransactions={syncedTransactions} compact />
+                  <ExpenseAnalytics expenses={expenses} />
+                </div>
                 <AIBusinessInsights syncedTransactions={syncedTransactions} />
                 <BusinessAnalytics deals={[]} payouts={[]} syncedPayouts={syncedPayouts} syncedTransactions={syncedTransactions} />
               </TabsContent>
