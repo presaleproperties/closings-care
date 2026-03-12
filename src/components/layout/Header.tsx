@@ -48,7 +48,7 @@ export function Header({
         style={{ background: 'linear-gradient(90deg, transparent, hsl(var(--border) / 0.65) 15%, hsl(var(--border) / 0.65) 85%, transparent)' }}
       />
 
-      <div className="relative flex items-center justify-between h-12 md:h-14 lg:h-[52px] px-4 sm:px-5 md:px-6 lg:px-6">
+      <div className="relative flex items-center justify-between h-[52px] md:h-[60px] lg:h-[52px] px-4 sm:px-5 md:px-6 lg:px-6">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {showBackButton ? (
             <Link
