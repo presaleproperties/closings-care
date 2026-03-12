@@ -18,15 +18,17 @@ export function MobileNav() {
       <div
         className="relative backdrop-blur-2xl backdrop-saturate-150"
         style={{
-          background: 'hsl(var(--background) / 0.88)',
+          background: 'hsl(var(--background) / 0.92)',
           boxShadow: '0 -1px 0 0 hsl(var(--border) / 0.45)',
         }}
       >
+        {/* Top border accent */}
         <div className="absolute inset-x-0 top-0 h-px" style={{
           background: 'linear-gradient(90deg, transparent, hsl(var(--border) / 0.6) 20%, hsl(var(--border) / 0.6) 80%, transparent)'
         }} />
 
-        <div className="relative flex justify-around items-center h-[52px] px-1">
+        {/* Nav items */}
+        <div className="relative flex justify-around items-center h-[60px] md:h-[68px] px-2 md:px-4">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path ||
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
@@ -37,17 +39,25 @@ export function MobileNav() {
                 to={item.path}
                 onClick={() => triggerHaptic('light')}
                 className={cn(
-                  'flex flex-col items-center justify-center flex-1 py-1.5 gap-[3px] transition-all duration-200',
-                  'active:scale-[0.90] active:opacity-60',
+                  'flex flex-col items-center justify-center flex-1 py-1 gap-[5px] transition-all duration-200',
+                  'active:scale-[0.88] active:opacity-60',
                   isActive ? 'text-primary' : 'text-muted-foreground/40'
                 )}
               >
+                {/* Active pill indicator */}
                 <div className={cn(
-                  "relative flex items-center justify-center w-6 h-[3px] rounded-full transition-all duration-200",
-                  isActive ? "bg-primary" : "bg-transparent"
-                )} />
+                  "relative flex items-center justify-center rounded-full transition-all duration-200",
+                  isActive
+                    ? "bg-primary/12 w-10 md:w-14 h-[26px] md:h-[30px]"
+                    : "w-10 md:w-14 h-[26px] md:h-[30px]"
+                )}>
+                  <div className={cn(
+                    "w-5 md:w-6 h-[3px] rounded-full transition-all duration-200",
+                    isActive ? "bg-primary" : "bg-transparent"
+                  )} />
+                </div>
                 <span className={cn(
-                  "text-[11px] tracking-tight",
+                  "text-[11px] md:text-[12px] tracking-tight transition-all duration-200",
                   isActive ? "font-semibold" : "font-normal"
                 )}>
                   {item.label}
@@ -57,6 +67,7 @@ export function MobileNav() {
           })}
         </div>
 
+        {/* Safe area */}
         <div
           className="w-full"
           style={{
