@@ -45,28 +45,10 @@ export function Sidebar() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { data: isAdmin } = useIsAdmin();
-
-  // Auto-collapse at md (< 1024px), only expand by default at lg+
-  const isTablet = typeof window !== 'undefined' && window.innerWidth < 1024;
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) return true;
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
-
-  // Collapse when resizing down to tablet, expand when resizing up to desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 1024) {
-        setIsCollapsed(true);
-      } else {
-        const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-        setIsCollapsed(saved === 'true');
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem(SECTION_COLLAPSED_KEY);
