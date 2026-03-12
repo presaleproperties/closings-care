@@ -148,12 +148,10 @@ export function Sidebar() {
                         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full bg-sidebar-primary" />
                       )}
                       {isCollapsed ? (
-                        <span className={cn(
-                          "text-[16px] w-7 text-center leading-none select-none",
-                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/35"
-                        )}>
-                          {item.short}
-                        </span>
+                        <item.icon className={cn(
+                          "w-[18px] h-[18px] flex-shrink-0",
+                          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+                        )} strokeWidth={1.75} />
                       ) : (
                         <span>{item.label}</span>
                       )}
