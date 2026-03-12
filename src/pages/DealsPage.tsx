@@ -483,7 +483,7 @@ export default function DealsPage() {
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
                               className="overflow-hidden"
                             >
-                              <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
                                 {groupDeals.map((deal, idx) => (
                                   <Link key={deal.id} to={`/deals/${deal.id}`}>
                                     <SyncedDealCard deal={deal} index={idx} />
