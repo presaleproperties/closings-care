@@ -5,7 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useAdmin';
 import { useState, useEffect } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft, ChevronRight,
+  LayoutDashboard, GitBranch, Handshake, DollarSign,
+  Receipt, TrendingUp, BarChart2, Building2, Network, Settings2, ShieldAlert,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface NavSection {
   label: string;
