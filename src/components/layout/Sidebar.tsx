@@ -12,35 +12,33 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-interface NavSection {
-  label: string;
-  items: { label: string; path: string; short?: string }[];
-}
+interface NavItem { label: string; path: string; icon: LucideIcon; }
+interface NavSection { label: string; items: NavItem[]; }
 
 const navSections: NavSection[] = [
   {
     label: 'Production',
     items: [
-      { label: 'Dashboard', path: '/dashboard', short: '⌂' },
-      { label: 'Pipeline', path: '/pipeline', short: '◈' },
-      { label: 'Deals', path: '/deals', short: '◇' },
-      { label: 'Payouts', path: '/payouts', short: '$' },
-      { label: 'Expenses', path: '/expenses', short: '−' },
-      { label: 'Forecast', path: '/forecast', short: '↗' },
-      { label: 'Analytics', path: '/analytics', short: '∿' },
-      { label: 'Client Inventory', path: '/inventory', short: '⊞' },
+      { label: 'Dashboard',       path: '/dashboard', icon: LayoutDashboard },
+      { label: 'Pipeline',        path: '/pipeline',  icon: GitBranch },
+      { label: 'Deals',           path: '/deals',     icon: Handshake },
+      { label: 'Payouts',         path: '/payouts',   icon: DollarSign },
+      { label: 'Expenses',        path: '/expenses',  icon: Receipt },
+      { label: 'Forecast',        path: '/forecast',  icon: TrendingUp },
+      { label: 'Analytics',       path: '/analytics', icon: BarChart2 },
+      { label: 'Client Inventory',path: '/inventory', icon: Building2 },
     ],
   },
   {
     label: 'Network',
     items: [
-      { label: 'Network', path: '/network', short: '⬡' },
+      { label: 'Network', path: '/network', icon: Network },
     ],
   },
 ];
 
-const standaloneItems = [
-  { label: 'Settings', path: '/settings', short: '⚙' },
+const standaloneItems: NavItem[] = [
+  { label: 'Settings', path: '/settings', icon: Settings2 },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed';
