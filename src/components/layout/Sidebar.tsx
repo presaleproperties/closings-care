@@ -225,13 +225,13 @@ export function Sidebar() {
                   <Link
                     to="/admin"
                     className={cn(
-                      'flex items-center justify-center py-2 rounded-lg text-[11px] font-semibold w-6 mx-auto tracking-tight transition-all duration-150',
+                      'flex items-center justify-center py-2 rounded-lg transition-all duration-150',
                       location.pathname === '/admin'
                         ? 'text-warning bg-warning/10'
                         : 'text-warning/40 hover:text-warning hover:bg-warning/8'
                     )}
                   >
-                    A
+                    <ShieldAlert className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">Admin</TooltipContent>
