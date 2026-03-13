@@ -336,16 +336,27 @@ function TempSubGroup({
                     }}
                     onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
                     className={cn(
-                      "hidden sm:flex items-stretch border-b border-border/30 group transition-colors cursor-grab active:cursor-grabbing",
+                      "hidden sm:flex items-stretch border-b border-border/30 group transition-colors cursor-pointer",
                       idx % 2 === 0 ? 'bg-card' : 'bg-muted/10',
-                      'hover:bg-primary/[0.03]'
+                      'hover:bg-primary/[0.04]'
                     )}
                   >
-                    <div className="w-8 shrink-0 px-2 flex items-center justify-center text-muted-foreground/20 group-hover:text-muted-foreground/40">
+                    {/* Drag handle */}
+                    <div
+                      className="w-8 shrink-0 px-2 flex items-center justify-center text-muted-foreground/20 group-hover:text-muted-foreground/40 cursor-grab active:cursor-grabbing"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <GripVertical className="h-3 w-3" />
                     </div>
-                    <div className="flex-[3] min-w-[160px] border-l border-border/10">
-                      <InlineCell value={p.client_name} isEditing={isEditing(p.id, 'client_name')} onStartEdit={() => setEditingCell({ id: p.id, field: 'client_name' })} onSave={(v) => handleSave(p.id, 'client_name', v)} className="font-semibold" placeholder="Client name" />
+                    {/* Name — click opens sheet */}
+                    <div
+                      className="flex-[3] min-w-[160px] border-l border-border/10"
+                      onClick={() => { onOpen(p); triggerHaptic('light'); }}
+                    >
+                      <div className="px-3 py-2.5 text-sm font-semibold truncate min-h-[42px] flex items-center gap-2">
+                        {p.client_name || <span className="text-muted-foreground/30 italic">—</span>}
+                        <ArrowRight className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      </div>
                     </div>
                     <div className="w-[70px] shrink-0 border-l border-border/10 flex items-center justify-center">
                       <button
@@ -355,37 +366,37 @@ function TempSubGroup({
                         <TempBadge temp={p.temperature || 'warm'} compact />
                       </button>
                     </div>
-                    <div className="flex-1 min-w-[100px] border-l border-border/10">
+                    <div className="flex-1 min-w-[100px] border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       {isEditing(p.id, 'home_type') ? (
                         <InlineCell value={p.home_type} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'home_type', v)} type="select" options={HOME_TYPES} />
                       ) : (
                         <div onClick={() => setEditingCell({ id: p.id, field: 'home_type' })} className="px-3 py-2 text-xs cursor-pointer text-muted-foreground min-h-[36px] flex items-center">{p.home_type}</div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-[120px] border-l border-border/10">
+                    <div className="flex-1 min-w-[120px] border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       {isEditing(p.id, 'potential_commission') ? (
                         <InlineCell value={p.potential_commission} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'potential_commission', v)} type="number" />
                       ) : (
                         <div onClick={() => setEditingCell({ id: p.id, field: 'potential_commission' })} className="px-3 py-2 text-sm cursor-text font-bold text-primary min-h-[36px] flex items-center">{formatCurrency(p.potential_commission)}</div>
                       )}
                     </div>
-                    <div className="w-[90px] shrink-0 border-l border-border/10">
+                    <div className="w-[90px] shrink-0 border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       {isEditing(p.id, 'status') ? (
                         <InlineCell value={p.status} isEditing onStartEdit={() => {}} onSave={(v) => handleSave(p.id, 'status', v)} type="select" options={[...STATUS_OPTIONS]} optionLabels={STATUS_LABELS} />
                       ) : (
                         <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
                       )}
                     </div>
-                    <div className="flex-1 min-w-[110px] border-l border-border/10">
+                    <div className="flex-1 min-w-[110px] border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       <InlineCell value={p.source} isEditing={isEditing(p.id, 'source')} onStartEdit={() => setEditingCell({ id: p.id, field: 'source' })} onSave={(v) => handleSave(p.id, 'source', v)} type="select" options={['', ...LEAD_SOURCES]} optionLabels={{ '': '—' }} placeholder="Source..." />
                     </div>
-                    <div className="flex-1 min-w-[110px] border-l border-border/10">
+                    <div className="flex-1 min-w-[110px] border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       <InlineCell value={p.budget != null ? formatCurrency(p.budget) : null} isEditing={isEditing(p.id, 'budget')} onStartEdit={() => setEditingCell({ id: p.id, field: 'budget' })} onSave={(v) => handleSave(p.id, 'budget', v)} type="number" placeholder="$0" />
                     </div>
-                    <div className="flex-[2] min-w-[120px] border-l border-border/10">
+                    <div className="flex-[2] min-w-[120px] border-l border-border/10" onClick={(e) => e.stopPropagation()}>
                       <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
                     </div>
-                    <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
+                    <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
                         <Trash2 className="h-3 w-3" />
                       </button>
