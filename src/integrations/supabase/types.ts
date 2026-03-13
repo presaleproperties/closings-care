@@ -547,6 +547,7 @@ export type Database = {
       }
       pipeline_prospects: {
         Row: {
+          budget: string | null
           client_name: string
           created_at: string
           deal_type: string | null
@@ -561,6 +562,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          budget?: string | null
           client_name: string
           created_at?: string
           deal_type?: string | null
@@ -575,6 +577,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          budget?: string | null
           client_name?: string
           created_at?: string
           deal_type?: string | null
