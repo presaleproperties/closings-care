@@ -35,41 +35,8 @@ export function MobileNav() {
       />
 
       {/* Items row */}
-      <div className="relative flex justify-around items-end px-1 md:px-6 pt-2.5 pb-2">
-        {navItems.map((item, i) => {
-          // Center FAB
-          if (item === null) {
-            return (
-              <div key="fab" className="relative flex flex-col items-center flex-1">
-                <button
-                  onClick={() => {
-                    triggerHaptic('medium');
-                    navigate('/deals/new');
-                  }}
-                  className="relative -translate-y-4 flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full shadow-premium active:scale-90 transition-all duration-150 outline-none"
-                  style={{
-                    background: 'linear-gradient(135deg, hsl(var(--primary-glow)), hsl(var(--primary)))',
-                    boxShadow: '0 0 0 4px hsl(var(--background)), 0 4px 20px -4px hsl(var(--primary) / 0.55), 0 8px 32px -8px hsl(var(--primary) / 0.35)',
-                  }}
-                  aria-label="New Deal"
-                >
-                  <Plus
-                    strokeWidth={2.5}
-                    className="w-6 h-6 md:w-7 md:h-7"
-                    style={{ color: 'hsl(var(--primary-foreground))' }}
-                  />
-                </button>
-                {/* Label below */}
-                <span
-                  className="text-[10px] md:text-[11px] tracking-tight leading-none font-semibold -mt-2.5"
-                  style={{ color: 'hsl(var(--primary))' }}
-                >
-                  New Deal
-                </span>
-              </div>
-            );
-          }
-
+      <div className="relative flex justify-around items-center px-1 md:px-6 pt-2.5 pb-2">
+        {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
             (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
