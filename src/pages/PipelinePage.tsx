@@ -375,6 +375,12 @@ function TempSubGroup({
                         <StatusCell status={p.status} onClick={() => setEditingCell({ id: p.id, field: 'status' })} />
                       )}
                     </div>
+                    <div className="flex-1 min-w-[110px] border-l border-border/10">
+                      <InlineCell value={p.source} isEditing={isEditing(p.id, 'source')} onStartEdit={() => setEditingCell({ id: p.id, field: 'source' })} onSave={(v) => handleSave(p.id, 'source', v)} placeholder="Add source..." />
+                    </div>
+                    <div className="flex-1 min-w-[110px] border-l border-border/10">
+                      <InlineCell value={p.budget} isEditing={isEditing(p.id, 'budget')} onStartEdit={() => setEditingCell({ id: p.id, field: 'budget' })} onSave={(v) => handleSave(p.id, 'budget', v)} placeholder="Add budget..." />
+                    </div>
                     <div className="flex-[2] min-w-[120px] border-l border-border/10">
                       <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
                     </div>
