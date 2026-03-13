@@ -958,13 +958,14 @@ export default function PipelinePage() {
                   { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
                 ]).map(group => {
                   const groupItems = [...prospects].reverse().filter(group.filter);
-                  const groupGCI = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
+                  const filteredGroupItems = tempFilter ? groupItems.filter(p => (p.temperature || 'warm') === tempFilter) : groupItems;
+                  const groupGCI = filteredGroupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
 
                   const tempGroups: { temp: string; label: string; dotClass: string; items: PipelineProspect[] }[] = [
-                    { temp: 'hot', label: 'Hot', dotClass: 'bg-rose-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'hot') },
-                    { temp: 'warm', label: 'Warm', dotClass: 'bg-amber-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'warm') },
-                    { temp: 'cold', label: 'Cold', dotClass: 'bg-sky-400', items: groupItems.filter(p => (p.temperature || 'warm') === 'cold') },
-                  ].filter(tg => tg.items.length > 0 || tg.temp === 'warm'); // always show warm as drop target
+                    { temp: 'hot', label: 'Hot', dotClass: 'bg-rose-500', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'hot') },
+                    { temp: 'warm', label: 'Warm', dotClass: 'bg-amber-500', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'warm') },
+                    { temp: 'cold', label: 'Cold', dotClass: 'bg-sky-400', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'cold') },
+                  ].filter(tg => tg.items.length > 0 || (!tempFilter && tg.temp === 'warm')); // always show warm as drop target when no filter
 
                   return (
                     <motion.div
