@@ -1089,6 +1089,8 @@ export default function PipelinePage() {
                         <div className="flex-1 min-w-[100px] px-3 py-2 border-l border-border/15">Property</div>
                         <div className="flex-1 min-w-[120px] px-3 py-2 border-l border-border/15">GCI</div>
                         <div className="w-[80px] shrink-0 px-3 py-2 border-l border-border/15">Type</div>
+                        <div className="flex-1 min-w-[110px] px-3 py-2 border-l border-border/15">Source</div>
+                        <div className="flex-1 min-w-[110px] px-3 py-2 border-l border-border/15">Budget</div>
                         <div className="flex-[2] min-w-[120px] px-3 py-2 border-l border-border/15">Notes</div>
                         <div className="w-10 shrink-0" />
                       </div>
