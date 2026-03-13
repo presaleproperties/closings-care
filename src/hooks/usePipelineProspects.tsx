@@ -13,6 +13,7 @@ export interface PipelineProspect {
   temperature: string;
   deal_type: string;
   notes: string | null;
+  source: string | null;
   created_at: string;
   updated_at: string;
 }

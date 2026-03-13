@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Flame, Thermometer, Snowflake, Trash2, Save, User, DollarSign, Home, Tag, StickyNote, TrendingUp } from 'lucide-react';
+import { X, Flame, Thermometer, Snowflake, Trash2, Save, User, DollarSign, Home, Tag, StickyNote, TrendingUp, Radio } from 'lucide-react';
 import { PipelineProspect } from '@/hooks/usePipelineProspects';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 import { formatCurrency } from '@/lib/format';
+
+const LEAD_SOURCES = ['Instagram', 'TikTok', 'Facebook Ads', 'YouTube', 'Referral', 'Team', 'Open House', 'Cold Call', 'Website', 'Other'];
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
