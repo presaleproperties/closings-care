@@ -979,7 +979,7 @@ export default function PipelinePage() {
                       <div className={cn("flex items-center gap-3 px-4 py-3 border-b", group.headerBorder, group.headerBg)}>
                         <div className={cn("w-2 h-2 rounded-full shrink-0", group.dotColor)} />
                         <span className="text-sm font-bold tracking-tight">{group.label}</span>
-                        <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} leads</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{filteredGroupItems.length} leads{tempFilter && groupItems.length !== filteredGroupItems.length ? ` of ${groupItems.length}` : ''}</span>
                         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
                           <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
                           <span className="text-sm font-bold text-primary">{formatCurrency(groupGCI)}</span>
