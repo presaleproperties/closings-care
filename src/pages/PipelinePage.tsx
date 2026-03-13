@@ -10,6 +10,7 @@ import { Plus, Trash2, Users, Flame, Thermometer, Snowflake, TrendingUp, List, L
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
+import { ProspectSheet } from '@/components/pipeline/ProspectSheet';
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
