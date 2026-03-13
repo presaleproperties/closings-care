@@ -709,6 +709,7 @@ export default function PipelinePage() {
     return (localStorage.getItem('pipeline-view') as ViewMode) || 'list';
   });
   const [selectedProspect, setSelectedProspect] = useState<PipelineProspect | null>(null);
+  const [tempFilter, setTempFilter] = useState<string | null>(null);
 
   const handleSheetSave = useCallback((id: string, updates: Partial<PipelineProspect>) => {
     updateProspect.mutate({ id, ...updates } as any);
