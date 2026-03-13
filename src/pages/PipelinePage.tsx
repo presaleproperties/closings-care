@@ -905,7 +905,7 @@ export default function PipelinePage() {
               <>
                 {([
                   { key: 'presale', label: 'Presale Deals', defaultDealType: 'buyer', defaultHomeType: 'Presale', headerBg: 'bg-amber-500/8', headerBorder: 'border-amber-500/30', dotColor: 'bg-amber-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type === 'Presale' },
-                  { key: 'buyer', label: 'Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
+                  { key: 'buyer', label: 'Resale Buyers', defaultDealType: 'buyer', defaultHomeType: 'Detached', headerBg: 'bg-sky-500/8', headerBorder: 'border-sky-500/30', dotColor: 'bg-sky-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'buyer' },
                   { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
                 ]).map(group => {
                   const groupItems = [...prospects].reverse().filter(group.filter);
