@@ -885,6 +885,7 @@ export default function PipelinePage() {
                 onDelete={(id) => deleteProspect.mutate(id)}
                 onAdd={handleAdd}
                 onUpdate={(id, field, value) => updateProspect.mutate({ id, [field]: value } as any)}
+                onOpen={setSelectedProspect}
               />
             )}
           </motion.div>
