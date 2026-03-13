@@ -20,8 +20,12 @@ export function MobileNav() {
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
       {/* Frosted glass backdrop */}
       <div
-        className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
-        style={{ background: 'hsl(var(--background) / 0.92)' }}
+        className="absolute inset-0"
+        style={{
+          background: 'hsl(var(--background) / 0.88)',
+          backdropFilter: 'blur(24px) saturate(160%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+        }}
       />
 
       {/* Top hairline border */}
@@ -29,12 +33,12 @@ export function MobileNav() {
         className="absolute inset-x-0 top-0 h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, hsl(var(--border) / 0.8) 15%, hsl(var(--border) / 0.8) 85%, transparent)',
+            'linear-gradient(90deg, transparent, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent)',
         }}
       />
 
-      {/* Items */}
-      <div className="relative flex justify-around items-end px-2 md:px-8 pt-2 pb-1">
+      {/* Items row */}
+      <div className="relative flex justify-around items-stretch px-1 md:px-6 pt-2.5 pb-2">
         {navItems.map((item) => {
           const isActive =
             location.pathname === item.path ||
@@ -46,55 +50,63 @@ export function MobileNav() {
               key={item.path}
               to={item.path}
               onClick={() => triggerHaptic('light')}
-              className={cn(
-                'relative flex flex-col items-center justify-end gap-1 flex-1 py-1.5 transition-all duration-200 active:scale-90 active:opacity-60 select-none',
-              )}
+              className="relative flex flex-col items-center gap-1 flex-1 py-1 transition-all duration-150 active:scale-90 active:opacity-60 select-none outline-none"
             >
-              {/* Icon container with pill highlight */}
+              {/* Active indicator bar at very top */}
+              <span
+                className={cn(
+                  'absolute -top-2.5 left-1/2 -translate-x-1/2 h-[3px] rounded-full transition-all duration-300',
+                  isActive
+                    ? 'w-6 opacity-100'
+                    : 'w-0 opacity-0',
+                )}
+                style={{ background: 'hsl(var(--primary))' }}
+              />
+
+              {/* Icon pill */}
               <div
                 className={cn(
                   'flex items-center justify-center rounded-2xl transition-all duration-200',
-                  'w-12 h-[34px] md:w-14 md:h-9',
-                  isActive
-                    ? 'bg-primary/12'
-                    : 'bg-transparent',
+                  'w-11 h-8 md:w-14 md:h-9',
                 )}
+                style={isActive ? {
+                  background: 'hsl(var(--primary) / 0.12)',
+                } : undefined}
               >
                 <Icon
+                  strokeWidth={isActive ? 2.3 : 1.8}
                   className={cn(
                     'transition-all duration-200',
                     'w-[19px] h-[19px] md:w-[21px] md:h-[21px]',
-                    isActive
-                      ? 'text-primary stroke-[2.2px]'
-                      : 'text-muted-foreground/55 stroke-[1.8px]',
                   )}
+                  style={{
+                    color: isActive
+                      ? 'hsl(var(--primary))'
+                      : 'hsl(var(--muted-foreground) / 0.5)',
+                  }}
                 />
               </div>
 
               {/* Label */}
               <span
                 className={cn(
-                  'text-[10px] md:text-[11.5px] tracking-tight leading-none transition-all duration-200',
-                  isActive
-                    ? 'text-primary font-semibold'
-                    : 'text-muted-foreground/55 font-normal',
+                  'text-[10px] md:text-[11px] tracking-tight leading-none transition-all duration-200',
+                  isActive ? 'font-semibold' : 'font-normal',
                 )}
+                style={{
+                  color: isActive
+                    ? 'hsl(var(--primary))'
+                    : 'hsl(var(--muted-foreground) / 0.5)',
+                }}
               >
                 {item.label}
               </span>
-
-              {/* Active dot */}
-              {isActive && (
-                <span
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary"
-                />
-              )}
             </Link>
           );
         })}
       </div>
 
-      {/* iOS safe area */}
+      {/* iOS safe area spacer */}
       <div style={{ height: 'env(safe-area-inset-bottom, 0px)' }} />
     </nav>
   );
