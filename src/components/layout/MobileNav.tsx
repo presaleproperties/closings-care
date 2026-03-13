@@ -41,7 +41,7 @@ export function MobileNav() {
                 className={cn(
                   'flex flex-col items-center justify-center flex-1 gap-[4px] transition-all duration-200',
                   'active:scale-[0.88] active:opacity-60',
-                  isActive ? 'text-primary' : 'text-muted-foreground/35'
+                  isActive ? 'text-primary' : 'text-muted-foreground/70'
                 )}
               >
                 {/* Pill indicator with background */}
