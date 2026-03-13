@@ -989,9 +989,17 @@ export default function PipelinePage() {
                         <div className="w-2 h-2 rounded-full shrink-0 bg-emerald-500" />
                         <span className="text-sm font-bold tracking-tight">Closed Deals</span>
                         <span className="text-[10px] text-muted-foreground font-medium">{closedItems.length} deals</span>
-                        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                          <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
-                          <span className="text-sm font-bold text-emerald-600">{formatCurrency(closedGCI)}</span>
+                        <div className="ml-auto flex items-center gap-3 sm:gap-4">
+                          {closedItems.some(p => p.budget != null) && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Closed Volume</span>
+                              <span className="text-sm font-bold text-emerald-500">{formatCurrency(closedItems.reduce((s, p) => s + Number(p.budget || 0), 0))}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
+                            <span className="text-sm font-bold text-emerald-600">{formatCurrency(closedGCI)}</span>
+                          </div>
                         </div>
                       </div>
                       {/* Desktop table headers */}
