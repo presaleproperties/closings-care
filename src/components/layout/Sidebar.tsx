@@ -109,7 +109,7 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={toggleCollapse}
-        className="absolute -right-3 top-[52px] w-5.5 h-5.5 w-5 h-5 rounded-full flex items-center justify-center bg-sidebar-background border border-sidebar-border text-sidebar-foreground/40 hover:text-sidebar-foreground transition-all duration-200 z-10"
+        className="absolute -right-3 top-[52px] w-5 h-5 rounded-full flex items-center justify-center bg-background border border-border text-foreground/70 hover:text-foreground hover:border-primary/60 shadow-sm transition-all duration-200 z-10"
         aria-label={isCollapsed ? "Expand" : "Collapse"}
       >
         {isCollapsed ? <ChevronRight className="w-2.5 h-2.5" /> : <ChevronLeft className="w-2.5 h-2.5" />}
