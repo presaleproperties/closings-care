@@ -889,6 +889,43 @@ export default function PipelinePage() {
           </div>
         </div>
 
+        {/* ── Temperature Filter Toggles ────────────────────────────────── */}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground font-medium shrink-0">Filter:</span>
+          <div className="flex gap-1.5">
+            {[
+              { value: 'hot',  label: 'Hot',  icon: Flame,       activeClass: 'bg-rose-500/15 text-rose-500 border-rose-500/40',  inactiveClass: 'text-muted-foreground border-border hover:border-rose-500/40 hover:text-rose-500' },
+              { value: 'warm', label: 'Warm', icon: Thermometer, activeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/40', inactiveClass: 'text-muted-foreground border-border hover:border-amber-500/40 hover:text-amber-500' },
+              { value: 'cold', label: 'Cold', icon: Snowflake,   activeClass: 'bg-sky-400/15 text-sky-400 border-sky-400/40',      inactiveClass: 'text-muted-foreground border-border hover:border-sky-400/40 hover:text-sky-400' },
+            ].map(({ value, label, icon: Icon, activeClass, inactiveClass }) => {
+              const count = activeProspects.filter(p => (p.temperature || 'warm') === value).length;
+              const isActive = tempFilter === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => { triggerHaptic('light'); setTempFilter(isActive ? null : value); }}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all duration-150',
+                    isActive ? activeClass : inactiveClass,
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{label}</span>
+                  <span className="font-bold opacity-70">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          {tempFilter && (
+            <button
+              onClick={() => { triggerHaptic('light'); setTempFilter(null); }}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1 underline underline-offset-2"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         {/* ── Content ────────────────────────────────── */}
         {viewMode === 'board' ? (
           <motion.div
