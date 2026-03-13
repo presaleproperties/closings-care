@@ -277,12 +277,16 @@ export function ProspectSheet({ prospect, onClose, onSave, onDelete }: Props) {
                 {/* Budget */}
                 <div>
                   <FieldLabel icon={DollarSign} label="Budget" />
-                  <input
-                    value={draft.budget || ''}
-                    onChange={e => set('budget', e.target.value)}
-                    placeholder="e.g. $800k–$1.2M, under $500k..."
-                    className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-border/40 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all placeholder:text-muted-foreground/30"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground/50 font-medium">$</span>
+                    <input
+                      type="number"
+                      value={draft.budget ?? ''}
+                      onChange={e => set('budget', parseFloat(e.target.value) || null as any)}
+                      placeholder="0"
+                      className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-muted/30 border border-border/40 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all placeholder:text-muted-foreground/30"
+                    />
+                  </div>
                 </div>
 
                 {/* Notes */}
