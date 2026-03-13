@@ -709,6 +709,7 @@ export default function PipelinePage() {
     return (localStorage.getItem('pipeline-view') as ViewMode) || 'list';
   });
   const [selectedProspect, setSelectedProspect] = useState<PipelineProspect | null>(null);
+  const [tempFilter, setTempFilter] = useState<string | null>(null);
 
   const handleSheetSave = useCallback((id: string, updates: Partial<PipelineProspect>) => {
     updateProspect.mutate({ id, ...updates } as any);
@@ -888,6 +889,43 @@ export default function PipelinePage() {
           </div>
         </div>
 
+        {/* ── Temperature Filter Toggles ────────────────────────────────── */}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground font-medium shrink-0">Filter:</span>
+          <div className="flex gap-1.5">
+            {[
+              { value: 'hot',  label: 'Hot',  icon: Flame,       activeClass: 'bg-rose-500/15 text-rose-500 border-rose-500/40',  inactiveClass: 'text-muted-foreground border-border hover:border-rose-500/40 hover:text-rose-500' },
+              { value: 'warm', label: 'Warm', icon: Thermometer, activeClass: 'bg-amber-500/15 text-amber-500 border-amber-500/40', inactiveClass: 'text-muted-foreground border-border hover:border-amber-500/40 hover:text-amber-500' },
+              { value: 'cold', label: 'Cold', icon: Snowflake,   activeClass: 'bg-sky-400/15 text-sky-400 border-sky-400/40',      inactiveClass: 'text-muted-foreground border-border hover:border-sky-400/40 hover:text-sky-400' },
+            ].map(({ value, label, icon: Icon, activeClass, inactiveClass }) => {
+              const count = activeProspects.filter(p => (p.temperature || 'warm') === value).length;
+              const isActive = tempFilter === value;
+              return (
+                <button
+                  key={value}
+                  onClick={() => { triggerHaptic('light'); setTempFilter(isActive ? null : value); }}
+                  className={cn(
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all duration-150',
+                    isActive ? activeClass : inactiveClass,
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{label}</span>
+                  <span className="font-bold opacity-70">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+          {tempFilter && (
+            <button
+              onClick={() => { triggerHaptic('light'); setTempFilter(null); }}
+              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1 underline underline-offset-2"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         {/* ── Content ────────────────────────────────── */}
         {viewMode === 'board' ? (
           <motion.div
@@ -920,13 +958,14 @@ export default function PipelinePage() {
                   { key: 'seller', label: 'Sellers / Listings', defaultDealType: 'seller', defaultHomeType: 'Detached', headerBg: 'bg-violet-500/8', headerBorder: 'border-violet-500/30', dotColor: 'bg-violet-500', filter: (p: PipelineProspect) => p.status !== 'closed' && p.status !== 'lost' && p.home_type !== 'Presale' && (p.deal_type || 'buyer') === 'seller' },
                 ]).map(group => {
                   const groupItems = [...prospects].reverse().filter(group.filter);
-                  const groupGCI = groupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
+                  const filteredGroupItems = tempFilter ? groupItems.filter(p => (p.temperature || 'warm') === tempFilter) : groupItems;
+                  const groupGCI = filteredGroupItems.reduce((s, p) => s + Number(p.potential_commission), 0);
 
                   const tempGroups: { temp: string; label: string; dotClass: string; items: PipelineProspect[] }[] = [
-                    { temp: 'hot', label: 'Hot', dotClass: 'bg-rose-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'hot') },
-                    { temp: 'warm', label: 'Warm', dotClass: 'bg-amber-500', items: groupItems.filter(p => (p.temperature || 'warm') === 'warm') },
-                    { temp: 'cold', label: 'Cold', dotClass: 'bg-sky-400', items: groupItems.filter(p => (p.temperature || 'warm') === 'cold') },
-                  ].filter(tg => tg.items.length > 0 || tg.temp === 'warm'); // always show warm as drop target
+                    { temp: 'hot', label: 'Hot', dotClass: 'bg-rose-500', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'hot') },
+                    { temp: 'warm', label: 'Warm', dotClass: 'bg-amber-500', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'warm') },
+                    { temp: 'cold', label: 'Cold', dotClass: 'bg-sky-400', items: filteredGroupItems.filter(p => (p.temperature || 'warm') === 'cold') },
+                  ].filter(tg => tg.items.length > 0 || (!tempFilter && tg.temp === 'warm')); // always show warm as drop target when no filter
 
                   return (
                     <motion.div
@@ -940,7 +979,7 @@ export default function PipelinePage() {
                       <div className={cn("flex items-center gap-3 px-4 py-3 border-b", group.headerBorder, group.headerBg)}>
                         <div className={cn("w-2 h-2 rounded-full shrink-0", group.dotColor)} />
                         <span className="text-sm font-bold tracking-tight">{group.label}</span>
-                        <span className="text-[10px] text-muted-foreground font-medium">{groupItems.length} leads</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{filteredGroupItems.length} leads{tempFilter && groupItems.length !== filteredGroupItems.length ? ` of ${groupItems.length}` : ''}</span>
                         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
                           <span className="hidden sm:inline text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Total GCI</span>
                           <span className="text-sm font-bold text-primary">{formatCurrency(groupGCI)}</span>
