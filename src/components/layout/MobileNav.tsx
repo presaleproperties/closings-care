@@ -1,14 +1,13 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
-import { LayoutDashboard, GitBranch, BarChart2, Settings2, Plus } from 'lucide-react';
+import { LayoutDashboard, GitBranch, BarChart2, Settings2 } from 'lucide-react';
 
 const navItems = [
-  { label: 'Home',     path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Pipeline', path: '/pipeline',  icon: GitBranch },
-  null, // FAB placeholder
-  { label: 'Analytics',path: '/analytics', icon: BarChart2 },
-  { label: 'Settings', path: '/settings',  icon: Settings2 },
+  { label: 'Home',      path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Pipeline',  path: '/pipeline',  icon: GitBranch },
+  { label: 'Analytics', path: '/analytics', icon: BarChart2 },
+  { label: 'Settings',  path: '/settings',  icon: Settings2 },
 ];
 
 export function MobileNav() {
