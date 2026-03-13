@@ -1134,6 +1134,8 @@ export default function PipelinePage() {
                                   {DEAL_TYPE_LABELS[p.deal_type || 'buyer']}
                                 </span>
                               </div>
+                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.source || '—'}</div>
+                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.budget || '—'}</div>
                               <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.notes || '—'}</div>
                               <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
                                 <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
