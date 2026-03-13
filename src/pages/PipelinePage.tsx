@@ -952,6 +952,7 @@ export default function PipelinePage() {
                           handleSave={handleSave}
                           deleteProspect={deleteProspect}
                           onDropTemp={(prospectId) => handleSave(prospectId, 'temperature', tg.temp)}
+                          onOpen={setSelectedProspect}
                         />
                       ))}
 
