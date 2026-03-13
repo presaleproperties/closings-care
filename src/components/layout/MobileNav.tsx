@@ -12,7 +12,6 @@ const navItems = [
 
 export function MobileNav() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50">
