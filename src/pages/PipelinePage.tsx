@@ -323,7 +323,7 @@ function TempSubGroup({
                 >
                   {/* ── Mobile card (< sm) ── */}
                   <div className="sm:hidden">
-                    <MobileProspectCard p={p} handleSave={handleSave} deleteProspect={deleteProspect} />
+                    <MobileProspectCard p={p} handleSave={handleSave} deleteProspect={deleteProspect} onOpen={onOpen} />
                   </div>
 
                   {/* ── Desktop table row (≥ sm) ── */}
