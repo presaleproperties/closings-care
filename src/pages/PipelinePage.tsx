@@ -659,7 +659,7 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate, onOpen 
                     </div>
                     <AnimatePresence mode="popLayout">
                       {tempItems.map(p => (
-                        <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
+                        <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} onOpen={onOpen} />
                       ))}
                     </AnimatePresence>
                   </div>
