@@ -395,11 +395,12 @@ function TempSubGroup({
 }
 
 // ── Board Card ──────────────────────────────────────────────────────────
-function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
+function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate, onOpen }: {
   prospect: PipelineProspect;
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   return (
     <motion.div
@@ -414,7 +415,8 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
         e.currentTarget.style.opacity = '0.45';
       }}
       onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-      className="rounded-lg border border-border/60 bg-card px-3 py-2.5 group hover:border-primary/30 hover:shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing"
+      onClick={() => { onOpen(prospect); triggerHaptic('light'); }}
+      className="rounded-lg border border-border/60 bg-card px-3 py-2.5 group hover:border-primary/30 hover:shadow-sm transition-all duration-150 cursor-pointer"
     >
       {/* Name row */}
       <p className="text-xs font-semibold text-foreground truncate mb-1.5">{prospect.client_name}</p>
