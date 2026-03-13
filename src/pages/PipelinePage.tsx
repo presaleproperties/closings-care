@@ -690,6 +690,15 @@ export default function PipelinePage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (localStorage.getItem('pipeline-view') as ViewMode) || 'list';
   });
+  const [selectedProspect, setSelectedProspect] = useState<PipelineProspect | null>(null);
+
+  const handleSheetSave = useCallback((id: string, updates: Partial<PipelineProspect>) => {
+    updateProspect.mutate({ id, ...updates } as any);
+  }, [updateProspect]);
+
+  const handleSheetDelete = useCallback((id: string) => {
+    deleteProspect.mutate(id);
+  }, [deleteProspect]);
 
   const activeProspects = prospects.filter(p => p.status === 'active' || p.status === 'in-contract' || p.status === 'listings');
   const totalPotential = activeProspects.reduce((sum, p) => sum + Number(p.potential_commission), 0);
