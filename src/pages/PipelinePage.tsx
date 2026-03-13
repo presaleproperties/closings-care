@@ -501,12 +501,13 @@ function BoardQuickAdd({ status, onAdd }: { status: string; onAdd: (data: { clie
   );
 }
 
-function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
+function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate, onOpen }: {
   prospects: PipelineProspect[];
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status: string }) => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [dragColSource, setDragColSource] = useState<string | null>(null);
