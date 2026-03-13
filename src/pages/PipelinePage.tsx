@@ -13,6 +13,7 @@ import { triggerHaptic } from '@/lib/haptics';
 import { ProspectSheet } from '@/components/pipeline/ProspectSheet';
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
+const LEAD_SOURCES = ['Instagram', 'Tiktok', 'Facebook Ads', 'YouTube', 'Referral', 'Team'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
 const DEAL_TYPE_OPTIONS = ['buyer', 'seller'];
@@ -376,7 +377,7 @@ function TempSubGroup({
                       )}
                     </div>
                     <div className="flex-1 min-w-[110px] border-l border-border/10">
-                      <InlineCell value={p.source} isEditing={isEditing(p.id, 'source')} onStartEdit={() => setEditingCell({ id: p.id, field: 'source' })} onSave={(v) => handleSave(p.id, 'source', v)} placeholder="Add source..." />
+                      <InlineCell value={p.source} isEditing={isEditing(p.id, 'source')} onStartEdit={() => setEditingCell({ id: p.id, field: 'source' })} onSave={(v) => handleSave(p.id, 'source', v)} type="select" options={['', ...LEAD_SOURCES]} optionLabels={{ '': '—' }} placeholder="Source..." />
                     </div>
                     <div className="flex-1 min-w-[110px] border-l border-border/10">
                       <InlineCell value={p.budget} isEditing={isEditing(p.id, 'budget')} onStartEdit={() => setEditingCell({ id: p.id, field: 'budget' })} onSave={(v) => handleSave(p.id, 'budget', v)} placeholder="Add budget..." />
