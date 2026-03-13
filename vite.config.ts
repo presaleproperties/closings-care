@@ -45,33 +45,39 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         clientsClaim: true,
         navigateFallbackDenylist: [/^\/~oauth/],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Only pre-cache icons & fonts — NOT JS/CSS bundles (they change on every build)
+        globPatterns: ["**/*.{ico,png,svg,woff2}"],
         importScripts: ["/sw-push.js"],
         runtimeCaching: [
+          // HTML — always network first, zero cache TTL
           {
             urlPattern: /\.html$/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "html-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 0
-              },
-              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 5, maxAgeSeconds: 0 },
+              networkTimeoutSeconds: 4,
             }
           },
+          // JS & CSS bundles — network first, short fallback cache (stale while revalidate kills old builds)
+          {
+            urlPattern: /\.(js|css)(\?.*)?$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "assets-cache",
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+              networkTimeoutSeconds: 4,
+              cacheableResponse: { statuses: [0, 200] },
+            }
+          },
+          // Google Fonts — long-lived cache is fine (immutable)
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
             handler: "CacheFirst",
             options: {
               cacheName: "google-fonts-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] }
             }
           }
         ]
