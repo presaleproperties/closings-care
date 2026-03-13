@@ -258,7 +258,7 @@ function MobileProspectCard({ p, handleSave, deleteProspect, onOpen }: {
 
 // ── Temperature sub-group (list view) ─────────────────────────────────
 function TempSubGroup({
-  temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp,
+  temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp, onOpen,
 }: {
   temp: string;
   label: string;
@@ -269,6 +269,7 @@ function TempSubGroup({
   handleSave: (id: string, field: string, value: string) => void;
   deleteProspect: { mutate: (id: string) => void };
   onDropTemp: (prospectId: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
