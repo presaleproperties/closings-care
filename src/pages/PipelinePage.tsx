@@ -728,6 +728,59 @@ export default function PipelinePage() {
 
   const isEditing = (id: string, field: string) => editingCell?.id === id && editingCell?.field === field;
 
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <Header title="Pipeline" showAddDeal={false} />
+        <div className="p-5 lg:p-6 space-y-5">
+          {/* Hero stat skeleton */}
+          <div className="card-premium p-4 sm:p-5 animate-pulse">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="h-3 w-28 rounded-full bg-muted/60" />
+                <div className="h-8 w-36 rounded-lg bg-muted/60" />
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="space-y-1.5 text-right">
+                  <div className="h-6 w-8 rounded bg-muted/60 ml-auto" />
+                  <div className="h-3 w-12 rounded-full bg-muted/40" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pills skeleton */}
+          <div className="flex gap-2">
+            {[80, 64, 96, 60, 52].map((w, i) => (
+              <div key={i} className="h-7 rounded-lg bg-muted/50 animate-pulse shrink-0" style={{ width: w }} />
+            ))}
+          </div>
+
+          {/* Table skeleton */}
+          <div className="rounded-xl border border-border/40 overflow-hidden bg-card animate-pulse">
+            {/* Header row */}
+            <div className="flex items-center gap-4 px-4 py-2.5 bg-muted/30 border-b border-border/40">
+              {[120, 60, 90, 110, 80, 160].map((w, i) => (
+                <div key={i} className="h-3 rounded-full bg-muted/60" style={{ width: w }} />
+              ))}
+            </div>
+            {/* Data rows */}
+            {[1, 2, 3, 4, 5, 6].map((_, i) => (
+              <div key={i} className={`flex items-center gap-4 px-4 py-3 border-b border-border/20 ${i % 2 === 1 ? 'bg-muted/10' : ''}`}>
+                <div className="h-3.5 rounded-full bg-muted/50" style={{ width: 100 + (i * 17 % 60) }} />
+                <div className="h-5 w-14 rounded-full bg-muted/40" />
+                <div className="h-3 w-16 rounded-full bg-muted/40" />
+                <div className="h-3.5 w-20 rounded-full bg-muted/50" />
+                <div className="h-5 w-16 rounded-full bg-muted/40" />
+                <div className="h-3 flex-1 rounded-full bg-muted/30" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <Header title="Pipeline" subtitle={`${activeProspects.length} active prospects`} showAddDeal={false} />
