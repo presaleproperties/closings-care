@@ -10,6 +10,7 @@ import { Plus, Trash2, Users, Flame, Thermometer, Snowflake, TrendingUp, List, L
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
+import { ProspectSheet } from '@/components/pipeline/ProspectSheet';
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
@@ -199,10 +200,11 @@ function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data
   );
 }
 // ── Mobile prospect card (list view) ──────────────────────────────────
-function MobileProspectCard({ p, handleSave, deleteProspect }: {
+function MobileProspectCard({ p, handleSave, deleteProspect, onOpen }: {
   p: PipelineProspect;
   handleSave: (id: string, field: string, value: string) => void;
   deleteProspect: { mutate: (id: string) => void };
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const tempConfig: Record<string, { icon: any; color: string; label: string }> = {
     hot: { icon: Flame, color: 'text-rose-500', label: 'Hot' },
@@ -213,10 +215,14 @@ function MobileProspectCard({ p, handleSave, deleteProspect }: {
   const TIcon = tc.icon;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20 bg-card active:bg-muted/20 transition-colors group">
+    <div
+      className="flex items-center gap-3 px-4 py-3 border-b border-border/20 bg-card active:bg-muted/20 transition-colors group cursor-pointer"
+      onClick={() => { onOpen(p); triggerHaptic('light'); }}
+    >
       {/* Temp icon — tap to cycle */}
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length];
           handleSave(p.id, 'temperature', next);
           triggerHaptic('light');
@@ -244,20 +250,15 @@ function MobileProspectCard({ p, handleSave, deleteProspect }: {
         <p className="text-[10px] text-muted-foreground">Est. GCI</p>
       </div>
 
-      {/* Delete */}
-      <button
-        onClick={() => deleteProspect.mutate(p.id)}
-        className="shrink-0 opacity-0 group-active:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive transition-opacity ml-1"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* Arrow hint */}
+      <ChevronRight className="shrink-0 h-4 w-4 text-muted-foreground/30" />
     </div>
   );
 }
 
 // ── Temperature sub-group (list view) ─────────────────────────────────
 function TempSubGroup({
-  temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp,
+  temp, label, dotClass, items, isEditing, setEditingCell, handleSave, deleteProspect, onDropTemp, onOpen,
 }: {
   temp: string;
   label: string;
@@ -268,6 +269,7 @@ function TempSubGroup({
   handleSave: (id: string, field: string, value: string) => void;
   deleteProspect: { mutate: (id: string) => void };
   onDropTemp: (prospectId: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -321,7 +323,7 @@ function TempSubGroup({
                 >
                   {/* ── Mobile card (< sm) ── */}
                   <div className="sm:hidden">
-                    <MobileProspectCard p={p} handleSave={handleSave} deleteProspect={deleteProspect} />
+                    <MobileProspectCard p={p} handleSave={handleSave} deleteProspect={deleteProspect} onOpen={onOpen} />
                   </div>
 
                   {/* ── Desktop table row (≥ sm) ── */}
@@ -393,11 +395,12 @@ function TempSubGroup({
 }
 
 // ── Board Card ──────────────────────────────────────────────────────────
-function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
+function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate, onOpen }: {
   prospect: PipelineProspect;
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   return (
     <motion.div
@@ -412,7 +415,8 @@ function BoardCard({ prospect, onMoveStatus, onDelete, onUpdate }: {
         e.currentTarget.style.opacity = '0.45';
       }}
       onDragEnd={(e: any) => { e.currentTarget.style.opacity = '1'; }}
-      className="rounded-lg border border-border/60 bg-card px-3 py-2.5 group hover:border-primary/30 hover:shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing"
+      onClick={() => { onOpen(prospect); triggerHaptic('light'); }}
+      className="rounded-lg border border-border/60 bg-card px-3 py-2.5 group hover:border-primary/30 hover:shadow-sm transition-all duration-150 cursor-pointer"
     >
       {/* Name row */}
       <p className="text-xs font-semibold text-foreground truncate mb-1.5">{prospect.client_name}</p>
@@ -497,12 +501,13 @@ function BoardQuickAdd({ status, onAdd }: { status: string; onAdd: (data: { clie
   );
 }
 
-function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
+function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate, onOpen }: {
   prospects: PipelineProspect[];
   onMoveStatus: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onAdd: (data: { client_name: string; home_type: string; potential_commission: number; temperature: string; status: string }) => void;
   onUpdate: (id: string, field: string, value: string) => void;
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [dragColSource, setDragColSource] = useState<string | null>(null);
@@ -654,7 +659,7 @@ function BoardView({ prospects, onMoveStatus, onDelete, onAdd, onUpdate }: {
                     </div>
                     <AnimatePresence mode="popLayout">
                       {tempItems.map(p => (
-                        <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} />
+                        <BoardCard key={p.id} prospect={p} onMoveStatus={onMoveStatus} onDelete={onDelete} onUpdate={onUpdate} onOpen={onOpen} />
                       ))}
                     </AnimatePresence>
                   </div>
@@ -685,6 +690,15 @@ export default function PipelinePage() {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (localStorage.getItem('pipeline-view') as ViewMode) || 'list';
   });
+  const [selectedProspect, setSelectedProspect] = useState<PipelineProspect | null>(null);
+
+  const handleSheetSave = useCallback((id: string, updates: Partial<PipelineProspect>) => {
+    updateProspect.mutate({ id, ...updates } as any);
+  }, [updateProspect]);
+
+  const handleSheetDelete = useCallback((id: string) => {
+    deleteProspect.mutate(id);
+  }, [deleteProspect]);
 
   const activeProspects = prospects.filter(p => p.status === 'active' || p.status === 'in-contract' || p.status === 'listings');
   const totalPotential = activeProspects.reduce((sum, p) => sum + Number(p.potential_commission), 0);
@@ -871,6 +885,7 @@ export default function PipelinePage() {
                 onDelete={(id) => deleteProspect.mutate(id)}
                 onAdd={handleAdd}
                 onUpdate={(id, field, value) => updateProspect.mutate({ id, [field]: value } as any)}
+                onOpen={setSelectedProspect}
               />
             )}
           </motion.div>
@@ -938,6 +953,7 @@ export default function PipelinePage() {
                           handleSave={handleSave}
                           deleteProspect={deleteProspect}
                           onDropTemp={(prospectId) => handleSave(prospectId, 'temperature', tg.temp)}
+                          onOpen={setSelectedProspect}
                         />
                       ))}
 
@@ -1123,6 +1139,12 @@ export default function PipelinePage() {
         )}
       </div>
       </PullToRefresh>
+      <ProspectSheet
+        prospect={selectedProspect}
+        onClose={() => setSelectedProspect(null)}
+        onSave={handleSheetSave}
+        onDelete={handleSheetDelete}
+      />
     </AppLayout>
   );
 }
