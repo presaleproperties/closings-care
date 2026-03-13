@@ -1138,6 +1138,12 @@ export default function PipelinePage() {
         )}
       </div>
       </PullToRefresh>
+      <ProspectSheet
+        prospect={selectedProspect}
+        onClose={() => setSelectedProspect(null)}
+        onSave={handleSheetSave}
+        onDelete={handleSheetDelete}
+      />
     </AppLayout>
   );
 }
