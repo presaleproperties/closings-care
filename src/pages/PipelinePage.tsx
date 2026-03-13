@@ -718,6 +718,7 @@ export default function PipelinePage() {
 
     let parsed: any = value;
     if (field === 'potential_commission') parsed = parseFloat(value) || 0;
+    if (field === 'budget') parsed = parseFloat(value) || null;
     if (String((prospect as any)[field]) === String(parsed)) return;
 
     // Defer mutation to next frame so AnimatePresence can cleanly unmount elements
