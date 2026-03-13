@@ -13,7 +13,7 @@ import { triggerHaptic } from '@/lib/haptics';
 import { ProspectSheet } from '@/components/pipeline/ProspectSheet';
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
-const LEAD_SOURCES = ['Instagram', 'Tiktok', 'Facebook Ads', 'YouTube', 'Referral', 'Team'];
+const LEAD_SOURCES = ['Instagram', 'Tiktok', 'Facebook Ads', 'YouTube', 'Referral', 'Team', 'Past Client'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
 const TEMP_OPTIONS = ['hot', 'warm', 'cold'];
 const DEAL_TYPE_OPTIONS = ['buyer', 'seller'];

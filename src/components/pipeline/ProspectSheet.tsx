@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 import { formatCurrency } from '@/lib/format';
 
-const LEAD_SOURCES = ['Instagram', 'TikTok', 'Facebook Ads', 'YouTube', 'Referral', 'Team', 'Open House', 'Cold Call', 'Website', 'Other'];
+const LEAD_SOURCES = ['Instagram', 'TikTok', 'Facebook Ads', 'YouTube', 'Referral', 'Team', 'Open House', 'Cold Call', 'Website', 'Past Client', 'Other'];
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
