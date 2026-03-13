@@ -200,10 +200,11 @@ function QuickAddRow({ onAdd, defaultDealType, defaultHomeType }: { onAdd: (data
   );
 }
 // ── Mobile prospect card (list view) ──────────────────────────────────
-function MobileProspectCard({ p, handleSave, deleteProspect }: {
+function MobileProspectCard({ p, handleSave, deleteProspect, onOpen }: {
   p: PipelineProspect;
   handleSave: (id: string, field: string, value: string) => void;
   deleteProspect: { mutate: (id: string) => void };
+  onOpen: (p: PipelineProspect) => void;
 }) {
   const tempConfig: Record<string, { icon: any; color: string; label: string }> = {
     hot: { icon: Flame, color: 'text-rose-500', label: 'Hot' },
@@ -214,10 +215,14 @@ function MobileProspectCard({ p, handleSave, deleteProspect }: {
   const TIcon = tc.icon;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/20 bg-card active:bg-muted/20 transition-colors group">
+    <div
+      className="flex items-center gap-3 px-4 py-3 border-b border-border/20 bg-card active:bg-muted/20 transition-colors group cursor-pointer"
+      onClick={() => { onOpen(p); triggerHaptic('light'); }}
+    >
       {/* Temp icon — tap to cycle */}
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           const next = TEMP_OPTIONS[(TEMP_OPTIONS.indexOf(p.temperature || 'warm') + 1) % TEMP_OPTIONS.length];
           handleSave(p.id, 'temperature', next);
           triggerHaptic('light');
@@ -245,13 +250,8 @@ function MobileProspectCard({ p, handleSave, deleteProspect }: {
         <p className="text-[10px] text-muted-foreground">Est. GCI</p>
       </div>
 
-      {/* Delete */}
-      <button
-        onClick={() => deleteProspect.mutate(p.id)}
-        className="shrink-0 opacity-0 group-active:opacity-100 p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive transition-opacity ml-1"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* Arrow hint */}
+      <ChevronRight className="shrink-0 h-4 w-4 text-muted-foreground/30" />
     </div>
   );
 }
