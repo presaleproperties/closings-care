@@ -1,0 +1,2 @@
+UPDATE public.pipeline_prospects SET budget = NULL WHERE budget = '' OR budget IS NOT NULL AND budget !~ '^[0-9]+(\.[0-9]+)?$';
+ALTER TABLE public.pipeline_prospects ALTER COLUMN budget TYPE numeric USING budget::numeric;
