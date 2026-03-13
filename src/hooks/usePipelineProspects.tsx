@@ -14,6 +14,7 @@ export interface PipelineProspect {
   deal_type: string;
   notes: string | null;
   source: string | null;
+  budget: string | null;
   created_at: string;
   updated_at: string;
 }
