@@ -53,14 +53,14 @@ export function Header({
           {showBackButton ? (
             <Link
               to={backPath}
-              className="lg:hidden -ml-1.5 flex items-center text-primary font-medium active:opacity-50 transition-all duration-200"
+              className="md:hidden -ml-1.5 flex items-center text-primary font-medium active:opacity-50 transition-all duration-200"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
               <span className="text-[15px] -ml-0.5 tracking-tight">Back</span>
             </Link>
           ) : (
             <Sheet>
-              <SheetTrigger asChild className="lg:hidden">
+              <SheetTrigger asChild className="md:hidden">
                 <button className="shrink-0 -ml-1 h-9 w-9 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground active:scale-95 transition-transform">
                   <Menu className="h-[19px] w-[19px]" />
                 </button>
