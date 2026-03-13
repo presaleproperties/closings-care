@@ -380,7 +380,7 @@ function TempSubGroup({
                       <InlineCell value={p.source} isEditing={isEditing(p.id, 'source')} onStartEdit={() => setEditingCell({ id: p.id, field: 'source' })} onSave={(v) => handleSave(p.id, 'source', v)} type="select" options={['', ...LEAD_SOURCES]} optionLabels={{ '': '—' }} placeholder="Source..." />
                     </div>
                     <div className="flex-1 min-w-[110px] border-l border-border/10">
-                      <InlineCell value={p.budget} isEditing={isEditing(p.id, 'budget')} onStartEdit={() => setEditingCell({ id: p.id, field: 'budget' })} onSave={(v) => handleSave(p.id, 'budget', v)} placeholder="Add budget..." />
+                      <InlineCell value={p.budget != null ? formatCurrency(p.budget) : null} isEditing={isEditing(p.id, 'budget')} onStartEdit={() => setEditingCell({ id: p.id, field: 'budget' })} onSave={(v) => handleSave(p.id, 'budget', v)} type="number" placeholder="$0" />
                     </div>
                     <div className="flex-[2] min-w-[120px] border-l border-border/10">
                       <InlineCell value={p.notes} isEditing={isEditing(p.id, 'notes')} onStartEdit={() => setEditingCell({ id: p.id, field: 'notes' })} onSave={(v) => handleSave(p.id, 'notes', v)} placeholder="Add notes..." />
@@ -718,6 +718,7 @@ export default function PipelinePage() {
 
     let parsed: any = value;
     if (field === 'potential_commission') parsed = parseFloat(value) || 0;
+    if (field === 'budget') parsed = parseFloat(value) || null;
     if (String((prospect as any)[field]) === String(parsed)) return;
 
     // Defer mutation to next frame so AnimatePresence can cleanly unmount elements
@@ -1049,7 +1050,7 @@ export default function PipelinePage() {
                                 )}
                               </div>
                               <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.source || '—'}</div>
-                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.budget || '—'}</div>
+                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.budget != null ? formatCurrency(p.budget) : '—'}</div>
                               <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/60 truncate">{p.notes || '—'}</div>
                               <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
                                 <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
@@ -1136,7 +1137,7 @@ export default function PipelinePage() {
                                 </span>
                               </div>
                               <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.source || '—'}</div>
-                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.budget || '—'}</div>
+                              <div className="flex-1 min-w-[110px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.budget != null ? formatCurrency(p.budget) : '—'}</div>
                               <div className="flex-[2] min-w-[120px] border-l border-border/10 px-3 py-2 text-xs text-muted-foreground/40 truncate">{p.notes || '—'}</div>
                               <div className="w-10 shrink-0 border-l border-border/10 flex items-center justify-center">
                                 <button onClick={() => deleteProspect.mutate(p.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground/30 hover:text-destructive">
