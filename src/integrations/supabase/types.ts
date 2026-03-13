@@ -554,6 +554,7 @@ export type Database = {
           id: string
           notes: string | null
           potential_commission: number
+          source: string | null
           status: string
           temperature: string
           updated_at: string
@@ -567,6 +568,7 @@ export type Database = {
           id?: string
           notes?: string | null
           potential_commission?: number
+          source?: string | null
           status?: string
           temperature?: string
           updated_at?: string
@@ -580,6 +582,7 @@ export type Database = {
           id?: string
           notes?: string | null
           potential_commission?: number
+          source?: string | null
           status?: string
           temperature?: string
           updated_at?: string

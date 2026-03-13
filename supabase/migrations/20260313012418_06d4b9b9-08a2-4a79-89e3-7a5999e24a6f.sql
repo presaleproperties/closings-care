@@ -1,0 +1,1 @@
+ALTER TABLE public.pipeline_prospects ADD COLUMN IF NOT EXISTS source text DEFAULT NULL;

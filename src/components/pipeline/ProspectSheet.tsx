@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Flame, Thermometer, Snowflake, Trash2, Save, User, DollarSign, Home, Tag, StickyNote, TrendingUp } from 'lucide-react';
+import { X, Flame, Thermometer, Snowflake, Trash2, Save, User, DollarSign, Home, Tag, StickyNote, TrendingUp, Radio } from 'lucide-react';
 import { PipelineProspect } from '@/hooks/usePipelineProspects';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/haptics';
 import { formatCurrency } from '@/lib/format';
+
+const LEAD_SOURCES = ['Instagram', 'TikTok', 'Facebook Ads', 'YouTube', 'Referral', 'Team', 'Open House', 'Cold Call', 'Website', 'Other'];
 
 const HOME_TYPES = ['Presale', 'Condo', 'Townhome', 'Detached', 'Listings'];
 const STATUS_OPTIONS = ['active', 'listings', 'in-contract', 'closed', 'lost'] as const;
@@ -248,13 +250,37 @@ export function ProspectSheet({ prospect, onClose, onSave, onDelete }: Props) {
                   </div>
                 </div>
 
+                {/* Source */}
+                <div>
+                  <FieldLabel icon={Radio} label="Lead Source" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {LEAD_SOURCES.map(s => {
+                      const isSelected = (draft.source || '') === s;
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => { set('source', isSelected ? '' : s); triggerHaptic('light'); }}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                            isSelected
+                              ? "bg-primary/15 text-primary border-primary/30"
+                              : "bg-muted/20 text-muted-foreground/50 border-border/30 hover:bg-muted/40"
+                          )}
+                        >
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* Notes */}
                 <div>
                   <FieldLabel icon={StickyNote} label="Notes" />
                   <textarea
                     value={draft.notes || ''}
                     onChange={e => set('notes', e.target.value)}
-                    placeholder="Add context, next steps, source..."
+                    placeholder="Add context, next steps..."
                     rows={3}
                     className="w-full px-3 py-2.5 rounded-xl bg-muted/30 border border-border/40 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all placeholder:text-muted-foreground/30"
                   />
